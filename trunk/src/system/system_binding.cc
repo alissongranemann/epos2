@@ -1,21 +1,13 @@
-// EPOS System Scaffold and System Abstraction Implementation
+// EPOS System Binding
 
-#include <utility/ostream.h>
-#include <utility/heap.h>
 #include <machine.h>
 #include <display.h>
-#include <system.h>
-#include <alarm.h>
 #include <thread.h>
-#include <framework/main.h>
-#include <framework/agent.h>
 
 __USING_SYS;
-
 extern "C" {
     void _panic() { Machine::panic(); }
     void _exit(int s) { Thread::exit(s); }
-    void _exec(Agent<void> * agent) { agent->exec(); }
     void _print(const char * s) { Display::puts(s); }
 
     // LIBC Heritage

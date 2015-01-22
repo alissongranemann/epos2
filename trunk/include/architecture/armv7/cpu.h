@@ -239,7 +239,8 @@ public:
         return ctx;
     }
 
-public: // ARMv7-only Methods
+public:
+    // ARMv7 specific methods
     static unsigned int int_id() { return flags() & 0x3f; }
 
 private:

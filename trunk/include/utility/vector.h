@@ -8,8 +8,7 @@
 __BEGIN_UTIL
 
 // Vector
-template<typename T, unsigned int SIZE, 
-          typename El = List_Elements::Pointer<T> >
+template<typename T, unsigned int SIZE, typename El = List_Elements::Pointer<T> >
 class Vector
 {
 public:
