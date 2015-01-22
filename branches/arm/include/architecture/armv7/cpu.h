@@ -7,9 +7,6 @@
 
 __BEGIN_SYS
 
-void _int_enable();
-void _int_disable();
-
 class ARMv7: private CPU_Common
 {
     friend class Init_System;
@@ -116,12 +113,19 @@ public:
     static Hertz clock() { return _cpu_clock; }
     static Hertz bus_clock() { return _bus_clock; }
 
-    // TODO: remove this temporary forward to tmp.cc when a real int_disable is found
     static void int_enable() {
-        _int_enable();
+        ASM("mov r0, #1 \n"
+            "msr primask, r0 \n"
+            "msr faultmask, r0");
+        //    ASM("cpsie f");
+//        Cortex_Model_Specifics::scs(Cortex_Model_Specifics::STCTRL) |= Cortex_Model_Specifics::INTEN;
     }
     static void int_disable() {
-        _int_disable();
+//        Cortex_Model_Specifics::scs(Cortex_Model_Specifics::STCTRL) &= ~Cortex_Model_Specifics::INTEN;
+    //    ASM("cpsid f");
+        ASM("mov r0, #0 \n"
+            "msr primask, r0 \n"
+            "msr faultmask, r0");
     }
 
     static bool int_enabled() {
@@ -227,7 +231,7 @@ public:
     static Reg16 ntohs(Reg16 v) { return swap16(v); }
 
     template<typename ... Tn>
-    static Context * init_stack(const Log_Addr & stack, unsigned int size, void (* exit)(), int (* entry)(Tn ...), Tn ... an) {
+    static Context * init_stack(const Log_Addr & usp, const Log_Addr & stack, unsigned int size, void (* exit)(), int (* entry)(Tn ...), Tn ... an) {
         Log_Addr sp = stack + size;
         sp -= sizeof(Context);
         Context * ctx = new(sp) Context(entry, exit);

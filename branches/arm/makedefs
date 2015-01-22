@@ -186,8 +186,7 @@ MAKEFLAGS       := --no-builtin-rules
 MKBI            := $(BIN)/eposmkbi $(EPOS)
 
 OBJCOPY         = $(COMP_PREFIX)objcopy
-#OBJCOPYFLAGS    := -R .note -R .comment
-OBJCOPYFLAGS    := -I elf32-$(ARCH_ENDIANESS)
+OBJCOPYFLAGS    := -R .note -R .comment
 
 OBJDUMP         = $(COMP_PREFIX)objdump
 OBJDUMPFLAGS    :=
@@ -254,7 +253,7 @@ lib%.o: lib%.cc
 		$(AR) $(ARFLAGS) $@ $^
 
 %.hex: %
-		$(OBJCOPY) -O ihex $< $<.tmp
+		$(OBJCOPY) -I elf32-$(ARCH_ENDIANESS) -O ihex $< $<.tmp
 		$(MKBI) $@ $<.tmp
 		$(CLEAN) $<.tmp
 

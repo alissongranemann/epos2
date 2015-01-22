@@ -4,6 +4,11 @@
 #include <thread.h>
 #include <alarm.h>
 
+// This_Thread class attributes
+__BEGIN_UTIL
+bool This_Thread::_not_booting;
+__END_UTIL
+
 __BEGIN_SYS
 
 // Class attributes
@@ -12,15 +17,11 @@ Scheduler_Timer * Thread::_timer;
 Scheduler<Thread> Thread::_scheduler;
 Spin Thread::_lock;
 
-
-// This_Thread class attributes
-bool This_Thread::_not_booting;
-
-
 // Methods
-void Thread::common_constructor(Log_Addr entry, unsigned int stack_size) 
+void Thread::constructor(Log_Addr entry, unsigned int stack_size)
 {
-    db<Thread>(TRC) << "Thread(entry=" << entry
+    db<Thread>(TRC) << "Thread(task=" << _task
+                    << ",entry=" << entry
                     << ",state=" << _state
                     << ",priority=" << _link.rank()
                     << ",stack={b=" << reinterpret_cast<void *>(_stack)
@@ -336,6 +337,37 @@ void Thread::implicit_exit()
 }
 
 
+void Thread::dispatch(Thread * prev, Thread * next, bool charge)
+{
+    if(charge) {
+        if(Criterion::timed)
+            _timer->reset();
+    }
+
+    if(prev != next) {
+        if(prev->_state == RUNNING)
+            prev->_state = READY;
+        next->_state = RUNNING;
+
+        db<Thread>(TRC) << "Thread::dispatch(prev=" << prev << ",next=" << next << ")" << endl;
+        db<Thread>(INF) << "prev={" << prev << ",ctx=" << *prev->_context << "}" << endl;
+        db<Thread>(INF) << "next={" << next << ",ctx=" << *next->_context << "}" << endl;
+
+        if(smp)
+            _lock.release();
+
+        if(multitask && (next->_task != prev->_task))
+            next->_task->activate();
+
+        CPU::switch_context(&prev->_context, next->_context);
+    } else
+        if(smp)
+            _lock.release();
+
+    CPU::int_enable();
+}
+
+
 int Thread::idle()
 {
     while(true) {
@@ -364,11 +396,12 @@ int Thread::idle()
     return 0;
 }
 
+__END_SYS
 
 // Id forwarder to the spin lock
+__BEGIN_UTIL
 unsigned int This_Thread::id() 
 { 
     return _not_booting ? reinterpret_cast<volatile unsigned int>(Thread::self()) : Machine::cpu_id() + 1;
 }
-
-__END_SYS
+__END_UTIL

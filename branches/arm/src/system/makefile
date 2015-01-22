@@ -45,7 +45,7 @@ $(MACH)_system_kernel: $(OBJS)
 		--section-start $(MACH_DATA_NAME)=$(SYS_DATA_ADDR) \
 		--entry=_init -o $(MACH)_system \
 		$(LIB)/$(ARCH)_crtbegin.o \
-		system_scaffold.o system_binding.o \
+		system_scaffold.o system_binding.o kernel_binding.o \
 		$(LIB)/$(ARCH)_crtend.o \
 		--whole-archive \
 		-l$(LSYS) -l$(LMACH) -l$(LARCH) \
