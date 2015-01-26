@@ -27,6 +27,7 @@ eposcc.conf: FORCE
 eposmkbi.conf:	FORCE
 		@echo "MODE=$(MODE)" > $@
 		@echo "MACH=$(MACH)" >> $@
+		@echo "MMOD=$(MMOD)" >> $@
 		@echo "ARCH=$(ARCH)" >> $@
 		@echo "CLOCK=$(ARCH_CLOCK)" >> $@
 		@echo "WORD_SIZE=$(ARCH_WORD_SIZE)" >> $@
