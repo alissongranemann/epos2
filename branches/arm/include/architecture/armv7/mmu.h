@@ -43,7 +43,7 @@ public:
         Page_Table * pt() const { return 0; }
         unsigned int size() const { return _bytes; }
         Phy_Addr phy_address() const { return _phy_addr; } // always CT
-        int resize(unsigned int amount) { return 0; } // always CT
+        int resize(unsigned int amount) { return 0; } // no resize in CT
 
     private:
         Phy_Addr _phy_addr;
@@ -60,7 +60,6 @@ public:
     public:
         Directory() {}
         Directory(Page_Directory * pd) {}
-        ~Directory() {}
 
         Page_Table * pd() const { return 0; }
 

@@ -16,7 +16,7 @@
 
 __BEGIN_SYS
 
-class Cortex_M: private Machine_Common, private Cortex_Model_Specifics
+class Cortex_M: private Machine_Common, private Cortex_M_Model
 {
     friend class Init_System;
 
@@ -28,7 +28,7 @@ public:
 
     static void panic();
     static void reboot() { 
-        db<Cortex_M>(WRN) << "Machine::reboot()" << endl;
+        db<Machine>(WRN) << "Machine::reboot()" << endl;
         scs(AIRCR) |=  SYSRESREQ ;
         for(;;); // TODO: the above is not working!
     }

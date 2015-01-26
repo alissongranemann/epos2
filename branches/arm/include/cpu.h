@@ -31,7 +31,7 @@ public:
         template<typename T>
         Log_Addr(T * a) : _addr(Reg(a)) {}
 
-        operator volatile const Reg &() const volatile { return _addr; }
+        operator const Reg &() const { return _addr; }
 
         template<typename T>
         operator T *() const { return reinterpret_cast<T *>(_addr); }
@@ -65,7 +65,7 @@ public:
         friend OStream & operator<<(OStream & os, const Log_Addr & a) { os << reinterpret_cast<void *>(a._addr); return os; }
 
     private:
-        volatile Reg _addr;
+        Reg _addr;
     };
 
     typedef Log_Addr Phy_Addr;

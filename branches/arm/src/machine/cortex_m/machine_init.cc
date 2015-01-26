@@ -1,4 +1,4 @@
-// EPOS Cortex_M Mediator Implementation
+// EPOS Cortex_M Mediator Initialization
 
 #include <machine/cortex_m/machine.h>
 
@@ -8,7 +8,7 @@ void Cortex_M::init()
 {
     db<Init, Cortex_M>(TRC) << "Cortex_M::init()" << endl;
 
-    init_clock();
+    Cortex_M_Model::init();
 
     if(Traits<Cortex_M_IC>::enabled)
         Cortex_M_IC::init();

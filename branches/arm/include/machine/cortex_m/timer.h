@@ -12,7 +12,7 @@
 
 __BEGIN_SYS
 
-class Cortex_M_Sys_Tick: public Cortex_Model_Specifics
+class Cortex_M_Sys_Tick: public Cortex_M_Model
 {
 private:
     typedef TSC::Hertz Hertz;

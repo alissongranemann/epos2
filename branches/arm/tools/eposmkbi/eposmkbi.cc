@@ -260,6 +260,14 @@ bool parse_config(FILE * cfg_file, Configuration * cfg)
         return false;
     }
     strtolower(cfg->mode, token);						
+    // Arch
+    fgets(line, 256, cfg_file);
+    token = strtok(line, "=");
+    if(strcmp(token, "ARCH") || !(token = strtok(NULL, "\n"))) {
+        fprintf(stderr, "Error: no valid ARCH in configuration!\n");
+        return false;
+    }
+    strtolower(cfg->arch, token);
     // Machine
     fgets(line, 256, cfg_file);
     token = strtok(line, "=");
@@ -276,14 +284,6 @@ bool parse_config(FILE * cfg_file, Configuration * cfg)
         return false;
     }
     strtolower(cfg->mmod, token);	
-    // Arch
-    fgets(line, 256, cfg_file);
-    token = strtok(line, "=");
-    if(strcmp(token, "ARCH") || !(token = strtok(NULL, "\n"))) {
-        fprintf(stderr, "Error: no valid ARCH in configuration!\n");
-        return false;
-    }
-    strtolower(cfg->arch, token);
 
     // Clock
     fgets(line, 256, cfg_file);

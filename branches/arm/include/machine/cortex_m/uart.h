@@ -10,10 +10,10 @@
 
 __BEGIN_SYS
 
-class Cortex_M_UART: private UART_Common, private Cortex_Model_UART
+class Cortex_M_UART: private UART_Common, private Cortex_M_Model_UART
 {
 private:
-    typedef Cortex_Model_UART Engine;
+    typedef Cortex_M_Model_UART Engine;
 
     static const unsigned int BAUD_RATE = Traits<Cortex_M_UART>::DEF_BAUD_RATE;
     static const unsigned int DATA_BITS = Traits<Cortex_M_UART>::DEF_DATA_BITS;
