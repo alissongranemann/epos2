@@ -9,7 +9,7 @@
 
 __BEGIN_SYS
 
-class Cortex_M_IC: private IC_Common, private Cortex_Model_Specifics
+class Cortex_M_IC: private IC_Common, private Cortex_M_Model
 {
     friend class Cortex_M;
 
@@ -23,7 +23,7 @@ public:
 
     // IRQs
     static const unsigned int IRQS = 29;
-    typedef unsigned int IRQ;
+    typedef Interrupt_Id IRQ;
     enum {
         IRQ_TIMER       = 0,
         IRQ_KEYBOARD    = 1,

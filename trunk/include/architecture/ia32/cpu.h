@@ -531,39 +531,39 @@ public:
         ASM("wrmsr" : : "c"(msr), "A"(v));
     }
 
-    static Reg8 in8(const IO_Port port) {
+    static Reg8 in8(const IO_Port & port) {
         Reg8 value;
         ASM("inb %1,%0" : "=a"(value) : "d"(port));
         return value;
     }
-    static Reg16 in16(const IO_Port port) {
+    static Reg16 in16(const IO_Port & port) {
         Reg16 value;
         ASM("inw %1,%0" : "=a"(value) : "d"(port));
         return value;
     }
-    static Reg32 in32(const IO_Port port) {
+    static Reg32 in32(const IO_Port & port) {
         Reg32 value;
         ASM("inl %1,%0" : "=a"(value) : "d"(port));
         return value;
     }
-    static void out8(const IO_Port port, const Reg8 value) {
+    static void out8(const IO_Port & port, const Reg8 & value) {
         ASM("outb %1,%0" : : "d"(port), "a"(value));
     }
-    static void out16(const IO_Port port, const Reg16 value)	{
+    static void out16(const IO_Port & port, const Reg16 & value)	{
         ASM("outw %1,%0" : : "d"(port), "a"(value));
     }
-    static void out32(const IO_Port port, const Reg32 value)	{
+    static void out32(const IO_Port & port, const Reg32 & value)	{
         ASM("outl %1,%0" : : "d"(port), "a"(value));
     }
 
-    static void switch_tss(const Reg32 tss_selector) {
+    static void switch_tss(const Reg32 & selector) {
         struct {
             Reg32 offset;
             Reg32 selector;
         } address;
 
         address.offset   = 0;
-        address.selector = tss_selector;
+        address.selector = selector;
 
         ASM("ljmp *%0" : "=o" (address));
     }

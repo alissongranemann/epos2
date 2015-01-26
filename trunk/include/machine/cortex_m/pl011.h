@@ -8,7 +8,7 @@
 __BEGIN_SYS
 
 // PrimeCell UART (PL011)
-class PL011: protected Cortex_Model_Specifics
+class PL011: protected Cortex_M_Model
 {
 private:
     typedef CPU::Log_Addr Log_Addr;

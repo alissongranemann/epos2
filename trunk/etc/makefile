@@ -16,6 +16,7 @@ eposcc.conf: FORCE
 		@echo "MODE=$(MODE)" > $@
 		@echo "ARCH=$(ARCH)" >> $@
 		@echo "MACH=$(MACH)" >> $@
+		@echo "MMOD=$(MMOD)" >> $@
 		@echo "TOOLS_PREFIX=$(COMP_PREFIX)" >> $@
 		@echo "APP_CODE=$(APP_CODE_ADDR)" >> $@
 		@echo "APP_DATA=$(APP_DATA_ADDR)" >> $@
@@ -26,8 +27,9 @@ eposcc.conf: FORCE
 
 eposmkbi.conf:	FORCE
 		@echo "MODE=$(MODE)" > $@
-		@echo "MACH=$(MACH)" >> $@
 		@echo "ARCH=$(ARCH)" >> $@
+		@echo "MACH=$(MACH)" >> $@
+		@echo "MMOD=$(MMOD)" >> $@
 		@echo "CLOCK=$(ARCH_CLOCK)" >> $@
 		@echo "WORD_SIZE=$(ARCH_WORD_SIZE)" >> $@
 		@echo "ENDIANESS=$(ARCH_ENDIANESS)" >> $@

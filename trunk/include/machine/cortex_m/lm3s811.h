@@ -277,11 +277,15 @@ public:
     static Log_Addr & gpioc(unsigned int o) { return reinterpret_cast<Log_Addr *>(GPIOC_BASE)[o / sizeof(Log_Addr)]; }
     static Log_Addr & gpiod(unsigned int o) { return reinterpret_cast<Log_Addr *>(GPIOD_BASE)[o / sizeof(Log_Addr)]; }
     static Log_Addr & gpioe(unsigned int o) { return reinterpret_cast<Log_Addr *>(GPIOE_BASE)[o / sizeof(Log_Addr)]; }
+
+protected:
+    static void init();
 };
 
-typedef LM3S811 Cortex_Model_Specifics;
+typedef LM3S811 Cortex_M_Model;
+
 class PL011;
-typedef PL011 Cortex_Model_UART;
+typedef PL011 Cortex_M_Model_UART;
 
 __END_SYS
 

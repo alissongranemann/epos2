@@ -13,14 +13,13 @@ void ARMv7::init()
 {
     db<Init, CPU>(TRC) << "ARMv7_CPU::init()" << endl;
 
-//    _cpu_clock = System::info()->tm.cpu_clock;
-//    _bus_clock = System::info()->tm.bus_clock;
-
-    // Initialize the MMU
     if(Traits<MMU>::enabled)
         MMU::init();
     else
         db<Init, MMU>(WRN) << "MMU is disabled!" << endl;
+
+//    if(Traits<TSC>::enabled)
+//        TSC::init();
 }
 
 __END_SYS
