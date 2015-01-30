@@ -8,24 +8,25 @@
 #include <ieee802_15_4.h>
 #include <system.h>
 #include "machine.h"
-#include "radio.h"
+#include "cc2538_radio.h"
 
 __BEGIN_SYS
 
-class Cortex_M_NIC: public IEEE802_15_4
+class Cortex_M_Radio: public IEEE802_15_4
 {
     friend class Cortex_M;
 
 private:
-    typedef Traits<Cortex_M_NIC>::NICS NICS;
+    typedef Traits<Cortex_M_Radio>::NICS NICS;
+    static const unsigned int UNITS = NICS::Length;
 
 public:
     template<unsigned int UNIT = 0>
-    Cortex_M_NIC(unsigned int u = UNIT) {
+    Cortex_M_Radio(unsigned int u = UNIT) {
         _dev = Meta_NIC<NICS>::Get<UNIT>::Result::get(u);
-        db<Cortex_M_NIC>(TRC) << "NIC::NIC(u=" << UNIT << ",d=" << _dev << ") => " << this << endl;
+        db<Cortex_M_Radio>(TRC) << "NIC::NIC(u=" << UNIT << ",d=" << _dev << ") => " << this << endl;
     }
-    ~Cortex_M_NIC() { _dev = 0; }
+    ~Cortex_M_Radio() { _dev = 0; }
     
     Buffer * alloc(NIC * nic, const Address & dst, const Protocol & prot, unsigned int once, unsigned int always, unsigned int payload) {
         return _dev->alloc(nic, dst, prot, once, always, payload);
@@ -49,7 +50,6 @@ public:
     const Statistics & statistics() { return _dev->statistics(); }
 
     void reset() { _dev->reset(); }
-
 
     void attach(Observer * obs, const Protocol & prot) { _dev->attach(obs, prot); }
     void detach(Observer * obs, const Protocol & prot) { _dev->detach(obs, prot); }

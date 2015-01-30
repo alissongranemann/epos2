@@ -131,7 +131,7 @@ protected:
     static void reschedule();
     static void reschedule(unsigned int cpu);
     static void rescheduler(const IC::Interrupt_Id & interrupt);
-    static void time_slicer();
+    static void time_slicer(const IC::Interrupt_Id & interrupt);
 
     static void implicit_exit();
 

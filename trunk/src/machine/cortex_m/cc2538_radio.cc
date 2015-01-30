@@ -1,24 +1,26 @@
-// EPOS PC AMD PCNet II (Am79C970A) Ethernet NIC Mediator Implementation
+// EPOS CC2538 IEEE 802.15.4 NIC Mediator Implementation
+
+#include <system/config.h>
+#ifndef __no_networking__
 
 #include <machine/cortex_m/machine.h>
-#include <machine/cortex_m/radio.h>
+#include "../../../include/machine/cortex_m/cc2538_radio.h"
 #include <utility/malloc.h>
 #include <alarm.h>
 
 __BEGIN_SYS
 
 // Class attributes
-Radio::Device Radio::_devices[UNITS];
-
+CC2538::Device CC2538::_devices[UNITS];
 
 // Methods
-Radio::~Radio()
+CC2538::~CC2538()
 {
-    db<Radio>(TRC) << "~Radio(unit=" << _unit << ")" << endl;
+    db<CC2538>(TRC) << "~Radio(unit=" << _unit << ")" << endl;
 }
 
 
-int Radio::send(const Address & dst, const Protocol & prot, const void * data, unsigned int size)
+int CC2538::send(const Address & dst, const Protocol & prot, const void * data, unsigned int size)
 {
     // Wait for a buffer to become free and seize it
     for(bool locked = false; !locked; ) {
@@ -29,7 +31,7 @@ int Radio::send(const Address & dst, const Protocol & prot, const void * data, u
     Tx_Desc * desc = &_tx_ring[_tx_cur];
     Buffer * buf = _tx_buffer[_tx_cur];
 
-    db<Radio>(TRC) << "Radio::send(s=" << _address << ",d=" << dst << ",p=" << hex << prot << dec
+    db<CC2538>(TRC) << "Radio::send(s=" << _address << ",d=" << dst << ",p=" << hex << prot << dec
                      << ",d=" << data << ",s=" << size << ")" << endl;
 
     // Assemble the Ethernet frame
@@ -49,7 +51,7 @@ int Radio::send(const Address & dst, const Protocol & prot, const void * data, u
     // Wait for packet to be sent
     // while(desc->status & Tx_Desc::OWN);
 
-    db<Radio>(INF) << "Radio::send:desc[" << _tx_cur << "]=" << desc << " => " << *desc << endl;
+    db<CC2538>(INF) << "Radio::send:desc[" << _tx_cur << "]=" << desc << " => " << *desc << endl;
 
     buf->unlock();
 
@@ -59,9 +61,9 @@ int Radio::send(const Address & dst, const Protocol & prot, const void * data, u
 }
 
 
-int Radio::receive(Address * src, Protocol * prot, void * data, unsigned int size)
+int CC2538::receive(Address * src, Protocol * prot, void * data, unsigned int size)
 {
-    db<Radio>(TRC) << "Radio::receive(s=" << *src << ",p=" << hex << *prot << dec
+    db<CC2538>(TRC) << "Radio::receive(s=" << *src << ",p=" << hex << *prot << dec
                      << ",d=" << data << ",s=" << size << ") => " << endl;
 
     // Wait for a received frame and seize it
@@ -89,7 +91,7 @@ int Radio::receive(Address * src, Protocol * prot, void * data, unsigned int siz
     _statistics.rx_packets++;
     _statistics.rx_bytes += buf->size();
 
-    db<Radio>(INF) << "Radio::receive:desc[" << _rx_cur << "]=" << desc << " => " << *desc << endl;
+    db<CC2538>(INF) << "Radio::receive:desc[" << _rx_cur << "]=" << desc << " => " << *desc << endl;
 
     int tmp = buf->size();
 
@@ -102,14 +104,14 @@ int Radio::receive(Address * src, Protocol * prot, void * data, unsigned int siz
 
 
 // Allocated buffers must be sent or release IN ORDER as assumed by the Radio
-Radio::Buffer * Radio::alloc(NIC * nic, const Address & dst, const Protocol & prot, unsigned int once, unsigned int always, unsigned int payload)
+CC2538::Buffer * CC2538::alloc(NIC * nic, const Address & dst, const Protocol & prot, unsigned int once, unsigned int always, unsigned int payload)
 {
-    db<Radio>(TRC) << "Radio::alloc(s=" << _address << ",d=" << dst << ",p=" << hex << prot << dec << ",on=" << once << ",al=" << always << ",ld=" << payload << ")" << endl;
+    db<CC2538>(TRC) << "Radio::alloc(s=" << _address << ",d=" << dst << ",p=" << hex << prot << dec << ",on=" << once << ",al=" << always << ",ld=" << payload << ")" << endl;
 
     int max_data = MTU - always;
 
     if((payload + once) / max_data > TX_BUFS) {
-        db<Radio>(WRN) << "Radio::alloc: sizeof(Network::Packet::Data) > sizeof(NIC::Frame::Data) * TX_BUFS!" << endl;
+        db<CC2538>(WRN) << "Radio::alloc: sizeof(Network::Packet::Data) > sizeof(NIC::Frame::Data) * TX_BUFS!" << endl;
         return 0;
     }
 
@@ -128,7 +130,7 @@ Radio::Buffer * Radio::alloc(NIC * nic, const Address & dst, const Protocol & pr
         // Initialize the buffer and assemble the Ethernet Frame Header
         new (buf) Buffer(nic, _address, dst, prot, (size > max_data) ? MTU : size + always);
 
-        db<Radio>(INF) << "Radio::alloc:desc[" << _tx_cur << "]=" << desc << " => " << *desc << endl;
+        db<CC2538>(INF) << "Radio::alloc:desc[" << _tx_cur << "]=" << desc << " => " << *desc << endl;
 
         ++_tx_cur %= TX_BUFS;
 
@@ -139,7 +141,7 @@ Radio::Buffer * Radio::alloc(NIC * nic, const Address & dst, const Protocol & pr
 }
 
 
-int Radio::send(Buffer * buf)
+int CC2538::send(Buffer * buf)
 {
     unsigned int size = 0;
 
@@ -147,7 +149,7 @@ int Radio::send(Buffer * buf)
         buf = el->object();
         Tx_Desc * desc = buf->back<Tx_Desc>();
 
-        db<Radio>(TRC) << "Radio::send(buf=" << buf << ")" << endl;
+        db<CC2538>(TRC) << "Radio::send(buf=" << buf << ")" << endl;
 
         desc->size = -(buf->size() + sizeof(Header)); // 2's comp.
 
@@ -162,7 +164,7 @@ int Radio::send(Buffer * buf)
         _statistics.tx_packets++;
         _statistics.tx_bytes += buf->size();
 
-        db<Radio>(INF) << "Radio::send:desc=" << desc << " => " << *desc << endl;
+        db<CC2538>(INF) << "Radio::send:desc=" << desc << " => " << *desc << endl;
 
         // Wait for packet to be sent and unlock the respective buffer
         while(desc->status & Tx_Desc::OWN);
@@ -173,9 +175,9 @@ int Radio::send(Buffer * buf)
 }
 
 
-void Radio::free(Buffer * buf)
+void CC2538::free(Buffer * buf)
 {
-    db<Radio>(TRC) << "Radio::free(buf=" << buf << ")" << endl;
+    db<CC2538>(TRC) << "Radio::free(buf=" << buf << ")" << endl;
 
     for(Buffer::Element * el = buf->link(); el; el = el->next()) {
         buf = el->object();
@@ -191,14 +193,14 @@ void Radio::free(Buffer * buf)
         // Release the buffer to the OS
         buf->unlock();
 
-        db<Radio>(INF) << "Radio::free:desc=" << desc << " => " << *desc << endl;
+        db<CC2538>(INF) << "Radio::free:desc=" << desc << " => " << *desc << endl;
     }
 }
 
 
-void Radio::reset()
+void CC2538::reset()
 {
-    db<Radio>(TRC) << "Radio::reset()" << endl;
+    db<CC2538>(TRC) << "Radio::reset()" << endl;
 
 
     // Reset statistics
@@ -206,7 +208,7 @@ void Radio::reset()
 }
 
 
-void Radio::handle_int()
+void CC2538::handle_int()
 {
         if(true) { // Frame received (possibly multiple, let's handle a whole round on the ring buffer)
 
@@ -223,10 +225,10 @@ void Radio::handle_int()
                     // For the upper layers, size will represent the size of frame->data<T>()
                     buf->size((desc->misc & 0x00000fff) - sizeof(Header) - sizeof(CRC));
 
-                    db<Radio>(TRC) << "Radio::int:receive(s=" << frame->src() << ",p=" << hex << frame->header()->prot() << dec
+                    db<CC2538>(TRC) << "Radio::int:receive(s=" << frame->src() << ",p=" << hex << frame->header()->prot() << dec
                                      << ",d=" << frame->data<void>() << ",s=" << buf->size() << ")" << endl;
 
-                    db<Radio>(INF) << "Radio::handle_int:desc[" << _rx_cur << "]=" << desc << " => " << *desc << endl;
+                    db<CC2538>(INF) << "Radio::handle_int:desc[" << _rx_cur << "]=" << desc << " => " << *desc << endl;
 
                     IC::disable(IC::irq2int(_irq));
                     if(!notify(frame->header()->prot(), buf)) // No one was waiting for this frame, so let it free for receive()
@@ -238,7 +240,7 @@ void Radio::handle_int()
  	}
 
         if(false) { // Error
-            db<Radio>(WRN) << "Radio::int:error =>";
+            db<CC2538>(WRN) << "Radio::int:error =>";
 
 //            if(csr0 & CSR0_MERR) { // Memory
 //        	db<Radio>(WRN) << " memory";
@@ -259,22 +261,24 @@ void Radio::handle_int()
 //        	_statistics.tx_overruns++;
 //            }
 
-            db<Radio>(WRN) << endl;
+            db<CC2538>(WRN) << endl;
         }
 
 }
 
 
-void Radio::int_handler(const IC::Interrupt_Id & interrupt)
+void CC2538::int_handler(const IC::Interrupt_Id & interrupt)
 {
-    Radio * dev = get_by_interrupt(interrupt);
+    CC2538 * dev = get_by_interrupt(interrupt);
 
-    db<Radio>(TRC) << "Radio::int_handler(int=" << interrupt << ",dev=" << dev << ")" << endl;
+    db<CC2538>(TRC) << "Radio::int_handler(int=" << interrupt << ",dev=" << dev << ")" << endl;
 
     if(!dev)
-        db<Radio>(WRN) << "Radio::int_handler: handler not assigned!" << endl;
+        db<CC2538>(WRN) << "Radio::int_handler: handler not assigned!" << endl;
     else
         dev->handle_int();
 }
 
 __END_SYS
+
+#endif

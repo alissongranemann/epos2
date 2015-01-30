@@ -70,93 +70,181 @@ public:
         DCGCUART_UART1  = 1 << 1
     };
 
+    // Useful Bits in the Clock Control Register
+    enum {             // Description                                      Type    Value after reset
+        OSC32K_CALDIS = 1 << 25,  // Disable calibration 32-kHz RC oscillator.        rw      0
+                                  // 0: Enable calibration
+                                  // 1: Disable calibration
+        OSC32K        = 1 << 24,  // 32-kHz clock oscillator selection                rw      1
+                                  // 0: 32-kHz crystal oscillator
+                                  // 1: 32-kHz RC oscillator
+        AMP_DET       = 1 << 21,  // Amplitude detector of XOSC during power up       rw      0
+                                  // 0: No action
+                                  // 1: Delay qualification of XOSC until amplitude
+                                  //    is greater than the threshold.
+        OSC_PD        = 1 << 17,  // 0: Power up both oscillators
+                                  // 1: Power down oscillator not selected by
+                                  //    OSC bit (hardware-controlled when selected).
+        OSC           = 1 << 16,  // System clock oscillator selection                rw      1
+                                  // 0: 32-MHz crystal oscillator
+                                  // 1: 16-MHz HF-RC oscillator
+        IO_DIV        = 1 <<  8,  // I/O clock rate setting                           rw      1
+                                  // Cannot be higher than OSC setting
+                                  // 000: 32 MHz
+                                  // 001: 16 MHz
+                                  // 010: 8 MHz
+                                  // 011: 4 MHz
+                                  // 100: 2 MHz
+                                  // 101: 1 MHz
+                                  // 110: 0.5 MHz
+                                  // 111: 0.25 MHz
+        SYS_DIV       = 1 <<  0,  // System clock rate setting                        rw      1
+                                  // Cannot be higher than OSC setting
+                                  // 000: 32 MHz
+                                  // 001: 16 MHz
+                                  // 010: 8 MHz
+                                  // 011: 4 MHz
+                                  // 100: 2 MHz
+                                  // 101: 1 MHz
+                                  // 110: 0.5 MHz
+                                  // 111: 0.25 MHz
+    };
+    // Useful Bits in the Clock Status Register
+    enum CLOCK_STA {                 // Description                                      Type    Value after reset
+        STA_SYNC_32K      = 1<<26,   // 32-kHz clock source synced to undivided          ro      0
+                                     // system clock (16 or 32 MHz).
+        STA_OSC32K_CALDIS = 1<<25,   // Disable calibration 32-kHz RC oscillator.        ro      0
+        STA_OSC32K        = 1<<24,   // Current 32-kHz clock oscillator selected.        ro      1
+                                     // 0: 32-kHz crystal oscillator
+                                     // 1: 32-kHz RC oscillator
+        STA_RST           = 1<<22,   // Returns last source of reset                     ro      0
+                                     // 00: POR
+                                     // 01: External reset
+                                     // 10: WDT
+                                     // 11: CLD or software reset
+        STA_SOURCE_CHANGE = 1<<20,   // 0: System clock is not requested to change.      ro      0
+                                     // 1: A change of system clock source has been
+                                     //    initiated and is not finished. Same as when
+                                     //    OSC bit in CLOCK_STA and CLOCK_CTRL register
+                                     //    are not equal
+        STA_XOSC_STB      = 1<<19,   // whether crystal oscillator (XOSC) is stable      ro      0
+        STA_HSOSC_STB     = 1<<18,   // whether HSOSC is stable                          ro      0
+        STA_OSC_PD        = 1<<17,   // 0: Both oscillators powered up and stable and    ro      0
+                                     //    OSC_PD_CMD = 0.
+                                     // 1: Oscillator not selected by CLOCK_CTRL. OSC
+                                     //    bit is powered down.
+        STA_OSC           = 1<<16,   // Current clock source selected                    ro      1
+                                     // 0: 32-MHz crystal oscillator
+                                     // 1: 16-MHz HF-RC oscillator
+        STA_IO_DIV        = 1<<8,    // Returns current functional frequency for IO_CLK  ro      1
+                                     // (may differ from setting in the CLOCK_CTRL register)
+                                     // 000: 32 MHz
+                                     // 001: 16 MHz
+                                     // 010: 8 MHz
+                                     // 011: 4 MHz
+                                     // 100: 2 MHz
+                                     // 101: 1 MHz
+                                     // 110: 0.5 MHz
+                                     // 111: 0.25 MHz
+        STA_SYS_DIV       = 1<<0,    // Returns current functional frequency for         ro     1
+                                     // system clock
+                                     // (may differ from setting in the CLOCK_CTRL register)
+                                     // 000: 32 MHz
+                                     // 001: 16 MHz
+                                     // 010: 8 MHz
+                                     // 011: 4 MHz
+                                     // 100: 2 MHz
+                                     // 101: 1 MHz
+                                     // 110: 0.5 MHz
+                                     // 111: 0.25 MHz
+    };
 
     enum { // IOC Registers offsets
-        PA0_SEL        = 0x000, //RW 32 0x0000 0000 
-        PA1_SEL        = 0x004, //RW 32 0x0000 0000 
-        PA2_SEL        = 0x008, //RW 32 0x0000 0000 
-        PA3_SEL        = 0x00C, //RW 32 0x0000 0000 
-        PA4_SEL        = 0x010, //RW 32 0x0000 0000 
-        PA5_SEL        = 0x014, //RW 32 0x0000 0000 
-        PA6_SEL        = 0x018, //RW 32 0x0000 0000 
-        PA7_SEL        = 0x01C, //RW 32 0x0000 0000 
-        PB0_SEL        = 0x020, //RW 32 0x0000 0000 
-        PB1_SEL        = 0x024, //RW 32 0x0000 0000 
-        PB2_SEL        = 0x028, //RW 32 0x0000 0000 
-        PB3_SEL        = 0x02C, //RW 32 0x0000 0000 
-        PB4_SEL        = 0x030, //RW 32 0x0000 0000 
-        PB5_SEL        = 0x034,//RW 32 0x0000 0000  
-        PB6_SEL        = 0x038,//RW 32 0x0000 0000  
-        PB7_SEL        = 0x03C,//RW 32 0x0000 0000  
-        PC0_SEL        = 0x040,//RW 32 0x0000 0000  
-        PC1_SEL        = 0x044,//RW 32 0x0000 0000  
-        PC2_SEL        = 0x048, //RW 32 0x0000 0000 
-        PC3_SEL        = 0x04C, //RW 32 0x0000 0000 
-        PC4_SEL        = 0x050, //RW 32 0x0000 0000 
-        PC5_SEL        = 0x054, //RW 32 0x0000 0000 
-        PC6_SEL        = 0x058, //RW 32 0x0000 0000 
-        PC7_SEL        = 0x05C, //RW 32 0x0000 0000 
-        PD0_SEL        = 0x060, //RW 32 0x0000 0000 
-        PD1_SEL        = 0x064, //RW 32 0x0000 0000 
-        PD2_SEL        = 0x068, //RW 32 0x0000 0000 
-        PD3_SEL        = 0x06C, //RW 32 0x0000 0000 
-        PD4_SEL        = 0x070, //RW 32 0x0000 0000 
-        PD5_SEL        = 0x074, //RW 32 0x0000 0000 
-        PD6_SEL        = 0x078, //RW 32 0x0000 0000 
-        PD7_SEL        = 0x07C, //RW 32 0x0000 0000 
-        PA0_OVER       = 0x080, //RW 32 0x0000 0004 
-        PA1_OVER       = 0x084, //RW 32 0x0000 0004 
-        PA2_OVER       = 0x088, //RW 32 0x0000 0004 
-        PA3_OVER       = 0x08C, //RW 32 0x0000 0004 
-        PA4_OVER       = 0x090, //RW 32 0x0000 0004 
-        PA5_OVER       = 0x094, //RW 32 0x0000 0004 
-        PA6_OVER       = 0x098, //RW 32 0x0000 0004 
-        PA7_OVER       = 0x09C, //RW 32 0x0000 0004 
-        PB0_OVER       = 0x0A0, //RW 32 0x0000 0004 
-        PB1_OVER       = 0x0A4, //RW 32 0x0000 0004 
-        PB2_OVER       = 0x0A8, //RW 32 0x0000 0004 
-        PB3_OVER       = 0x0AC, //RW 32 0x0000 0004 
-        PB4_OVER       = 0x0B0, //RW 32 0x0000 0004 
-        PB5_OVER       = 0x0B4, //RW 32 0x0000 0004 
-        PB6_OVER       = 0x0B8, //RW 32 0x0000 0004 
-        PB7_OVER       = 0x0BC, //RW 32 0x0000 0004 
-        PC0_OVER       = 0x0C0, //RW 32 0x0000 0004 
-        PC1_OVER       = 0x0C4, //RW 32 0x0000 0004 
-        PC2_OVER       = 0x0C8, //RW 32 0x0000 0004 
-        PC3_OVER       = 0x0CC, //RW 32 0x0000 0004 
-        PC4_OVER       = 0x0D0, //RW 32 0x0000 0004 
-        PC5_OVER       = 0x0D4, //RW 32 0x0000 0004 
-        PC6_OVER       = 0x0D8, //RW 32 0x0000 0004 
-        PC7_OVER       = 0x0DC, //RW 32 0x0000 0004 
-        PD0_OVER       = 0x0E0, //RW 32 0x0000 0004 
-        PD1_OVER       = 0x0E4, //RW 32 0x0000 0004 
-        PD2_OVER       = 0x0E8, //RW 32 0x0000 0004 
-        PD3_OVER       = 0x0EC, //RW 32 0x0000 0004 
-        PD4_OVER       = 0x0F0, //RW 32 0x0000 0004 
-        PD5_OVER       = 0x0F4, //RW 32 0x0000 0004 
-        PD6_OVER       = 0x0F8, //RW 32 0x0000 0004 
-        PD7_OVER       = 0x0FC, //RW 32 0x0000 0004 
-        UARTRXD_UART0  = 0x100, //RW 32 0x0000 0000 
-        UARTCTS_UART1  = 0x104, //RW 32 0x0000 0000 
-        UARTRXD_UART1  = 0x108, //RW 32 0x0000 0000 
-        CLK_SSI_SSI0   = 0x10C, //RW 32 0x0000 0000 
-        SSIRXD_SSI0    = 0x110, //RW 32 0x0000 0000 
-        SSIFSSIN_SSI0  = 0x114, //RW 32 0x0000 0000 
-        CLK_SSIIN_SSI0 = 0x118, //RW 32 0x0000 0000 
-        CLK_SSI_SSI1   = 0x11C, //RW 32 0x0000 0000 
-        SSIRXD_SSI1    = 0x120, //RW 32 0x0000 0000 
-        SSIFSSIN_SSI1  = 0x124, //RW 32 0x0000 0000 
-        CLK_SSIIN_SSI1 = 0x128, //RW 32 0x0000 0000 
-        I2CMSSDA       = 0x12C, //RW 32 0x0000 0000 
-        I2CMSSCL       = 0x130, //RW 32 0x0000 0000 
-        GPT0OCP1       = 0x134, //RW 32 0x0000 0000 
-        GPT0OCP2       = 0x138, //RW 32 0x0000 0000 
-        GPT1OCP1       = 0x13C, //RW 32 0x0000 0000 
-        GPT1OCP2       = 0x140, //RW 32 0x0000 0000 
-        GPT2OCP1       = 0x144, //RW 32 0x0000 0000 
-        GPT2OCP2       = 0x148, //RW 32 0x0000 0000 
-        GPT3OCP1       = 0x14C, //RW 32 0x0000 0000 
-        GPT3OCP2       = 0x150  //RW 32 0x0000 0000 
+        PA0_SEL        = 0x000, //RW 32 0x0000 0000
+        PA1_SEL        = 0x004, //RW 32 0x0000 0000
+        PA2_SEL        = 0x008, //RW 32 0x0000 0000
+        PA3_SEL        = 0x00C, //RW 32 0x0000 0000
+        PA4_SEL        = 0x010, //RW 32 0x0000 0000
+        PA5_SEL        = 0x014, //RW 32 0x0000 0000
+        PA6_SEL        = 0x018, //RW 32 0x0000 0000
+        PA7_SEL        = 0x01C, //RW 32 0x0000 0000
+        PB0_SEL        = 0x020, //RW 32 0x0000 0000
+        PB1_SEL        = 0x024, //RW 32 0x0000 0000
+        PB2_SEL        = 0x028, //RW 32 0x0000 0000
+        PB3_SEL        = 0x02C, //RW 32 0x0000 0000
+        PB4_SEL        = 0x030, //RW 32 0x0000 0000
+        PB5_SEL        = 0x034,//RW 32 0x0000 0000
+        PB6_SEL        = 0x038,//RW 32 0x0000 0000
+        PB7_SEL        = 0x03C,//RW 32 0x0000 0000
+        PC0_SEL        = 0x040,//RW 32 0x0000 0000
+        PC1_SEL        = 0x044,//RW 32 0x0000 0000
+        PC2_SEL        = 0x048, //RW 32 0x0000 0000
+        PC3_SEL        = 0x04C, //RW 32 0x0000 0000
+        PC4_SEL        = 0x050, //RW 32 0x0000 0000
+        PC5_SEL        = 0x054, //RW 32 0x0000 0000
+        PC6_SEL        = 0x058, //RW 32 0x0000 0000
+        PC7_SEL        = 0x05C, //RW 32 0x0000 0000
+        PD0_SEL        = 0x060, //RW 32 0x0000 0000
+        PD1_SEL        = 0x064, //RW 32 0x0000 0000
+        PD2_SEL        = 0x068, //RW 32 0x0000 0000
+        PD3_SEL        = 0x06C, //RW 32 0x0000 0000
+        PD4_SEL        = 0x070, //RW 32 0x0000 0000
+        PD5_SEL        = 0x074, //RW 32 0x0000 0000
+        PD6_SEL        = 0x078, //RW 32 0x0000 0000
+        PD7_SEL        = 0x07C, //RW 32 0x0000 0000
+        PA0_OVER       = 0x080, //RW 32 0x0000 0004
+        PA1_OVER       = 0x084, //RW 32 0x0000 0004
+        PA2_OVER       = 0x088, //RW 32 0x0000 0004
+        PA3_OVER       = 0x08C, //RW 32 0x0000 0004
+        PA4_OVER       = 0x090, //RW 32 0x0000 0004
+        PA5_OVER       = 0x094, //RW 32 0x0000 0004
+        PA6_OVER       = 0x098, //RW 32 0x0000 0004
+        PA7_OVER       = 0x09C, //RW 32 0x0000 0004
+        PB0_OVER       = 0x0A0, //RW 32 0x0000 0004
+        PB1_OVER       = 0x0A4, //RW 32 0x0000 0004
+        PB2_OVER       = 0x0A8, //RW 32 0x0000 0004
+        PB3_OVER       = 0x0AC, //RW 32 0x0000 0004
+        PB4_OVER       = 0x0B0, //RW 32 0x0000 0004
+        PB5_OVER       = 0x0B4, //RW 32 0x0000 0004
+        PB6_OVER       = 0x0B8, //RW 32 0x0000 0004
+        PB7_OVER       = 0x0BC, //RW 32 0x0000 0004
+        PC0_OVER       = 0x0C0, //RW 32 0x0000 0004
+        PC1_OVER       = 0x0C4, //RW 32 0x0000 0004
+        PC2_OVER       = 0x0C8, //RW 32 0x0000 0004
+        PC3_OVER       = 0x0CC, //RW 32 0x0000 0004
+        PC4_OVER       = 0x0D0, //RW 32 0x0000 0004
+        PC5_OVER       = 0x0D4, //RW 32 0x0000 0004
+        PC6_OVER       = 0x0D8, //RW 32 0x0000 0004
+        PC7_OVER       = 0x0DC, //RW 32 0x0000 0004
+        PD0_OVER       = 0x0E0, //RW 32 0x0000 0004
+        PD1_OVER       = 0x0E4, //RW 32 0x0000 0004
+        PD2_OVER       = 0x0E8, //RW 32 0x0000 0004
+        PD3_OVER       = 0x0EC, //RW 32 0x0000 0004
+        PD4_OVER       = 0x0F0, //RW 32 0x0000 0004
+        PD5_OVER       = 0x0F4, //RW 32 0x0000 0004
+        PD6_OVER       = 0x0F8, //RW 32 0x0000 0004
+        PD7_OVER       = 0x0FC, //RW 32 0x0000 0004
+        UARTRXD_UART0  = 0x100, //RW 32 0x0000 0000
+        UARTCTS_UART1  = 0x104, //RW 32 0x0000 0000
+        UARTRXD_UART1  = 0x108, //RW 32 0x0000 0000
+        CLK_SSI_SSI0   = 0x10C, //RW 32 0x0000 0000
+        SSIRXD_SSI0    = 0x110, //RW 32 0x0000 0000
+        SSIFSSIN_SSI0  = 0x114, //RW 32 0x0000 0000
+        CLK_SSIIN_SSI0 = 0x118, //RW 32 0x0000 0000
+        CLK_SSI_SSI1   = 0x11C, //RW 32 0x0000 0000
+        SSIRXD_SSI1    = 0x120, //RW 32 0x0000 0000
+        SSIFSSIN_SSI1  = 0x124, //RW 32 0x0000 0000
+        CLK_SSIIN_SSI1 = 0x128, //RW 32 0x0000 0000
+        I2CMSSDA       = 0x12C, //RW 32 0x0000 0000
+        I2CMSSCL       = 0x130, //RW 32 0x0000 0000
+        GPT0OCP1       = 0x134, //RW 32 0x0000 0000
+        GPT0OCP2       = 0x138, //RW 32 0x0000 0000
+        GPT1OCP1       = 0x13C, //RW 32 0x0000 0000
+        GPT1OCP2       = 0x140, //RW 32 0x0000 0000
+        GPT2OCP1       = 0x144, //RW 32 0x0000 0000
+        GPT2OCP2       = 0x148, //RW 32 0x0000 0000
+        GPT3OCP1       = 0x14C, //RW 32 0x0000 0000
+        GPT3OCP2       = 0x150  //RW 32 0x0000 0000
     };
     enum { // Peripheral Signal Select Values (Same for All IOC_Pxx_SEL Registers)
         UART0_TXD       =  0x00,
@@ -272,8 +360,8 @@ public:
         IEV		= 0x40c,	// Interrupt Event 	        R/W	0x0000.0000
         IM		= 0x410,	// Interrupt Mask 	        R/W	0x0000.0000
         GRIS		= 0x414,	// Raw Interrupt Status 	RO	0x0000.0000
-        MIS		= 0x418,	// Masked Interrupt Status	RO	0x0000.0000
-        ICR		= 0x41c,	// Interrupt Clear 	        W1C	0x0000.0000
+        //MIS		= 0x418,	// Masked Interrupt Status	RO	0x0000.0000
+        //ICR		= 0x41c,	// Interrupt Clear 	        W1C	0x0000.0000
         AFSEL		= 0x420,	// Alternate Function Select	R/W	-
         DR2R		= 0x500,	// 2-mA Drive Select	        R/W	0x0000.00ff
         DR4R		= 0x504,	// 4-mA Drive Select	        R/W	0x0000.0000
@@ -283,6 +371,7 @@ public:
         PDR		= 0x514,	// Pull-Down Select 	        R/W	0x0000.0000
         SLR		= 0x518,	// Slew Rate Control Select	R/W	0x0000.0000
         DEN		= 0x51c,	// Digital Enable 	        R/W	0x0000.00ff
+    /*
         PeriphID4	= 0xfd0,	// Peripheral Identification 4	RO	0x0000.0000
         PeriphID5	= 0xfd4,	// Peripheral Identification 5 	RO	0x0000.0000
         PeriphID6	= 0xfd8,	// Peripheral Identification 6	RO	0x0000.0000
@@ -295,6 +384,82 @@ public:
         PCellID1	= 0xff4,	// PrimeCell Identification 1	RO	0x0000.00f0
         PCellID2	= 0xff8,	// PrimeCell Identification 2	RO	0x0000.0005
         PCellID3	= 0xffc		// PrimeCell Identification 3	RO	0x0000.00b1
+        */
+    };
+
+    // UART Register offsets
+    enum {                              // Description                  Type    Value after reset
+        DR	        = 0x000,	// Data	                        r/w	0x00000000
+        RSR             = 0x004,        // Receive Status               r/w     0x00000000
+        ECR             = 0x004,        // Error Clear                  r/w     0x00000000
+        FR	        = 0x018,	// Flag	                        ro	0x00000090
+        IBRD	        = 0x024,	// Integer Baud-Rate Divisor	r/w	0x00000000
+        FBRD    	= 0x028,	// Fractional Baud-Rate Divisor	r/w	0x00000000
+        LCRH	        = 0x02c,	// Line Control         	r/w	0x00000000
+        UCR	        = 0x030,	// Control	                r/w	0x00000300
+        IFLS    	= 0x034,	// Interrupt FIFO Level Select	r/w	0x00000012
+        UIM	        = 0x038,	// Interrupt Mask	        r/w	0x00000000
+        RIS     	= 0x03c,	// Raw Interrupt Status	        ro	0x0000000f
+        MIS     	= 0x040,	// Masked Interrupt Status	ro	0x00000000
+        ICR             = 0x044,        // Interrupt Clear              w1c     0x00000000
+        DMACR           = 0x048,        // DMA Control                  rw      0x00000000
+        PeriphID4	= 0xfd0,	// Peripheral Identification 4	ro	0x00000000
+        PeriphID5	= 0xfd4,	// Peripheral Identification 5	ro	0x00000000
+        PeriphID6	= 0xfd8,	// Peripheral Identification 6	ro	0x00000000
+        PeriphID7	= 0xfdc,	// Peripheral Identification 7	ro	0x00000000
+        PeriphID0	= 0xfe0,	// Peripheral Identification 0	ro	0x00000011
+        PeriphID1	= 0xfe4,	// Peripheral Identification 1	ro	0x00000000
+        PeriphID2	= 0xfe8,	// Peripheral Identification 2	ro	0x00000018
+        PeriphID3	= 0xfec,	// Peripheral Identification 3	ro	0x00000001
+        PCellID0	= 0xff0,	// PrimeCell Identification 0	ro	0x0000000d
+        PCellID1	= 0xff4,	// PrimeCell Identification 1	ro	0x000000f0
+        PCellID2	= 0xff8,	// PrimeCell Identification 2	ro	0x00000005
+        PCellID3	= 0xffc		// PrimeCell Identification 3	ro	0x000000b1
+    };
+    // Useful Bits in the UART Flag Register
+    enum {                              // Description                  Type    Value after reset
+        CTS             = 1 <<  0,      // Clear to Send                r/w     0
+        DSR             = 1 <<  1,      // Data Set Ready               r/w     0
+        DCD             = 1 <<  2,      // Data Carrier Detect          r/w     0
+        BUSY            = 1 <<  3,      // Busy transmitting data       r/w     0
+        RXFE            = 1 <<  4,      // Receive FIFO Empty           r/w     1
+        TXFF            = 1 <<  5,      // Transmit FIFO Full           r/w     0
+        RXFF            = 1 <<  6,      // Receive FIFO Full            r/w     0
+        TXFE            = 1 <<  7,      // Transmit FIFO Empty          r/w     1
+        RI              = 1 <<  8,      // Ring Indicator               r/w     0
+    };
+
+    // Useful Bits in the Control Register
+    enum {                              // Description                  Type    Value after reset
+        UEN             = 1 <<  0,      // Enable                       r/w     0
+        HSE             = 1 <<  5,      // High-speed Enable            r/w     0
+        LBE             = 1 <<  7,      // Loop Back Enable             r/w     0
+        TXE             = 1 <<  8,      // Transmit Enable              r/w     1
+        RXE             = 1 <<  9       // Receive Enable               r/w     1
+    };
+    // Useful Bits in the Interrupt Mask Register
+    enum {                              // Description                  Type    Value after reset
+        UIMRX           = 1 <<  4,      // Receive                      r/w     0
+        UIMTX           = 1 <<  5,      // Transmit                     r/w     0
+        UIMRT           = 1 <<  6,      // Receive Time-Out             r/w     0
+        UIMFE           = 1 <<  7,      // Framing Error                r/w     0
+        UIMPE           = 1 <<  8,      // Parity Error                 r/w     0
+        UIMBE           = 1 <<  9,      // Break Error                  r/w     0
+        UIMOE           = 1 << 10,      // Overrun Error                r/w     0
+        UIMALL          = 0
+    };
+    // Useful Bits in the Line Control
+    enum {                              // Description                  Type    Value after reset
+        BRK             = 1 <<  0,      // Send Break                   r/w     0
+        PEN             = 1 <<  1,      // Parity Enable                r/w     0
+        EPS             = 1 <<  2,      // Even Parity Select           r/w     0
+        STP2            = 1 <<  3,      // Two Stop Bits Select         r/w     0
+        FEN             = 1 <<  4,      // FIFOs Enable                 r/w     0
+        WLEN5           = 0 <<  5,      // Word Length 5 bits           r/w     0
+        WLEN6           = 1 <<  5,      // Word Length 6 bits           r/w     0
+        WLEN7           = 2 <<  5,      // Word Length 7 bits           r/w     0
+        WLEN8           = 3 <<  5,      // Word Length 8 bits           r/w     0
+        SPS             = 1 <<  7       // Stick Parity Select          r/w     0
     };
 
     // Useful Bits in the Alternate Function Select Register
@@ -333,9 +498,12 @@ public:
     static Log_Addr & gpiob(unsigned int o) { return reinterpret_cast<Log_Addr *>(GPIOB_BASE)[o / sizeof(Log_Addr)]; }
     static Log_Addr & gpioc(unsigned int o) { return reinterpret_cast<Log_Addr *>(GPIOC_BASE)[o / sizeof(Log_Addr)]; }
     static Log_Addr & gpiod(unsigned int o) { return reinterpret_cast<Log_Addr *>(GPIOD_BASE)[o / sizeof(Log_Addr)]; }
+
+protected:
+    static void init();
 };
 
-typedef eMote3 Cortex_Model_Specifics;
+typedef eMote3 Cortex_M_Model;
 
 
 // eMote3 UART
@@ -358,27 +526,63 @@ public:
 
     void config(unsigned int baud_rate, unsigned int data_bits, unsigned int parity, unsigned int stop_bits) {
         if(_base == reinterpret_cast<Log_Addr *>(UART0_BASE)) {
-//            scr(RCGC1) |= RCGC1_UART0;                   // Activate UART 0 clock
-//            scr(RCGC2) |= RCGC2_GPIOA;                   // Activate port A clock
-            gpioa(AFSEL) |= (AFSEL_ALTP0 | AFSEL_ALTP1); // Pins A[1:0] are multiplexed between GPIO and UART 0. Select UART.
-            gpioa(DEN) |= (DEN_DIGP0 | DEN_DIGP1);       // Enable digital I/O on Pins A[1:0]
+            //1. Enable the UART module using the SYS_CTRL_RCGCUART register.
+            scr(RCGCUART) |= RCGCUART_UART0; // Enable clock for UART0 while in Running mode
+
+            //2. Set the GPIO pin configuration through the Pxx_SEL registers for the desired output
+            ioc(PA1_SEL) = UART0_TXD;
+
+            //3. To enable IO pads to drive outputs, the corresponding IPxx_OVER bits in IOC_Pxx_OVER register
+            //   has to be configured to 0x8 (OE - Output Enable).
+            ioc(PA1_OVER) = OE;
+            ioc(PA0_OVER) = 0;
+
+            //4. Connect the appropriate input signals to the UART module        
+            // The value is calculated as: (port << 3) + pin
+            ioc(UARTRXD_UART0) = (0 << 3) + 0;
+
+            //5. Set GPIO pins A1 and A0 to peripheral mode
+            gpioa(AFSEL) |= (AFSEL_ALTP0) + (AFSEL_ALTP1);
         } else {
-//            scr(RCGC1) |= RCGC1_UART1;                   // Activate UART 1 clock
-//            scr(RCGC2) |= RCGC2_GPIOB;                   // Activate port B clock
-            gpiod(AFSEL) |= (AFSEL_ALTP2 | AFSEL_ALTP3); // Pins D[3:2] are multiplexed between GPIO and UART 1. Select UART.
-            gpiod(DEN) |= (DEN_DIGP2 | DEN_DIGP3);       // Enable digital I/O on Pins D[3:2]
+            while(1)
+            ;
         }
 
-//        reg(UCR) &= ~UEN;                       // Disable UART for configuration
-//        reg(ICR) = ~0;                          // Clear all interrupts
-//        reg(UIM) = UIMALL;                      // Disable all interrupts
-//        Reg32 br = CLOCK / (baud_rate / 300);   // Factor by the minimum BR to preserve meaningful bits of FBRD
-//        reg(IBRD) = br / 300;                   // IBRD = int(CLOCK / baud_rate)
-//        reg(FBRD) = br / 1000;                  // FBRD = int(0.1267 * 64 + 0.5) = 8
-//        reg(LCRH) = WLEN8 | FEN;                // 8 bit word length (no parity bits, one stop bit, FIFOs)
-//        reg(UCR) |= UEN | TXE | RXE;            // Enable UART
-//        reg(UIM) = UIMTX | UIMRX;               // Mask TX and RX interrupts for polling operation
+        // Disable UART        
+        reg(LCRH) &= ~(FEN);             // Disable FIFOs
+        reg(UCR) &= ~(UEN | TXE | RXE);  // Disable UART for configuration
+        reg(ICR) = ~0;                   // Clear all interrupts
+        reg(UIM) = UIMALL;               // Disable all interrupts
+
+        // Baud rate setup
+        Reg32 clock;
+        switch(scr(CLOCK_STA) & 7)
+        {
+            /*
+            * These are the possible values on SYS_CTRL_CLOCK_STA register,
+            * should be replaced by Traits' CLOCK when the clock configuration
+            * is done in its right place.
+            */
+            case 0: clock = 32000000; break;
+            case 1: clock = 16000000; break;
+            case 2: clock =  8000000; break;
+            case 3: clock =  4000000; break;
+            case 4: clock =  2000000; break;
+            case 5: clock =  1000000; break;
+            case 6: clock =   500000; break;
+            case 7: clock =   250000; break;
+        }
+        Reg32 br = (((clock * 8) / baud_rate) + 1) / 2;
+        reg(IBRD) = br / 64;
+        reg(FBRD) = br % 64;
+
+        reg(LCRH) = WLEN8 | FEN;      // 8 bit word length (no parity bits, one stop bit, FIFOs)
+        reg(UIM) &= ~(UIMTX | UIMRX); // Mask TX and RX interrupts for polling operation
+        reg(FR) = 0;                  // Clear flags
+        reg(UCR) |= UEN | TXE | RXE;  // Enable UART
+        
     }
+
     void config(unsigned int * baud_rate, unsigned int * data_bits, unsigned int * parity, unsigned int * stop_bits) {
 //        *data_bits = (reg(LCRH) & WLEN8) ? 8 : (reg(LCRH) & WLEN7) ? 7 : (reg(LCRH) & WLEN6) ? 6 : 5;
 //        *parity = (reg(LCRH) & PEN) ? (reg(LCRH) & EPS) ? UART_Common::EVEN : UART_Common::ODD : UART_Common::NONE;
@@ -396,7 +600,7 @@ public:
     }
 
     void reset() {
-        // There is no software reset on the PL011, so the best we can do is refresh its configuaration
+        // There is no software reset on the PL011, so the best we can do is refresh its configuration
         unsigned int b, db, p, sb;
         config(&b, &db, &p, &sb);
         config(b, db, p, sb);
@@ -413,13 +617,13 @@ public:
     bool txd_ok() { return !(reg(FR) & TXFF); }
 
 private:
-    Log_Addr & reg(unsigned int o) { return _base[o]; }
+    Log_Addr & reg(unsigned int o) { return _base[o / sizeof(Log_Addr)]; }
 
 private:
     Log_Addr * _base;
 };
 
-typedef XYZ Cortex_Model_UART;
+typedef XYZ Cortex_M_Model_UART;
 
 __END_SYS
 

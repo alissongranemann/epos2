@@ -91,7 +91,7 @@ public:
         unsigned short  _urgent_pointer;
     } __attribute__((packed));
 
-    static const unsigned int MTU = 65536 - sizeof(Header) - sizeof(IP::Header);
+    static const unsigned int MTU = IP::MTU - sizeof(Header);
     static const unsigned int MSS = IP::MFS - sizeof(Header);
 
     typedef unsigned char Data[MTU];

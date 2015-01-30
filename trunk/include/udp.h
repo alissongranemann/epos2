@@ -96,7 +96,7 @@ public:
         unsigned short _checksum; // Pseudo header checksum (see RFC)
     } __attribute__((packed));
 
-    static const unsigned int MTU = 65536 - sizeof(Header) - sizeof(IP::Header);
+    static const unsigned int MTU = IP::MTU - sizeof(Header);
 
     typedef unsigned char Data[MTU];
 

@@ -1,5 +1,8 @@
 // EPOS Network Abstraction Initialization
 
+#include <system/config.h>
+#ifndef __no_networking__
+
 #include <network.h>
 #include <icmp.h>
 #include <udp.h>
@@ -42,3 +45,5 @@ void Network::init()
 }
 
 __END_SYS
+
+#endif

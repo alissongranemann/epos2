@@ -411,8 +411,7 @@ private:
 
 
     // Interrupt dispatching binding
-    struct Device
-    {
+    struct Device {
         PCNet32 * device;
         unsigned int interrupt;
     };

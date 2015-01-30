@@ -3,8 +3,6 @@
 #ifndef __cortex_m_pl011_h__
 #define __cortex_m_pl011_h__
 
-#include __MODEL_H
-
 __BEGIN_SYS
 
 // PrimeCell UART (PL011)

@@ -7,8 +7,8 @@
 
 __BEGIN_SYS
 
-// Cortex-M IEEE 802.15.4 Radio
-class Cortex_M_IEEE802_15_4
+// CC2538 IEEE 802.15.4 RF Transceiver
+class CC2538RF
 {
 protected:
     typedef CPU::Reg8 Reg8;
@@ -82,16 +82,16 @@ public:
 
 };
 
-// Cortex-M Radio NIC
-class Radio: public IEEE802_15_4, public IEEE802_15_4::Observed, private Cortex_M_IEEE802_15_4
+// CC2538 IEEE 802.15.4 Radio Mediator
+class CC2538: public IEEE802_15_4, public IEEE802_15_4::Observed, private CC2538RF
 {
     template <int unit> friend void call_init();
 
 private:
     // Transmit and Receive Ring sizes
-    static const unsigned int UNITS = Traits<Radio>::UNITS;
-    static const unsigned int TX_BUFS = Traits<Radio>::SEND_BUFFERS;
-    static const unsigned int RX_BUFS = Traits<Radio>::RECEIVE_BUFFERS;
+    static const unsigned int UNITS = Traits<CC2538>::UNITS;
+    static const unsigned int TX_BUFS = Traits<CC2538>::SEND_BUFFERS;
+    static const unsigned int RX_BUFS = Traits<CC2538>::RECEIVE_BUFFERS;
 
 
     // Size of the DMA Buffer that will host the ring buffers and the init block
@@ -100,19 +100,17 @@ private:
         RX_BUFS * ((sizeof(Buffer) + 15) & ~15U) + TX_BUFS * ((sizeof(Buffer) + 15) & ~15U); // align128() cannot be used here
 
 
-
     // Interrupt dispatching binding
-    struct Device
-    {
-        Radio * device;
+    struct Device {
+        CC2538 * device;
         unsigned int interrupt;
     };
         
 protected:
-    Radio(unsigned int unit, IO_Irq irq, DMA_Buffer * dma_buf);
+    CC2538(unsigned int unit, IO_Irq irq, DMA_Buffer * dma_buf);
 
 public:
-    ~Radio();
+    ~CC2538();
 
     int send(const Address & dst, const Protocol & prot, const void * data, unsigned int size);
     int receive(Address * src, Protocol * prot, void * data, unsigned int size);
@@ -128,22 +126,22 @@ public:
 
     void reset();
 
-    static Radio * get(unsigned int unit = 0) { return get_by_unit(unit); }
+    static CC2538 * get(unsigned int unit = 0) { return get_by_unit(unit); }
 
 private:
     void handle_int();
 
     static void int_handler(const IC::Interrupt_Id & interrupt);
 
-    static Radio * get_by_unit(unsigned int unit) {
+    static CC2538 * get_by_unit(unsigned int unit) {
         if(unit >= UNITS) {
-            db<Radio>(WRN) << "Radio::get: requested unit (" << unit << ") does not exist!" << endl;
+            db<CC2538>(WRN) << "Radio::get: requested unit (" << unit << ") does not exist!" << endl;
             return 0;
         } else
             return _devices[unit].device;
     }
 
-    static Radio * get_by_interrupt(unsigned int interrupt) {
+    static CC2538 * get_by_interrupt(unsigned int interrupt) {
         for(unsigned int i = 0; i < UNITS; i++)
             if(_devices[i].interrupt == interrupt)
         	return _devices[i].device;

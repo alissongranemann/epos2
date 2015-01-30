@@ -67,19 +67,19 @@ template <> struct Traits<Cortex_M_UART>: public Traits<Cortex_M_Common>
     static const unsigned int DEF_STOP_BITS = 1;
 };
 
-template <> struct Traits<Cortex_M_NIC>: public Traits<Cortex_M_Common>
+template <> struct Traits<Cortex_M_Radio>: public Traits<Cortex_M_Common>
 {
-    static const bool enabled = (Traits<Build>::NODES > 1);
+    static const bool enabled = false;
 
-    typedef LIST<Radio> NICS;
+    typedef LIST<CC2538> NICS;
     static const unsigned int UNITS = NICS::Length;
 };
 
-template <> struct Traits<Radio>: public Traits<Cortex_M_NIC>
+template <> struct Traits<CC2538>: public Traits<Cortex_M_Radio>
 {
-    static const unsigned int UNITS = NICS::Count<Radio>::Result;
-    static const unsigned int SEND_BUFFERS = 64; // per unit
-    static const unsigned int RECEIVE_BUFFERS = 256; // per unit
+    static const unsigned int UNITS = NICS::Count<CC2538>::Result;
+    static const unsigned int SEND_BUFFERS = 1;
+    static const unsigned int RECEIVE_BUFFERS = 1;
 };
 
 template <> struct Traits<Cortex_M_Scratchpad>: public Traits<Cortex_M_Common>

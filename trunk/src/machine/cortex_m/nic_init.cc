@@ -1,14 +1,17 @@
-// EPOS PC AMD PCNet II (Am79C970A) Ethernet NIC Mediator Initialization
+// EPOS CC2538 IEEE 802.15.4 NIC Mediator Initialization
+
+#include <system/config.h>
+#ifndef __no_networking__
 
 #include <system.h>
 #include <machine/cortex_m/machine.h>
-#include <machine/cortex_m/radio.h>
+#include "../../../include/machine/cortex_m/cc2538_radio.h"
 
 __BEGIN_SYS
 
-Radio::Radio(unsigned int unit, IO_Irq irq, DMA_Buffer * dma_buf)
+CC2538::CC2538(unsigned int unit, IO_Irq irq, DMA_Buffer * dma_buf)
 {
-    db<Radio>(TRC) << "Radio(unit=" << unit << ",irq=" << irq << ",dma=" << dma_buf << ")" << endl;
+    db<CC2538>(TRC) << "Radio(unit=" << unit << ",irq=" << irq << ",dma=" << dma_buf << ")" << endl;
 
     _unit = unit;
     _irq = irq;
@@ -67,9 +70,9 @@ Radio::Radio(unsigned int unit, IO_Irq irq, DMA_Buffer * dma_buf)
 }
 
 
-void Radio::init(unsigned int unit)
+void CC2538::init(unsigned int unit)
 {
-    db<Init, Radio>(TRC) << "Radio::init(unit=" << unit << ")" << endl;
+    db<Init, CC2538>(TRC) << "Radio::init(unit=" << unit << ")" << endl;
 
     // Allocate a DMA Buffer for init block, rx and tx rings
     DMA_Buffer * dma_buf = new (SYSTEM) DMA_Buffer(DMA_BUFFER_SIZE);
@@ -77,7 +80,7 @@ void Radio::init(unsigned int unit)
     IO_Irq irq = 10;
 
     // Initialize the device
-    Radio * dev = new (SYSTEM) Radio(unit, irq, dma_buf);
+    CC2538 * dev = new (SYSTEM) CC2538(unit, irq, dma_buf);
 
     // Register the device
     _devices[unit].device = dev;
@@ -91,3 +94,5 @@ void Radio::init(unsigned int unit)
 }
 
 __END_SYS
+
+#endif

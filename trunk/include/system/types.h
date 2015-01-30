@@ -28,6 +28,7 @@ void * operator new[](size_t, const EPOS::Scratchpad_Allocator &);
 
 // Utilities
 __BEGIN_UTIL
+class Dummy;
 class Bitmaps;
 class CRC;
 class ELF;
@@ -65,32 +66,52 @@ class ARMv7;
 class ARMv7_TSC;
 class ARMv7_MMU;
 
+class AVR8;
+class AVR8_TSC;
+class AVR8_MMU;
+
 // Machine Hardware Mediators
 class PC;
 class PC_PCI;
 class PC_IC;
 class PC_Timer;
 class PC_RTC;
-class PC_EEPROM;
-class PC_Scratchpad;
 class PC_UART;
+class PC_EEPROM;
 class PC_Display;
+class PC_Scratchpad;
+class PC_NIC;
 class PC_Ethernet;
 
 class Cortex_M;
 class Cortex_M_IC;
 class Cortex_M_Timer;
 class Cortex_M_RTC;
-class Cortex_M_EEPROM;
-class Cortex_M_Scratchpad;
 class Cortex_M_UART;
+class Cortex_M_EEPROM;
 class Cortex_M_Display;
-class Cortex_M_NIC;
+class Cortex_M_Scratchpad;
+class Cortex_M_Radio;
+
+class ATmega;
+class ATmega_IC;
+class ATmega_Timer;
+class ATmega_RTC;
+class ATmega_EEPROM;
+class ATmega_Flash;
+class ATmega_Scratchpad;
+class ATmega_UART;
+class ATmega_USART;
+class ATmega_SPI;
+class ATmega_ADC;
+class ATmega_Battery;
+class ATmega_Radio;
 
 class PCNet32;
 class C905;
 class E100;
-class Radio;
+class CC2538;
+class AT86RF;
 
 class Serial_Display;
 
@@ -236,6 +257,7 @@ template<> struct Type<Cortex_M_UART> { static const Type_Id ID = UART_ID; };
 template<> struct Type<Cortex_M_RTC> { static const Type_Id ID = RTC_ID; };
 template<> struct Type<Cortex_M_Display> { static const Type_Id ID = DISPLAY_ID; };
 template<> struct Type<Cortex_M_Scratchpad> { static const Type_Id ID = SCRATCHPAD_ID; };
+template<> struct Type<Cortex_M_Radio> { static const Type_Id ID = NIC_ID; };
 
 
 template<> struct Type<Thread> { static const Type_Id ID = THREAD_ID; };

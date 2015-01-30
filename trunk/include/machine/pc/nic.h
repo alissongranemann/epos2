@@ -51,7 +51,6 @@ public:
 
     void reset() { _dev->reset(); }
 
-
     void attach(Observer * obs, const Protocol & prot) { _dev->attach(obs, prot); }
     void detach(Observer * obs, const Protocol & prot) { _dev->detach(obs, prot); }
     void notify(const Protocol & prot, Buffer * buf) { _dev->notify(prot, buf); }
