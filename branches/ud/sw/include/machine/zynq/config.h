@@ -21,9 +21,9 @@
 
 __BEGIN_SYS
 
-typedef ARMV7                       CPU;
-typedef ARMV7_MMU                   MMU;
-typedef ARMV7_TSC                   TSC;
+typedef ARMv7                       CPU;
+typedef ARMv7_MMU                   MMU;
+typedef ARMv7_TSC                   TSC;
 
 typedef Zynq                        Machine;
 typedef Zynq_GPIO                   GPIO;

@@ -1,4 +1,4 @@
-// EPOS-- ARMV7 MMU Mediator Declarations
+// EPOS-- ARMv7 MMU Mediator Declarations
 
 #ifndef __armv7_mmu_h
 #define __armv7_mmu_h
@@ -15,12 +15,12 @@ __BEGIN_SYS
  * the remaining is allocated for memory mapped registers.
  * It is also a good idea to not map anything in the first 1MB.
  */
-class ARMV7_MMU: public MMU_Common<12, 8, 12>
+class ARMv7_MMU: public MMU_Common<12, 8, 12>
 {
 private:
     typedef Grouping_List<Frame> List;
     static const unsigned int PHY_MEM = Memory_Map<Machine>::PHY_MEM;
-	static const unsigned int MMU_TABLE_ADDR = Traits<ARMV7_MMU>::MMU_TABLE_ADDR;
+	static const unsigned int MMU_TABLE_ADDR = Traits<ARMv7_MMU>::MMU_TABLE_ADDR;
 
 public:
 	enum{
@@ -44,7 +44,7 @@ public:
 		XN = 		1,
 	};
     // Page Flags
-    class ARMV7_Flags
+    class ARMv7_Flags
     {
     public:
         enum {
@@ -89,10 +89,10 @@ public:
         };
 
     public:
-        ARMV7_Flags() {}
-        ARMV7_Flags(const ARMV7_Flags & f) : _flags(f._flags) {}
-        ARMV7_Flags(unsigned int f) : _flags(f) {}
-        ARMV7_Flags(Flags f) : _flags(PRE | ACC |
+        ARMv7_Flags() {}
+        ARMv7_Flags(const ARMv7_Flags & f) : _flags(f._flags) {}
+        ARMv7_Flags(unsigned int f) : _flags(f) {}
+        ARMv7_Flags(Flags f) : _flags(PRE | ACC |
         			     ((f & Flags::RW)  ? RW  : 0) |
         			     ((f & Flags::USR) ? USR : 0) |
         			     ((f & Flags::CWT) ? PWT : 0) |
@@ -102,7 +102,7 @@ public:
 
         operator unsigned int() const { return _flags; }
 
-        friend OStream & operator << (OStream & db, ARMV7_Flags f) { db << (void *)f._flags; return db; }
+        friend OStream & operator << (OStream & db, ARMv7_Flags f) { db << (void *)f._flags; return db; }
 
     private:
         unsigned int _flags;
@@ -117,7 +117,7 @@ public:
 		unsigned const int size_mb = PHY_MEM/(1024*1024);
 		unsigned const int pt_size = PT_ENTRIES*sizeof(PT_Entry);
 
-		ARMV7_Flags flags(0<<DOMAIN_SHIFT | NS | L2_ENTRY);
+		ARMv7_Flags flags(0<<DOMAIN_SHIFT | NS | L2_ENTRY);
 		for(unsigned int i = 0; i < size_mb; ++i)//run over the 512mb
 		{
 			build_l2_PT((PT_Entry*)(l2_addr + i*pt_size), i*1024*1024);
@@ -142,7 +142,7 @@ public:
 
 	static inline void build_l2_PT(PT_Entry* entry, Phy_Addr pa)
 	{
-		ARMV7_Flags flags(AP1 | AP0 | SMALL_PAGE);
+		ARMv7_Flags flags(AP1 | AP0 | SMALL_PAGE);
 		for(unsigned int i = 0; i < PT_ENTRIES; ++i)
 			entry[i] = (pa + i*sizeof(Page)) | flags;
 	}
@@ -183,7 +183,7 @@ public:
     class DMA_Buffer {};
 
     // Page Flags
-    //typedef MMU_Common<12, 8, 12>::Flags ARMV7_Flags;
+    //typedef MMU_Common<12, 8, 12>::Flags ARMv7_Flags;
 
     // Page_Table
 	//template <unsigned int PT_ENTRIES = PT_ENTRIES>
@@ -194,7 +194,7 @@ public:
 
 			PT_Entry & operator[](unsigned int i) { return _entry[i]; }
 
-			void map(int from, int to, ARMV7_Flags flags) {
+			void map(int from, int to, ARMv7_Flags flags) {
 				Phy_Addr * addr = alloc(to - from);
 				if(addr)
 					remap(addr, from, to, flags);
@@ -203,11 +203,11 @@ public:
 						_entry[from] = alloc() | flags;
 			}
 
-			void map_contiguous(int from, int to, ARMV7_Flags flags) {
+			void map_contiguous(int from, int to, ARMv7_Flags flags) {
 				remap(alloc(to - from), from, to, flags);
 			}
 
-			void remap(Phy_Addr addr, int from, int to, ARMV7_Flags flags) {
+			void remap(Phy_Addr addr, int from, int to, ARMv7_Flags flags) {
 				addr = align_page(addr);
 				for( ; from < to; from++) {
 					_entry[from] = addr | flags;
@@ -247,21 +247,21 @@ public:
 			Chunk() {}
 
 			Chunk(unsigned int bytes, Flags flags)
-				: _from(0), _to(pages(bytes)), _pts(page_tables(_to - _from)), _flags(ARMV7_Flags(flags)), _pt(calloc(_pts)) {
-					if(flags & ARMV7_Flags::CT)
+				: _from(0), _to(pages(bytes)), _pts(page_tables(_to - _from)), _flags(ARMv7_Flags(flags)), _pt(calloc(_pts)) {
+					if(flags & ARMv7_Flags::CT)
 						_pt->map_contiguous(_from, _to, _flags);
 					else 
 						_pt->map(_from, _to, _flags);
 				}
 
 			Chunk(Phy_Addr phy_addr, unsigned int bytes, Flags flags)
-				: _from(0), _to(pages(bytes)), _pts(page_tables(_to - _from)), _flags(ARMV7_Flags(flags)), _pt(calloc(_pts)) {
+				: _from(0), _to(pages(bytes)), _pts(page_tables(_to - _from)), _flags(ARMv7_Flags(flags)), _pt(calloc(_pts)) {
 					_pt->remap(phy_addr, _from, _to, flags);
 				}
 
 			~Chunk() {
-				if(!(_flags & ARMV7_Flags::IO)) {
-					if(_flags & ARMV7_Flags::CT)
+				if(!(_flags & ARMv7_Flags::IO)) {
+					if(_flags & ARMv7_Flags::CT)
 						free((*_pt)[_from], _to - _from);
 					else
 						for( ; _from < _to; _from++)
@@ -271,17 +271,17 @@ public:
 			}
 
 			unsigned int pts() const { return _pts; }
-			ARMV7_Flags flags() const { return _flags; }
+			ARMv7_Flags flags() const { return _flags; }
 			Page_Table * pt() const { return _pt; }
 			unsigned int size() const { return (_to - _from) * sizeof(Page); }
 
 			Phy_Addr phy_address() const {
-				return (_flags & ARMV7_Flags::CT) ?
+				return (_flags & ARMv7_Flags::CT) ?
 					Phy_Addr(indexes((*_pt)[_from])) : Phy_Addr(false);
 			}
 
 			int resize(unsigned int amount) {
-				if(_flags & ARMV7_Flags::CT)
+				if(_flags & ARMv7_Flags::CT)
 					return 0;
 
 				unsigned int pgs = pages(amount);
@@ -306,7 +306,7 @@ public:
 			unsigned int _from;
 			unsigned int _to;
 			unsigned int _pts;
-			ARMV7_Flags _flags;
+			ARMv7_Flags _flags;
 			Page_Table * _pt;
 	};
 
@@ -338,7 +338,7 @@ public:
     };
 
 public:
-    ARMV7_MMU() {}
+    ARMv7_MMU() {}
 
     static void flush_tlb() {}
     static void flush_tlb(Log_Addr addr) {}
@@ -354,9 +354,9 @@ public:
 			if(e)
 				phy = e->object() + e->size();
 			else
-				db<ARMV7_MMU>(WRN) << "ARMV7_MMU::alloc() failed!" << endl;
+				db<ARMv7_MMU>(WRN) << "ARMv7_MMU::alloc() failed!" << endl;
 		}
-		db<ARMV7_MMU>(TRC) << "ARMV7_MMU::alloc(frames=" << frames << ") => " << phy << endl;
+		db<ARMv7_MMU>(TRC) << "ARMv7_MMU::alloc(frames=" << frames << ") => " << phy << endl;
 		return phy;
 
 	}

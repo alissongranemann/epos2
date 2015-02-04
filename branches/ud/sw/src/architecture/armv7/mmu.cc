@@ -1,4 +1,4 @@
-// EPOS-- ARMV7 MMU Mediator Implementation
+// EPOS-- ARMv7 MMU Mediator Implementation
 
 #include <mmu.h>
 #include <machine.h>
@@ -7,9 +7,9 @@
 __BEGIN_SYS
 
 // Class attributes
-ARMV7_MMU::List ARMV7_MMU::_free;
+ARMv7_MMU::List ARMv7_MMU::_free;
 /*
-ARMV7_MMU::Phy_Addr ARMV7_MMU::alloc(unsigned int bytes) {
+ARMv7_MMU::Phy_Addr ARMv7_MMU::alloc(unsigned int bytes) {
     Phy_Addr phy(false);
     if(bytes) {
         List::Element * e = _free.search_decrementing(bytes);
@@ -20,22 +20,22 @@ ARMV7_MMU::Phy_Addr ARMV7_MMU::alloc(unsigned int bytes) {
 				<< ", e->size()="<<(unsigned int)e->size()<<endl;
 		}
         else {
-            kout << "ARMV7_MMU::alloc() failed!\n";
-            db<ARMV7_MMU>(WRN) << "ARMV7_MMU::alloc() failed!\n";
+            kout << "ARMv7_MMU::alloc() failed!\n";
+            db<ARMv7_MMU>(WRN) << "ARMv7_MMU::alloc() failed!\n";
         }
     }
-    db<ARMV7_MMU>(TRC) << "ARMV7_MMU::alloc(bytes=" << bytes << ") => "
+    db<ARMv7_MMU>(TRC) << "ARMv7_MMU::alloc(bytes=" << bytes << ") => "
                       << (void *)phy << "\n";
-    //kout << "ARMV7_MMU::alloc(bytes=" << bytes << ") => " << (void *)phy << "\n";
+    //kout << "ARMv7_MMU::alloc(bytes=" << bytes << ") => " << (void *)phy << "\n";
     return phy;
 }
 */
-void ARMV7_MMU::free(Phy_Addr addr, int n) {
-    db<ARMV7_MMU>(TRC) << "ARMV7_MMU::free(addr=" << (void *)addr
+void ARMv7_MMU::free(Phy_Addr addr, int n) {
+    db<ARMv7_MMU>(TRC) << "ARMv7_MMU::free(addr=" << (void *)addr
                       << ",n=" << n << ")\n";
 
 	if(addr % 4 != 0){
-		db<ARMV7_MMU>(ERR) << "Unaligned address to be freed!\n";
+		db<ARMv7_MMU>(ERR) << "Unaligned address to be freed!\n";
 		kout << "Unaligned address to be freed!\n";
 		Machine::panic();
 	}

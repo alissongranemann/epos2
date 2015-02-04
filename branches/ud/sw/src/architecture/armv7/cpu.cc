@@ -1,4 +1,4 @@
-// EPOS-- ARMV7 CPU Mediator Implementation
+// EPOS-- ARMv7 CPU Mediator Implementation
 
 #include <arch/armv7/cpu.h>
 #include <system/config.h>
@@ -6,14 +6,14 @@
 
 __BEGIN_SYS
 
-ARMV7::OP_Mode ARMV7::_mode = ARMV7::FULL;
+ARMv7::OP_Mode ARMv7::_mode = ARMv7::FULL;
 
-void ARMV7::Context::save() volatile
+void ARMv7::Context::save() volatile
 {
 	ASMV("nop\n");
 }
 
-void ARMV7::Context::load() const volatile
+void ARMv7::Context::load() const volatile
 {
 	db<CPU>(TRC) << "CPU::Context::load(this=" << (void*)this << ")\n";
 
@@ -26,7 +26,7 @@ void ARMV7::Context::load() const volatile
 }
 
 
-void ARMV7::switch_context(Context * volatile * o, Context * volatile n)
+void ARMv7::switch_context(Context * volatile * o, Context * volatile n)
 {
 	kout << "Switch_context\n";
     Context * old = *o;
@@ -44,7 +44,7 @@ void ARMV7::switch_context(Context * volatile * o, Context * volatile n)
 }
 
 
-void ARMV7::power(ARMV7::OP_Mode mode)
+void ARMv7::power(ARMv7::OP_Mode mode)
 {
     if (mode == _mode) return;
         _mode = mode;

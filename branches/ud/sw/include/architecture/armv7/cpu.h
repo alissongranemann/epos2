@@ -1,4 +1,4 @@
-// EPOS-- ARMV7 CPU Mediator Declarations
+// EPOS-- ARMv7 CPU Mediator Declarations
 
 #ifndef __armv7_h
 #define __armv7_h
@@ -8,7 +8,7 @@
 
 __BEGIN_SYS
 
-class ARMV7: public CPU_Common
+class ARMv7: public CPU_Common
 {
     friend class Init_System;
 
@@ -77,7 +77,7 @@ public:
     };
 
 public:
-    ARMV7() {}
+    ARMv7() {}
 
     static Hertz clock() { return Traits<Machine>::CLOCK; }
 
@@ -309,7 +309,7 @@ public:
 private:
     static void init();
 
-    // ARMV7 specific methods
+    // ARMv7 specific methods
 public:
     static Reg8 in8(const Reg32 port) {
         return (*(volatile Reg8 *)port);

@@ -1,4 +1,4 @@
-// EPOS ARMV7 CPU Mediator Initialization
+// EPOS ARMv7 CPU Mediator Initialization
 
 #include <cpu.h>
 #include <mmu.h>
@@ -6,9 +6,9 @@
 
 __BEGIN_SYS
 
-void ARMV7::init()
+void ARMv7::init()
 {
-    db<Init, ARMV7>(TRC) << "CPU::init()" << endl;
+    db<Init, ARMv7>(TRC) << "CPU::init()" << endl;
 
     if(Traits<MMU>::enabled)
         MMU::init();

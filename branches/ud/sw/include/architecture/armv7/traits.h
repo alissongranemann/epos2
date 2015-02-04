@@ -3,8 +3,8 @@
 
 __BEGIN_SYS
 
-// ARMV7
-template <> struct Traits<ARMV7>: public Traits<void>
+// ARMv7
+template <> struct Traits<ARMv7>: public Traits<void>
 {
     enum {LITTLE, BIG};
     static const unsigned int ENDIANESS         = LITTLE;
@@ -13,11 +13,11 @@ template <> struct Traits<ARMV7>: public Traits<void>
     static const bool unaligned_memory_access   = false;
 };
 
-template <> struct Traits<ARMV7_TSC>: public Traits<void>
+template <> struct Traits<ARMv7_TSC>: public Traits<void>
 {
 };
 
-template <> struct Traits<ARMV7_MMU>: public Traits<void>
+template <> struct Traits<ARMv7_MMU>: public Traits<void>
 {
 	static const unsigned int MMU_TABLE_ADDR = 0x104000;
 };

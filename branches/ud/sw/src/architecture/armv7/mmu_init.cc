@@ -1,4 +1,4 @@
-// EPOS ARMV7 MMU Mediator Initialization
+// EPOS ARMv7 MMU Mediator Initialization
 
 #include <mmu.h>
 #include <system.h>
@@ -8,9 +8,9 @@
 
 __BEGIN_SYS
 
-void ARMV7_MMU::init()
+void ARMv7_MMU::init()
 {
-    db<Init, ARMV7_MMU>(TRC) << "ARMV7_MMU::init()\n";
+    db<Init, ARMv7_MMU>(TRC) << "ARMv7_MMU::init()\n";
 
     /* L1 PT: 4096 entries 4 bytes long.
      * L2 PT: 256 entries 4 bytes long. There is one L2 PT for each entry in L1 (4096).
@@ -18,8 +18,8 @@ void ARMV7_MMU::init()
      * However, the current implementation maps the 512mb:1023mb into 0:511mb, saving 512*1024 bytes.
      * */
 
-    ARMV7_MMU::build_PTs(); //Build page tables.
-    ARMV7_MMU::enable_caches();
+    ARMv7_MMU::build_PTs(); //Build page tables.
+    ARMv7_MMU::enable_caches();
 
     /*unsigned int* p = (unsigned int*)0x1ffffffc;
     unsigned int* q = (unsigned int*)(0x1ffffffc + 0x20000000);
@@ -28,9 +28,9 @@ void ARMV7_MMU::init()
     kout << "*q=" << *q << endl;*/
 
     // TODO: This is causing a prefetch abort
-    //db<Init, ARMV7_MMU>(TRC)<<"Enabling MMU...";
-    //ARMV7_MMU::enable();
-    //db<Init, ARMV7_MMU>(TRC)<<"done.\n";
+    //db<Init, ARMv7_MMU>(TRC)<<"Enabling MMU...";
+    //ARMv7_MMU::enable();
+    //db<Init, ARMv7_MMU>(TRC)<<"done.\n";
 
     /*kout << "*p=" << *p << endl;
     kout << "*q=" << *q << endl;*/
@@ -43,19 +43,19 @@ void ARMV7_MMU::init()
     if(base % 0x4000 != 0)
         base = base + (4 - base % 4);
 
-    db<Init, ARMV7_MMU>(TRC) << "MMU base = " << base << " limit = " << limit << "\n";
-    ARMV7_MMU::free(base, pages(limit - base));
-    db<Init, ARMV7_MMU>(TRC) << "Memory freed!" << endl;
+    db<Init, ARMv7_MMU>(TRC) << "MMU base = " << base << " limit = " << limit << "\n";
+    ARMv7_MMU::free(base, pages(limit - base));
+    db<Init, ARMv7_MMU>(TRC) << "Memory freed!" << endl;
 }
 
-void ARMV7_MMU::disable_domains()
+void ARMv7_MMU::disable_domains()
 {
     unsigned int x=0xffffffff; //all ones = manager (no domain check).
     ASMV("mcr p15,0,%0,c3,c0,0 \n"
             ::"r"(x):);
 }
 
-void ARMV7_MMU::disable_access_flags()
+void ARMv7_MMU::disable_access_flags()
 {
     unsigned int old, flag = 1<<29;
     ASMV("mrc p15,0,%0,c1,c0,0 \n"
@@ -64,7 +64,7 @@ void ARMV7_MMU::disable_access_flags()
          :"=r"(old), "=r"(flag) : : );
 }
 
-void ARMV7_MMU::disable()
+void ARMv7_MMU::disable()
 {
     unsigned int flag;
     ASMV("mrc p15, 0, %0, c1, c0, 0 \n"
@@ -73,14 +73,14 @@ void ARMV7_MMU::disable()
          "=r"(flag) : : "cc");
 }
 
-void ARMV7_MMU::set_ttbr()
+void ARMv7_MMU::set_ttbr()
 {
     ASMV("mcr p15, 0, %0, c2, c0, 0 \n"
          "mcr p15, 0, %0, c2, c0, 1 \n"
          : : "r"(MMU_TABLE_ADDR) : "cc");
 }
 
-unsigned int ARMV7_MMU::check_ttbr()
+unsigned int ARMv7_MMU::check_ttbr()
 {
     unsigned int ret;
     ASMV("mrc p15,0,%0,c2,c0,2 \n"
@@ -92,11 +92,11 @@ unsigned int ARMV7_MMU::check_ttbr()
     return ret;
 }
 
-void ARMV7_MMU::enable()
+void ARMv7_MMU::enable()
 {
-    ARMV7_MMU::set_ttbr();
-    ARMV7_MMU::disable_domains();
-    ARMV7_MMU::disable_access_flags();
+    ARMv7_MMU::set_ttbr();
+    ARMv7_MMU::disable_domains();
+    ARMv7_MMU::disable_access_flags();
     unsigned int flag;
 
     ASMV("mrc p15, 0, %0, c1, c0, 0 \n"
@@ -120,7 +120,7 @@ void ARMV7_MMU::enable()
         );
 }
 
-void ARMV7_MMU::enable_caches()
+void ARMv7_MMU::enable_caches()
 {   //setting bits 2 (data cache) and 12 (I-cache).
     unsigned int flag;//, val=0x1004;
     ASMV("mrc p15, 0, %0, c1, c0, 0 \n"
