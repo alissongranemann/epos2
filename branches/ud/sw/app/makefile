@@ -11,13 +11,7 @@ $(APPLICATION).o: $(APPLICATION).cc $(SRC)
 		$(ACC) $(ACCFLAGS) -o $@ $<
 
 install: $(APPLICATION)
-ifndef  GDB
-		$(STRIP) -o $(APPLICATION).tmp $<
-else
-		$(INSTALL) $< $(APPLICATION).tmp
-endif
-		$(INSTALL) $(APPLICATION).tmp $(IMG)/$(APPLICATION)
-		$(CLEAN) $(APPLICATION).tmp
-
+		$(INSTALL) $(APPLICATION) $(IMG)
+		
 clean:
 		$(CLEAN) *.o $(APPLICATION)
