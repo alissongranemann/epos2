@@ -157,7 +157,7 @@ public:
 
 
 public:
-	
+
 	static void disable_domains();
 	static void disable_access_flags();
 	static void disable();
@@ -170,7 +170,7 @@ public:
 	static bool status()//true=MMU active
 	{
 		unsigned int flag;
-		ASMV("mrc p15, 0, %0, c1, c0, 0 \n"
+		ASM("mrc p15, 0, %0, c1, c0, 0 \n"
 			 :"=r"(flag) : :);
 		return flag & 0x1;
 	}
@@ -198,7 +198,7 @@ public:
 				Phy_Addr * addr = alloc(to - from);
 				if(addr)
 					remap(addr, from, to, flags);
-				else 
+				else
 					for( ; from < to; from++)
 						_entry[from] = alloc() | flags;
 			}
@@ -250,7 +250,7 @@ public:
 				: _from(0), _to(pages(bytes)), _pts(page_tables(_to - _from)), _flags(ARMv7_Flags(flags)), _pt(calloc(_pts)) {
 					if(flags & ARMv7_Flags::CT)
 						_pt->map_contiguous(_from, _to, _flags);
-					else 
+					else
 						_pt->map(_from, _to, _flags);
 				}
 
@@ -316,13 +316,13 @@ public:
     typedef Page_Table Page_Directory;
 
     // Directory (for Address_Space)
-    class Directory 
+    class Directory
     {
     public:
     Directory() {}
     Directory(Page_Directory * pd) {}
     ~Directory() {}
-    
+
     Page_Table * pd() const { return 0; }
 
     void activate() { }
@@ -363,7 +363,7 @@ public:
     static Phy_Addr calloc(unsigned int bytes = 1) {
     Phy_Addr phy = alloc(bytes);
     memset(phy, bytes, 0);
-    return phy; 
+    return phy;
     }
     static void free(Phy_Addr addr, int n = 1);
 
@@ -376,7 +376,7 @@ public:
     static void init();
 
     static unsigned int allocable() { return _free.head() ? _free.head()->size() : 0; }
-	
+
 private:
     static List _free;
 	static Page_Directory * _master;

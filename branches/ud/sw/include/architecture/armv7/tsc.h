@@ -23,7 +23,7 @@ public:
     static Time_Stamp time_stamp() {
         // The MRC instruction doesn't to work correctly if ts is a Time_Stamp
         CPU::Reg32 ts;
-        ASMV("mrc p15, 0, %0, c9, c13, 0" : "=r"(ts));
+        ASM("mrc p15, 0, %0, c9, c13, 0" : "=r"(ts));
         return ((Time_Stamp)ts);
     }
 

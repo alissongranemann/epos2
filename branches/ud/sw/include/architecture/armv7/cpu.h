@@ -93,21 +93,21 @@ public:
 
     static void irq_enable() {
         Reg32 flags;
-        ASMV("mrs %0, cpsr\n"
+        ASM("mrs %0, cpsr\n"
             "bic %0, %0, #0x80\n"
             "msr cpsr_c, %0\n":  "=r"(flags) : : "cc");
     }
 
     static void irq_disable() {
         Reg32 flags;
-        ASMV("mrs %0, cpsr\n"
+        ASM("mrs %0, cpsr\n"
             "orr %0, %0, #0x80\n"
             "msr cpsr_c, %0\n":  "=r"(flags) : : "cc");
     }
 
     static void fiq_enable() {
         Reg32 flags;
-        ASMV("mrs %0, cpsr\n"
+        ASM("mrs %0, cpsr\n"
             "bic %0, %0, #0x40\n"
             "msr cpsr_c, %0\n":  "=r"(flags) : : "cc");
 
@@ -115,7 +115,7 @@ public:
 
     static void fiq_disable() {
         Reg32 flags;
-        ASMV("mrs %0, cpsr\n"
+        ASM("mrs %0, cpsr\n"
             "orr %0, %0, #0x40\n"
             "msr cpsr_c, %0\n":  "=r"(flags) : : "cc");
     }
@@ -127,58 +127,58 @@ public:
     }
 
     static void reboot() {
-        ASMV("b _init\n");//Should do more than that...TODO
+        ASM("b _init\n");//Should do more than that...TODO
     }
 
     static void switch_context(Context * volatile * o, Context * volatile n);
 
     static Flags flags() {
         register Reg32 result;
-        ASMV("mrs %0, cpsr" : "=r"(result) ::);
+        ASM("mrs %0, cpsr" : "=r"(result) ::);
         return result;
     }
 
     static void flags(Flags flags) {
-        ASMV("msr cpsr_c, %0" : : "r"(flags) :);
+        ASM("msr cpsr_c, %0" : : "r"(flags) :);
     }
 
     static void sp(Reg32 sp) {
-        ASMV("mov sp, %0" : : "r"(sp) : "sp");
+        ASM("mov sp, %0" : : "r"(sp) : "sp");
     }
 
     static Reg32 fr() {
         Reg32 return_value;
-        ASMV("mov %0, r0" : "=r" (return_value) : : "r0");
+        ASM("mov %0, r0" : "=r" (return_value) : : "r0");
         return return_value;
     }
 
     static void fr(Reg32 fr) {
-        ASMV("mov r0, %0" : : "r" (fr) : "r0");
+        ASM("mov r0, %0" : : "r" (fr) : "r0");
     }
 
     static Reg32 sp() {
         Reg32 return_value;
-        ASMV("mov %0, sp" : "=r" (return_value) : : );
+        ASM("mov %0, sp" : "=r" (return_value) : : );
         return return_value;
     }
 
     static Reg32 pdp() {
         //Translation table 0 base address
         Reg32 return_value;
-        ASMV("mrc p15,0,%0,c2,c0,0" : "=r" (return_value) : : );
+        ASM("mrc p15,0,%0,c2,c0,0" : "=r" (return_value) : : );
         return return_value;
     }
 
     static void pdp(Reg32 value) {
         //Translation table 0 base address
-        ASMV("mcr p15,0,%0,c2,c0,0" : : "r"(value) : );
+        ASM("mcr p15,0,%0,c2,c0,0" : : "r"(value) : );
     }
 
     // PC is read with a +8 offset
     static Log_Addr ip()
     {
         register Reg32 result;
-        ASMV("mov %0, pc" : "=r"(result) : :);
+        ASM("mov %0, pc" : "=r"(result) : :);
         return result;
     }
 
@@ -187,7 +187,7 @@ public:
         register unsigned int value = 1;
         static volatile bool old=lock;
 
-        ASMV("1: ldrexb %0, [%1]      \n"
+        ASM("1: ldrexb %0, [%1]      \n"
              "   strexb r4, %2, [%1]  \n"
              "   cmp r4, #0          \n"
              "   bne 1b              \n"
@@ -202,7 +202,7 @@ public:
     static T finc(volatile T & value) {
         register int result;
         volatile register T old = value;
-        ASMV("1: ldrex %0, [%1]     \n"
+        ASM("1: ldrex %0, [%1]     \n"
              "   add %0, %0, #1     \n"
              "   strex r1, %0, [%1] \n"
              "   cmp r1, #0         \n"
@@ -219,7 +219,7 @@ public:
         register int result;
         volatile register T old = value;
 
-        ASMV("1: ldrex %0, [%1]     \n"
+        ASM("1: ldrex %0, [%1]     \n"
              "   sub %0, %0, #1     \n"
              "   strex r1, %0, [%1] \n"
              "   cmp r1, #0         \n"
@@ -235,7 +235,7 @@ public:
         unsigned int addr=0xfffffff0, init;
         //Write the first instruction to be
         //executed by CPU1 at the position 0xfffffff0
-        ASMV("ldr %0, =boot_return \n"
+        ASM("ldr %0, =boot_return \n"
             "str %0, [%1] \n"
             "dsb \n"
             "SEV \n"
