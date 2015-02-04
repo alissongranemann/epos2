@@ -1,11 +1,11 @@
 // EPOS List Utility Declarations
 
 #ifndef __list_h
-#define        __list_h
+#define __list_h
 
 #include <system/config.h>
 
-__BEGIN_SYS
+__BEGIN_UTIL
 
 // List Element Rank (for ordered lists)
 class List_Element_Rank
@@ -26,7 +26,7 @@ namespace List_Elements
     typedef List_Element_Rank Rank;
 
     // Vector Element
-    template <typename T>
+    template<typename T>
     class Pointer
     {
     public:
@@ -43,7 +43,7 @@ namespace List_Elements
     };
 
     // Hash Table Element
-    template <typename T, typename R = Rank>
+    template<typename T, typename R = Rank>
     class Ranked
     {
     public:
@@ -68,7 +68,7 @@ namespace List_Elements
     };
 
     // Simple List Element
-    template <typename T>
+    template<typename T>
     class Singly_Linked
     {
     public:
@@ -90,7 +90,7 @@ namespace List_Elements
 
     // Simple Ordered List Element
     // Hash Table's Synonym List Element
-    template <typename T, typename R = Rank>
+    template<typename T, typename R = Rank>
     class Singly_Linked_Ordered
     {
     public:
@@ -99,8 +99,7 @@ namespace List_Elements
         typedef Singly_Linked_Ordered Element;
 
     public:
-        Singly_Linked_Ordered(const T * o, const R & r = 0)
-        : _object(o), _rank(r), _next(0) {}
+        Singly_Linked_Ordered(const T * o, const R & r = 0): _object(o), _rank(r), _next(0) {}
     
         T * object() const { return const_cast<T *>(_object); }
 
@@ -120,7 +119,7 @@ namespace List_Elements
     };
 
     // Simple Grouping List Element
-    template <typename T>
+    template<typename T>
     class Singly_Linked_Grouping
     {
     public:
@@ -128,8 +127,7 @@ namespace List_Elements
         typedef Singly_Linked_Grouping Element;
 
     public:
-        Singly_Linked_Grouping(const T * o, int s)
-        : _object(o), _size(s), _next(0) {}
+        Singly_Linked_Grouping(const T * o, int s): _object(o), _size(s), _next(0) {}
 
         T * object() const { return const_cast<T *>(_object); }
 
@@ -148,7 +146,7 @@ namespace List_Elements
     };
 
     // List Element
-    template <typename T>
+    template<typename T>
     class Doubly_Linked
     {
     public:
@@ -172,7 +170,7 @@ namespace List_Elements
     };
 
     // Ordered List Element
-    template <typename T, typename R = Rank>
+    template<typename T, typename R = Rank>
     class Doubly_Linked_Ordered
     {
     public:
@@ -181,8 +179,7 @@ namespace List_Elements
         typedef Doubly_Linked_Ordered Element;
 
     public:
-        Doubly_Linked_Ordered(const T * o,  const R & r = 0)
-        : _object(o), _rank(r), _prev(0), _next(0) {}
+        Doubly_Linked_Ordered(const T * o,  const R & r = 0): _object(o), _rank(r), _prev(0), _next(0) {}
     
         T * object() const { return const_cast<T *>(_object); }
 
@@ -204,7 +201,7 @@ namespace List_Elements
     };
     
     // Scheduling List Element
-    template <typename T, typename R = Rank>
+    template<typename T, typename R = Rank>
     class Doubly_Linked_Scheduling
     {
     public:
@@ -213,8 +210,7 @@ namespace List_Elements
         typedef Doubly_Linked_Scheduling Element;
 
     public:
-        Doubly_Linked_Scheduling(const T * o,  const R & r = 0)
-        : _object(o), _rank(r), _prev(0), _next(0) {}
+        Doubly_Linked_Scheduling(const T * o,  const R & r = 0): _object(o), _rank(r), _prev(0), _next(0) {}
     
         T * object() const { return const_cast<T *>(_object); }
 
@@ -237,7 +233,7 @@ namespace List_Elements
 
 
     // Grouping List Element
-    template <typename T>
+    template<typename T>
     class Doubly_Linked_Grouping
     {
     public:
@@ -245,8 +241,7 @@ namespace List_Elements
         typedef Doubly_Linked_Grouping Element;
 
     public:
-        Doubly_Linked_Grouping(const T * o, int s)
-        : _object(o), _size(s), _prev(0), _next(0) {}
+        Doubly_Linked_Grouping(const T * o, int s): _object(o), _size(s), _prev(0), _next(0) {}
 
         T * object() const { return const_cast<T *>(_object); }
 
@@ -291,25 +286,17 @@ namespace List_Iterators
         Element & operator*() const { return *_current; }
         Element * operator->() const { return _current; }
 
-        Iterator & operator++() {
-            _current = _current->next(); return *this;
-        }
-        Iterator operator++(int) {
-            Iterator tmp = *this; ++*this; return tmp;
-        }
+        Iterator & operator++() { _current = _current->next(); return *this; }
+        Iterator operator++(int) { Iterator tmp = *this; ++*this; return tmp; }
 
-        bool operator==(const Iterator & i) const {
-            return _current == i._current;
-        }
-        bool operator!=(const Iterator & i) const {
-            return _current != i._current;
-        }
+        bool operator==(const Iterator & i) const { return _current == i._current; }
+        bool operator!=(const Iterator & i) const { return _current != i._current; }
 
-    private:
+    protected:
         Element * _current;
     };
 
-    // Bidireacional Iterator (for doubly linked lists)
+    // Bidirectional Iterator (for doubly linked lists)
     template<typename El>
     class Bidirecional
     {
@@ -328,26 +315,14 @@ namespace List_Iterators
         Element & operator*() const { return *_current; }
         Element * operator->() const { return _current; }
 
-        Iterator & operator++() {
-            _current = _current->next(); return *this;
-        }
-        Iterator operator++(int) {
-            Iterator tmp = *this; ++*this; return tmp;
-        }
+        Iterator & operator++() { _current = _current->next(); return *this; }
+        Iterator operator++(int) { Iterator tmp = *this; ++*this; return tmp; }
 
-        Iterator & operator--() {
-            _current = _current->prev(); return *this;
-        }
-        Iterator operator--(int) {
-            Iterator tmp = *this; --*this; return tmp;
-        }
+        Iterator & operator--() { _current = _current->prev(); return *this; }
+        Iterator operator--(int) { Iterator tmp = *this; --*this; return tmp; }
         
-        bool operator==(const Iterator & i) const {
-            return _current == i._current;
-        }
-        bool operator!=(const Iterator & i) const {
-            return _current != i._current;
-        }
+        bool operator==(const Iterator & i) const { return _current == i._current; }
+        bool operator!=(const Iterator & i) const { return _current != i._current; }
 
     private:
         Element * _current;
@@ -355,8 +330,7 @@ namespace List_Iterators
 }
 
 // Singly-Linked List
-template <typename T, 
-          typename El = List_Elements::Singly_Linked<T> >
+template<typename T, typename El = List_Elements::Singly_Linked<T> >
 class Simple_List
 {
 public:
@@ -374,7 +348,7 @@ public:
     Element * tail() { return _tail; }
 
     Iterator begin() { return Iterator(_head); }
-    Iterator end() { return Iterator(_tail ? _tail->next() : 0); }
+    Iterator end() { return Iterator(0); }
 
     void insert(Element * e) { insert_tail(e); }
 
@@ -481,7 +455,7 @@ private:
 
 
 // Singly-Linked, Ordered List
-template <typename T, 
+template<typename T, 
           typename R = List_Element_Rank, 
           typename El = List_Elements::Singly_Linked_Ordered<T, R>,
           bool relative = false>
@@ -546,13 +520,13 @@ public:
         return 0;
     }
     
-    Element * search_rank(int rank) {
+    Element * search_rank(const Rank_Type & rank) {
         Element * e = head();
         for(; e && (e->rank() != rank); e = e->next());
         return e;
     }
 
-    Element * remove_rank(int rank) {
+    Element * remove_rank(const Rank_Type & rank) {
         Element * e = search_rank(rank);
         if(e)
             return remove(e);
@@ -562,14 +536,14 @@ public:
 
 
 // Singly-Linked, Relative Ordered List
-template <typename T, 
+template<typename T, 
           typename R = List_Element_Rank,
           typename El = List_Elements::Singly_Linked_Ordered<T, R> >
 class Simple_Relative_List: public Simple_Ordered_List<T, R, El, true> {};
 
 
 // Singly-Linked, Grouping List
-template <typename T,
+template<typename T,
           typename El = List_Elements::Singly_Linked_Grouping<T> >
 class Simple_Grouping_List: public Simple_List<T, El>
 {
@@ -639,7 +613,7 @@ private:
 
 
 // Doubly-Linked List
-template <typename T,
+template<typename T,
           typename El = List_Elements::Doubly_Linked<T> >
 class List
 {
@@ -658,7 +632,7 @@ public:
     Element * tail() { return _tail; }
     
     Iterator begin() { return Iterator(_head); }
-    Iterator end() { return Iterator(_tail->next()); }
+    Iterator end() { return Iterator(0); }
 
     void insert(Element * e) { insert_tail(e); }
 
@@ -885,7 +859,7 @@ private:
 
 
 // Doubly-Linked, Ordered List
-template <typename T,
+template<typename T,
           typename R = List_Element_Rank,
           typename El = List_Elements::Doubly_Linked_Ordered<T, R>,
           bool relative = false>
@@ -974,13 +948,13 @@ public:
             return 0;
     }
     
-    Element * search_rank(int rank) {
+    Element * search_rank(const Rank_Type & rank) {
         Element * e = head();
         for(; e && (e->rank() != rank); e = e->next());
         return e;
     }
 
-    Element * remove_rank(int rank) {
+    Element * remove_rank(const Rank_Type & rank) {
         db<Lists>(TRC) << "Ordered_List::remove_rank(r=" << rank << ")" << endl;
 
         Element * e = search_rank(rank);
@@ -992,7 +966,7 @@ public:
 
 
 // Doubly-Linked, Relative Ordered List
-template <typename T,
+template<typename T,
           typename R = List_Element_Rank,
           typename El = List_Elements::Doubly_Linked_Ordered<T, R> >
 class Relative_List: public Ordered_List<T, R, El, true> {};
@@ -1003,7 +977,7 @@ class Relative_List: public Ordered_List<T, R, El, true> {};
 // with those available at scheduler.h .
 // In this implementation, the chosen element is kept outside the list
 // referenced by the _chosen attribute.
-template <typename T,
+template<typename T,
           typename R = typename T::Criterion,
           typename El = List_Elements::Doubly_Linked_Scheduling<T, R> >
 class Scheduling_List: private Ordered_List<T, R, El>
@@ -1105,7 +1079,7 @@ private:
 // use the Multihead list must export the HEADS constant to indicate the
 // number of heads in the list and the current_head() class method to designate
 // the head to which the current operation applies.
-template <typename T,
+template<typename T,
           typename R = typename T::Criterion,
           typename El = List_Elements::Doubly_Linked_Scheduling<T, R>,
           unsigned int H = R::HEADS>
@@ -1216,7 +1190,7 @@ private:
 // sublists in the list, the current_queue() class method to designate the
 // queue to which the current operation applies, and the queue() method to
 // return the queue in which the object currently resides.
-template <typename T,
+template<typename T,
           typename R = typename T::Criterion,
           typename El = List_Elements::Doubly_Linked_Scheduling<T, R>,
           typename L = Scheduling_List<T, R, El>,
@@ -1246,7 +1220,7 @@ public:
     Element * tail() { return _list[R::current_queue()].tail(); }
 
     Iterator begin() { return Iterator(_list[R::current_queue()].head()); }
-    Iterator end() { return Iterator(_list[R::current_queue()].tail() ? _list[R::current_queue()].tail()->next() : 0); }
+    Iterator end() { return Iterator(0); }
 
     Element * volatile & chosen() {
         return _list[R::current_queue()].chosen();
@@ -1284,7 +1258,7 @@ private:
 // queue to which the current operation applies, the current_head() class
 // method to designate the head to which the current operation applies, and
 // the queue() method to return the queue in which the object currently resides.
-template <typename T,
+template<typename T,
           typename R = typename T::Criterion,
           typename El = List_Elements::Doubly_Linked_Scheduling<T, R>,
           unsigned int Q = R::QUEUES,
@@ -1292,7 +1266,7 @@ template <typename T,
 class Multihead_Scheduling_Multilist: public Scheduling_Multilist<T, R, El, Multihead_Scheduling_List<T, R, El, H>, Q> {};
 
 // Doubly-Linked, Grouping List
-template <typename T, 
+template<typename T, 
           typename El = List_Elements::Doubly_Linked_Grouping<T> >
 class Grouping_List: public List<T, El>
 {
@@ -1316,20 +1290,14 @@ public:
     using Base::insert_tail;
     using Base::remove;
     using Base::search;
+    using Base::print_head;
+    using Base::print_tail;
 
     unsigned int grouped_size() const { return _grouped_size; }
     
     Element * search_size(unsigned int s) {
         Element * e = head();
-		/* It would be possible to suppress the if-clause and leave only the second "for"
-		 * (which is the generic case), however, this if-clause is resolved in compile time,
-		 * making this code faster by not having to make an additional multiplication and comparison
-		 * each time.*/
-		if(sizeof(Object_Type) >= sizeof(Element)) //When the object type is a 4k page, for example.
-        	for(; e && e->size() < s; e = e->next());
-		else
-        	for(; e && ((e->size() < s) ||
-						(e->size()*sizeof(Object_Type) < sizeof(Element)) ); e = e->next());
+        for(; e && (e->size() < sizeof(Element) + s) && (e->size() != s); e = e->next());
         return e;
     }
     
@@ -1362,6 +1330,8 @@ public:
     
     Element * search_decrementing(unsigned int s) {
         db<Lists>(TRC) << "Grouping_List::search_decrementing(s=" << s << ")" << endl;
+        print_head();
+        print_tail();
 
         Element * e = search_size(s);
         if(e) {
@@ -1378,6 +1348,6 @@ private:
     unsigned int _grouped_size;
 };
 
-__END_SYS
+__END_UTIL
  
 #endif

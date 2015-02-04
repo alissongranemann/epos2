@@ -7,7 +7,7 @@
 
 extern "C" { void _print(const char * s); }
 
-__BEGIN_SYS
+__BEGIN_UTIL
 
 class OStream
 {
@@ -191,8 +191,11 @@ extern OStream::Hex hex;
 extern OStream::Dec dec;
 extern OStream::Oct oct;
 extern OStream::Bin bin;
-extern OStream kout, kerr;
 
+__END_UTIL
+
+__BEGIN_SYS
+extern OStream kout, kerr;
 __END_SYS
 
 #endif

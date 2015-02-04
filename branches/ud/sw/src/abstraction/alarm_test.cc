@@ -14,13 +14,13 @@ OStream cout;
 
 int main()
 {
-    cout << "Alarm test" < endl;
+    cout << "Alarm test" << endl;
 
     cout << "I'm the first thread of the first task created in the system." << endl;
     cout << "I'll now create two alarms and put myself in a delay ..." << endl;
 
     Function_Handler handler_a(&func_a);
-    Alarm alarm_a(1000000, &handler_a, iterations);
+    Alarm alarm_a(2000000, &handler_a, iterations);
  
     Function_Handler handler_b(&func_b);
     Alarm alarm_b(1000000, &handler_b, iterations);

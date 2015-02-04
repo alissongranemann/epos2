@@ -4,40 +4,74 @@
 #define __config_h
 
 //============================================================================
-// DEFINITIONS
-//============================================================================
-#define __SYS_NS            EPOS
-#define __BEGIN_SYS         namespace __SYS_NS {
-#define __END_SYS           }
-#define __USING_SYS         using namespace __SYS_NS;
-#define __SYS(X)            ::__SYS_NS::X
-
-#define ASM                 __asm__
-#define ASMV                __asm__ __volatile__
-
-#define __HEADER_ARCH(X)	    <arch/ARCH/X.h>
-#define __HEADER_MACH(X)	    <mach/MACH/X.h>
-#define __HEADER_APPLICATION_T(X)   <../app/X##_traits.h>
-#define __HEADER_APPLICATION(X)     __HEADER_APPLICATION_T(X)
-
-//============================================================================
 // ARCHITECTURE, MACHINE, AND APPLICATION SELECTION
-// This section is generated automatically from makedefs
+// This section is generated automatically from makedefs by $EPOS/etc/makefile
 //============================================================================
+#define MODE xxx
 #define ARCH xxx
-#define __ARCH_TRAITS_H	        __HEADER_ARCH(traits)
-
 #define MACH xxx
-#define __MACH_TRAITS_H	        __HEADER_MACH(traits)
+#define MMOD xxx
+#define APPL xxx
+#define __mode_xxx__
+#define __arch_xxx__
+#define __mach_xxx__
+#define __mmod_xxx__
 
-#define APPLICATION xxx
-#define __APPLICATION_TRAITS_H  __HEADER_APPLICATION(APPLICATION)
+#if defined (__arch_avr__) || defined (__mmod_lm3s811__)
+#define __no_networking__
+#endif
+
+//============================================================================
+// NAMESPACES AND DEFINITIONS
+//============================================================================
+namespace EPOS {
+    namespace S {
+        namespace U {}
+        using namespace U;
+    }
+}
+
+#define __BEGIN_API             namespace EPOS {
+#define __END_API               }
+#define _API                    ::EPOS
+
+#define __BEGIN_UTIL            namespace EPOS { namespace S { namespace U {
+#define __END_UTIL              }}}
+#define __USING_UTIL            using namespace S::U;
+#define _UTIL                   ::EPOS::S::U
+
+#define __BEGIN_SYS             namespace EPOS { namespace S {
+#define __END_SYS               }}
+#define __USING_SYS             using namespace EPOS::S;
+#define _SYS                    ::EPOS::S
+
+#ifndef __mode_kernel__
+namespace EPOS {
+    using namespace S;
+    using namespace S::U;
+}
+#endif
+
+#define __HEADER_ARCH(X)        <architecture/ARCH/X.h>
+#define __HEADER_MACH(X)        <machine/MACH/X.h>
+#define __MACH_TRAITS_T(X)      <machine/MACH/X##_traits.h>
+#define __MACH_TRAITS(X)        __MACH_TRAITS_T(X)
+#define __MACH_CONFIG_T(X)      <machine/MACH/X##_config.h>
+#define __MACH_CONFIG(X)        __MACH_CONFIG_T(X)
+#define __APPL_TRAITS_T(X)      <../app/X##_traits.h>
+#define __APPL_TRAITS(X)        __APPL_TRAITS_T(X)
+
+#define __ARCH_TRAITS_H         __HEADER_ARCH(traits)
+#define __MACH_TRAITS_H         __MACH_TRAITS(MMOD)
+#define __MACH_CONFIG_H         __MACH_CONFIG(MMOD)
+#define __APPL_TRAITS_H         __APPL_TRAITS(APPL)
+
+#define ASM                     __asm__ __volatile__
 
 //============================================================================
 // ASSERT (for pre and post conditions)
 //============================================================================
-//extern void __assert_fail (const char * __assertion, const char * __file, unsigned int __line, const char * __function);
-//#define assert(expr)    ((expr) ? static_cast<void>(0) : __assert_fail (#expr, __FILE__, __LINE__, __PRETTY_FUNCTION__))
+//#define assert(expr)    ((expr) ? static_cast<void>(0) : Assert::fail (#expr, __FILE__, __LINE__, __PRETTY_FUNCTION__))
 #define assert(expr)    (static_cast<void>(0))
 
 //============================================================================
@@ -45,7 +79,7 @@
 //============================================================================
 #include <system/types.h>
 #include <system/meta.h>
-#include __APPLICATION_TRAITS_H
+#include __APPL_TRAITS_H
 #include <system/info.h>
 
 //============================================================================

@@ -40,10 +40,10 @@
 #include "list.h"
 #include "spin.h"
 
-__BEGIN_SYS
+__BEGIN_UTIL
 
 // Wrapper for non-atomic queues  
-template <typename T, bool atomic>
+template<typename T, bool atomic>
 class Queue_Wrapper: private T
 {
 public:
@@ -74,7 +74,7 @@ public:
 };
 
 // Wrapper for atomic queues  
-template <typename T>
+template<typename T>
 class Queue_Wrapper<T, true>: private T
 {
 public:
@@ -188,24 +188,24 @@ private:
 
 
 // Queue
-template <typename T,
+template<typename T,
           typename El = List_Elements::Doubly_Linked<T> >
 class Queue: public Queue_Wrapper<List<T, El>, false> {};
 
 
 // Ordered Queue
-template <typename T, 
+template<typename T, 
           typename R = List_Element_Rank,
           typename El = List_Elements::Doubly_Linked_Ordered<T, R> >
 class Ordered_Queue: public Queue_Wrapper<Ordered_List<T, R, El>, false> {};
 
 
 // Relatively-Ordered Queue
-template <typename T, 
+template<typename T, 
           typename R = List_Element_Rank,
           typename El = List_Elements::Doubly_Linked_Ordered<T, R> >
 class Relative_Queue: public Queue_Wrapper<Relative_List<T, R, El>, false> {};
 
-__END_SYS
+__END_UTIL
 
 #endif

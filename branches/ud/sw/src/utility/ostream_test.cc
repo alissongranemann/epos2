@@ -8,7 +8,7 @@ int main()
 {
     OStream cout;
 
-    cout << "OStream test\n";
+    cout << "OStream test" << endl;
     cout << "This is a char:\t\t\t" << 'A' << endl;
     cout << "This is a negative char:\t" << '\377' << endl;
     cout << "This is an unsigned char:\t" << 'A' << endl;

@@ -5,7 +5,7 @@
 
 #include <cpu.h>
 
-__BEGIN_SYS
+__BEGIN_UTIL
 
 // Forwarder to the running thread id
 class This_Thread
@@ -50,6 +50,6 @@ private:
     volatile int _owner;
 };
 
-__END_SYS
+__END_UTIL
 
 #endif

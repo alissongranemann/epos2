@@ -3,7 +3,7 @@
 #include <utility/srec.h>
 #include <utility/string.h>
 
-__BEGIN_SYS
+__BEGIN_UTIL
 
 void * SREC::entry() 
 {
@@ -168,4 +168,4 @@ signed char SREC::ctab[] = {
 int SREC::ltab[] = {4,4,6,8,0,4,0,8,6,4};
 
 
-__END_SYS
+__END_UTIL

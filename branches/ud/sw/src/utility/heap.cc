@@ -4,14 +4,14 @@
 
 extern "C" { void _panic(); }
 
-__BEGIN_SYS
+__BEGIN_UTIL
 
 // Methods
 void Simple_Heap::out_of_memory()
 {
-    db<Heap>(ERR) << "Heap::alloc(this=" << this << "): out of memory!" << endl;
+    db<Heaps>(ERR) << "Heap::alloc(this=" << this << "): out of memory!" << endl;
 
     _panic();
 }
 
-__END_SYS
+__END_UTIL

@@ -3,8 +3,7 @@
 #ifndef __string_h
 #define __string_h
 
-// TODO: This is a workaround, should work without it
-typedef __SIZE_TYPE__ size_t;
+#include <system/config.h>
 
 extern "C" {
     int memcmp(const void * m1, const void * m2, size_t n);
@@ -19,10 +18,10 @@ extern "C" {
     char * strchr(const char * s, int c);
     char * strrchr(const char * s, int c);
     size_t strlen(const char * s);
-    long atol(const char *s);
-    char *itoa(int v, char *s);
+    long atol(const char * s);
+    char * itoa(int v, char * s);
     int utoa(unsigned long v,char * d);
-    int atoi(const char *s);
+    int atoi(const char * s);
 }
 
 #endif

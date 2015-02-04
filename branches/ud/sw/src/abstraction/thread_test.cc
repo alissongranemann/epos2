@@ -19,12 +19,12 @@ OStream cout;
 
 int main()
 {
-    cout << "Thread test\n";
+    cout << "Thread test" << endl;
 
     m = Thread::self();
 
-    cout << "I'm the first thread of the first task created in the system.\n";
-    cout << "I'll now create two threads and then wait for them to finish ...\n";
+    cout << "I'm the first thread of the first task created in the system." << endl;
+    cout << "I'll now create two threads and then wait for them to finish ..." << endl;
 
     a = new Thread(&func_a);
     b = new Thread(&func_b);
@@ -33,7 +33,7 @@ int main()
     int status_b = b->join();
 
     cout << "Thread A exited with status " << status_a 
-         << " and thread B exited with status " << status_b << "\n";
+         << " and thread B exited with status " << status_b << "" << endl;
 
     delete a;
     delete b;
@@ -49,7 +49,7 @@ int func_a(void)
     for(int i = iterations; i > 0; i--) {
         for(int i = 0; i < 79; i++)
             cout << "a";
-        cout << "\n";
+        cout << "" << endl;
         Alarm::delay(500000);
     }
 
@@ -61,7 +61,7 @@ int func_b(void)
     for(int i = iterations; i > 0; i--) {
         for(int i = 0; i < 79; i++)
             cout << "b";
-        cout << "\n";
+        cout << "" << endl;
         Alarm::delay(500000);
     }
 

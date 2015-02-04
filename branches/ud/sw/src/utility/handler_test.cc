@@ -27,12 +27,12 @@ Thread * thread_c;
 
 int main()
 {
-    cout << "Event Handler Utility Test\n";
+    cout << "Event Handler Utility Test" << endl;
 
-    cout << "\nThis test consists in creating three event handlers as follows:\n";
-    cout << "  Handler 1 triggers a \"function\" that prints an \"a\" every " << period_a << " ms;\n";
-    cout << "  Handler 2 triggers a \"thread\" that prints a \"b\" every " << period_b << " ms;\n";
-    cout << "  Handler 3 triggers a \"v\" on a \"semaphore\" that controls another thread that prints a \"c\" every " << period_c << "ms.\n";
+    cout << "\nThis test consists in creating three event handlers as follows:" << endl;
+    cout << "  Handler 1 triggers a \"function\" that prints an \"a\" every " << period_a << " ms;" << endl;
+    cout << "  Handler 2 triggers a \"thread\" that prints a \"b\" every " << period_b << " ms;" << endl;
+    cout << "  Handler 3 triggers a \"v\" on a \"semaphore\" that controls another thread that prints a \"c\" every " << period_c << "ms." << endl;
 
     thread_b = new Thread(&func_b);
     thread_c = new Thread(&func_c);
@@ -43,7 +43,7 @@ int main()
     Thread_Handler handler_b(thread_b);
     Semaphore_Handler handler_c(&sem_c);
     
-    cout << "Now the alarms will be created, along with a chronometer to keep track of the total execution time. I'll then wait for the threads to finish...\n\n";
+    cout << "Now the alarms will be created, along with a chronometer to keep track of the total execution time. I'll then wait for the threads to finish...\n" << endl;
 
     Chronometer chrono;
     chrono.start();
@@ -58,7 +58,7 @@ int main()
     chrono.stop();
 
     cout << "\n\nThread B exited with status " << status_b 
-  	 << " and thread C exited with status " << status_c << "\n";
+  	 << " and thread C exited with status " << status_c << endl;
 
     cout << "\nThe estimated time to run the test was " << max(period_a, period_b, period_c) * iterations << " ms. The measured time was " << chrono.read() / 1000 <<" ms!" << endl;
 

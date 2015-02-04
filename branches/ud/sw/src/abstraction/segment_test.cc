@@ -13,19 +13,19 @@ int main()
 {
     OStream cout;
 
-    cout << "Segment test\n";
+    cout << "Segment test" << endl;
 
     cout << "My address space's page directory is located at "
-         << reinterpret_cast<void *>(CPU::pdp()) << "\n";
-    Address_Space self(SELF);
+         << reinterpret_cast<void *>(CPU::pdp()) << "" << endl;
+    Address_Space self(MMU::current());
 
-    cout << "Creating two extra data segments:\n";
+    cout << "Creating two extra data segments:" << endl;
     Segment * es1 = new Segment(ES1_SIZE);
     Segment * es2 = new Segment(ES2_SIZE);
     cout << "  extra segment 1 => " << ES1_SIZE << " bytes, done!" << endl;
     cout << "  extra segment 2 => " << ES2_SIZE << " bytes, done!" << endl;
 
-    cout << "Attaching segments:\n";
+    cout << "Attaching segments:" << endl;
     CPU::Log_Addr * extra1 = self.attach(*es1);
     CPU::Log_Addr * extra2 = self.attach(*es2);
     cout << "  extra segment 1 => " << extra1 << " done!" << endl;

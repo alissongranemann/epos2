@@ -5,28 +5,6 @@
 #include <machine.h>
 #include <display.h>
 #include <system.h>
-#include <thread.h>
-
-// LIBC Heritage
-extern "C" {
-    using namespace EPOS;
-
-    void _panic() {
-        Machine::panic();
-    }
-
-    void _exit(int s) {
-        Thread::exit(s); for(;;);
-    }
-
-    void _print(const char * s) {
-        Display::puts(s);
-    }
-
-    void __cxa_pure_virtual() {
-        db<void>(ERR) << "Pure Virtual method called!" << endl;
-    }
-}
 
 __BEGIN_SYS
 
@@ -37,7 +15,7 @@ class First_Object
 {
 public:
     First_Object() {
-	Display::remap();
+	Display::init();
 
 	if(Traits<System>::multicore) {
 	    System_Info<Machine> * si = reinterpret_cast<System_Info<Machine> *>(Memory_Map<Machine>::SYS_INFO);

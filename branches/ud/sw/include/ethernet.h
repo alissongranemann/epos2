@@ -5,68 +5,142 @@
 #ifndef __ethernet_h
 #define __ethernet_h
 
-#include <utility/string.h>
+#include <cpu.h>
+#include <utility/list.h>
+#include <utility/observer.h>
 
 __BEGIN_SYS
 
 class Ethernet: private NIC_Common
 {
 protected:
-    Ethernet() {}
-
-public:
     static const unsigned int MTU = 1500;
     static const unsigned int HEADER_SIZE = 14;
 
+
+public:
     typedef NIC_Common::Address<6> Address;
-    typedef NIC_Common::Observer Observer;
-    typedef NIC_Common::Observed Observed;
-    typedef char PDU[MTU];
-    typedef NIC_Common::CRC32 CRC;
 
     typedef unsigned short Protocol;
-    enum {
+    enum
+    {
+        IP     = 0x0800,
         ARP    = 0x0806,
         RARP   = 0x8035,
         ELP    = 0x8888,
-        IP     = 0x0800,
-        ROUTER = 0x0801
+        PTP    = 0x88F7
     };
 
-    // The Ethernet Frame (RFC 894)
-    class Frame {
-    public:
-        Frame(const Address & src, const Address & dst, const Protocol & prot)
-        : _dst(dst), _src(src), _prot(prot) { }
+    typedef unsigned char Data[MTU];
+    typedef NIC_Common::CRC32 CRC;
 
-        Frame(const Address & src, const Address & dst, const Protocol & prot, const void * data, unsigned int size)
-        : _dst(dst), _src(src), _prot(prot)
-        {
-            memcpy(_data, data, size);
-        }
-        
-        friend OStream & operator << (OStream & db, const Frame & f) {
-            db << "{" << Address(f._dst)
-               << "," << Address(f._src)
-               << "," << f._prot
-               << "," << f._data << "}";
+
+    // The Ethernet Header (RFC 894)
+    class Header
+    {
+    public:
+        Header() {}
+        Header(const Address & src, const Address & dst, const Protocol & prot):
+            _dst(dst), _src(src), _prot(htons(prot)) {}
+
+        friend Debug & operator<<(Debug & db, const Header & h) {
+            db << "{" << h._dst << "," << h._src << "," << h.prot() << "}";
             return db;
         }
-        
-    public:
+
+        const Address & src() const { return _src; }
+        const Address & dst() const { return _dst; }
+
+        Protocol prot() const { return ntohs(_prot); }
+
+    protected:
         Address _dst;
         Address _src;
         Protocol _prot;
-        PDU _data;
+    } __attribute__((packed, may_alias));
+
+
+    // The Ethernet Frame (RFC 894)
+    class Frame: public Header
+    {
+    public:
+        Frame() {}
+        Frame(const Address & src, const Address & dst, const Protocol & prot) : Header(src, dst, prot) {}
+        Frame(const Address & src, const Address & dst, const Protocol & prot, const void * data, unsigned int size): Header(src, dst, prot) {
+            memcpy(_data, data, size);
+        }
+        
+        Header * header() { return this; }
+
+        template<typename T>
+        T * data() { return reinterpret_cast<T *>(&_data); }
+
+        friend Debug & operator<<(Debug & db, const Frame & f) {
+            db << "{" << f.dst() << "," << f.src() << "," << f.prot() << "," << f._data << "}";
+            return db;
+        }
+        
+    protected:
+        Data _data;
         CRC _crc;
+    } __attribute__((packed));
+
+    typedef Frame PDU;
+
+
+    // Buffers used to hold frames across a zero-copy network stack
+    class Buffer: private Frame
+    {
+    public:
+        typedef Simple_List<Buffer> List;
+        typedef List::Element Element;
+
+    public:
+        Buffer(void * back): _lock(false), _nic(0), _back(back), _size(sizeof(Frame)), _link(this) {}
+        Buffer(NIC * nic, const Address & src, const Address & dst, const Protocol & prot, unsigned int size):
+            Frame(src, dst, prot), _lock(false), _nic(nic), _size(size), _link(this) {}
+
+        Frame * frame() { return this; }
+
+        bool lock() { return !CPU::tsl(_lock); }
+        void unlock() { _lock = 0; }
+
+        NIC * nic() const { return _nic; }
+        void nic(NIC * n) { _nic = n; }
+
+        template<typename T>
+        T * back() const { return reinterpret_cast<T *>(_back); }
+
+        unsigned int size() const { return _size; }
+        void size(unsigned int s) { _size = s; }
+
+        Element * link() { return &_link; }
+
+        friend Debug & operator<<(Debug & db, const Buffer & b) {
+            db << "{nc=" << b._nic << ",lk=" << b._lock << ",sz=" << b._size << ",bl=" << b._back << "}";
+            return db;
+        }
+
+    private:
+        volatile bool _lock;
+        NIC * _nic;
+        void * _back;
+        unsigned int _size;
+        Element _link;
     };
 
-    // Meaningful statistics for Ethernet
-    struct Statistics: public NIC_Common::Statistics {
-        Statistics() : rx_overruns(0), tx_overruns(0), frame_errors(0),
-        	       carrier_errors(0), collisions(0) {}
 
-        friend OStream & operator << (OStream & db, const Statistics & s) {
+    // Observers of a protocol get a also a pointer to the received buffer
+    typedef Data_Observer<Buffer, Protocol> Observer;
+    typedef Data_Observed<Buffer, Protocol> Observed;
+
+
+    // Meaningful statistics for Ethernet
+    struct Statistics: public NIC_Common::Statistics
+    {
+        Statistics(): rx_overruns(0), tx_overruns(0), frame_errors(0), carrier_errors(0), collisions(0) {}
+
+        friend Debug & operator<<(Debug & db, const Statistics & s) {
             db << "{rxp=" << s.rx_packets
                << ",rxb=" <<  s.rx_bytes
                << ",rxorun=" <<  s.rx_overruns
@@ -87,28 +161,14 @@ public:
         unsigned int collisions;
     };
 
-public:
-    void attach(Observer * obs, const Protocol & prot) {
-        _observed.attach(obs, prot);
-    }
-
-    void detach(Observer * obs, const Protocol & prot) {
-        _observed.detach(obs, prot);
-    }
-
-    void notify(const Protocol & prot) {
-        _observed.notify(prot);
-    }
-
+protected:
+    Ethernet() {}
 
 public:
-    static const Address BROADCAST;
-
-private:
-    static Observed _observed;
+    static const unsigned int mtu() { return MTU; }
+    static const Address broadcast() { return Address::BROADCAST; }
 };
 
 __END_SYS
 
 #endif
-

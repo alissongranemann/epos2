@@ -51,7 +51,7 @@ public:
 
         void adjust_year(int y) { _Y += y; };
 
-        friend OStream & operator << (OStream & db, const Date & d) {
+        friend Debug & operator<<(Debug & db, const Date & d) {
             db << "{" << d._Y << "/" << d._M << "/" << d._D << " " << d._h << ":" << d._m << ":" << d._s << "}";
             return db;
         }

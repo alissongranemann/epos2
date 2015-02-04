@@ -2,7 +2,11 @@
 
 include makedefs
 
+ifeq ($(findstring flash,$(MAKECMDGOALS)),flash)
+SUBDIRS	:= etc tools src app
+else
 SUBDIRS	:= etc tools src app img
+endif
 
 all: FORCE
 ifndef APPLICATION
@@ -36,13 +40,33 @@ endif
 debug1: FORCE
 		(cd img && $(MAKE) debug)
 
-TESTS := $(subst .cc,,$(shell find $(SRC) -name \*_test.cc -printf "%f\n"))
-TEST_SORUCES := $(shell find $(SRC) -name \*_test.cc -printf "%p\n")
+flash: FORCE
+ifndef APPLICATION
+		$(foreach app,$(APPLICATIONS),$(MAKE) APPLICATION=$(app) $(PRECLEAN) flash1;)
+else
+		$(MAKE) flash1
+endif
+
+flash1: all1
+		(cd img && $(MAKE) flash)
+
+TESTS := $(subst .cc,,$(shell find $(SRC)/abstraction -name \*_test.cc -printf "%f\n"))
+TEST_SORUCES := $(shell find $(SRC)/abstraction -name \*_test.cc -printf "%p\n")
 test: $(subst .cc,_traits.h,$(TEST_SORUCES))
 		$(INSTALL) $(TEST_SORUCES) $(APP)
 		$(INSTALL) $(subst .cc,_traits.h,$(TEST_SORUCES)) $(APP)
-		$(foreach tst,$(TESTS),$(MAKE) APPLICATION=$(tst) clean1 run1;)
+		$(foreach tst,$(TESTS),$(MAKETEST) APPLICATION=$(tst) prebuild_$(tst) clean1 all1 posbuild_$(tst) prerun_$(tst) run1 posbuild_$(tst);)
 		$(foreach tst,$(TESTS),$(CLEAN) $(APP)/$(tst)*;)
+
+.PHONY: prebuild_$(APPLICATION) posbuild_$(APPLICATION) prerun_$(APPLICATION)
+prebuild_$(APPLICATION):
+		@echo "Building $(APPLICATION) ..."
+posbuild_$(APPLICATION):
+		@echo "done!"
+prerun_$(APPLICATION):
+		@echo "Cooling down for 10s ..."
+		sleep 10
+		@echo "Running $(APPLICATION) ..."
 
 clean: FORCE
 ifndef APPLICATION
@@ -62,12 +86,14 @@ veryclean: clean
 		(cd tools && $(MAKECLEAN))
 		find $(LIB) -maxdepth 1 -type f -exec $(CLEAN) {} \;
 		find $(BIN) -maxdepth 1 -type f -exec $(CLEAN) {} \;
-		find $(APP) -maxdepth 1 -type f -perm +111 -exec $(CLEAN) {} \;
+		find $(APP) -maxdepth 1 -type f -perm -755 -exec $(CLEAN) {} \;
 		find $(IMG) -name "*.img" -exec $(CLEAN) {} \;
 		find $(IMG) -name "*.out" -exec $(CLEAN) {} \;
-		find $(IMG) -maxdepth 1 -type f -perm +111 -exec $(CLEAN) {} \;
-		find $(TOP) -name "*_test_traits.h" -type f -perm +111 -exec $(CLEAN) {} \;
-		find $(TOP) -name "*~" -exec $(CLEAN) {} \; 
+		find $(IMG) -name "*.pcap" -exec $(CLEAN) {} \;
+		find $(IMG) -name "*.net" -exec $(CLEAN) {} \;
+		find $(IMG) -name "*.hex" -exec $(CLEAN) {} \;
+		find $(IMG) -maxdepth 1 -type f -perm 755 -exec $(CLEAN) {} \;
+		find $(TOP) -name "*_test_traits.h" -type f -perm 755 -exec $(CLEAN) {} \;
 
 dist: veryclean
 		find $(TOP) -name ".*project" -exec $(CLEAN) {} \;

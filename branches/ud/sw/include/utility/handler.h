@@ -5,7 +5,7 @@
 
 #include <system/config.h>
 
-__BEGIN_SYS
+__BEGIN_UTIL
 
 class Handler
 {
@@ -48,6 +48,6 @@ private:
     T * _ptr;
 };
 
-__END_SYS
+__END_UTIL
 
 #endif

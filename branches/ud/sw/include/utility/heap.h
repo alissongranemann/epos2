@@ -7,7 +7,7 @@
 #include <utility/list.h>
 #include <utility/spin.h>
 
-__BEGIN_SYS
+__BEGIN_UTIL
 
 // Heap
 class Simple_Heap: private Grouping_List<char>
@@ -20,25 +20,24 @@ public:
     using Grouping_List<char>::size;
 
     Simple_Heap() {
-        db<Init, Simple_Heap>(TRC) << "Heap() => " << this << endl;
+        db<Init, Heaps>(TRC) << "Heap() => " << this << endl;
     }
 
     Simple_Heap(void * addr, unsigned int bytes) {
-        db<Init, Simple_Heap>(TRC) << "Heap(addr=" << addr << ",bytes=" << bytes << ") => " << this << endl;
+        db<Init, Heaps>(TRC) << "Heap(addr=" << addr << ",bytes=" << bytes << ") => " << this << endl;
 
         free(addr, bytes);
     }
 
     void * alloc(unsigned int bytes) {
-        db<Heap>(TRC) << "Heap::alloc(this=" << this << ",bytes=" << bytes;
+        db<Heaps>(TRC) << "Heap::alloc(this=" << this << ",bytes=" << bytes;
 
         if(!bytes)
             return 0;
 
         if(!Traits<CPU>::unaligned_memory_access)
-			bytes += sizeof(void*) - bytes % sizeof(void*);
-        //    while((bytes % sizeof(void *)))
-        //        ++bytes;
+            while((bytes % sizeof(void *)))
+                ++bytes;
 
         if(typed)
             bytes += sizeof(void *);  // add room for heap pointer
@@ -58,25 +57,19 @@ public:
             *addr++ = reinterpret_cast<int>(this);
         *addr++ = bytes;
 
-        db<Heap>(TRC) << ") => " << reinterpret_cast<void *>(addr) << endl;
+        db<Heaps>(TRC) << ") => " << reinterpret_cast<void *>(addr) << endl;
 
         return addr;
     }
 
     void free(void * ptr, unsigned int bytes) {
-        db<Heap>(TRC) << "Heap::free(this=" << this
-                      << ",ptr=" << ptr
-                      << ",bytes=" << bytes << ")" << endl;
+        db<Heaps>(TRC) << "Heap::free(this=" << this << ",ptr=" << ptr << ",bytes=" << bytes << ")" << endl;
 
         if(ptr && (bytes >= sizeof(Element))) {
             Element * e = new (ptr) Element(reinterpret_cast<char *>(ptr), bytes);
             Element * m1, * m2;
             insert_merging(e, &m1, &m2);
         }
-		else
-			db<Heap>(TRC) << "Heap: Unable to free memory from pointer="<<ptr
-						  << ", size should be equal or bigger than "
-						  << sizeof(Element) << endl;
     }
 
     static void typed_free(void * ptr) {
@@ -98,7 +91,7 @@ private:
 
 
 // Wrapper for non-atomic heap
-template <typename T, bool atomic>
+template<typename T, bool atomic>
 class Heap_Wrapper: public T
 {
 public:
@@ -175,6 +168,6 @@ public:
     Heap(void * addr, unsigned int bytes): Base(addr, bytes) {}
 };
 
-__END_SYS
+__END_UTIL
 
 #endif

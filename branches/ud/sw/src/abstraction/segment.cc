@@ -5,15 +5,7 @@
 __BEGIN_SYS
 
 // Methods
-
-Segment::Segment()
-{
-    db<Segment>(TRC) << "Segment() => " << this << endl;
-}
-
-
-Segment::Segment(unsigned int bytes, Flags flags)
-: Chunk(bytes, flags)
+Segment::Segment(unsigned int bytes, Flags flags): Chunk(bytes, flags)
 {
     db<Segment>(TRC) << "Segment(bytes=" << bytes
                      << ",flags=" << flags
@@ -22,8 +14,7 @@ Segment::Segment(unsigned int bytes, Flags flags)
 }
 
 
-Segment::Segment(Phy_Addr phy_addr, unsigned int bytes, Flags flags)
-: Chunk(phy_addr, bytes, flags | Flags::IO)
+Segment::Segment(Phy_Addr phy_addr, unsigned int bytes, Flags flags): Chunk(phy_addr, bytes, flags | Flags::IO)
 // The MMU::IO flag signalizes the MMU that the attached memory shall
 // not be released when the chunk is deleted
 {
@@ -41,17 +32,20 @@ Segment::~Segment()
 }
 
 
-unsigned int Segment::size() const {
+unsigned int Segment::size() const
+{
     return Chunk::size();
 }
 
 
-Segment::Phy_Addr Segment::phy_address() const {
+Segment::Phy_Addr Segment::phy_address() const
+{
     return Chunk::phy_address();
 }
 
 
-int Segment::resize(int amount) {
+int Segment::resize(int amount)
+{
     db<Segment>(TRC) << "Segment::resize(amount=" << amount << ")" << endl;
 
     return Chunk::resize(amount);

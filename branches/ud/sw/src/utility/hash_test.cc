@@ -16,7 +16,7 @@ OStream cout;
 
 int main()
 {
-    cout << "Hash Utility Test\n";
+    cout << "Hash Utility Test" << endl;
 
     test_few_synonyms_hash();
     test_many_synonyms_hash();
@@ -28,7 +28,7 @@ int main()
 
 void test_few_synonyms_hash()
 {
-    cout << "\nThis is a hash table of integeres with few synonyms:\n";
+    cout << "\nThis is a hash table of integeres with few synonyms:" << endl;
 
     Simple_Hash<int, N> h;
     int o[N * 2];
@@ -43,38 +43,38 @@ void test_few_synonyms_hash()
         if(i != N * 2 - 1)
             cout << ", ";
     }
-    cout << "\n";
+    cout << "" << endl;
 
-    cout << "The hash table has now " << h.size() << " elements:\n";
+    cout << "The hash table has now " << h.size() << " elements:" << endl;
     for(int i = 0; i < N * 2; i++) {
         cout << "[" << i << "]={o=" << *h.search_key(i)->object()
              << ",k=" << h.search_key(i)->key() << "}";
         if(i != N * 2 - 1)
             cout << ", ";
     }
-    cout << "\n";
+    cout << "" << endl;
 
     cout << "Removing the element whose value is " << o[N/2] << " => " 
-         << *h.remove(&o[N/2])->object() << "\n";
+         << *h.remove(&o[N/2])->object() << "" << endl;
     cout << "Removing the element whose key is " << 1 << " => " 
-         << *h.remove_key(1)->object() << "\n";
+         << *h.remove_key(1)->object() << "" << endl;
     cout << "Removing the element whose key is " << 11 << " => " 
-         << *h.remove_key(11)->object() << "\n";
+         << *h.remove_key(11)->object() << "" << endl;
     cout << "Removing the element whose value is " << o[N/4] << " => " 
-         << *h.remove(&o[N/4])->object() << "\n";
+         << *h.remove(&o[N/4])->object() << "" << endl;
     cout << "Removing the element whose key is " << N-1 << " => " 
-         << *h.remove_key(N-1)->object() << "\n";
+         << *h.remove_key(N-1)->object() << "" << endl;
     cout << "Trying to remove an element that is not on the hash => " 
-         << h.remove(&o[N/2]) << "\n";
+         << h.remove(&o[N/2]) << "" << endl;
 
-    cout << "The hash table has now " << h.size() << " elements:\n";
+    cout << "The hash table has now " << h.size() << " elements:" << endl;
     for(int i = 0; i < N * 2; i++) {
         cout << "[" << i << "]={o=" << *h.search_key(i)->object()
              << ",k=" << h.search_key(i)->key() << "}";
         if(i != N * 2 - 1)
             cout << ", ";
     }
-    cout << "\n";
+    cout << "" << endl;
 
     cout << "Removing all remaining elements => ";
     for(int i = 0; i < N * 2; i++) {
@@ -82,7 +82,7 @@ void test_few_synonyms_hash()
         if(i != N * 2 - 1)
             cout << ", ";
     }
-    cout << "\n";
+    cout << "" << endl;
 
     for(int i = 0; i < N * 2; i++)
         delete e[i];
@@ -90,7 +90,7 @@ void test_few_synonyms_hash()
 
 void test_many_synonyms_hash()
 {
-    cout << "\nThis is a hash table of integeres with many synonyms:\n";
+    cout << "\nThis is a hash table of integeres with many synonyms:" << endl;
 
     Hash<int, N> h;
     int o[N * N];
@@ -106,36 +106,36 @@ void test_many_synonyms_hash()
             cout << ", ";
     }
 
-    cout << "The hash table has now " << h.size() << " elements:\n";
+    cout << "The hash table has now " << h.size() << " elements:" << endl;
     for(int i = 0; i < N * N; i++) {
         cout << "[" << i << "]={o=" << *h.search_key(i)->object()
              << ",k=" << h.search_key(i)->key() << "}";
         if(i != N * N - 1)
             cout << ", ";
     }
-    cout << "\n";
+    cout << "" << endl;
 
     cout << "Removing the element whose value is " << o[N/2] << " => " 
-         << *h.remove(&o[N/2])->object() << "\n";
+         << *h.remove(&o[N/2])->object() << "" << endl;
     cout << "Removing the element whose key is " << 1 << " => " 
-         << *h.remove_key(1)->object() << "\n";
+         << *h.remove_key(1)->object() << "" << endl;
     cout << "Removing the element whose key is " << 11 << " => " 
-         << *h.remove_key(11)->object() << "\n";
+         << *h.remove_key(11)->object() << "" << endl;
     cout << "Removing the element whose value is " << o[N/4] << " => " 
-         << *h.remove(&o[N/4])->object() << "\n";
+         << *h.remove(&o[N/4])->object() << "" << endl;
     cout << "Removing the element whose key is " << N-1 << " => " 
-         << *h.remove_key(N-1)->object() << "\n";
+         << *h.remove_key(N-1)->object() << "" << endl;
     cout << "Trying to remove an element that is not on the hash => " 
-         << h.remove(&o[N/2]) << "\n";
+         << h.remove(&o[N/2]) << "" << endl;
 
-    cout << "The hash table has now " << h.size() << " elements:\n";
+    cout << "The hash table has now " << h.size() << " elements:" << endl;
     for(int i = 0; i < N * N; i++) {
         cout << "[" << i << "]={o=" << *h.search_key(i)->object()
              << ",k=" << h.search_key(i)->key() << "}";
         if(i != N * N - 1)
             cout << ", ";
     }
-    cout << "\n";
+    cout << "" << endl;
 
     cout << "Removing all remaining elements => ";
     for(int i = 0; i < N * N; i++) {
@@ -143,7 +143,7 @@ void test_many_synonyms_hash()
         if(i != N * N - 1)
             cout << ", ";
     }
-    cout << "\n";
+    cout << "" << endl;
 
     for(int i = 0; i < N * N; i++)
         delete e[i];

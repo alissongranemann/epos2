@@ -17,7 +17,7 @@ namespace Scheduling_Criteria
     // Priority (static and dynamic)
     class Priority
     {
-        friend class EPOS::RT_Thread;
+        friend class _SYS::RT_Thread;
 
     public:
         enum {
@@ -106,12 +106,11 @@ namespace Scheduling_Criteria
         static const bool dynamic = false;
         static const bool preemptive = true;
 
-        static const unsigned int QUEUES = Traits<Machine>::MAX_CPUS;
+        static const unsigned int QUEUES = Traits<Machine>::CPUS;
 
     public:
         CPU_Affinity(int p = NORMAL, int cpu = ANY)
-        : Priority(p), Variable_Queue(((_priority == IDLE) || (_priority == MAIN)) ?
-                                      Machine::cpu_id() : (cpu != ANY) ? cpu : ++_next_queue %= Machine::n_cpus()) {}
+        : Priority(p), Variable_Queue(((_priority == IDLE) || (_priority == MAIN)) ? Machine::cpu_id() : (cpu != ANY) ? cpu : ++_next_queue %= Machine::n_cpus()) {}
 
         using Variable_Queue::queue;
 
@@ -193,16 +192,17 @@ namespace Scheduling_Criteria
 
           void update(); // Defined at Alarm
       };
+      
       // Global Earliest Deadline First (multicore)
       class GEDF: public EDF
       {
       public:
-          static const unsigned int HEADS = Traits<Machine>::MAX_CPUS;
+          static const unsigned int HEADS = Traits<Machine>::CPUS;
 
       public:
           GEDF(int p = APERIODIC): EDF(p) {}
           GEDF(const Microsecond & d, const Microsecond & p = SAME, const Microsecond & c = UNKNOWN, int cpu = ANY)
-          : EDF(d, p, c) {}
+          : EDF(d, p, c, cpu) {}
 
           static unsigned int queue() { return current_head(); }
           static unsigned int current_head() { return Machine::cpu_id(); }
@@ -214,13 +214,14 @@ namespace Scheduling_Criteria
           enum { ANY = Variable_Queue::ANY };
 
       public:
-          static const unsigned int QUEUES = Traits<Machine>::MAX_CPUS;
+          static const unsigned int QUEUES = Traits<Machine>::CPUS;
 
       public:
           PEDF(int p = APERIODIC)
           : EDF(p), Variable_Queue(((_priority == IDLE) || (_priority == MAIN)) ? Machine::cpu_id() : 0) {}
+
           PEDF(const Microsecond & d, const Microsecond & p = SAME, const Microsecond & c = UNKNOWN, int cpu = ANY)
-          : EDF(d, p, c), Variable_Queue((cpu != ANY) ? cpu : ++_next_queue %= Machine::n_cpus()) {}
+          : EDF(d, p, c, cpu), Variable_Queue((cpu != ANY) ? cpu : ++_next_queue %= Machine::n_cpus()) {}
 
           using Variable_Queue::queue;
 
@@ -233,15 +234,16 @@ namespace Scheduling_Criteria
           enum { ANY = Variable_Queue::ANY };
 
       public:
-          // QUEUES x HEADS must be equal to Traits<Machine>::MAX_CPUS
+          // QUEUES x HEADS must be equal to Traits<Machine>::CPUS
           static const unsigned int HEADS = 2;
-          static const unsigned int QUEUES = Traits<Machine>::MAX_CPUS / HEADS;
+          static const unsigned int QUEUES = Traits<Machine>::CPUS / HEADS;
 
       public:
           CEDF(int p = APERIODIC)
           : EDF(p), Variable_Queue(((_priority == IDLE) || (_priority == MAIN)) ? current_queue() : 0) {} // Aperiodic
+
           CEDF(const Microsecond & d, const Microsecond & p = SAME, const Microsecond & c = UNKNOWN, int cpu = ANY)
-          : EDF(d, p, c), Variable_Queue((cpu != ANY) ? cpu / HEADS : ++_next_queue %= Machine::n_cpus() / HEADS) {}
+          : EDF(d, p, c, cpu), Variable_Queue((cpu != ANY) ? cpu / HEADS : ++_next_queue %= Machine::n_cpus() / HEADS) {}
 
           using Variable_Queue::queue;
 
@@ -252,23 +254,23 @@ namespace Scheduling_Criteria
 
 
 // Scheduling_Queue
-template <typename T, typename R = typename T::Criterion>
+template<typename T, typename R = typename T::Criterion>
 class Scheduling_Queue: public Scheduling_List<T> {};
 
-template <typename T>
+template<typename T>
 class Scheduling_Queue<T, Scheduling_Criteria::CPU_Affinity>:
 public Scheduling_Multilist<T> {};
 
-template <typename T>
+template<typename T>
 class Scheduling_Queue<T, Scheduling_Criteria::GEDF>:
 public Multihead_Scheduling_List<T> {};
 
-template <typename T>
+template<typename T>
 class Scheduling_Queue<T, Scheduling_Criteria::PEDF>:
 public Scheduling_Multilist<T> {};
 
 
-template <typename T>
+template<typename T>
 class Scheduling_Queue<T, Scheduling_Criteria::CEDF>:
 public Multihead_Scheduling_Multilist<T> {};
 
@@ -278,7 +280,7 @@ public Multihead_Scheduling_Multilist<T> {};
 // that will be used as the scheduling queue sorting criterion (viz, through
 // operators <, >, and ==) and must also define a method "link" to export the
 // list element pointing to the object being handled.
-template <typename T>
+template<typename T>
 class Scheduler: public Scheduling_Queue<T>
 {
 private:
@@ -328,11 +330,11 @@ public:
     }
 
     T * choose() {
-        //db<Scheduler>(TRC) << "Scheduler[chosen=" << chosen() << "]::choose() => ";
+        db<Scheduler>(TRC) << "Scheduler[chosen=" << chosen() << "]::choose() => ";
 
         T * obj = Base::choose()->object();
 
-        //db<Scheduler>(TRC) << obj << endl;
+        db<Scheduler>(TRC) << obj << endl;
 
         return obj;
     }

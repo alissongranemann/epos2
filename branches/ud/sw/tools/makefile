@@ -2,7 +2,7 @@
 
 include	../makedefs
 
-SUBDIRS := $(shell find * -maxdepth 0 -type d \! -name CVS)
+SUBDIRS := $(shell find * -maxdepth 0 -type d)
 
 all:		$(SUBDIRS)
 

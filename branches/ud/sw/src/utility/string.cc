@@ -310,7 +310,7 @@ extern "C"
 
     }
 
-    char * strcat(char *dst0, const char *src0)
+    char * strcat(char * dst0, const char *src0)
     {
     	size_t dst_len = strlen(dst0);
         return strcpy(&dst0[dst_len], src0);
@@ -318,11 +318,11 @@ extern "C"
 
     char * strchr(const char * s1, int i)
     {
-        const unsigned char *s = (const unsigned char *) s1;
+        const unsigned char * s = (const unsigned char *) s1;
         unsigned char c = i;
 
         unsigned long mask, j;
-        unsigned long *aligned_addr;
+        unsigned long * aligned_addr;
 
         if(!c) {
             while(((long) s & (sizeof(long) - 1))) {

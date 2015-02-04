@@ -17,6 +17,8 @@ class Task
     friend class Thread;
 
 private:
+    static const bool multitask = Traits<System>::multitask;
+    
     typedef CPU::Log_Addr Log_Addr;
     typedef CPU::Phy_Addr Phy_Addr;
     typedef CPU::Context Context;
@@ -38,7 +40,7 @@ public:
     Log_Addr code() const { return _code; }
     Log_Addr data() const { return _data; }
 
-    static const Task * self();
+    static const Task * self() { assert(_master || !Traits<Task>::enabled); return multitask ? Thread::self()->task() : _master; }
 
 private:
     void activate() const { _as->activate(); }

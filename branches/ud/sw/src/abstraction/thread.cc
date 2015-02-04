@@ -4,6 +4,11 @@
 #include <thread.h>
 #include <alarm.h>
 
+// This_Thread class attributes
+__BEGIN_UTIL
+bool This_Thread::_not_booting;
+__END_UTIL
+
 __BEGIN_SYS
 
 // Class attributes
@@ -12,18 +17,14 @@ Scheduler_Timer * Thread::_timer;
 Scheduler<Thread> Thread::_scheduler;
 Spin Thread::_lock;
 
-
-// This_Thread class attributes
-bool This_Thread::_not_booting;
-
-
 // Methods
-void Thread::common_constructor(Log_Addr entry, unsigned int stack_size) 
+void Thread::constructor(Log_Addr entry, unsigned int stack_size)
 {
-    db<Thread>(TRC) << "Thread(entry=" << entry
+    db<Thread>(TRC) << "Thread(task=" << _task
+                    << ",entry=" << entry
                     << ",state=" << _state
                     << ",priority=" << _link.rank()
-                    << ",stack={b=" << reinterpret_cast<void*>(_stack)
+                    << ",stack={b=" << reinterpret_cast<void *>(_stack)
                     << ",s=" << stack_size
                     << "},context={b=" << _context
                     << "," << *_context << "}) => " << this << "@" << _link.rank().queue() << endl;
@@ -48,31 +49,38 @@ Thread::~Thread()
     db<Thread>(TRC) << "~Thread(this=" << this
                     << ",state=" << _state
                     << ",priority=" << _link.rank()
-                    << ",stack={b=" << reinterpret_cast<void*>(_stack)
+                    << ",stack={b=" << reinterpret_cast<void *>(_stack)
                     << ",context={b=" << _context
                     << "," << *_context << "})" << endl;
 
+    // The running thread cannot delete itself!
+    assert(_state != RUNNING);
+    
     switch(_state) {
-    case RUNNING:  // Self deleted itself! Stack won't be released!
+    case RUNNING:  // For switch completion only: the running thread would have deleted itself! Stack wouldn't have been released!
         exit(-1);
         break;
     case READY:
+        _scheduler.remove(this);
         _thread_count--;
         break;
     case SUSPENDED:
         _scheduler.resume(this);
+        _scheduler.remove(this);
         _thread_count--;
         break;
     case WAITING:
         _waiting->remove(this);
         _scheduler.resume(this);
+        _scheduler.remove(this);
         _thread_count--;
         break;
     case FINISHING: // Already called exit()
         break;
     }
 
-    _scheduler.remove(this);
+    if(_joining)
+        _joining->resume();
 
     unlock();
 
@@ -80,7 +88,7 @@ Thread::~Thread()
 }
 
 
-void Thread::priority(const Criterion & c)
+void Thread::priority(const Priority & c)
 {
     lock();
 
@@ -88,7 +96,7 @@ void Thread::priority(const Criterion & c)
 
     unsigned int old_cpu = _link.rank().queue();
 
-    _link.rank(c);
+    _link.rank(Criterion(c));
 
     if(_state != RUNNING) {
         _scheduler.remove(this);
@@ -123,7 +131,7 @@ int Thread::join()
     } else
         unlock();
 
-    return *reinterpret_cast<int *>(&_stack[0]);
+    return *reinterpret_cast<int *>(_stack);
 }
 
 
@@ -205,7 +213,7 @@ void Thread::exit(int status)
 
     Thread * prev = running();
     _scheduler.remove(prev);
-    *reinterpret_cast<int *>(&prev->_stack[0]) = status;
+    *reinterpret_cast<int *>(prev->_stack) = status;
     prev->_state = FINISHING;
 
     _thread_count--;
@@ -224,6 +232,9 @@ void Thread::sleep(Queue * q)
 {
     db<Thread>(TRC) << "Thread::sleep(running=" << running() << ",q=" << q << ")" << endl;
 
+    // lock() must be called before entering this method
+    assert(locked());
+
     Thread * prev = running();
     _scheduler.suspend(prev);
     prev->_state = WAITING;
@@ -237,6 +248,9 @@ void Thread::sleep(Queue * q)
 void Thread::wakeup(Queue * q)
 {
     db<Thread>(TRC) << "Thread::wakeup(running=" << running() << ",q=" << q << ")" << endl;
+
+    // lock() must be called before entering this method
+    assert(locked());
 
     if(!q->empty()) {
         Thread * t = q->remove()->object();
@@ -254,6 +268,9 @@ void Thread::wakeup(Queue * q)
 void Thread::wakeup_all(Queue * q)
 {
     db<Thread>(TRC) << "Thread::wakeup_all(running=" << running() << ",q=" << q << ")" << endl;
+
+    // lock() must be called before entering this method
+    assert(locked());
 
     if(!q->empty())
         while(!q->empty()) {
@@ -274,7 +291,10 @@ void Thread::wakeup_all(Queue * q)
 
 void Thread::reschedule()
 {
-    //db<Thread>(TRC) << "Thread::reschedule()" << endl;
+    db<Scheduler<Thread> >(TRC) << "Thread::reschedule()" << endl;
+
+    // lock() must be called before entering this method
+    assert(locked());
 
     Thread * prev = running();
     Thread * next = _scheduler.choose();
@@ -282,19 +302,20 @@ void Thread::reschedule()
     dispatch(prev, next);
 }
 
+
 void Thread::reschedule(unsigned int cpu)
 {
     if(!smp || (cpu == Machine::cpu_id()))
         reschedule();
     else {
-        db<Thread>(TRC) << "Thread::reschedule(cpu=" << cpu << ")" << endl;
+        db<Scheduler<Thread> >(TRC) << "Thread::reschedule(cpu=" << cpu << ")" << endl;
         IC::ipi_send(cpu, IC::INT_RESCHEDULER);
         unlock();
     }
 }
 
 
-void Thread::rescheduler(unsigned int irq)
+void Thread::rescheduler(const IC::Interrupt_Id & interrupt)
 {
     lock();
 
@@ -302,7 +323,7 @@ void Thread::rescheduler(unsigned int irq)
 }
 
 
-void Thread::time_slicer()
+void Thread::time_slicer(const IC::Interrupt_Id & i)
 {
     lock();
 
@@ -316,6 +337,37 @@ void Thread::implicit_exit()
 }
 
 
+void Thread::dispatch(Thread * prev, Thread * next, bool charge)
+{
+    if(charge) {
+        if(Criterion::timed)
+            _timer->reset();
+    }
+
+    if(prev != next) {
+        if(prev->_state == RUNNING)
+            prev->_state = READY;
+        next->_state = RUNNING;
+
+        db<Thread>(TRC) << "Thread::dispatch(prev=" << prev << ",next=" << next << ")" << endl;
+        db<Thread>(INF) << "prev={" << prev << ",ctx=" << *prev->_context << "}" << endl;
+        db<Thread>(INF) << "next={" << next << ",ctx=" << *next->_context << "}" << endl;
+
+        if(smp)
+            _lock.release();
+
+        if(multitask && (next->_task != prev->_task))
+            next->_task->activate();
+
+        CPU::switch_context(&prev->_context, next->_context);
+    } else
+        if(smp)
+            _lock.release();
+
+    CPU::int_enable();
+}
+
+
 int Thread::idle()
 {
     while(true) {
@@ -323,13 +375,11 @@ int Thread::idle()
             db<Thread>(TRC) << "Thread::idle(CPU=" << Machine::cpu_id() << ",this=" << running() << ")" << endl;
 
         if(_thread_count <= Machine::n_cpus()) { // Only idle is left
-			kout << "Only idle is left!\n";
             CPU::int_disable();
             if(Machine::cpu_id() == 0) {
                 db<Thread>(WRN) << "The last thread has exited!" << endl;
                 if(reboot) {
                     db<Thread>(WRN) << "Rebooting the machine ..." << endl;
-					kout << "Rebooting.\n";
                     Machine::reboot();
                 } else
                     db<Thread>(WRN) << "Halting the machine ..." << endl;
@@ -341,17 +391,17 @@ int Thread::idle()
             if(_scheduler.schedulables() > 0) // A thread might have been woken up by another CPU
                 yield();
         }
-		kout << "Woke up!\n";
     }
 
     return 0;
 }
 
+__END_SYS
 
 // Id forwarder to the spin lock
+__BEGIN_UTIL
 unsigned int This_Thread::id() 
 { 
     return _not_booting ? reinterpret_cast<volatile unsigned int>(Thread::self()) : Machine::cpu_id() + 1;
 }
-
-__END_SYS
+__END_UTIL

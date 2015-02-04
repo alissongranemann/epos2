@@ -7,9 +7,9 @@
 #include <utility/handler.h>
 #include <tsc.h>
 #include <rtc.h>
+#include <ic.h>
 #include <timer.h>
 #include <semaphore.h>
-#include <display.h>
 
 __BEGIN_SYS
 
@@ -43,7 +43,7 @@ public:
     static void delay(const Microsecond & time);
 
 private:
-    static int init();
+    static void init();
 
     static Microsecond period() {
         return 1000000 / frequency();
@@ -56,7 +56,7 @@ private:
     static void lock() { Thread::lock(); }
     static void unlock() { Thread::unlock(); }
 
-    static void handler();
+    static void handler(const IC::Interrupt_Id & i);
 
 private:
     Tick _ticks;
@@ -80,21 +80,20 @@ public:
 
 private:
     Microsecond _time;
-
 };
 
 
 // The following Scheduling Criteria depend on Alarm, which is not yet available at scheduler.h
 namespace Scheduling_Criteria {
-    inline FCFS::FCFS(int p)
-    : Priority((p == IDLE) ? IDLE : Alarm::_elapsed) {}
+    inline FCFS::FCFS(int p):
+        Priority((p == IDLE) ? IDLE : Alarm::_elapsed) {}
 
 
-    inline EDF::EDF(const Microsecond & d, const Microsecond & p, const Microsecond & c, int cpu)
-    : RT_Common(Alarm::ticks(d), Alarm::ticks(d), p, c) {}
+    inline EDF::EDF(const Microsecond & d, const Microsecond & p, const Microsecond & c, int cpu):
+        RT_Common(Alarm::ticks(d), Alarm::ticks(d), p, c) {}
 
     inline void EDF::update() {
-        if(_priority < APERIODIC)
+        if((_priority > PERIODIC) && (_priority < APERIODIC))
             _priority = Alarm::_elapsed + _deadline;
     }
 };

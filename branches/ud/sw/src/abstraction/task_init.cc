@@ -20,8 +20,23 @@ void Task::init()
                                  CPU::Log_Addr(Memory_Map<Machine>::APP_DATA));
 
     if(si->bm.extras_offset != -1)
-        db<Init>(INF) << "Task:: additional tasks at "  << reinterpret_cast<void *>(si->pmm.ext_base) << ":" << si->pmm.ext_top << endl;
+        db<Init>(INF) << "Task:: additional tasks at "  << reinterpret_cast<void *>(si->lm.app_extra) << ":" << si->lm.app_extra_size << endl;
 
+//    MMU::PT_Entry * sys_pd = reinterpret_cast<MMU::PT_Entry *>((void *)si->pmm.sys_pd);
+//
+//    // Attach memory starting at MEM_BASE
+//    for(unsigned int i = MMU::directory(MMU::align_directory(si->pmm.free1_base));
+//        i < MMU::directory(MMU::align_directory(si->pmm.free1_top));
+//        i++)
+//        sys_pd[i] = 0;
+//    for(unsigned int i = MMU::directory(MMU::align_directory(si->pmm.free2_base));
+//        i < MMU::directory(MMU::align_directory(si->pmm.free2_top));
+//        i++)
+//        sys_pd[i] = 0;
+//    for(unsigned int i = MMU::directory(MMU::align_directory(si->pmm.free3_base));
+//        i < MMU::directory(MMU::align_directory(si->pmm.free3_top));
+//        i++)
+//        sys_pd[i] = 0;
 }
 
 __END_SYS

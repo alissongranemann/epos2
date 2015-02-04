@@ -16,9 +16,6 @@ public:
     typedef MMU::Flags Flags;
     typedef CPU::Phy_Addr Phy_Addr;
 
-protected:
-    Segment();
-
 public:
     Segment(unsigned int bytes, Flags flags = Flags::APP);
     Segment(Phy_Addr phy_addr, unsigned int bytes, Flags flags = Flags::APP);

@@ -15,6 +15,9 @@ protected:
 
 class Serial_Display: public Display_Common
 {
+    friend class PC_Setup;
+    friend class First_Object;
+
 private:
     static const int LINES = Traits<Serial_Display>::LINES;
     static const int COLUMNS = Traits<Serial_Display>::COLUMNS;
@@ -30,16 +33,6 @@ private:
 
 public:
     Serial_Display() {}
-
-    static void remap() {
-        // Display must be on very early in the boot process, so it is
-        // subject to memory remappings. We also cannot be sure about 
-        // global constructors, so _uart is manually reconstructed here
-        new (&_uart) UART;
-
-        _line = 0;
-        _column = 0;
-    }
 
     static void clear() {
         _line = 0;
@@ -91,7 +84,6 @@ public:
     }
 
 private:
-
     static void put(char c) {
         _uart.put(c);
     }
@@ -122,6 +114,15 @@ private:
     static void scroll() {
         put(CR);
         put(LF);
+        _column = 0;
+    }
+
+    static void init() {
+        // Display must be on very early in the boot process, so it is
+        // subject to memory remappings. Renewing it cares for it.
+        new (&_uart) UART;
+
+        _line = 0;
         _column = 0;
     }
 

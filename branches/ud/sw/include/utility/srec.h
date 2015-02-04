@@ -5,7 +5,7 @@
 
 #include <system/config.h>
 
-__BEGIN_SYS 
+__BEGIN_UTIL 
 
 class SREC
 {
@@ -54,7 +54,7 @@ private:
     
 };
 
-__END_SYS 
+__END_UTIL 
  
 #endif
 

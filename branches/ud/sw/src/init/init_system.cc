@@ -1,11 +1,10 @@
 // EPOS System Initializer
 
+#include <utility/random.h>
 #include <machine.h>
 #include <system.h>
 #include <address_space.h>
 #include <segment.h>
-
-extern "C" { void __epos_library_app_entry(void); }
 
 __BEGIN_SYS
 
@@ -35,19 +34,11 @@ public:
         CPU::init();
         db<Init>(INF) << "done!" << endl;
 
-        // If EPOS is a library then adjust the application entry point (that
-        // was set by SETUP) based on the ELF SYSTEM+APPLICATION image
-        System_Info<Machine> * si = System::info();
-        if(!si->lm.has_sys)
-            si->lmm.app_entry = reinterpret_cast<unsigned int>(&__epos_library_app_entry);
-
         // Initialize System's heap
         db<Init>(INF) << "Initializing system's heap: " << endl;
         if(Traits<System>::multiheap) {
             System::_heap_segment = new (&System::_preheap[0]) Segment(HEAP_SIZE);
-            System::_heap = new (&System::_preheap[sizeof(Segment)]) Heap(
-                Address_Space(MMU::current()).attach(*System::_heap_segment, Memory_Map<Machine>::SYS_HEAP),
-                System::_heap_segment->size());
+            System::_heap = new (&System::_preheap[sizeof(Segment)]) Heap(Address_Space(MMU::current()).attach(*System::_heap_segment, Memory_Map<Machine>::SYS_HEAP), System::_heap_segment->size());
         } else
             System::_heap = new (&System::_preheap[0]) Heap(MMU::alloc(MMU::pages(HEAP_SIZE)), HEAP_SIZE);
         db<Init>(INF) << "done!" << endl;
@@ -64,6 +55,28 @@ public:
         db<Init>(INF) << "Initializing system abstractions: " << endl;
         System::init();
         db<Init>(INF) << "done!" << endl;
+
+        // Randomize the Random Numbers Generator's seed
+        if(Traits<Random>::enabled) {
+            db<Init>(INF) << "Randomizing the Random Numbers Generator's seed: " << endl;
+            if(Traits<TSC>::enabled)
+                Random::seed(TSC::time_stamp());
+#ifdef __NIC_H
+            if(Traits<NIC>::enabled) {
+                NIC nic;
+                Random::seed(Random::random() ^ nic.address());
+            }
+#endif
+#ifdef __ADC_H
+            if(Traits<ADC>::enabled) {
+                ADC adc;
+                Random::seed(Random::random() ^ adc.read());
+            }
+#endif
+            if(!Traits<TSC>::enabled && !Traits<NIC>::enabled)
+                db<Init>(WRN) << "Due to lack of entropy, Random is a pseudo random numbers generator!" << endl;
+            db<Init>(INF) << "done!" << endl;
+        }
 
         // Initialization continues at init_first
     }

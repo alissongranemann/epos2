@@ -59,9 +59,9 @@ int main()
 
     cout << "Threads will now be created and I'll wait for them to finish..." << endl;
 
-    thread_a = new Periodic_Thread(&func_a, period_a * 1000, iterations);
-    thread_b = new Periodic_Thread(&func_b, period_b * 1000, iterations);
-    thread_c = new Periodic_Thread(&func_c, period_c * 1000, iterations);
+    thread_a = new Periodic_Thread(RTConf(period_a * 1000, iterations), &func_a);
+    thread_b = new Periodic_Thread(RTConf(period_b * 1000, iterations), &func_b);
+    thread_c = new Periodic_Thread(RTConf(period_c * 1000, iterations), &func_c);
 
     exec('M');
 

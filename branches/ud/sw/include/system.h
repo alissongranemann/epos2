@@ -12,6 +12,7 @@ class System
 {
     friend class Init_System;
     friend class Init_Application;
+    friend void CPU::Context::load() const volatile;
     friend void * ::malloc(size_t);
     friend void ::free(void *);
     friend void * ::operator new(size_t, const EPOS::System_Allocator &);
@@ -20,7 +21,7 @@ class System
     friend void ::operator delete[](void *);
 
 public:
-    static System_Info<Machine> * const info() { return _si; }
+    static System_Info<Machine> * const info() { assert(_si); return _si; }
 
 private:
     static void init();
@@ -35,11 +36,11 @@ private:
 __END_SYS
 
 inline void * operator new(size_t bytes, const EPOS::System_Allocator & allocator) {
-    return EPOS::System::_heap->alloc(bytes);
+    return _SYS::System::_heap->alloc(bytes);
 }
 
 inline void * operator new[](size_t bytes, const EPOS::System_Allocator & allocator) {
-    return EPOS::System::_heap->alloc(bytes);
+    return _SYS::System::_heap->alloc(bytes);
 }
 
 #endif

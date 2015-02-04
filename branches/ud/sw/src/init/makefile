@@ -14,23 +14,11 @@ $(MACH)_install_library: $(MACH)_init_library
 		$(INSTALL) $(MACH)_init_application.o $(LIB)
 
 $(MACH)_install_builtin: $(MACH)_init_builtin
-ifndef 	GDB
-		$(STRIP) -o $(MACH)_init.tmp $(MACH)_init
-else
-		$(INSTALL) $(MACH)_init $(MACH)_init.tmp
-endif
-		$(INSTALL) $(MACH)_init.tmp $(IMG)/$(MACH)_init
-		$(CLEAN) $(MACH)_init.tmp
+		$(INSTALL) $(MACH)_init $(IMG)
 		$(INSTALL) $(MACH)_init_application.o $(LIB)
 
 $(MACH)_install_kernel: $(MACH)_init_kernel
-ifndef 	GDB
-		$(STRIP) -o $(MACH)_init.tmp $(MACH)_init
-else
-		$(INSTALL) $(MACH)_init $(MACH)_init.tmp
-endif
-		$(INSTALL) $(MACH)_init.tmp $(IMG)/$(MACH)_init
-		$(CLEAN) $(MACH)_init.tmp
+		$(INSTALL) $(MACH)_init $(IMG)
 		$(INSTALL) $(MACH)_init_application.o $(LIB)
 
 
@@ -41,30 +29,26 @@ $(MACH)_init_library: $(OBJS)
 
 $(MACH)_init_builtin: $(SRC)/system/$(MACH)_system $(OBJS) $(LIBINIT)
 		$(LD) $(LDFLAGS) -L$(CCLIB) --omagic \
-		--section-start .init=$(INIT_ADDR) \
+		--section-start $(MACH_CODE_NAME)=$(INIT_ADDR) \
 		--entry=_init -o $(MACH)_init \
-		$(LIB)/$(ARCH)_crti.o \
 		$(LIB)/$(ARCH)_crtbegin.o \
 		init_first.o init_system.o \
 		$(LIB)/$(ARCH)_crtend.o \
-		$(LIB)/$(ARCH)_crtn.o \
 		-l$(LINIT) \
 		-R $(SRC)/system/$(MACH)_system \
-		-l$(LUTIL) -lgcc -lc -lgcc
+		-l$(LUTIL) -lgcc
 		$(INSTALL) init_application.o $(MACH)_init_application.o
 
 $(MACH)_init_kernel: $(SRC)/system/$(MACH)_system $(OBJS) $(LIBINIT)
 		$(LD) $(LDFLAGS) -L$(CCLIB) --omagic \
 		--section-start .init=$(INIT_ADDR) \
 		--entry=_init -o $(MACH)_init \
-		$(LIB)/$(ARCH)_crti.o \
 		$(LIB)/$(ARCH)_crtbegin.o \
 		init_first.o init_system.o \
 		$(LIB)/$(ARCH)_crtend.o \
-		$(LIB)/$(ARCH)_crtn.o \
 		-l$(LINIT) \
 		-R $(SRC)/system/$(MACH)_system \
-		-l$(LUTIL) -lgcc -lc -lgcc
+		-l$(LUTIL) -lgcc
 		$(INSTALL) init_application.o $(MACH)_init_application.o
 
 

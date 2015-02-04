@@ -7,7 +7,7 @@
 
 __BEGIN_SYS
 
-template <class Machine>
+template<class Machine>
 struct System_Info {};
 
 __END_SYS

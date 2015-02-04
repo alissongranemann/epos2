@@ -5,20 +5,11 @@ typedef __SIZE_TYPE__ size_t;
 #ifndef __types_h
 #define __types_h
 
-__BEGIN_SYS
-
 // Memory allocators
-enum System_Allocator
-{
-    SYSTEM
-};
-
-enum Scratchpad_Allocator
-{
-    SCRATCHPAD
-};
-
-__END_SYS
+__BEGIN_API
+enum System_Allocator { SYSTEM };
+enum Scratchpad_Allocator { SCRATCHPAD };
+__END_API
 
 extern "C"
 {
@@ -37,111 +28,120 @@ void * operator new[](size_t, const EPOS::Scratchpad_Allocator &);
 
 #include "../../../unified/framework/types.h"
 
-__BEGIN_SYS
-
 // Dummy class for incomplete architectures and machines
 template<int>
 class Dummy;
 
 // Utilities
+__BEGIN_UTIL
+class Dummy;
+class Bitmaps;
+class CRC;
+class ELF;
+class Handler;
+class Hashes;
+class Heaps;
 class Debug;
 class Lists;
+class Observers;
+class Observeds;
+class OStream;
+class Queues;
+class Random;
 class Spin;
-class Heap;
+class SREC;
+class Vectors;
+__END_UTIL
+
+__BEGIN_SYS
 
 // System parts
 class Build;
 class Boot;
 class Setup;
 class Init;
-class System;
-class Application;
+class Utility;
 
-// Hardware Mediators - CPU
+// Architecture Hardware Mediators
 class IA32;
-class ARMV7;
-class MIPS32;
-
-// Hardware Mediators - Time-Stamp Counter
 class IA32_TSC;
-class ARMV7_TSC;
-class MIPS32_TSC;
-
-// Hardware Mediators - Memory Management Unit
 class IA32_MMU;
-class ARMV7_MMU;
-class MIPS32_MMU;
-
-// Hardware Mediators - Performance Monitoring Unit
 class IA32_PMU;
 
-// Hardware Mediators - Machine
+class ARMv7;
+class ARMv7_TSC;
+class ARMv7_MMU;
+
+class AVR8;
+class AVR8_TSC;
+class AVR8_MMU;
+
+// Machine Hardware Mediators
 class PC;
-class Zynq;
-class EPOSSOC;
-
-// Hardware Mediators - Busses
 class PC_PCI;
-class EPOSSOC_NOC;
-
-// Hardware Mediators - Interrupt Controller
 class PC_IC;
-class Zynq_IC;
-class EPOSSOC_IC;
-
-// Hardware Mediators - Timer
 class PC_Timer;
-class Zynq_Timer;
-class EPOSSOC_Timer;
-
-// Hardware Mediators - Real-time Clock
 class PC_RTC;
-class Zynq_RTC;
-class EPOSSOC_RTC;
-
-// Hardware Mediators - EEPROM
-class PC_EEPROM;
-
-// Hardware Mediators - Scratchpad
-class PC_Scratchpad;
-
-// Hardware Mediators - UART
 class PC_UART;
-class Zynq_UART;
-class EPOSSOC_UART;
-
-// Hardware Mediators - GPIO
-class Zynq_GPIO;
-
-// Hardware Mediators - Display
-class Serial_Display;
+class PC_EEPROM;
 class PC_Display;
-
-// Hardware Mediators - NIC
+class PC_Scratchpad;
+class PC_NIC;
 class PC_Ethernet;
+
+class Cortex_M;
+class Cortex_M_IC;
+class Cortex_M_Timer;
+class Cortex_M_RTC;
+class Cortex_M_UART;
+class Cortex_M_EEPROM;
+class Cortex_M_Display;
+class Cortex_M_Scratchpad;
+class Cortex_M_Radio;
+
+class ATmega;
+class ATmega_IC;
+class ATmega_Timer;
+class ATmega_RTC;
+class ATmega_EEPROM;
+class ATmega_Flash;
+class ATmega_Scratchpad;
+class ATmega_UART;
+class ATmega_USART;
+class ATmega_SPI;
+class ATmega_ADC;
+class ATmega_Battery;
+class ATmega_Radio;
+
+class Zynq;
+class Zynq_IC;
+class Zynq_Timer;
+class Zynq_RTC;
+class Zynq_UART;
+class Zynq_GPIO;
+class Zynq_NIC;
+class Zynq_Component_Controller;
+class Zynq_PCAP;
+
 class PCNet32;
 class C905;
 class E100;
-class Zynq_NIC;
-class EPOSSOC_NIC;
+class CC2538;
+class AT86RF;
 
-// Hardware Mediators - Component Controller
-class Zynq_Component_Controller;
-class EPOSSOC_Component_Controller;
+class Serial_Display;
 
-// Hardware Mediators - PCAP
-class Zynq_PCAP;
-class EPOSSOC_PCAP;
+// Abstractions
+class System;
+class Application;
 
-// Abstractions	- Process
 class Thread;
 class Active;
 class Periodic_Thread;
 class RT_Thread;
 class Task;
 
-// Abstractions - Scheduler
-template <typename> class Scheduler;
+template<typename> class Scheduler;
 namespace Scheduling_Criteria
 {
     class Priority;
@@ -156,24 +156,20 @@ namespace Scheduling_Criteria
     class CEDF;
 };
 
-// Abstractions	- Memory
-class Segment;
 class Address_Space;
+class Segment;
 
-// Abstractions	- Synchronization
 class Synchronizer;
 class Mutex;
 class Semaphore;
 class Condition;
 
-// Abstractions	- Time
 class Clock;
-class Alarm;
 class Chronometer;
+class Alarm;
+class Delay;
 
-// Abstractions - Network
-class Ethernet;
-template<typename NIC, typename Network, unsigned int HTYPE = 1>
+template<typename NIC, typename Network, unsigned int HTYPE>
 class ARP;
 class Network;
 class IP;
@@ -182,21 +178,35 @@ class UDP;
 class TCP;
 class DHCP;
 
-// Abstractions - Component Manager
+template<typename Channel, typename Network, bool connectionless>
+class Link;
+template<typename Channel, typename Network, bool connectionless>
+class Port;
+
+// Framework
+class Framework;
+template<typename Component> class Handle;
+template<typename Component> class Adapter;
+
 class Component_Manager;
+
+// Aspects
+class Aspect;
+template<typename Component> class Authenticated;
+template<typename Component> class Shared;
+template<typename Component> class Remote;
 
 // System Components IDs
 // The order in this enumeration defines many things in the system (e.g. init)
 typedef unsigned int Type_Id;
-enum
+enum 
 {
-    CPU_ID,
+    CPU_ID = 0,
     TSC_ID,
     MMU_ID,
 
-    MACHINE_ID,
+    MACHINE_ID = 10,
     PCI_ID,
-    NOC_ID,
     IC_ID,
     TIMER_ID,
     RTC_ID,
@@ -207,12 +217,12 @@ enum
     NIC_ID,
     COMPONENT_CONTROLLER_ID,
 
-    THREAD_ID,
+    THREAD_ID = 20,
     TASK_ID,
     ACTIVE_ID,
 
-    SEGMENT_ID,
     ADDRESS_SPACE_ID,
+    SEGMENT_ID,
 
     MUTEX_ID,
     SEMAPHORE_ID,
@@ -224,9 +234,78 @@ enum
 
     COMPONENT_MANAGER_ID,
 
+    IP_ID,
+    ICMP_ID,
+    UDP_ID,
+    TCP_ID,
+    DHCP_ID,
+
+    LINK_ID,
+    PORT_ID,
+
+    UTILITY_ID = 50,
+
     UNKNOWN_TYPE_ID,
     LAST_TYPE_ID = UNKNOWN_TYPE_ID - 1
 };
+
+// Type IDs for system components
+template<typename T> struct Type { static const Type_Id ID = UNKNOWN_TYPE_ID; };
+
+template<> struct Type<IA32> { static const Type_Id ID = CPU_ID; };
+template<> struct Type<IA32_TSC> { static const Type_Id ID = TSC_ID; };
+template<> struct Type<IA32_MMU> { static const Type_Id ID = MMU_ID; };
+
+template<> struct Type<ARMv7> { static const Type_Id ID = CPU_ID; };
+template<> struct Type<ARMv7_TSC> { static const Type_Id ID = TSC_ID; };
+template<> struct Type<ARMv7_MMU> { static const Type_Id ID = MMU_ID; };
+
+
+template<> struct Type<PC> { static const Type_Id ID = MACHINE_ID; };
+template<> struct Type<PC_IC> { static const Type_Id ID = IC_ID; };
+template<> struct Type<PC_Timer> { static const Type_Id ID = TIMER_ID; };
+template<> struct Type<PC_UART> { static const Type_Id ID = UART_ID; };
+template<> struct Type<PC_RTC> { static const Type_Id ID = RTC_ID; };
+template<> struct Type<PC_PCI> { static const Type_Id ID = PCI_ID; };
+template<> struct Type<PC_Display> { static const Type_Id ID = DISPLAY_ID; };
+template<> struct Type<PC_Scratchpad> { static const Type_Id ID = SCRATCHPAD_ID; };
+template<> struct Type<PC_Ethernet> { static const Type_Id ID = NIC_ID; };
+
+template<> struct Type<Cortex_M> { static const Type_Id ID = MACHINE_ID; };
+template<> struct Type<Cortex_M_IC> { static const Type_Id ID = IC_ID; };
+template<> struct Type<Cortex_M_Timer> { static const Type_Id ID = TIMER_ID; };
+template<> struct Type<Cortex_M_UART> { static const Type_Id ID = UART_ID; };
+template<> struct Type<Cortex_M_RTC> { static const Type_Id ID = RTC_ID; };
+template<> struct Type<Cortex_M_Display> { static const Type_Id ID = DISPLAY_ID; };
+template<> struct Type<Cortex_M_Scratchpad> { static const Type_Id ID = SCRATCHPAD_ID; };
+template<> struct Type<Cortex_M_Radio> { static const Type_Id ID = NIC_ID; };
+
+
+template<> struct Type<Thread> { static const Type_Id ID = THREAD_ID; };
+template<> struct Type<Periodic_Thread> { static const Type_Id ID = THREAD_ID; };
+template<> struct Type<RT_Thread> { static const Type_Id ID = THREAD_ID; };
+template<> struct Type<Active> { static const Type_Id ID = ACTIVE_ID; };
+template<> struct Type<Task> { static const Type_Id ID = TASK_ID; };
+
+template<> struct Type<Address_Space> { static const Type_Id ID = ADDRESS_SPACE_ID; };
+template<> struct Type<Segment> { static const Type_Id ID = SEGMENT_ID; };
+
+template<> struct Type<Mutex> { static const Type_Id ID = MUTEX_ID; };
+template<> struct Type<Semaphore> { static const Type_Id ID = SEMAPHORE_ID; };
+template<> struct Type<Condition> { static const Type_Id ID = CONDITION_ID; };
+
+template<> struct Type<Clock> { static const Type_Id ID = CLOCK_ID; };
+template<> struct Type<Chronometer> { static const Type_Id ID = CHRONOMETER_ID; };
+template<> struct Type<Alarm> { static const Type_Id ID = ALARM_ID; };
+template<> struct Type<Delay> { static const Type_Id ID = ALARM_ID; };
+
+template<> struct Type<IP> { static const Type_Id ID = IP_ID; };
+template<> struct Type<ICMP> { static const Type_Id ID = ICMP_ID; };
+template<> struct Type<UDP> { static const Type_Id ID = UDP_ID; };
+template<> struct Type<TCP> { static const Type_Id ID = TCP_ID; };
+template<> struct Type<DHCP> { static const Type_Id ID = DHCP_ID; };
+
+template<> struct Type<Utility> { static const Type_Id ID = UTILITY_ID; };
 
 __END_SYS
 

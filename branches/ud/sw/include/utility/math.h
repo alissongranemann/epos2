@@ -5,7 +5,7 @@
 
 #include <system/config.h>
 
-__BEGIN_SYS
+__BEGIN_UTIL
 
 namespace Math {
 
@@ -63,7 +63,6 @@ float fast_log(const float &val)
 
 };
 
-
-__END_SYS
+__END_UTIL
 
 #endif

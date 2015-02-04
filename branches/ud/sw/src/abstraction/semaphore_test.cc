@@ -51,7 +51,7 @@ int philosopher(int n, int l, int c)
     cout << "  done  ";
     table.unlock();
 
-    return(iterations);
+    return iterations;
 }
 
 int main()
@@ -59,7 +59,7 @@ int main()
     table.lock();
     Display::clear();
     Display::position(0, 0);
-    cout << "The Philosopher's Dinner:\n";
+    cout << "The Philosopher's Dinner:" << endl;
 
     for(int i = 0; i < 5; i++)
         chopstick[i] = new Semaphore;
@@ -84,14 +84,14 @@ int main()
     cout << '\\';
     Display::position(19, 0);
 
-    cout << "The dinner is served ...\n";
+    cout << "The dinner is served ..." << endl;
     table.unlock();
 
     for(int i = 0; i < 5; i++) {
         int ret = phil[i]->join();
         table.lock();
         Display::position(20 + i, 0);
-        cout << "Philosopher " << i << " ate " << ret << " times \n";
+        cout << "Philosopher " << i << " ate " << ret << " times " << endl;
         table.unlock();
     }
 

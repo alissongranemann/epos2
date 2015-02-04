@@ -5,7 +5,7 @@
 
 namespace Implementation {
 
-typedef unsigned int Channel_t; //Channel is a dummy type in software
+typedef unsigned int Channel_t; // Channel is a dummy type in software
 
 };
 

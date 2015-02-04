@@ -31,8 +31,11 @@ ANL_COMP_FLGS="-DANALYZE"
 
 CONFIGURATOR=eposcfg
 
-COMP_FLGS="-include $INC/application.h"
+COMP_FLGS="-include $INC/utility/malloc.h"
 COMP_HDRS="$INC"
+if [ "$MODE" = "kernel" ] ; then
+COMP_FLGS="$COMP_FLGS -include $INC/framework/main.h"
+fi
 
 C_COMPILER="$TOOLS_PREFIX""gcc"
 C_COMP_FLGS="$MACH_CC_FLAGS"
@@ -42,7 +45,7 @@ C_LINK_OBJS=
 C_LINK_LIBS=
 
 CPP_COMPILER="$TOOLS_PREFIX""g++"
-CPP_COMP_FLGS="--no-exceptions --no-rtti --no-use-cxa-atexit"
+CPP_COMP_FLGS="--no-exceptions --no-rtti --no-use-cxa-atexit -std=c++0x"
 CPP_COMP_HDRS=
 CPP_LINK_FLGS=
 CPP_LINK_OBJS=
@@ -59,21 +62,21 @@ LINKER="$TOOLS_PREFIX""ld"
 
 LINKER_LIBRARY=$LINKER
 LINK_FLGS_LIBRARY="-L$LIB -L`$C_COMPILER $C_COMP_FLGS -print-file-name=` -static --nmagic --section-start $MACH_CODE_NAME=$APP_CODE --section-start $MACH_DATA_NAME=$APP_DATA"
-LINK_OBJI_LIBRARY="$LIB/$ARCH""_crt1.o $LIB/$ARCH""_crti.o $LIB/$ARCH""_crtbegin.o $LIB/$MACH""_init_first.o $LIB/$MACH""_init_application.o $LIB/$MACH""_application.o"
-LINK_OBJN_LIBRARY="$LIB/$MACH""_init_system.o $LIB/$MACH""_system.o $LIB/$ARCH""_crtend.o $LIB/$ARCH""_crtn.o"
-LINK_LIBS_LIBRARY="util_$ARCH init_$ARCH system_$ARCH mach_$ARCH arch_$ARCH util_$ARCH gcc"
+LINK_OBJI_LIBRARY="$LIB/$ARCH""_crt0.o $LIB/$ARCH""_crtbegin.o $LIB/$MACH""_init_first.o $LIB/$MACH""_init_application.o $LIB/$MACH""_application.o"
+LINK_OBJN_LIBRARY="$LIB/$MACH""_init_system.o $LIB/$MACH""_system.o $LIB/$ARCH""_crtend.o"
+LINK_LIBS_LIBRARY="util_$ARCH init_$ARCH sys_$ARCH mach_$ARCH arch_$ARCH util_$ARCH gcc"
 
 LINKER_BUILTIN=$LINKER
 LINK_FLGS_BUILTIN="-L$LIB -L`$C_COMPILER $C_COMP_FLGS -print-file-name=` -static --nmagic --section-start $MACH_CODE_NAME=$APP_CODE --section-start $MACH_DATA_NAME=$APP_DATA"
-LINK_OBJI_BUILTIN="$LIB/$ARCH""_crt1.o $LIB/$ARCH""_crti.o $LIB/$ARCH""_crtbegin.o $LIB/$MACH""_init_application.o  $LIB/$MACH""_application.o"
-LINK_OBJN_BUILTIN="$LIB/$ARCH""_crtend.o $LIB/$ARCH""_crtn.o -R$SRC/system/$MACH""_system"
+LINK_OBJI_BUILTIN="$LIB/$ARCH""_crt0.o $LIB/$ARCH""_crtbegin.o $LIB/$MACH""_init_application.o  $LIB/$MACH""_application.o"
+LINK_OBJN_BUILTIN="$LIB/$ARCH""_crtend.o -R$SRC/system/$MACH""_system"
 LINK_LIBS_BUILTIN="util_$ARCH gcc"
 
 LINKER_KERNEL=$LINKER
 LINK_FLGS_KERNEL="-L$LIB -L`$C_COMPILER $C_COMP_FLGS -print-file-name=` -static --nmagic --section-start $MACH_CODE_NAME=$APP_CODE --section-start $MACH_DATA_NAME=$APP_DATA"
-LINK_OBJI_KERNEL="$LIB/$ARCH""_crt1.o $LIB/$ARCH""_crti.o $LIB/$ARCH""_crtbegin.o $LIB/$MACH""_init_application.o  $LIB/$MACH""_application.o"
-LINK_OBJN_KERNEL="$LIB/$ARCH""_crtend.o $LIB/$ARCH""_crtn.o"
-LINK_LIBS_KERNEL="util_$ARCH gcc"
+LINK_OBJI_KERNEL="$LIB/$ARCH""_crt0.o $LIB/$ARCH""_crtbegin.o $LIB/$MACH""_init_application.o  $LIB/$MACH""_application.o"
+LINK_OBJN_KERNEL="$LIB/$ARCH""_crtend.o"
+LINK_LIBS_KERNEL="util_$ARCH arch_$ARCH gcc"
 
 #=========================================================================
 # VARIABLES

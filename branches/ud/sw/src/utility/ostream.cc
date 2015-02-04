@@ -5,7 +5,7 @@
 
 extern "C" { void _panic(); }
 
-__BEGIN_SYS
+__BEGIN_UTIL
 
 const char OStream::_digits[] = "0123456789abcdef";
 
@@ -89,7 +89,7 @@ int OStream::llitoa(long long int v, char * s)
 
 int OStream::llutoa(unsigned long long int v, char * s, unsigned int i)
 {
-    unsigned int j;
+    unsigned long long int j;
 
     if(!v) {
         s[i++] = '0';
@@ -125,4 +125,4 @@ int OStream::ptoa(const void * p, char * s)
     return j + 2;
 }    
 
-__END_SYS
+__END_UTIL

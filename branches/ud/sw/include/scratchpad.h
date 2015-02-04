@@ -27,11 +27,11 @@ __END_SYS
 #include __SCRATCHPAD_H
 
 inline void * operator new(size_t bytes, const EPOS::Scratchpad_Allocator & allocator) {
-    return EPOS::Scratchpad::_heap->alloc(bytes);
+    return _SYS::Scratchpad::_heap->alloc(bytes);
 }
 
 inline void * operator new[](size_t bytes, const EPOS::Scratchpad_Allocator & allocator) {
-    return EPOS::Scratchpad::_heap->alloc(bytes);
+    return _SYS::Scratchpad::_heap->alloc(bytes);
 }
 
 #endif
