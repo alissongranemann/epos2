@@ -1,0 +1,7 @@
+SRCS = \
+amba_mux.v \
+address_decoder.v \
+priority_encoder.v \
+axi4_reset_control.v \
+axi4lite_dummy_master.vhd \
+axi4lite_decoder.v

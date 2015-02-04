@@ -1,0 +1,2 @@
+SRCS = \
+rst_sync.vhd

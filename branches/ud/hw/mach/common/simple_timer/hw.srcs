@@ -1,0 +1,9 @@
+##################################################
+# IP Sources
+##################################################
+MACH_COMMON_SIMPLE_TIMER_SRCS = \
+timer2.v \
+timer_axi4lite.v
+
+MACH_COMMON_SIMPLE_TIMER_SC_SRCS = timer.cc
+

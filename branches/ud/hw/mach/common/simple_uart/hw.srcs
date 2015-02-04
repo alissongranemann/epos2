@@ -1,0 +1,12 @@
+##################################################
+# IP Sources
+##################################################
+MACH_COMMON_SIMPLE_UART_SRCS = \
+shortfifo.v \
+medfifo.v \
+simple_uart_rx.v \
+simple_uart_tx.v \
+simple_uart.v \
+simple_uart_axi4lite.v
+
+MACH_COMMON_SIMPLE_UART_SC_SRCS = uart.cc

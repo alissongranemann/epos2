@@ -1,0 +1,8 @@
+##################################################
+# IP Sources
+##################################################
+MACH_COMMON_GPIO_SRCS = \
+gpio_axi4lite.v \
+very_simple_gpio.v
+
+MACH_COMMON_GPIO_SC_SRCS = gpio.cc

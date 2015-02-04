@@ -1,0 +1,21 @@
+SRCS = \
+router/ARBITER_MACHINE.vhd \
+router/COMPARE.vhd \
+router/crossbar.vhd \
+router/FLOW_CONTROL.vhd \
+router/INPUT_INTERFACE.vhd \
+router/OUTPUT_INTERFACE.vhd \
+router/PIPELINE.vhd \
+router/PRIORITY.vhd \
+router/QUEUE.vhd \
+router/ROUTER.vhd \
+rtsnoc_wishbone_proxy.v \
+rtsnoc_axi4lite_proxy.v \
+rtsnoc_axi4lite_reset.v \
+rtsnoc_echo_sm.v \
+rtsnoc_echo.v \
+rtsnoc_to_wishbone_master.v \
+wishbone_slave_to_rtsnoc.v \
+axi4lite_slave_to_rtsnoc.v \
+rtsnoc_to_axi4lite_master.v \
+rtsnoc_to_achannel.v

@@ -1,0 +1,4 @@
+SRCS = \
+parallel_bit_search.v \
+comp_manager.v \
+comp_manager_axi4lite.v

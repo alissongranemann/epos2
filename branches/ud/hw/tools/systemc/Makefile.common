@@ -1,0 +1,61 @@
+##################################################
+# Constants
+##################################################
+BASE_DIR = $(abspath ../../../..)
+BIN_FILE = $(TOP_MODULE).bin
+
+SYS_LIBS = -lutil -lsystemc
+SYS_LIBS_DIR = -L/usr/lib -L/usr/systemc-2.2.0/lib-linux64
+#Uses isystem for some headers to avoid wanings polution
+SYS_INCLUDES = -I/usr/systemc-2.2.0/include -I/usr/include -I/opt/Mentor/catapultc-2011a/Mgc_home/pkgs/hls_pkgs.any/src -I/opt/Mentor/catapultc-2011a/Mgc_home/pkgs/siflibs.any -I/opt/Mentor/catapultc-2011a/Mgc_home/shared/include -I/export/Mentor/Catapult/Mgc_home/pkgs/hls_pkgs.any/src -I/export/Mentor/Catapult/Mgc_home/pkgs/siflibs.any -I/export/Mentor/Catapult/Mgc_home/shared/include -I/export/Mentor/Catapult/Mgc_home/pkgs/hls_pkgs.any/mgc_comps_src
+
+INCLUDES = -I$(abspath $(BASE_DIR)/hw)
+
+CC = g++ -O2 -Wall -Wfatal-errors -c $(SYS_INCLUDES) $(INCLUDES)  
+LD_FLAGS = $(SYS_LIBS_DIR) $(SYS_LIBS)
+LD = g++ 
+
+#AUTO add the sources for catapult-ganerated nodes
+#SOURCES += $(abspath $(addsuffix /hls/cycle.cc, $(addprefix ../../../framework/catapult/top_level/, $(HLS_COMPONENTS))))
+
+##################################################
+# Global Targets
+##################################################
+
+OBJECTS=$(SOURCES:.cc=.o)
+
+%.o: %.cc
+	@echo "Compiling SystemC platform file $<"
+	$(CC) $< -o $@
+	@echo ' '
+	@echo ' '
+
+all: hls $(BIN_FILE)
+	@echo "Platform generation finished"
+	
+
+$(BIN_FILE): $(OBJECTS)
+	@echo "Linking SystemC platform files"
+	$(LD) -o $(BIN_FILE) $(OBJECTS) $(LD_FLAGS)
+	@echo ' '
+
+
+run: $(BIN_FILE)
+	./$(BIN_FILE)
+	
+run_max_priority:
+	sudo ionice -c1 -n0 nice -n -20 ./$(BIN_FILE)
+
+clean:
+	$(RM) $(BIN_FILE) *.io $(OBJECTS)
+	
+hls:
+	make all --directory=$(BASE_DIR)/hw/framework/catapult/top_level
+	
+hls_clean:
+	make clean --directory=$(BASE_DIR)/hw/framework/catapult/top_level
+
+veryclean: clean hls_clean
+
+.PHONY: all run run_max_priority clean hls hls_clean veryclean
+

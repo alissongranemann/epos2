@@ -1,0 +1,182 @@
+[*]
+[*] GTKWave Analyzer v3.3.34 (w)1999-2012 BSI
+[*] Sat Jun  8 17:05:35 2013
+[*]
+[dumpfile] "/export/tiago/lisha_svn/openepos/branches/unified_design/hw/mach/common/comp_manager/testbench/modelsim/trace_dec.vcd"
+[dumpfile_mtime] "Fri Jun  7 20:13:10 2013"
+[dumpfile_size] 309971529
+[savefile] "/export/tiago/lisha_svn/openepos/branches/unified_design/hw/mach/common/comp_manager/testbench/modelsim/trace_dec.sav"
+[timestart] 6896000
+[size] 1680 974
+[pos] -1 -1
+*-17.000000 7019200 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] unified_tests_comp_manager_tb.
+[treeopen] unified_tests_comp_manager_tb.proc_node.
+[treeopen] unified_tests_comp_manager_tb.proc_node.gpio.
+[treeopen] unified_tests_comp_manager_tb.proc_node.manager.
+[treeopen] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.
+[treeopen] unified_tests_comp_manager_tb.proc_node.plasma_amba.
+[sst_width] 301
+[signals_width] 417
+[sst_expanded] 1
+[sst_vpaned_height] 283
+@28
+unified_tests_comp_manager_tb.clk_i
+unified_tests_comp_manager_tb.reset_i
+@200
+-
+-AXI master
+@28
+unified_tests_comp_manager_tb.proc_node.plasma_amba.Bus_Model.arready
+unified_tests_comp_manager_tb.proc_node.plasma_amba.Bus_Model.arvalid
+@22
+unified_tests_comp_manager_tb.proc_node.plasma_amba.Bus_Model.araddr[31:0]
+@28
+unified_tests_comp_manager_tb.proc_node.plasma_amba.Bus_Model.rready
+unified_tests_comp_manager_tb.proc_node.plasma_amba.Bus_Model.rvalid
+@22
+unified_tests_comp_manager_tb.proc_node.plasma_amba.Bus_Model.rdata[31:0]
+@200
+-
+@28
+unified_tests_comp_manager_tb.proc_node.plasma_amba.Bus_Model.awready
+unified_tests_comp_manager_tb.proc_node.plasma_amba.Bus_Model.awvalid
+@22
+unified_tests_comp_manager_tb.proc_node.plasma_amba.Bus_Model.awaddr[31:0]
+@28
+unified_tests_comp_manager_tb.proc_node.plasma_amba.Bus_Model.wready
+unified_tests_comp_manager_tb.proc_node.plasma_amba.Bus_Model.wvalid
+@22
+unified_tests_comp_manager_tb.proc_node.plasma_amba.Bus_Model.wdata[31:0]
+@200
+-
+-Manager WB bus
+@22
+#{unified_tests_comp_manager_tb.proc_node.manager.comp_manager.wb_adr_i[7:0]} unified_tests_comp_manager_tb.proc_node.manager.comp_manager.wb_adr_i[7] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.wb_adr_i[6] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.wb_adr_i[5] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.wb_adr_i[4] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.wb_adr_i[3] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.wb_adr_i[2] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.wb_adr_i[1] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.wb_adr_i[0]
+@28
+unified_tests_comp_manager_tb.proc_node.manager.comp_manager.wb_cyc_i
+unified_tests_comp_manager_tb.proc_node.manager.comp_manager.wb_stb_i
+unified_tests_comp_manager_tb.proc_node.manager.comp_manager.wb_we_i
+@22
+#{unified_tests_comp_manager_tb.proc_node.manager.comp_manager.wb_dat_i[31:0]} unified_tests_comp_manager_tb.proc_node.manager.comp_manager.wb_dat_i[31] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.wb_dat_i[30] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.wb_dat_i[29] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.wb_dat_i[28] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.wb_dat_i[27] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.wb_dat_i[26] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.wb_dat_i[25] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.wb_dat_i[24] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.wb_dat_i[23] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.wb_dat_i[22] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.wb_dat_i[21] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.wb_dat_i[20] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.wb_dat_i[19] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.wb_dat_i[18] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.wb_dat_i[17] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.wb_dat_i[16] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.wb_dat_i[15] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.wb_dat_i[14] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.wb_dat_i[13] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.wb_dat_i[12] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.wb_dat_i[11] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.wb_dat_i[10] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.wb_dat_i[9] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.wb_dat_i[8] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.wb_dat_i[7] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.wb_dat_i[6] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.wb_dat_i[5] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.wb_dat_i[4] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.wb_dat_i[3] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.wb_dat_i[2] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.wb_dat_i[1] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.wb_dat_i[0]
+unified_tests_comp_manager_tb.proc_node.manager.comp_manager.wb_dat_o[31:0]
+@28
+unified_tests_comp_manager_tb.proc_node.manager.comp_manager.wb_ack_o
+unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_int_o
+@200
+-Manager NoC bus - TX
+@28
+unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_wait_i
+unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_wr_o
+@22
+#{unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_local_orig[2:0]} unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_local_orig[2] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_local_orig[1] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_local_orig[0]
+unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_local_dst[2:0]
+#{unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[55:0]} unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[55] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[54] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[53] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[52] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[51] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[50] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[49] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[48] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[47] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[46] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[45] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[44] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[43] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[42] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[41] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[40] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[39] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[38] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[37] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[36] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[35] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[34] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[33] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[32] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[31] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[30] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[29] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[28] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[27] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[26] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[25] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[24] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[23] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[22] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[21] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[20] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[19] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[18] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[17] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[16] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[15] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[14] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[13] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[12] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[11] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[10] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[9] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[8] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[7] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[6] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[5] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[4] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[3] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[2] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[1] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_data[0]
+@200
+-TX process
+@28
+unified_tests_comp_manager_tb.proc_node.manager.comp_manager.buff_tx[3:0]
+unified_tests_comp_manager_tb.proc_node.manager.comp_manager.buff_tx_wait[3:0]
+@22
+unified_tests_comp_manager_tb.proc_node.manager.comp_manager.tx_state[1:0]
+@28
+unified_tests_comp_manager_tb.proc_node.manager.comp_manager.tx_search_found
+@22
+#{unified_tests_comp_manager_tb.proc_node.manager.comp_manager.tx_search_result[1:0]} unified_tests_comp_manager_tb.proc_node.manager.comp_manager.tx_search_result[1] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.tx_search_result[0]
+unified_tests_comp_manager_tb.proc_node.manager.comp_manager.tx_search_result_reg[1:0]
+unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_msg_type_id[7:0]
+unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_msg_instance_id[7:0]
+unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_msg_msg_type[7:0]
+unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_tx_msg_payload[31:0]
+@200
+-Manager NoC bus - RX
+@28
+unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_nd_i
+unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rd_o
+@22
+#{unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_local_orig[2:0]} unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_local_orig[2] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_local_orig[1] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_local_orig[0]
+#{unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_local_dst[2:0]} unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_local_dst[2] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_local_dst[1] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_local_dst[0]
+#{unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[55:0]} unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[55] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[54] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[53] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[52] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[51] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[50] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[49] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[48] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[47] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[46] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[45] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[44] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[43] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[42] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[41] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[40] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[39] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[38] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[37] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[36] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[35] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[34] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[33] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[32] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[31] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[30] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[29] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[28] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[27] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[26] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[25] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[24] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[23] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[22] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[21] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[20] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[19] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[18] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[17] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[16] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[15] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[14] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[13] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[12] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[11] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[10] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[9] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[8] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[7] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[6] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[5] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[4] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[3] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[2] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[1] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_data[0]
+@200
+-RX process
+@28
+unified_tests_comp_manager_tb.proc_node.manager.comp_manager.buff_rx[3:0]
+unified_tests_comp_manager_tb.proc_node.manager.comp_manager.buff_rx_ack[3:0]
+@24
+unified_tests_comp_manager_tb.proc_node.manager.comp_manager.rx_idx[1:0]
+unified_tests_comp_manager_tb.proc_node.manager.comp_manager.rx_state[2:0]
+@28
+unified_tests_comp_manager_tb.proc_node.manager.comp_manager.rx_buffer_avaliable
+unified_tests_comp_manager_tb.proc_node.manager.comp_manager.rx_sel_buff_alloc_to_proxy_or_agent
+@800022
+#{unified_tests_comp_manager_tb.proc_node.manager.comp_manager.rx_sel_buff_instance_id[7:0]} unified_tests_comp_manager_tb.proc_node.manager.comp_manager.rx_sel_buff_instance_id[7] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.rx_sel_buff_instance_id[6] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.rx_sel_buff_instance_id[5] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.rx_sel_buff_instance_id[4] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.rx_sel_buff_instance_id[3] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.rx_sel_buff_instance_id[2] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.rx_sel_buff_instance_id[1] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.rx_sel_buff_instance_id[0]
+@1001200
+-group_end
+@22
+#{unified_tests_comp_manager_tb.proc_node.manager.comp_manager.rx_sel_buff_type_id[7:0]} unified_tests_comp_manager_tb.proc_node.manager.comp_manager.rx_sel_buff_type_id[7] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.rx_sel_buff_type_id[6] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.rx_sel_buff_type_id[5] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.rx_sel_buff_type_id[4] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.rx_sel_buff_type_id[3] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.rx_sel_buff_type_id[2] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.rx_sel_buff_type_id[1] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.rx_sel_buff_type_id[0]
+@28
+unified_tests_comp_manager_tb.proc_node.manager.comp_manager.rx_sel_buff_agent_phy_X[0]
+unified_tests_comp_manager_tb.proc_node.manager.comp_manager.rx_sel_buff_agent_phy_Y[0]
+@22
+#{unified_tests_comp_manager_tb.proc_node.manager.comp_manager.rx_sel_buff_agent_phy_LOCAL[2:0]} unified_tests_comp_manager_tb.proc_node.manager.comp_manager.rx_sel_buff_agent_phy_LOCAL[2] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.rx_sel_buff_agent_phy_LOCAL[1] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.rx_sel_buff_agent_phy_LOCAL[0]
+#{unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_type_id[7:0]} unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_type_id[7] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_type_id[6] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_type_id[5] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_type_id[4] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_type_id[3] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_type_id[2] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_type_id[1] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_type_id[0]
+#{unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_instance_id[7:0]} unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_instance_id[7] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_instance_id[6] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_instance_id[5] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_instance_id[4] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_instance_id[3] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_instance_id[2] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_instance_id[1] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_instance_id[0]
+#{unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_msg_type[7:0]} unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_msg_type[7] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_msg_type[6] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_msg_type[5] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_msg_type[4] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_msg_type[3] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_msg_type[2] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_msg_type[1] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_msg_type[0]
+#{unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_payload[31:0]} unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_payload[31] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_payload[30] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_payload[29] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_payload[28] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_payload[27] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_payload[26] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_payload[25] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_payload[24] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_payload[23] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_payload[22] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_payload[21] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_payload[20] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_payload[19] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_payload[18] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_payload[17] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_payload[16] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_payload[15] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_payload[14] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_payload[13] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_payload[12] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_payload[11] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_payload[10] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_payload[9] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_payload[8] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_payload[7] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_payload[6] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_payload[5] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_payload[4] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_payload[3] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_payload[2] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_payload[1] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.noc_rx_msg_payload[0]
+@200
+-Agent NTF process
+@29
+unified_tests_comp_manager_tb.proc_node.manager.comp_manager.buff_alloc_to_proxy_or_agent[3:0]
+@28
+unified_tests_comp_manager_tb.proc_node.manager.comp_manager.agent_ntf_search_found
+@22
+#{unified_tests_comp_manager_tb.proc_node.manager.comp_manager.agent_ntf_search_in[3:0]} unified_tests_comp_manager_tb.proc_node.manager.comp_manager.agent_ntf_search_in[3] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.agent_ntf_search_in[2] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.agent_ntf_search_in[1] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.agent_ntf_search_in[0]
+@28
+#{unified_tests_comp_manager_tb.proc_node.manager.comp_manager.agent_ntf_search_result[1:0]} unified_tests_comp_manager_tb.proc_node.manager.comp_manager.agent_ntf_search_result[1] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.agent_ntf_search_result[0]
+unified_tests_comp_manager_tb.proc_node.manager.comp_manager.status_agent_int
+@22
+unified_tests_comp_manager_tb.proc_node.manager.comp_manager.status_agent_buffer[31:0]
+@200
+-
+-Manager Registers
+@24
+unified_tests_comp_manager_tb.proc_node.manager.comp_manager.addr_space_sel
+@200
+-Ctrl space
+@22
+#{unified_tests_comp_manager_tb.proc_node.manager.comp_manager.addr_ctrl_reg_sel[6:0]} unified_tests_comp_manager_tb.proc_node.manager.comp_manager.addr_ctrl_reg_sel[6] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.addr_ctrl_reg_sel[5] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.addr_ctrl_reg_sel[4] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.addr_ctrl_reg_sel[3] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.addr_ctrl_reg_sel[2] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.addr_ctrl_reg_sel[1] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.addr_ctrl_reg_sel[0]
+@28
+unified_tests_comp_manager_tb.proc_node.manager.comp_manager.cmd
+@22
+unified_tests_comp_manager_tb.proc_node.manager.comp_manager.cmd_result[31:0]
+@28
+unified_tests_comp_manager_tb.proc_node.manager.comp_manager.status_cmd_idle
+unified_tests_comp_manager_tb.proc_node.manager.comp_manager.status_agent_int
+@22
+unified_tests_comp_manager_tb.proc_node.manager.comp_manager.status_agent_buffer[31:0]
+@200
+-Buff space
+@800022
+#{unified_tests_comp_manager_tb.proc_node.manager.comp_manager.addr_buffer_sel[2:0]} unified_tests_comp_manager_tb.proc_node.manager.comp_manager.addr_buffer_sel[2] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.addr_buffer_sel[1] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.addr_buffer_sel[0]
+@1001200
+-group_end
+@800022
+#{unified_tests_comp_manager_tb.proc_node.manager.comp_manager.addr_buffer_reg_sel[3:0]} unified_tests_comp_manager_tb.proc_node.manager.comp_manager.addr_buffer_reg_sel[3] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.addr_buffer_reg_sel[2] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.addr_buffer_reg_sel[1] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.addr_buffer_reg_sel[0]
+@1001200
+-group_end
+@28
+unified_tests_comp_manager_tb.proc_node.manager.comp_manager.buff_rx[3:0]
+unified_tests_comp_manager_tb.proc_node.manager.comp_manager.buff_rx_ack[3:0]
+unified_tests_comp_manager_tb.proc_node.manager.comp_manager.buff_tx[3:0]
+unified_tests_comp_manager_tb.proc_node.manager.comp_manager.buff_tx_wait[3:0]
+unified_tests_comp_manager_tb.proc_node.manager.comp_manager.buff_alloc_free[3:0]
+unified_tests_comp_manager_tb.proc_node.manager.comp_manager.buff_alloc_to_proxy_or_agent[3:0]
+@200
+-
+-Manager CMD process
+@28
+unified_tests_comp_manager_tb.proc_node.manager.comp_manager.cmd_search_found
+@22
+#{unified_tests_comp_manager_tb.proc_node.manager.comp_manager.cmd_search_result[1:0]} unified_tests_comp_manager_tb.proc_node.manager.comp_manager.cmd_search_result[1] unified_tests_comp_manager_tb.proc_node.manager.comp_manager.cmd_search_result[0]
+[pattern_trace] 1
+[pattern_trace] 0

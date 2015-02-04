@@ -1,0 +1,17 @@
+TODO:
+
+otimizações da descrição do AES
+
+
+testbench do AES em HW
+	validar as implementaçõe sde hardware (talvez criar validação automática)
+
+re-design da interface para conectar no zynq
+	
+
+criar makefiles para o catapult e para o ISE
+
+
+
+
+	

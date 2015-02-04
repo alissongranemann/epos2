@@ -1,0 +1,10 @@
+##################################################
+# IP Sources
+##################################################
+MACH_COMMON_SIMPLE_PIC_SRCS = \
+priority_enc.v \
+pic.v \
+pic_axi4lite.v
+
+MACH_COMMON_SIMPLE_PIC_SC_SRCS = pic.cc
+
