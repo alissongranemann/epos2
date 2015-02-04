@@ -8,40 +8,40 @@ void _undefined_instruction() __attribute__ ((naked));
 void _undefined_instruction()
 {
     kout << "undefined instruction\n";
-    ASMV("movs pc, r14");
+    ASM("movs pc, r14");
 }
 
 void _software_interrupt() __attribute__ ((naked));
 void _software_interrupt()
 {
     kout << "software interrupt\n";
-    ASMV("movs pc, r14");
+    ASM("movs pc, r14");
 }
 
 void _prefetch_abort() __attribute__ ((naked));
 void _prefetch_abort()
 {
     kout << "prefetch abort\n";
-    ASMV("subs pc, r14, #4");
+    ASM("subs pc, r14, #4");
 }
 
 void _data_abort() __attribute__ ((naked));
 void _data_abort()
 {
     kout << "data abort =(\n";
-    ASMV("subs pc, r14, #8");
+    ASM("subs pc, r14, #8");
 }
 
 void _reserved() __attribute__ ((naked));
 void _reserved()
 {
     kout << "reserved\n";
-    ASMV("mov pc, r14");
+    ASM("mov pc, r14");
 }
 
 void _irq_handler() __attribute__ ((naked));
 void _irq_handler() {
-    ASMV(
+    ASM(
             // A few definitions
             ".equ ARM_MODE_FIQ,      0x11 \n"
             ".equ ARM_MODE_IRQ,      0x12 \n"
@@ -51,7 +51,7 @@ void _irq_handler() {
 
             "msr cpsr_c, #ARM_MODE_SVC | IRQ_BIT | FIQ_BIT \n" // go to SVC
 			// save current context (lr, sp and spsr are banked registers)
-            "stmfd sp!, {r0-r3,r12,lr,pc}\n" 
+            "stmfd sp!, {r0-r3,r12,lr,pc}\n"
 
             "msr cpsr_c, #ARM_MODE_IRQ | IRQ_BIT | FIQ_BIT     \n" // go to IRQ
 
@@ -62,13 +62,13 @@ void _irq_handler() {
             "add r2, sp, #24 \n"  // sp+24 is the position of the saved pc
 			// save address to return from interrupt into the pc position
 			// to retore context later on.
-            "str r0, [r2] \n" 
+            "str r0, [r2] \n"
             "stmfd sp!, {r1} \n"   // save irq-spsr
-    );            
-	
+    );
+
     IC::int_handler();
-	
-    ASMV(        
+
+    ASM(
             "ldmfd sp!, {r0}              \n"
             "msr spsr_cfxs, r0           \n" //restore IRQ's spsr value to SVC's spsr
 
@@ -82,7 +82,7 @@ void _fiq_handler() __attribute__ ((naked));
 void _fiq_handler()
 {
     kout << "fiq handler\n";
-    ASMV("subs pc, r14, #4");
+    ASM("subs pc, r14, #4");
 }
 
 };

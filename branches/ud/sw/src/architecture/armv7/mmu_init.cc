@@ -51,14 +51,14 @@ void ARMv7_MMU::init()
 void ARMv7_MMU::disable_domains()
 {
     unsigned int x=0xffffffff; //all ones = manager (no domain check).
-    ASMV("mcr p15,0,%0,c3,c0,0 \n"
+    ASM("mcr p15,0,%0,c3,c0,0 \n"
             ::"r"(x):);
 }
 
 void ARMv7_MMU::disable_access_flags()
 {
     unsigned int old, flag = 1<<29;
-    ASMV("mrc p15,0,%0,c1,c0,0 \n"
+    ASM("mrc p15,0,%0,c1,c0,0 \n"
          "bic %1, %0, %1 \n"
          "mcr p15,0,%1,c1,c0,0 \n"
          :"=r"(old), "=r"(flag) : : );
@@ -67,7 +67,7 @@ void ARMv7_MMU::disable_access_flags()
 void ARMv7_MMU::disable()
 {
     unsigned int flag;
-    ASMV("mrc p15, 0, %0, c1, c0, 0 \n"
+    ASM("mrc p15, 0, %0, c1, c0, 0 \n"
          "bic %0, %0, #1\n"
          "mcr p15, 0, %0, c1, c0, 0 \n":
          "=r"(flag) : : "cc");
@@ -75,7 +75,7 @@ void ARMv7_MMU::disable()
 
 void ARMv7_MMU::set_ttbr()
 {
-    ASMV("mcr p15, 0, %0, c2, c0, 0 \n"
+    ASM("mcr p15, 0, %0, c2, c0, 0 \n"
          "mcr p15, 0, %0, c2, c0, 1 \n"
          : : "r"(MMU_TABLE_ADDR) : "cc");
 }
@@ -83,11 +83,11 @@ void ARMv7_MMU::set_ttbr()
 unsigned int ARMv7_MMU::check_ttbr()
 {
     unsigned int ret;
-    ASMV("mrc p15,0,%0,c2,c0,2 \n"
+    ASM("mrc p15,0,%0,c2,c0,2 \n"
             :"=r"(ret) : :);
     if((ret&0x7)==0) kout<<"Using TTBR0 only!\n";
 
-    ASMV("mrc p15, 0, %0, c2, c0, 0 \n"
+    ASM("mrc p15, 0, %0, c2, c0, 0 \n"
          : "=r"(ret): :);
     return ret;
 }
@@ -99,17 +99,17 @@ void ARMv7_MMU::enable()
     ARMv7_MMU::disable_access_flags();
     unsigned int flag;
 
-    ASMV("mrc p15, 0, %0, c1, c0, 0 \n"
+    ASM("mrc p15, 0, %0, c1, c0, 0 \n"
          :"=r"(flag) : :);
     flag=(flag|1);
     //flag=(flag|0xc03807);
-    ASMV(//"orr %0, %0, #0x1 \n"
+    ASM(//"orr %0, %0, #0x1 \n"
          "dsb \n"
          "isb \n"
          "mcr p15, 0, %0, c1, c0, 0 \n"
          ::"r"(flag): "cc");
 
-    ASMV(
+    ASM(
          "dsb \n"
          "and r0, r0, r0 \n"
          "and r0, r0, r0 \n"
@@ -123,10 +123,10 @@ void ARMv7_MMU::enable()
 void ARMv7_MMU::enable_caches()
 {   //setting bits 2 (data cache) and 12 (I-cache).
     unsigned int flag;//, val=0x1004;
-    ASMV("mrc p15, 0, %0, c1, c0, 0 \n"
+    ASM("mrc p15, 0, %0, c1, c0, 0 \n"
          :"=r"(flag) : : );
     flag=flag|0x1004;
-    ASMV(//"orr %0, %0, %1 \n"
+    ASM(//"orr %0, %0, %1 \n"
          "mcr p15, 0, %0, c1, c0, 0 \n"
 
          "and r0, r0, r0\n"

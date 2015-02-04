@@ -74,12 +74,10 @@ private:
 
 __END_SYS
 
-#include "flash.h"
 #include "info.h"
 #include "uart.h"
 #include "rtc.h"
 #include "timer.h"
-#include "adc.h"
 #include "nic.h"
 #include "gpio.h"
 

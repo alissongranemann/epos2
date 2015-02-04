@@ -3,7 +3,8 @@
 #ifndef __zynq_config_h
 #define __zynq_config_h
 
-#include __APPLICATION_TRAITS_H
+#include <system/meta.h>
+#include __APPL_TRAITS_H
 
 #define __CPU_H                     __HEADER_ARCH(cpu)
 #define __TSC_H                     __HEADER_ARCH(tsc)
@@ -35,11 +36,7 @@ typedef Zynq_NIC                    NIC;
 typedef Zynq_RTC                    RTC;
 typedef Zynq_Component_Controller   Component_Controller;
 typedef Zynq_PCAP                   PCAP;
-
-// TODO: Fix this ugly workaround for ctti.h
-typedef Dummy<1>                    PCI;
-typedef Dummy<2>                    NOC;
-typedef Dummy<3>                    EEPROM;
+typedef Zynq_Scratchpad             Scratchpad;
 
 __END_SYS
 

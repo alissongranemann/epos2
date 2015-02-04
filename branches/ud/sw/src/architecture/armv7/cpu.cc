@@ -1,6 +1,6 @@
-// EPOS-- ARMv7 CPU Mediator Implementation
+// EPOS ARMv7 CPU Mediator Implementation
 
-#include <arch/armv7/cpu.h>
+#include <architecture/armv7/cpu.h>
 #include <system/config.h>
 #include <machine.h>
 
@@ -10,14 +10,14 @@ ARMv7::OP_Mode ARMv7::_mode = ARMv7::FULL;
 
 void ARMv7::Context::save() volatile
 {
-	ASMV("nop\n");
+	ASM("nop\n");
 }
 
 void ARMv7::Context::load() const volatile
 {
 	db<CPU>(TRC) << "CPU::Context::load(this=" << (void*)this << ")\n";
 
-	ASMV("ldr r0, [%0, #64]\n"
+	ASM("ldr r0, [%0, #64]\n"
          "msr spsr_cfsx, r0\n"
          "ldmfd %0, {r0-r12,sp,lr,pc}^\n"
 		 :
@@ -30,17 +30,17 @@ void ARMv7::switch_context(Context * volatile * o, Context * volatile n)
 {
 	kout << "Switch_context\n";
     Context * old = *o;
-        
-    old->_cpsr = CPU::flags();
-    
-    //ASMV("ldr r2, [%0, #64]" : : "r"(n) : "r2"); //geting n->_cpsr
-    //ASMV("msr spsr_cfsx, r2");
 
-    ASMV("msr spsr_cfsx, %0" : : "r"(n->_cpsr) :);
-    ASMV("stmia %0, {r0-r12,sp,lr,pc} \n"              // pc is always read with a +8 offset
+    old->_cpsr = CPU::flags();
+
+    //ASM("ldr r2, [%0, #64]" : : "r"(n) : "r2"); //geting n->_cpsr
+    //ASM("msr spsr_cfsx, r2");
+
+    ASM("msr spsr_cfsx, %0" : : "r"(n->_cpsr) :);
+    ASM("stmia %0, {r0-r12,sp,lr,pc} \n"              // pc is always read with a +8 offset
          "ldmfd %1, {r0-r12,sp,lr,pc}^"
           : : "r"(old), "r"(n) :);
-    ASMV("nop");                                        // so the pc read above is poiting here
+    ASM("nop");                                        // so the pc read above is poiting here
 }
 
 

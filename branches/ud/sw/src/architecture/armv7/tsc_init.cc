@@ -10,10 +10,10 @@ void ARMv7_TSC::init()
     db<Init, ARMv7_TSC>(TRC) << "ARMv7_TSC::init()" << endl;
 
     // Enable all counters and reset cycle counter
-    ASMV("MCR p15, 0, %0, c9, c12, 0\t\n" :: "r"(1<<2 || 1<<0));
+    ASM("MCR p15, 0, %0, c9, c12, 0\t\n" :: "r"(1<<2 || 1<<0));
 
     // Enable the cycle counter
-    ASMV("MCR p15, 0, %0, c9, c12, 1\t\n" :: "r"(0x80000000));
+    ASM("MCR p15, 0, %0, c9, c12, 1\t\n" :: "r"(0x80000000));
 }
 
 __END_SYS

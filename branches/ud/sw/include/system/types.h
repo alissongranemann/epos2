@@ -120,6 +120,7 @@ class Zynq_RTC;
 class Zynq_UART;
 class Zynq_GPIO;
 class Zynq_NIC;
+class Zynq_Scratchpad;
 class Zynq_Component_Controller;
 class Zynq_PCAP;
 
@@ -199,7 +200,7 @@ template<typename Component> class Remote;
 // System Components IDs
 // The order in this enumeration defines many things in the system (e.g. init)
 typedef unsigned int Type_Id;
-enum 
+enum
 {
     CPU_ID = 0,
     TSC_ID,

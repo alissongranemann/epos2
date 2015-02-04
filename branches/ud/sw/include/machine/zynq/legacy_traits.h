@@ -33,9 +33,10 @@ template <> struct Traits<Zynq>: public Traits<Zynq_Common>
 	static const unsigned int SYS       = 0x00100140; // After undef stack, but before APP_DATA (sys_info uses 260 bytes)
 	static const unsigned int SYS_HEAP  = 0x00508000; // SYS_HEAP comes right after APP_DATA, which is no bigger than 1 KB.
 
-	static const unsigned int APPLICATION_STACK_SIZE = 1024 * 4096; // 4 MB
-	static const unsigned int APPLICATION_HEAP_SIZE  = 16 * 1024 * 1024; // 16 MB
-	static const unsigned int SYSTEM_HEAP_SIZE = APPLICATION_STACK_SIZE * 32; // 128 MB
+    // Default Sizes and Quantities
+    static const unsigned int STACK_SIZE = 1024 * 4096;
+    static const unsigned int HEAP_SIZE = 16 * 1024 * 1024;
+    static const unsigned int MAX_THREADS = 16;
 
 	static const unsigned int enabled = true;
 };
@@ -54,6 +55,11 @@ template <> struct Traits<Zynq_Timer>: public Traits<Zynq_Common>
 template <> struct Traits<Zynq_UART>: public Traits<Zynq_Common>
 {
 	static const unsigned int BAUD_RATE = 115200;
+};
+
+template<> struct Traits<Zynq_Scratchpad>: public Traits<Zynq_Common>
+{
+    static const bool enabled = false;
 };
 
 __END_SYS
