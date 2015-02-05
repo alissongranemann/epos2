@@ -2,7 +2,7 @@
 
 #include <machine.h>
 
-extern "C" int __epos_library_app_entry();
+extern "C" int __epos_app_entry();
 
 __BEGIN_SYS
 
@@ -44,7 +44,7 @@ void Zynq::init()
     si->lm.sys_stack = 0;
     si->lm.sys_stack_size = 0;
 
-    si->lm.app_entry = (unsigned int)&__epos_library_app_entry;
+    si->lm.app_entry = (unsigned int)&__epos_app_entry;
 
     // Unlock SLCR and reset FPGA
     CPU::out32(0xF8000008, 0xDF0D);

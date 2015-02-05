@@ -15,7 +15,7 @@
 #define __IC_H                      __HEADER_MACH(ic)
 #define __TIMER_H                   __HEADER_MACH(timer)
 #define __UART_H                    __HEADER_MACH(uart)
-#define __NIC_H                     __HEADER_MACH(nic)
+//#define __NIC_H                     __HEADER_MACH(nic)
 #define __RTC_H                     __HEADER_MACH(rtc)
 #define __COMPONENT_CONTROLLER_H    __HEADER_MACH(component_controller)
 #define __PCAP_H                    __HEADER_MACH(pcap)
