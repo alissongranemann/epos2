@@ -119,7 +119,7 @@ protected:
             _lock.release();
         CPU::int_enable();
     }
-    
+
     static bool locked() { return CPU::int_disabled(); }
 
     void suspend(bool locked);

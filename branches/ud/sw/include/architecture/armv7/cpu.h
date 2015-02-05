@@ -20,7 +20,6 @@ public:
     class Context
     {
     public:
-
         Context(Log_Addr entry, Log_Addr stack_bottom, Log_Addr exit) :
             _r0(0xA), _r1(0xB), _r2(0xC), _r3(0xD), _r4(0xE), _r5(0xF), _r6(0),
             _r7(0), _r8(0), _r9(0), _r10(0), _r11(0), _r12(0),
@@ -84,12 +83,18 @@ public:
     static void int_enable() {
         irq_enable();
         fiq_enable();
+        _int_enabled = true;
     }
 
     static void int_disable() {
         irq_disable();
         fiq_disable();
+        _int_enabled = false;
     }
+
+    static bool int_enabled() { return _int_enabled; }
+
+    static bool int_disabled() { return !_int_enabled; }
 
     static void irq_enable() {
         Reg32 flags;
@@ -306,11 +311,8 @@ public:
             return ctx;
     }
 
-private:
-    static void init();
-
-    // ARMv7 specific methods
 public:
+    // ARMv7 specific methods
     static Reg8 in8(const Reg32 port) {
         return (*(volatile Reg8 *)port);
     }
@@ -340,6 +342,7 @@ public:
     }
 
     typedef char OP_Mode;
+
     enum {
         OFF = 0,
         HIBERNATE = 1,
@@ -354,7 +357,13 @@ public:
     static void power(OP_Mode mode);
 
 private:
+    static void init();
+
+private:
     static OP_Mode _mode;
+    // TODO: Maybe there's a cleaner way to signal when the interruptions are
+    // enabled
+    static bool _int_enabled;
 };
 
 inline CPU::Reg32 htonl(CPU::Reg32 v) { return CPU::htonl(v); }
