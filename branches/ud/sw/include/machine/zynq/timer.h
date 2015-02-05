@@ -62,7 +62,7 @@ public:
 
     static void init();
 
-    static void int_handler(IC::Interrupt_Id id);
+    static void int_handler(const IC::Interrupt_Id & id);
 
     void reset() { value(load()); }
 
