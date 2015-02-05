@@ -32,7 +32,7 @@ void Component_Manager::recfg(Buffer * buf, Type_Id type_id) {
     (buf->node)->couple();
 }
 
-void Component_Manager::int_handler(unsigned int interrupt) {
+void Component_Manager::int_handler(const unsigned int & interrupt) {
     //Component_Controller::disable_agent_receive_int();
     db<Component_Manager>(TRC) << "Component_Manager::int_handler(): begin"
         << endl;
