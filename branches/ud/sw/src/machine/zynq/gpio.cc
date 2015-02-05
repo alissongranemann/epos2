@@ -1,6 +1,6 @@
 // EPOS Zynq GPIO Mediator Implementation
 
-#include <mach/zynq/gpio.h>
+#include <machine/zynq/gpio.h>
 
 __BEGIN_SYS
 

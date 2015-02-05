@@ -37,7 +37,7 @@ void ARMv7_MMU::init()
 
     // let our stack breath!
     const unsigned int limit =
-        Memory_Map<Machine>::TOP - Traits<Machine>::APPLICATION_STACK_SIZE;
+        Memory_Map<Machine>::TOP - Traits<Machine>::STACK_SIZE;
     //Getting the memory position right after the end of the MMU Table
     CPU::Phy_Addr base = 0x104000+0x404000-0x80000;
     if(base % 0x4000 != 0)

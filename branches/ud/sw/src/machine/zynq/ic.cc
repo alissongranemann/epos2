@@ -1,4 +1,4 @@
-#include <mach/zynq/ic.h>
+#include <machine/zynq/ic.h>
 
 __BEGIN_SYS
 

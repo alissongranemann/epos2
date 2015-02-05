@@ -1,6 +1,6 @@
 // EPOS Zynq Component Controller Implementation
 
-#include <mach/zynq/component_controller.h>
+#include <machine/zynq/component_controller.h>
 
 __BEGIN_SYS
 
