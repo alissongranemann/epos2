@@ -50,6 +50,8 @@ template <> struct Traits<Zynq_Timer>: public Traits<Zynq_Common>
 {
     static const bool enabled = true;
 	static const bool prescale = true;
+
+    static const int FREQUENCY = 1000; // Hz
 };
 
 template <> struct Traits<Zynq_UART>: public Traits<Zynq_Common>
