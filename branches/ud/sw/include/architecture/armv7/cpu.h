@@ -281,7 +281,7 @@ public:
             int size, void (* exit)(), int (* entry)(T1 a1, T2 a2), T1 a1,
             T2 a2) {
         Log_Addr sp = stack + size;
-        sp -= sizeof(Context); //stack bottom
+        sp -= sizeof(Context); // Stack bottom
         Context * ctx = new(sp) Context(entry, sp - sizeof(unsigned int),
             Log_Addr(exit));
         ctx->_r0 = (Reg32)(a1);
@@ -294,7 +294,7 @@ public:
             int size, void (* exit)(), int (* entry)(T1 a1, T2 a2, T3 a3),
             T1 a1, T2 a2, T3 a3) {
         Log_Addr sp = stack + size;
-        sp -= sizeof(Context); //stack bottom
+        sp -= sizeof(Context); // Stack bottom
         Context * ctx = new(sp) Context(entry, sp - sizeof(unsigned int), Log_Addr(exit));
         ctx->_r0 = (Reg32)(a1);
         ctx->_r1 = (Reg32)(a2);

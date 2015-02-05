@@ -7,6 +7,7 @@
 __BEGIN_SYS
 
 ARMv7::OP_Mode ARMv7::_mode = ARMv7::FULL;
+bool ARMv7::_int_enabled = false;
 
 void ARMv7::Context::save() volatile
 {
