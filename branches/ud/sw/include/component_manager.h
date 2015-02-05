@@ -120,7 +120,7 @@ private:
     static const unsigned int N_RP = 8;
 
 private:
-    static void int_handler(unsigned int interrupt);
+    static void int_handler(const unsigned int & interrupt);
 
     static void init_ints();
 

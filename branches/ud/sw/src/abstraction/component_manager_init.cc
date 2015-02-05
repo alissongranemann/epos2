@@ -2,7 +2,6 @@
 
 #include <system/resource_table.h>
 #include <component_manager.h>
-#include <components/add.h>
 #include <gpio.h>
 
 __BEGIN_SYS

@@ -59,6 +59,11 @@ template <> struct Traits<Zynq_UART>: public Traits<Zynq_Common>
 	static const unsigned int BAUD_RATE = 115200;
 };
 
+template <> struct Traits<Zynq_NIC>: public Traits<Zynq_Common>
+{
+    static const unsigned int UNITS = 0;
+};
+
 template<> struct Traits<Zynq_Scratchpad>: public Traits<Zynq_Common>
 {
     static const bool enabled = false;
