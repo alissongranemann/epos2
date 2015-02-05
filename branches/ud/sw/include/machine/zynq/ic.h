@@ -621,7 +621,7 @@ public:
     }
 
     static void int_handler();
-    static void default_handler(Interrupt_Id id);
+    static void default_handler(const Interrupt_Id & id);
 
     static void init();
 
@@ -637,7 +637,7 @@ class Zynq_IC : public PandaBoard_IC
 	static const unsigned int INTS = 96;
 	private:
     static Interrupt_Handler _vector[INTS];
-	static void default_handler(Interrupt_Id id);
+	static void default_handler(const Interrupt_Id & id);
 	public:
     static void int_handler();
     static const unsigned int GIC_PROC_INTERFACE = 0xF8F00100;

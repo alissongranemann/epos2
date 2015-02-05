@@ -119,12 +119,12 @@ void PandaBoard_IC::int_handler() {
     //enable_distributor();
 }
 
-void PandaBoard_IC::default_handler(Interrupt_Id id) {
+void PandaBoard_IC::default_handler(const Interrupt_Id & id) {
     db<PandaBoard_IC>(INF) << "PandaBoard_IC::default_handler(id="<<id<<")\n";
 }
 
 
-void Zynq_IC::default_handler(Interrupt_Id id) {
+void Zynq_IC::default_handler(const Interrupt_Id & id) {
     db<PandaBoard_IC>(INF) << "Zynq_IC::default_handler(id="<<id<<")\n";
 }
 

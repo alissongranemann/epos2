@@ -6,19 +6,6 @@
 
 __BEGIN_SYS
 
-void PandaBoard_IC::init()
-{
-    db<Init, IC>(TRC) << "IC::init()" << endl;
-
-    CPU::int_disable();
-
-    if(Machine::cpu_id() == 0)
-        interrupt_distributor_init();
-    //interrupt_interface_init();
-
-    CPU::int_enable();
-}
-
 void Zynq_IC::init()
 {
     db<Init, IC>(TRC) << "IC::init()" << endl;
