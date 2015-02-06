@@ -1,8 +1,0 @@
-possiveis otimizações para o algorítimo de hardware
-	- criar um parâmetro para criação de multiplas s-box (otimização de throughput usando memória)
-		parametro pode ter valores múltiplos de 2 até 16
-
-	- incluir novamente a divisão do key schedule no algorítimo otimizado
-
-	- buscar maneira de implementar um bloco só de expansão de chave que é compartilhado
-		não utilizar herança?

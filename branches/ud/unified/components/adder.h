@@ -1,13 +1,13 @@
-// EPOS Add Abstraction Declarations
+// EPOS Adder Abstraction Declarations
 
-#ifndef __add_unified_h
-#define __add_unified_h
+#ifndef __adder_unified_h
+#define __adder_unified_h
 
 #include "component.h"
 
 namespace Implementation {
 
-class Add: public Component
+class Adder: public Component
 {
 public:
     enum {
@@ -15,7 +15,7 @@ public:
     };
 
 public:
-    Add(Channel_t &rx_ch, Channel_t &tx_ch, unsigned int inst_id):
+    Adder(Channel_t &rx_ch, Channel_t &tx_ch, unsigned int inst_id):
             Component(rx_ch, tx_ch, inst_id) {}
 
     unsigned int add(unsigned int a, unsigned int b) {
@@ -23,13 +23,13 @@ public:
     }
 };
 
-PROXY_BEGIN(Add)
+PROXY_BEGIN(Adder)
     unsigned int add(unsigned int a, unsigned int b) {
-        return Base::call_r<Add::OP_ADD, unsigned int>(a, b);
+        return Base::call_r<Adder::OP_ADD, unsigned int>(a, b);
     }
 PROXY_END
 
-HANDLE_BEGIN(Add)
+HANDLE_BEGIN(Adder)
     unsigned int add(unsigned int a, unsigned int b) {
         unsigned int result;
 
@@ -42,7 +42,7 @@ HANDLE_BEGIN(Add)
     }
 HANDLE_END
 
-AGENT_BEGIN(Add)
+AGENT_BEGIN(Adder)
     D_CALL_R_2(add, OP_ADD, unsigned int, unsigned int, unsigned int)
 AGENT_END
 
