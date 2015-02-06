@@ -1,8 +1,8 @@
-// EPOS Add Abstraction Declarations
+// EPOS Adder Abstraction Declarations
 
-#ifndef __add_h
-#define __add_h
+#ifndef __adder_h
+#define __adder_h
 
-#include "../../unified/components/add.h"
+#include "../../unified/components/adder.h"
 
 #endif

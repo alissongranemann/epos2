@@ -13,4 +13,4 @@ typedef Catapult::Channel_t Channel_t;
 
 };
 
-#endif /* TYPES_H_ */
+#endif

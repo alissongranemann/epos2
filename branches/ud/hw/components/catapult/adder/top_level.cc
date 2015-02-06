@@ -1,7 +1,7 @@
 #define HIGH_LEVEL_SYNTHESIS
 
-#include "../../add.h"
+#include "../../adder.h"
 using namespace EPOS;
 
 #pragma hls_design top
-DECLARE_HLS_TOP_LEVEL(Add)
+DECLARE_HLS_TOP_LEVEL(Adder)

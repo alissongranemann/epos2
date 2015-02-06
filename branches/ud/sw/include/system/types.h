@@ -5,6 +5,8 @@ typedef __SIZE_TYPE__ size_t;
 #ifndef __types_h
 #define __types_h
 
+#include "../../../unified/framework/types.h"
+
 // Memory allocators
 __BEGIN_API
 enum System_Allocator { SYSTEM };
@@ -25,12 +27,6 @@ void * operator new[](size_t, const EPOS::System_Allocator &);
 
 void * operator new(size_t, const EPOS::Scratchpad_Allocator &);
 void * operator new[](size_t, const EPOS::Scratchpad_Allocator &);
-
-#include "../../../unified/framework/types.h"
-
-// Dummy class for incomplete architectures and machines
-template<int>
-class Dummy;
 
 // Utilities
 __BEGIN_UTIL
@@ -218,7 +214,7 @@ enum
     NIC_ID,
     COMPONENT_CONTROLLER_ID,
 
-    THREAD_ID = 20,
+    THREAD_ID = 21,
     TASK_ID,
     ACTIVE_ID,
 
@@ -281,6 +277,15 @@ template<> struct Type<Cortex_M_Display> { static const Type_Id ID = DISPLAY_ID;
 template<> struct Type<Cortex_M_Scratchpad> { static const Type_Id ID = SCRATCHPAD_ID; };
 template<> struct Type<Cortex_M_Radio> { static const Type_Id ID = NIC_ID; };
 
+template<> struct Type<Zynq> { static const Type_Id ID = MACHINE_ID; };
+template<> struct Type<ZynqM_IC> { static const Type_Id ID = IC_ID; };
+template<> struct Type<Zynq_Timer> { static const Type_Id ID = TIMER_ID; };
+template<> struct Type<Zynq_UART> { static const Type_Id ID = UART_ID; };
+template<> struct Type<Zynq_RTC> { static const Type_Id ID = RTC_ID; };
+template<> struct Type<Zynq_Display> { static const Type_Id ID = DISPLAY_ID; };
+template<> struct Type<Zynq_Scratchpad> { static const Type_Id ID = SCRATCHPAD_ID; };
+template<> struct Type<Zynq_Component_Controller> { static const Type_Id ID = COMPONENT_CONTROLLER_ID; };
+
 
 template<> struct Type<Thread> { static const Type_Id ID = THREAD_ID; };
 template<> struct Type<Periodic_Thread> { static const Type_Id ID = THREAD_ID; };
@@ -299,6 +304,8 @@ template<> struct Type<Clock> { static const Type_Id ID = CLOCK_ID; };
 template<> struct Type<Chronometer> { static const Type_Id ID = CHRONOMETER_ID; };
 template<> struct Type<Alarm> { static const Type_Id ID = ALARM_ID; };
 template<> struct Type<Delay> { static const Type_Id ID = ALARM_ID; };
+
+template<> struct Type<Component_Manager> { static const Type_Id ID = COMPONENT_MANAGER_ID; };
 
 template<> struct Type<IP> { static const Type_Id ID = IP_ID; };
 template<> struct Type<ICMP> { static const Type_Id ID = ICMP_ID; };

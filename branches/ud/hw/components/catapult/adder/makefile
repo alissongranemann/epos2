@@ -1,6 +1,6 @@
-COMP_NAMESPACE := ADD_NS
-COMP_NAME := Add
-COMP_HEADER_NAME := add.h
+COMP_NAMESPACE := ADDER_NS
+COMP_NAME := Adder
+COMP_HEADER_NAME := adder.h
 COMP_NIDS := 1
 
 # Include definitions
