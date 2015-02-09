@@ -1,161 +1,120 @@
-#ifndef __proxy_sw_h
-#define __proxy_sw_h
+// EPOS Component Framework - Component Proxy
 
-#include <system/ctti.h>
-#include <system/types.h>
-#include <component_manager.h>
+// Proxies and Agents handle RMI within EPOS component framework
 
-using EPOS::Component_Manager;
-using EPOS::SYSTEM;
+#ifndef __proxy_h
+#define __proxy_h
 
-namespace Implementation {
+#include "message.h"
+
+__BEGIN_SYS
 
 template<typename Component>
-class Proxy_Common<Component, Configurations::EPOS_SOC_Catapult, false>:
-    Serializer<Traits<Component>::serdes_buffer>
+class Proxy;
+
+// Proxied is used to create a Proxy for components created either by SETUP before the framework came into place or internally by the framework itself
+template<typename Component>
+class Proxied: public Proxy<Component>
 {
 public:
-    // No arguments, return
-    template<unsigned int OP, typename RET>
-    RET call_r() {
-        Component_Manager::call(_buf, OP, 0, type_to_npkt_1<RET>::Result,
-            Base::get_pkt_buffer());
-        Base::set_pkt_cnt(type_to_npkt_1<RET>::Result);
-        Base::reset();
-        RET ret;
-        Base::deserialize(ret);
-
-        return ret;
+    Proxied(): Proxy<Component>(Proxy<Component>::PROXIED) {
+        db<Framework>(TRC) << "Proxied(this=" << this << ")" << endl;
     }
 
-    // No arguments, no return
-    template<unsigned int OP>
-    void call() {
-        Component_Manager::call(_buf, OP, 0, 0, 0);
+    void * operator new(size_t s, void * adapter) {
+        db<Framework>(TRC) << "Proxied::new(adapter=" << adapter << ")" << endl;
+        Framework::Element * el= Framework::_cache.search_key(reinterpret_cast<unsigned int>(adapter));
+        void * proxy;
+        if(el) {
+            proxy = el->object();
+            db<Framework>(INF) << "Proxied::new(adapter=" << adapter << ") => " << proxy << " (CACHED)" << endl;
+        } else {
+            proxy = new Proxy<Component>(Id(Type<Component>::ID, reinterpret_cast<Id::Unit_Id>(adapter)));
+            el = new Framework::Element(proxy, reinterpret_cast<unsigned int>(adapter));  // the proxied cache is insert-only; object are intentionally never deleted, since they have been created by SETUP!
+            Framework::_cache.insert(el);
+        }
+        return proxy;
     }
-
-    // One argument, return
-    template<unsigned int OP, typename RET, typename ARG0>
-    RET call_r(ARG0 &arg0) {
-        Base::reset();
-        Base::serialize(arg0);
-        Component_Manager::call(_buf, OP, type_to_npkt_1<ARG0>::Result,
-            type_to_npkt_1<RET>::Result, Base::get_pkt_buffer());
-        Base::set_pkt_cnt(type_to_npkt_1<RET>::Result);
-        Base::reset();
-        RET ret;
-        Base::deserialize(ret);
-
-        return ret;
-    }
-
-    // Two arguments, return
-    template<unsigned int OP, typename RET, typename ARG0, typename ARG1>
-    RET call_r(ARG0 &arg0, ARG1 &arg1) {
-        Base::reset();
-        Base::serialize(arg0);
-        Base::serialize(arg1);
-        Component_Manager::call(_buf, OP,
-            type_to_npkt_2<ARG0,ARG1>::Result, type_to_npkt_1<RET>::Result,
-            Base::get_pkt_buffer());
-        Base::set_pkt_cnt(type_to_npkt_1<RET>::Result);
-        Base::reset();
-        RET ret;
-        Base::deserialize(ret);
-
-        return ret;
-    }
-
-    // Four arguments, return
-    template<unsigned int OP, typename RET, typename ARG0, typename ARG1,
-        typename ARG2, typename ARG3>
-    RET call_r(ARG0 &arg0, ARG1 &arg1, ARG2 &arg2, ARG3 &arg3) {
-        Base::reset();
-        Base::serialize(arg0);
-        Base::serialize(arg1);
-        Base::serialize(arg2);
-        Base::serialize(arg3);
-        Component_Manager::call(_buf, OP,
-            type_to_npkt_4<ARG0,ARG1,ARG2,ARG3>::Result,
-            type_to_npkt_1<RET>::Result, Base::get_pkt_buffer());
-        Base::set_pkt_cnt(type_to_npkt_1<RET>::Result);
-        Base::reset();
-        RET ret;
-        Base::deserialize(ret);
-
-        return ret;
-    }
-
-    // Eight arguments, return
-    template<unsigned int OP, typename RET, typename ARG0, typename ARG1,
-        typename ARG2, typename ARG3, typename ARG4, typename ARG5,
-        typename ARG6, typename ARG7>
-    RET call_r(ARG0 &arg0, ARG1 &arg1, ARG2 &arg2, ARG3 &arg3, ARG4 &arg4,
-            ARG5 &arg5, ARG6 &arg6, ARG7 &arg7) {
-        Base::reset();
-        Base::serialize(arg0);
-        Base::serialize(arg1);
-        Base::serialize(arg2);
-        Base::serialize(arg3);
-        Base::serialize(arg4);
-        Base::serialize(arg5);
-        Base::serialize(arg6);
-        Base::serialize(arg7);
-        Component_Manager::call(_buf, OP,
-            type_to_npkt_8<ARG0,ARG1,ARG2,ARG3,ARG4,ARG5,ARG6,ARG7>::Result,
-            type_to_npkt_1<RET>::Result, Base::get_pkt_buffer());
-        Base::set_pkt_cnt(type_to_npkt_1<RET>::Result);
-        Base::reset();
-        RET ret;
-        Base::deserialize(ret);
-
-        return ret;
-    }
-
-    // One argument, no return
-    template<unsigned int OP, typename ARG0>
-    void call(ARG0 &arg0) {
-        Base::reset();
-        Base::serialize(arg0);
-        Component_Manager::call(_buf, OP, type_to_npkt_1<ARG0>::Result, 0,
-            Base::get_pkt_buffer());
-    }
-
-    // Two arguments, no return
-    template<unsigned int OP, typename ARG0, typename ARG1>
-    void call(ARG0 &arg0, ARG1 &arg1) {
-        Base::reset();
-        Base::serialize(arg0);
-        Base::serialize(arg1);
-        Component_Manager::call(_buf, OP,
-            type_to_npkt_2<ARG0,ARG1>::Result, 0, Base::get_pkt_buffer());
-    }
-
-protected:
-    Proxy_Common(Channel_t &rx_ch, Channel_t &tx_ch, unsigned int inst_id) {
-        _buf = new (SYSTEM) Component_Manager::Buffer(Type2Id<Component>::ID, inst_id);
-
-        Component_Manager::recfg(_buf, Type2Id<Component>::ID);
-
-        // TODO: The Component_Manager should handle inst_ids, not the Proxy,
-        // fix it
-        set_inst_id(inst_id);
-    }
-
-    ~Proxy_Common() { delete _buf; }
-
-private:
-    typedef Serializer<Traits<Component>::serdes_buffer> Base;
-
-private:
-    // The methods are implemented by all agents
-    void set_inst_id(unsigned int id) { call<Component::OP_SET_INST_ID, unsigned int>(id); }
-    unsigned int get_inst_id() { return call_r<Component::OP_GET_INST_ID, unsigned int>(); }
-
-private:
-    Component_Manager::Buffer * _buf;
 };
 
+template<typename Component>
+class Proxy: public Message
+{
+    template<typename> friend class Proxy;
+    template<typename> friend class Proxied;
+
+private:
+    enum Private_Proxied{ PROXIED };
+
+private:
+    Proxy(const Id & id): Message(id) {} // for Proxied::operator new()
+    Proxy(const Private_Proxied & p) { db<Framework>(TRC) << "Proxy(PROXIED) => [id=" << Proxy<Component>::id() << "]" << endl; } // for Proxied
+
+public:
+    template<typename ... Tn>
+    Proxy(const Tn & ... an): Message(Id(Type<Component>::ID, 0)) { invoke(CREATE + sizeof ... (Tn), an ...); }
+    ~Proxy() { invoke(DESTROY); }
+
+    static Proxy<Component> * self() { return new (reinterpret_cast<void *>(static_invoke(SELF))) Proxied<Component>; }
+
+    // Process management
+    void suspend() { invoke(THREAD_SUSPEND); }
+    void resume() { invoke(THREAD_RESUME); }
+    int join() { return invoke(THREAD_JOIN); }
+    int pass() { return invoke(THREAD_PASS); }
+    static int yield() { return static_invoke(THREAD_YIELD); }
+    static void exit(int r) { static_invoke(THREAD_EXIT, r); }
+    static volatile bool wait_next() { return static_invoke(THREAD_WAIT_NEXT); }
+
+    Proxy<Address_Space> * address_space() { return new (reinterpret_cast<Adapter<Address_Space> *>(invoke(TASK_ADDRESS_SPACE))) Proxied<Address_Space>; }
+    Proxy<Segment> * code_segment() { return new (reinterpret_cast<Adapter<Segment> *>(invoke(TASK_CODE_SEGMENT))) Proxied<Segment>; }
+    Proxy<Segment> * data_segment() { return new (reinterpret_cast<Adapter<Segment> *>(invoke(TASK_DATA_SEGMENT))) Proxied<Segment>; }
+    CPU::Log_Addr code() { return invoke(TASK_CODE); }
+    CPU::Log_Addr data() { return invoke(TASK_DATA); }
+
+    // Memory management
+    CPU::Phy_Addr pd() { return invoke(ADDRESS_SPACE_PD); }
+    CPU::Log_Addr attach(const Proxy<Segment> & seg) { return invoke(ADDRESS_SPACE_ATTACH1, seg.id().unit()); }
+    CPU::Log_Addr attach(const Proxy<Segment> & seg, CPU::Log_Addr addr) { return invoke(ADDRESS_SPACE_ATTACH2, seg.id().unit(), addr); }
+    void detach(const Proxy<Segment> & seg) { invoke(ADDRESS_SPACE_DETACH, seg.id().unit());}
+
+    unsigned int size() { return invoke(SEGMENT_SIZE); }
+    CPU::Phy_Addr phy_address() { return invoke(SEGMENT_PHY_ADDRESS); }
+    int resize(int amount) { return invoke(SEGMENT_RESIZE, amount); }
+
+    // Synchronization
+    void lock() { invoke(SYNCHRONIZER_LOCK); }
+    void unlock() { invoke(SYNCHRONIZER_UNLOCK); }
+
+    void p() { invoke(SYNCHRONIZER_P); }
+    void v() { invoke(SYNCHRONIZER_V); }
+
+    void wait() { invoke(SYNCHRONIZER_WAIT); }
+    void signal() { invoke(SYNCHRONIZER_SIGNAL); }
+    void broadcast() { invoke(SYNCHRONIZER_BROADCAST); }
+
+    // Timing
+    template<typename T>
+    static void delay(T t) { static_invoke(ALARM_DELAY, t); }
+
+    // Communication
+    template<typename T1, typename T2, typename T3>
+    int send(T1 a1, T2 a2, T3 a3) { return invoke(SELF, a1, a2, a3); }
+    template<typename T1, typename T2, typename T3>
+    int receive(T1 a1, T2 a2, T3 a3) { return invoke(SELF, a1, a2, a3); }
+
+    template<typename ... Tn>
+    static int static_invoke(const Method & m, const Tn & ... an) {
+        Message msg(Id(Type<Component>::ID, 0)); // avoid calling ~Proxy()
+        Result res = msg.act(m, an ...);
+        return (m == SELF) ? msg.id().unit() : res;
+    }
+
+private:
+    template<typename ... Tn>
+    int invoke(const Method & m, const Tn & ... an) { return act(m, an ...); }
 };
+
+__END_SYS
 
 #endif

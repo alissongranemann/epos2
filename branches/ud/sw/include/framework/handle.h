@@ -1,82 +1,140 @@
-#ifndef __handle_sw_h
-#define __handle_sw_h
+// EPOS Component Framework - Component Handle
 
-#include <utility/spin.h>
-#include <component_manager.h>
-#include "../../../unified/framework/proxy.h"
-#include "../../../unified/framework/scenario_adapter.h"
+// Handle is the framework entry point. It defines a first component wrapper whose main
+// purpose is to ensure the invocation of proper new and delete operators (from scenario) for components,
+// independently of how they are declared by the client (static allocations will be forwarded to new).
 
-using EPOS::Component_Manager;
-using EPOS::Spin;
+#ifndef __handle_h
+#define __handle_h
 
-namespace Implementation {
+#include "stub.h"
+
+__BEGIN_SYS
 
 template<typename Component>
-class Handle_Common<Component, Configurations::EPOS_SOC_Catapult, false>
+class Handle;
+
+// Handled is used to create a wrapper for components created either by SETUP before the framework came into place or internally by the framework itself
+template<typename Component>
+class Handled: public Handle<Component>
 {
 public:
-    Handle_Common(Channel_t &rx_ch, Channel_t &tx_ch) {
-        // A static instance ID implies that it will be shared by all
-        // different types but it's better than hard coded IDs
-        // TODO: Possible race condition!
-        static unsigned int inst_id = 0;
-
-        _inst_id = inst_id++;
-
-        // We keep a Scenario_Adapter and Proxy in order to manage the Component
-        // in both hardware and software domains
-        _adapter = new Scenario_Adapter<Component>(rx_ch, tx_ch, _inst_id);
-        _proxy = new Proxy<Component>(rx_ch, tx_ch, _inst_id);
-
-        // TODO: Which should be the initial domain of the component?
-        _domain = Component_Manager::HARDWARE;
+    Handled(): Handle<Component>(Handle<Component>::HANDLED) {
+        db<Framework>(TRC) << "Handled(this=" << this << ")" << endl;
     }
 
-    ~Handle_Common() {
-        delete _adapter;
-        delete _proxy;
+    void * operator new(size_t s, void * stub) {
+        db<Framework>(TRC) << "Handled::new(stub=" << stub << ")" << endl;
+        Framework::Element * el= Framework::_cache.search_key(reinterpret_cast<unsigned int>(stub));
+        void * handle;
+        if(el) {
+            handle = el->object();
+            db<Framework>(INF) << "Handled::new(stub=" << stub << ") => " << handle << " (CACHED)" << endl;
+        } else {
+            handle = new Handle<Component>(reinterpret_cast<typename Handle<Component>::_Stub *>(stub));
+            el = new Framework::Element(handle, reinterpret_cast<unsigned int>(stub));  // the handled cache is insert-only; object are intentionally never deleted, since they have been created by SETUP!
+            Framework::_cache.insert(el);
+        }
+        return handle;
     }
-
-protected:
-    void enter_recfg() {
-        _spin.acquire();
-
-        get_state();
-
-        // TODO: Speed hack! hehehe :)
-        delete _proxy;
-
-        // TODO: Can we remove these damn channels?
-        Channel_t rx_ch;
-        Channel_t tx_ch;
-        _proxy = new Proxy<Component>(rx_ch, tx_ch, _inst_id);
-
-        set_state();
-
-        _domain = Component_Manager::HARDWARE;
-    }
-
-    void leave_recfg() { _spin.release(); }
-
-protected:
-    Scenario_Adapter<Component> * _adapter;
-    Proxy<Component> * _proxy;
-    Component_Manager::Domain _domain;
-
-private:
-    bool get_state() {
-        return true;
-    }
-
-    bool set_state() {
-        return true;
-    }
-
-private:
-    Spin _spin;
-    unsigned int _inst_id;
 };
 
+
+template<typename Component>
+class Handle
+{
+    template<typename> friend class Handle;
+    template<typename> friend class Handled;
+    template<typename> friend class Proxy;
+
+private:
+    typedef Stub<Component, Traits<Component>::ASPECTS::Length || (Traits<System>::mode == Traits<Build>::KERNEL)> _Stub;
+
+    enum Private_Handle{ HANDLED };
+
+private:
+    Handle(const Private_Handle & h) { db<Framework>(TRC) << "Handle(HANDLED) => [stub=" << _stub << "]" << endl; }
+    Handle(_Stub * s) { _stub = s; }
+
+public:
+    // Dereferencing handles for Task(cs, ds)
+    Handle(const Handle<Segment> & cs, const Handle<Segment> & ds) { _stub = new _Stub(*cs._stub, *ds._stub); }
+
+    // Dereferencing handle for Thread(task, an ...)
+    template<typename ... Tn>
+    Handle(const Handle<Task> & t, const Tn & ... an) { _stub = new _Stub(*t._stub, an ...); }
+
+    template<typename ... Tn>
+    Handle(const Tn & ... an) { _stub = new _Stub(an ...); }
+
+    ~Handle() { if(_stub) delete _stub; }
+
+    static Handle<Component> * self() { return new (_Stub::self()) Handled<Component>; }
+
+    // Process management
+    void suspend() { _stub->suspend(); }
+    void resume() { _stub->resume(); }
+    int join() { return _stub->join(); }
+    int pass() { return _stub->pass(); }
+    static void yield() { _Stub::yield(); }
+    static void exit(int r = 0) { _Stub::exit(r); }
+    static volatile bool wait_next() { return _Stub::wait_next(); }
+
+    Handle<Address_Space> * address_space() const { return new (_stub->address_space()) Handled<Address_Space>; }
+    Handle<Segment> * code_segment() const { return new (_stub->code_segment()) Handled<Segment>; }
+    Handle<Segment> * data_segment() const { return new (_stub->data_segment()) Handled<Segment>; }
+    CPU::Log_Addr code() const { return _stub->code(); }
+    CPU::Log_Addr data() const { return _stub->data(); }
+
+    // Memory Management
+    CPU::Phy_Addr pd() { return _stub->pd(); }
+    CPU::Log_Addr attach(const Handle<Segment> & seg) { return _stub->attach(*seg._stub); }
+    CPU::Log_Addr attach(const Handle<Segment> & seg, CPU::Log_Addr addr) { return _stub->attach(*seg._stub, addr); }
+    void detach(const Handle<Segment> & seg) { _stub->detach(*seg._stub); }
+
+    unsigned int size() const { return _stub->size(); }
+    CPU::Phy_Addr phy_address() const { return _stub->phy_address(); }
+    int resize(int amount) { return _stub->resize(amount); }
+
+    // Synchronization
+    void lock() { _stub->lock(); }
+    void unlock() { _stub->unlock(); }
+
+    void p() { _stub->p(); }
+    void v() { _stub->v(); }
+
+    void wait() { _stub->wait(); }
+    void signal() { _stub->signal(); }
+    void broadcast() { _stub->broadcast(); }
+
+    // Timing
+    template<typename T>
+    static void delay(T a) { _Stub::delay(a); }
+
+    void reset() { _stub->reset(); }
+    void start() { _stub->start(); }
+    void lap() { _stub->lap(); }
+    void stop() { _stub->stop(); }
+
+    int frequency() { return _stub->frequency(); }
+    int ticks() { return _stub->ticks(); }
+    int read() { return _stub->read(); }
+
+    // Communication
+    template<typename ... Tn>
+    int send(Tn ... an) { return _stub->send(an ...);}
+    template<typename ... Tn>
+    int receive(Tn ... an) { return _stub->receive(an ...);}
+
+    template<typename ... Tn>
+    int read(Tn ... an) { return _stub->read(an ...);}
+    template<typename ... Tn>
+    int write(Tn ... an) { return _stub->write(an ...);}
+
+private:
+    _Stub * _stub;
 };
+
+__END_SYS
 
 #endif
