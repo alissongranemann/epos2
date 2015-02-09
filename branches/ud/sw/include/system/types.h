@@ -116,6 +116,7 @@ class Zynq_RTC;
 class Zynq_UART;
 class Zynq_GPIO;
 class Zynq_NIC;
+class Zynq_Display;
 class Zynq_Scratchpad;
 class Zynq_Component_Controller;
 class Zynq_PCAP;
@@ -180,6 +181,8 @@ class Link;
 template<typename Channel, typename Network, bool connectionless>
 class Port;
 
+class Adder;
+
 // Framework
 class Framework;
 template<typename Component> class Handle;
@@ -191,6 +194,7 @@ class Component_Manager;
 class Aspect;
 template<typename Component> class Authenticated;
 template<typename Component> class Shared;
+template<typename Component> class Hardware;
 template<typename Component> class Remote;
 
 // System Components IDs
@@ -240,6 +244,8 @@ enum
     LINK_ID,
     PORT_ID,
 
+    ADDER_ID,
+
     UTILITY_ID = 50,
 
     UNKNOWN_TYPE_ID,
@@ -278,7 +284,7 @@ template<> struct Type<Cortex_M_Scratchpad> { static const Type_Id ID = SCRATCHP
 template<> struct Type<Cortex_M_Radio> { static const Type_Id ID = NIC_ID; };
 
 template<> struct Type<Zynq> { static const Type_Id ID = MACHINE_ID; };
-template<> struct Type<ZynqM_IC> { static const Type_Id ID = IC_ID; };
+template<> struct Type<Zynq_IC> { static const Type_Id ID = IC_ID; };
 template<> struct Type<Zynq_Timer> { static const Type_Id ID = TIMER_ID; };
 template<> struct Type<Zynq_UART> { static const Type_Id ID = UART_ID; };
 template<> struct Type<Zynq_RTC> { static const Type_Id ID = RTC_ID; };
