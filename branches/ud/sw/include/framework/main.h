@@ -73,6 +73,8 @@ BIND(UDP);
 BIND(TCP);
 BIND(DHCP);
 
+BIND(Adder);
+
 //TBIND(Link);
 //TBIND(Port);
 

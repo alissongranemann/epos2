@@ -131,6 +131,9 @@ public:
     template<typename ... Tn>
     int write(Tn ... an) { return _stub->write(an ...);}
 
+    // Adder
+    int add(int a, int b) { return _stub->add(a, b); }
+
 private:
     _Stub * _stub;
 };
