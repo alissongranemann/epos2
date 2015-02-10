@@ -319,6 +319,8 @@ template<> struct Type<UDP> { static const Type_Id ID = UDP_ID; };
 template<> struct Type<TCP> { static const Type_Id ID = TCP_ID; };
 template<> struct Type<DHCP> { static const Type_Id ID = DHCP_ID; };
 
+template<> struct Type<Adder> { static const Type_Id ID = ADDER_ID; };
+
 template<> struct Type<Utility> { static const Type_Id ID = UTILITY_ID; };
 
 __END_SYS
