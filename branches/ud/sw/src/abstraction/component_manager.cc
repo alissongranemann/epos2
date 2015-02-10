@@ -1,14 +1,13 @@
 // EPOS Component Manager Abstraction Implementation
 
-#include <utility/malloc.h>
 #include <component_manager.h>
 
 __BEGIN_SYS
 
-void Component_Manager::call(Buffer * buf, unsigned int op_id,
+void Component_Manager::call(const Buffer & buf, Method m,
         unsigned int n_args, unsigned int n_ret, unsigned int * data) {
-    db<Component_Manager>(TRC) << "Component_Manager::call(buf=" << buf
-        << ",op_id=" << op_id << ",n_args=" << n_args << ",n_ret=" << n_ret
+    db<Component_Manager>(TRC) << "Component_Manager::call(buf=" << &buf
+        << ",m=" << m << ",n_args=" << n_args << ",n_ret=" << n_ret
         << ",data=" << data << "(";
 
     for (unsigned int i = 0; i < n_args; ++i)
@@ -16,20 +15,9 @@ void Component_Manager::call(Buffer * buf, unsigned int op_id,
 
     db<Component_Manager>(TRC) << "))" << endl;
 
-    Component_Controller::send_call(buf->id, op_id);
-    Component_Controller::send_call_data(buf->id, n_args, data);
-    Component_Controller::receive_return_data(buf->id, n_ret, data);
-}
-
-void Component_Manager::recfg(Buffer * buf, Type_Id type_id) {
-    db<Component_Manager>(TRC) << "Component_Manager::recfg(buf="
-        << buf << "," << "type_id=" << type_id << ")" << endl;
-
-    unsigned int local = ((buf->node)->addr)->local;
-
-    (buf->node)->decouple();
-    _pcap->transfer(_bitstreams[local][type_id].addr, _bitstreams[local][type_id].n_bytes/4);
-    (buf->node)->couple();
+    Component_Controller::send_call(buf.proxy_id, m);
+    Component_Controller::send_call_data(buf.proxy_id, n_args, data);
+    Component_Controller::receive_return_data(buf.proxy_id, n_ret, data);
 }
 
 void Component_Manager::int_handler(const unsigned int & interrupt) {
