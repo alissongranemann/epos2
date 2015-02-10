@@ -105,7 +105,7 @@ public:
         return db;
     }
 
-private:
+protected:
     Id _id;
     Method _method;
     char _parms[MAX_PARAMETERS_SIZE];
@@ -137,8 +137,9 @@ public:
         out(an ...);
         // TODO: Find a way to set the instance ID. n_ret should depend on
         // the serdes packet width. Change data for _parms.
-        return Component_Manager::call(_buf, _method, sizeof...(an),
+        Component_Manager::call(_buf, _method, sizeof...(an),
             (sizeof(int)/4), data);
+        return 0;
     }
 
 private:
