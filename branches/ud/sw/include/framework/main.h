@@ -32,6 +32,8 @@ __END_SYS
 #include <system.h>
 #include <alarm.h>
 
+#include <adder.h>
+
 #include "handle.h"
 
 #define BIND(X) typedef _SYS::IF<(_SYS::Traits<_SYS::X>::ASPECTS::Length || (_SYS::Traits<_SYS::Build>::MODE == _SYS::Traits<_SYS::Build>::KERNEL)), _SYS::Handle<_SYS::X>, _SYS::X>::Result X;

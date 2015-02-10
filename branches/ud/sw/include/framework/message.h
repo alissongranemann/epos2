@@ -3,13 +3,15 @@
 #ifndef __message_h
 #define __message_h
 
+#include "../component_manager.h"
+
 #include "id.h"
 
 extern "C" { int _syscall(void *); }
 
 __BEGIN_SYS
 
-class Message
+class Message_Common
 {
 private:
     static const unsigned int MAX_PARAMETERS_SIZE = 20;
@@ -63,6 +65,8 @@ public:
 
         ALARM_DELAY = COMPONENT,
 
+        ADDER_ADD = COMPONENT,
+
         PRINT = COMPONENT,
 
         UNDEFINED = -1
@@ -71,22 +75,14 @@ public:
     typedef Method Result;
 
 public:
-    Message() {}
-    Message(const Id & id): _id(id) {}
+    Message_Common() {}
+    Message_Common(const Id & id): _id(id) {}
 
     const Id & id() const { return _id; }
     void id(const Id & id) { _id = id; }
 
     const Method & method() const { return _method; }
     void result(const Result & r) { _method = r; }
-
-    template<typename ... Tn>
-    int act(const Method & m, const Tn & ... an) {
-        _method = m;
-        out(an ...);
-        _syscall(this);
-        return _method;
-    }
 
     template<typename ... Tn>
     void in(Tn && ... an) {
@@ -101,18 +97,52 @@ public:
         SERIALIZE(_parms, index, an ...);
     }
 
-    friend Debug & operator << (Debug & db, const Message & m) {
-          db << "{id=" << m._id << ",m=" << hex << m._method
-             << ",p={" << reinterpret_cast<void *>(*static_cast<const int *>(reinterpret_cast<const void *>(&m._parms[0]))) << ","
-             << reinterpret_cast<void *>(*static_cast<const int *>(reinterpret_cast<const void *>(&m._parms[4]))) << ","
-             << reinterpret_cast<void *>(*static_cast<const int *>(reinterpret_cast<const void *>(&m._parms[8]))) << "}}";
-          return db;
-      }
+    friend Debug & operator << (Debug & db, const Message_Common & m) {
+        db << "{id=" << m._id << ",m=" << hex << m._method
+            << ",p={" << reinterpret_cast<void *>(*static_cast<const int *>(reinterpret_cast<const void *>(&m._parms[0]))) << ","
+            << reinterpret_cast<void *>(*static_cast<const int *>(reinterpret_cast<const void *>(&m._parms[4]))) << ","
+            << reinterpret_cast<void *>(*static_cast<const int *>(reinterpret_cast<const void *>(&m._parms[8]))) << "}}";
+        return db;
+    }
 
 private:
     Id _id;
     Method _method;
     char _parms[MAX_PARAMETERS_SIZE];
+};
+
+class Message_Kernel: public Message_Common
+{
+public:
+    Message_Kernel(const Id & id): Message_Common(id) {}
+
+    template<typename ... Tn>
+    int act(const Method & m, const Tn & ... an) {
+        _method = m;
+        out(an ...);
+        _syscall(this);
+        return _method;
+    }
+};
+
+class Message_UD: public Message_Common
+{
+public:
+    Message_UD(const Id & id): Message_Common(id), _buf(id) {}
+
+    template<typename ... Tn>
+    int act(const Method & m, const Tn & ... an) {
+        unsigned int * data;
+        _method = m;
+        out(an ...);
+        // TODO: Find a way to set the instance ID. n_ret should depend on
+        // the serdes packet width. Change data for _parms.
+        return Component_Manager::call(_buf, _method, sizeof...(an),
+            (sizeof(int)/4), data);
+    }
+
+private:
+    Component_Manager::Buffer _buf;
 };
 
 __END_SYS

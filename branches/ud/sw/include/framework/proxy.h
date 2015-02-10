@@ -38,8 +38,10 @@ public:
 };
 
 template<typename Component>
-class Proxy: public Message
+class Proxy: public IF<Traits<Component>::Hardware, Message_UD, Message_Kernel>::Result
 {
+    typedef IF<Traits<Component>::Hardware, Message_UD, Message_Kernel>::Result Base;
+
     template<typename> friend class Proxy;
     template<typename> friend class Proxied;
 
@@ -47,12 +49,12 @@ private:
     enum Private_Proxied{ PROXIED };
 
 private:
-    Proxy(const Id & id): Message(id) {} // for Proxied::operator new()
+    Proxy(const Id & id): Base(id) {} // for Proxied::operator new()
     Proxy(const Private_Proxied & p) { db<Framework>(TRC) << "Proxy(PROXIED) => [id=" << Proxy<Component>::id() << "]" << endl; } // for Proxied
 
 public:
     template<typename ... Tn>
-    Proxy(const Tn & ... an): Message(Id(Type<Component>::ID, 0)) { invoke(CREATE + sizeof ... (Tn), an ...); }
+    Proxy(const Tn & ... an): Base(Id(Type<Component>::ID, 0)) { invoke(CREATE + sizeof ... (Tn), an ...); }
     ~Proxy() { invoke(DESTROY); }
 
     static Proxy<Component> * self() { return new (reinterpret_cast<void *>(static_invoke(SELF))) Proxied<Component>; }
@@ -103,9 +105,12 @@ public:
     template<typename T1, typename T2, typename T3>
     int receive(T1 a1, T2 a2, T3 a3) { return invoke(SELF, a1, a2, a3); }
 
+    // Adder
+    int add(int a, int b) { return invoke(ADDER_ADD, a, b); }
+
     template<typename ... Tn>
     static int static_invoke(const Method & m, const Tn & ... an) {
-        Message msg(Id(Type<Component>::ID, 0)); // avoid calling ~Proxy()
+        Base msg(Id(Type<Component>::ID, 0)); // avoid calling ~Proxy()
         Result res = msg.act(m, an ...);
         return (m == SELF) ? msg.id().unit() : res;
     }
