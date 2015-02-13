@@ -4,9 +4,9 @@
 
 __BEGIN_SYS
 
-void Component_Manager::call(const Buffer & buf, Method m,
-        unsigned int n_args, unsigned int n_ret, unsigned int * data) {
-    db<Component_Manager>(TRC) << "Component_Manager::call(buf=" << &buf
+void Component_Manager::call(Id id, Method m, unsigned int n_args,
+        unsigned int n_ret, unsigned int * data) {
+    db<Component_Manager>(TRC) << "Component_Manager::call(id=" << id
         << ",m=" << m << ",n_args=" << n_args << ",n_ret=" << n_ret
         << ",data=" << data << "(";
 
@@ -15,9 +15,10 @@ void Component_Manager::call(const Buffer & buf, Method m,
 
     db<Component_Manager>(TRC) << "))" << endl;
 
-    Component_Controller::send_call(buf.proxy_id, m);
-    Component_Controller::send_call_data(buf.proxy_id, n_args, data);
-    Component_Controller::receive_return_data(buf.proxy_id, n_ret, data);
+    // TODO: Fix the hardcored id
+    Component_Controller::send_call(0, m);
+    Component_Controller::send_call_data(0, n_args, data);
+    Component_Controller::receive_return_data(0, n_ret, data);
 }
 
 void Component_Manager::int_handler(const unsigned int & interrupt) {
@@ -31,6 +32,7 @@ void Component_Manager::int_handler(const unsigned int & interrupt) {
         SW_Dispatcher dispatcher = (SW_Dispatcher)call_info.dispatcher_address;
         dispatcher(call_info);
     }
+
     //Component_Controller::enable_agent_receive_int(&int_handler);
     db<Component_Manager>(TRC) << "Component_Manager::int_handler(): end"
         << endl;

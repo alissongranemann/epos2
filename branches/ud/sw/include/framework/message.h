@@ -128,7 +128,7 @@ public:
 class Message_UD: public Message_Common
 {
 public:
-    Message_UD(const Id & id): Message_Common(id), _buf(id) {}
+    Message_UD(const Id & id): Message_Common(id) {}
 
     template<typename ... Tn>
     int act(const Method & m, const Tn & ... an) {
@@ -137,13 +137,10 @@ public:
         out(an ...);
         // TODO: Find a way to set the instance ID. n_ret should depend on
         // the serdes packet width. Change data for _parms.
-        Component_Manager::call(_buf, _method, sizeof...(an),
-            (sizeof(int)/4), data);
+        Component_Manager::call(_id, _method, sizeof...(an), (sizeof(int)/4),
+            data);
         return 0;
     }
-
-private:
-    Component_Manager::Buffer _buf;
 };
 
 __END_SYS

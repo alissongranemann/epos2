@@ -1,33 +1,39 @@
 // EPOS Component Manager Abstraction Initialization
 
+#include <system.h>
 #include <component_manager.h>
 
 __BEGIN_SYS
 
-Simple_List<Component_Manager::Recfg_Node> Component_Manager::_nodes;
+Component_Manager::Buffer * Component_Manager::_nodes[];
 
-void Component_Manager::init_ints() {
-    Component_Controller::enable_agent_receive_int(&int_handler);
-    CPU::int_enable();
-}
+template <unsigned int UNIT>
+void Component_Manager::init_buffer()
+{
+    typedef typename Traits<Component_Manager>::Node<UNIT> NODE;
+
+    Id id(NODE::TYPE_ID, NODE::UNIT_ID);
+    Address addr(NODE::X, NODE::Y, NODE::LOCAL);
+
+    // TODO: Must check if it's a proxy or agent
+    _nodes[UNIT] = new (SYSTEM) Buffer(id, addr);
+
+    init_buffer<UNIT + 1>();
+};
+
+template <>
+void Component_Manager::init_buffer<Traits<Component_Manager>::UNITS>()
+{
+};
 
 void Component_Manager::init() {
-    // Add all NoC nodes to the _recfg_nodes list. LOCAL_NN is used by the
-    // EPOSoC thus not available
-    // TODO: The NoC nodes should not be hard coded, maybe use Traits to manage
-    // them
-    unsigned int addr[2] = { Implementation::Address::LOCAL_NE,
-        Implementation::Address::LOCAL_EE };
+    db<Init, Component_Manager>(TRC) << "Component_Manager::init()" << endl;
 
-    for(unsigned int i = 0; i < sizeof(addr)/sizeof(addr[0]); i++) {
-        Recfg_Node * node = new (SYSTEM) Recfg_Node(0, 0, addr[i]);
-        Simple_List<Recfg_Node>::Element * node_e = new (SYSTEM)
-            Simple_List<Recfg_Node>::Element(node);
+    init_buffer<0>();
 
-        _nodes.insert(node_e);
-    }
-
-    init_ints();
+    // TODO: Is this really needed?
+    Component_Controller::enable_agent_receive_int(&int_handler);
+    CPU::int_enable();
 }
 
 __END_SYS
