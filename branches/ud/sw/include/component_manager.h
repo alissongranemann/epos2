@@ -3,7 +3,6 @@
 #ifndef __component_manager_h
 #define __component_manager_h
 
-#include <utility/list.h>
 //#include <framework/message.h>
 #include <framework/id.h>
 #include <machine.h>
@@ -37,7 +36,7 @@ public:
 
         ~Buffer() { Component_Controller::free_buf(proxy_id); }
 
-    public:
+    private:
         unsigned int proxy_id;
     };
 

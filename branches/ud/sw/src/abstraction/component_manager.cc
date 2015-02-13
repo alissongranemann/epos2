@@ -10,7 +10,7 @@ void Component_Manager::call(Id id, Method m, unsigned int n_args,
         << ",m=" << m << ",n_args=" << n_args << ",n_ret=" << n_ret
         << ",data=" << data << "(";
 
-    for (unsigned int i = 0; i < n_args; ++i)
+    for (unsigned int i = 0; i < n_args; i++)
         db<Component_Manager>(TRC) << reinterpret_cast<void *>(data[i]) << ",";
 
     db<Component_Manager>(TRC) << "))" << endl;
