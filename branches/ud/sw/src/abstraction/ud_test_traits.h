@@ -219,11 +219,10 @@ template<> struct Traits<DHCP>: public Traits<Network>
 template<> struct Traits<Adder>: public Traits<void>
 {
     static const bool hardware = true;
-    static const unsigned int node = 0;
     typedef TLIST<Hardware> ASPECTS;
 };
 
-template<> struct Traits<RTSNoC>: public Traits<void>
+template<> struct Traits<Component_Manager>: public Traits<void>
 {
     // Node local
     enum {NN, NE, EE, SE, SS, SW, WW, NW};
@@ -232,6 +231,9 @@ template<> struct Traits<RTSNoC>: public Traits<void>
     enum {PROXY, AGENT};
 
     struct Default_Node {
+        static const unsigned int TYPE_ID = UNKNOWN_TYPE_ID;
+        // TODO: Find a better way to manage UNIT_ID
+        static const unsigned int UNIT_ID = 0;
         static const unsigned int TYPE = PROXY;
         static const unsigned int X = 0;
         static const unsigned int Y = 0;
@@ -240,10 +242,15 @@ template<> struct Traits<RTSNoC>: public Traits<void>
 
     template<unsigned int UNIT>
     struct Node: public Default_Node {};
+
+    // TODO: Calculate UNITS automatically
+    static const unsigned int UNITS = 1;
 };
 
-template<> struct Traits<RTSNoC>::Node<0>
+template<> struct Traits<Component_Manager>::Node<0>
 {
+    static const unsigned int TYPE_ID = Type<Adder>::ID;
+    static const unsigned int UNIT_ID = 0;
     static const unsigned int TYPE = PROXY;
     static const unsigned int X = 0;
     static const unsigned int Y = 0;
