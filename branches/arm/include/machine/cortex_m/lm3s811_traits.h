@@ -75,6 +75,15 @@ template <> struct Traits<Cortex_M_NIC>: public Traits<Cortex_M_Common>
     static const unsigned int UNITS = NICS::Length;
 };
 
+template <> struct Traits<eMote3_Radio>: public Traits<Cortex_M_NIC>
+{
+    static const bool auto_listen = true;
+
+    static const unsigned int UNITS = NICS::Count<eMote3_Radio>::Result;
+    static const unsigned int SEND_BUFFERS = 1; // per unit
+    static const unsigned int RECEIVE_BUFFERS = 1; // per unit
+};
+
 template <> struct Traits<Radio>: public Traits<Cortex_M_NIC>
 {
     static const unsigned int UNITS = NICS::Count<Radio>::Result;

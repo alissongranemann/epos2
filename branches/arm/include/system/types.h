@@ -86,11 +86,13 @@ class Cortex_M_Scratchpad;
 class Cortex_M_UART;
 class Cortex_M_Display;
 class Cortex_M_NIC;
+class Cortex_M_IEEE802_15_4;
 
 class PCNet32;
 class C905;
 class E100;
 class Radio;
+class eMote3_Radio;
 
 class Serial_Display;
 

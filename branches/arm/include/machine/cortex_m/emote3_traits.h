@@ -19,13 +19,13 @@ template <> struct Traits<Cortex_M>: public Traits<Cortex_M_Common>
 
     // Physical Memory
     static const unsigned int MEM_BASE  = 0x20000000;
-    static const unsigned int MEM_TOP   = 0x20001fff; // 8 KB (MAX for 32-bit is 0x70000000 / 1792 MB)
+    static const unsigned int MEM_TOP   = 0x20007fff; // (MAX for 32-bit is 0x70000000 / 1792 MB)
 
     // Logical Memory Map
     static const unsigned int APP_LOW   = 0x20000000;
     static const unsigned int APP_CODE  = 0x00200000;
     static const unsigned int APP_DATA  = 0x20000000;
-    static const unsigned int APP_HIGH  = 0x20001fff; // 8 KB
+    static const unsigned int APP_HIGH  = 0x20007fff; 
 
     static const unsigned int PHY_MEM   = 0x20000000;
     static const unsigned int IO_BASE   = 0x40000000;
@@ -38,11 +38,12 @@ template <> struct Traits<Cortex_M>: public Traits<Cortex_M_Common>
     // Default Sizes and Quantities
     static const unsigned int STACK_SIZE = 1024;
     static const unsigned int HEAP_SIZE = 512;
-    static const unsigned int MAX_THREADS = 3;
+    static const unsigned int MAX_THREADS = 5;
 };
 
 template <> struct Traits<Cortex_M_IC>: public Traits<Cortex_M_Common>
 {
+    static const bool hysterically_debugged = false;
 };
 
 template <> struct Traits<Cortex_M_Timer>: public Traits<Cortex_M_Common>
@@ -71,8 +72,17 @@ template <> struct Traits<Cortex_M_NIC>: public Traits<Cortex_M_Common>
 {
     static const bool enabled = (Traits<Build>::NODES > 1);
 
-    typedef LIST<Radio> NICS;
+    typedef LIST<eMote3_Radio> NICS;
     static const unsigned int UNITS = NICS::Length;
+};
+
+template <> struct Traits<eMote3_Radio>: public Traits<Cortex_M_NIC>
+{
+    static const bool auto_listen = true;
+
+    static const unsigned int UNITS = NICS::Count<eMote3_Radio>::Result;
+    static const unsigned int SEND_BUFFERS = 1; // per unit
+    static const unsigned int RECEIVE_BUFFERS = 1; // per unit
 };
 
 template <> struct Traits<Radio>: public Traits<Cortex_M_NIC>
@@ -81,6 +91,7 @@ template <> struct Traits<Radio>: public Traits<Cortex_M_NIC>
     static const unsigned int SEND_BUFFERS = 64; // per unit
     static const unsigned int RECEIVE_BUFFERS = 256; // per unit
 };
+
 
 template <> struct Traits<Cortex_M_Scratchpad>: public Traits<Cortex_M_Common>
 {

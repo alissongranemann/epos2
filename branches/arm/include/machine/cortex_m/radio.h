@@ -4,6 +4,7 @@
 #define __cortex_m_radio_h
 
 #include <ieee802_15_4.h>
+#include <ic.h>
 
 __BEGIN_SYS
 
@@ -86,6 +87,8 @@ public:
 class Radio: public IEEE802_15_4, public IEEE802_15_4::Observed, private Cortex_M_IEEE802_15_4
 {
     template <int unit> friend void call_init();
+    typedef Cortex_M_IEEE802_15_4::Reg8 Reg8;
+    typedef Cortex_M_IEEE802_15_4::Reg16 Reg16;
 
 private:
     // Transmit and Receive Ring sizes
@@ -129,6 +132,9 @@ public:
     void reset();
 
     static Radio * get(unsigned int unit = 0) { return get_by_unit(unit); }
+
+    void listen() {}
+    void stop_listening() {}
 
 private:
     void handle_int();

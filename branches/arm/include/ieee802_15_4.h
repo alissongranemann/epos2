@@ -14,12 +14,34 @@ __BEGIN_SYS
 class IEEE802_15_4: private NIC_Common
 {
 protected:
-    static const unsigned int MTU = 1500;
-    static const unsigned int HEADER_SIZE = 14;
-
+    static const unsigned int MTU = 127;
+//    static const unsigned int HEADER_SIZE = 14;
 
 public:
-    typedef NIC_Common::Address<6> Address;
+    typedef NIC_Common::Address<2> Short_Address;
+    typedef NIC_Common::Address<8> Extended_Address;
+    typedef Short_Address Address;
+    typedef CPU::Reg8 Reg8;
+    typedef CPU::Reg16 Reg16;    
+
+    // Frame types
+    enum Frame_Type
+    {
+        BEACON  = 0,
+        DATA    = 1,
+        ACK     = 2,
+        MAC_CMD = 3,
+    };
+    enum Addressing_Mode
+    {
+        ADDR_MODE_NOT_PRESENT = 0,
+        ADDR_MODE_SHORT_ADDR  = 2,
+        ADDR_MODE_EXT_ADDR    = 4,
+    };
+    enum
+    {
+        PAN_ID_BROADCAST = 0xffff
+    };
 
     typedef unsigned short Protocol;
     enum
@@ -31,17 +53,71 @@ public:
         PTP    = 0x88F7
     };
 
+
     typedef unsigned char Data[MTU];
-    typedef NIC_Common::CRC32 CRC;
+    typedef NIC_Common::CRC16 CRC;
 
-
-    // The Ethernet Header (RFC 894)
-    class Header
+    // The IEEE 802.15.4 PHR
+    class Phy_Header
     {
     public:
+        Phy_Header() {};
+        Phy_Header(Reg8 len) : _frame_length(len) {};
+
+        Reg8 frame_length() const { return _frame_length; }
+        void frame_length(Reg8 len) { _frame_length = len; }
+    
+    protected:
+        Reg8 _frame_length;        
+    } __attribute__((packed, may_alias));
+
+    // The IEEE 802.15.4 MHR
+    // 802.15.4 headers can have variable format, for now this only 
+    // supports a simple, fixed format
+    // Adding the Protocol field for compatibility with ethernet/nic headers
+    class Header : public Phy_Header
+    {
+    public:
+        // Frame Control field that goes inside MHR
+        // TODO: This class assumes that the machine is little-endian
+        class Frame_Control
+        {
+            public:
+                // TODO: For now, we'll only support data frames
+                // TODO: This order assumes that the machine is little-endian
+                Frame_Control() : 
+                    _frame_type(DATA),
+                    _security_enabled(0),
+                    _frame_pending(0),
+                    _ar(0),
+                    _pan_id_compression(1), 
+                    _reserved(0),
+                    _dst_addressing_mode(ADDR_MODE_SHORT_ADDR), 
+                    _frame_version(0),
+                    _src_addressing_mode(ADDR_MODE_SHORT_ADDR)
+            { }
+
+                bool frame_pending() const { return _frame_pending; }
+                unsigned char frame_type() const { return _frame_type; }
+
+            protected:
+                // TODO: This order assumes that the machine is little-endian
+                unsigned _frame_type : 3;
+                unsigned _security_enabled : 1;
+                unsigned _frame_pending : 1;
+                unsigned _ar : 1;
+                unsigned _pan_id_compression: 1;
+                unsigned _reserved : 3;
+                unsigned _dst_addressing_mode : 2;
+                unsigned _frame_version : 2;
+                unsigned _src_addressing_mode : 2;
+        } __attribute__((packed, may_alias));
+
         Header() {}
-        Header(const Address & src, const Address & dst, const Protocol & prot):
-            _dst(dst), _src(src), _prot(htons(prot)) {}
+        Header(Reg8 len): Phy_Header(len+sizeof(Header)-sizeof(Phy_Header)) {};
+        Header(const Short_Address & src, const Short_Address & dst, const Protocol & prot): Phy_Header(), _frame_control(), _dst(dst), _src(src), _prot(htons(prot)) {}
+        Header(Reg8 len, const Short_Address & src, const Short_Address & dst, const Protocol & prot):
+            Phy_Header(len+sizeof(Header)-sizeof(Phy_Header)), _frame_control(), _sequence_number(0), _dst_pan_id(PAN_ID_BROADCAST), _dst(dst), _src(src), _prot(htons(prot)) {}
 
         friend Debug & operator<<(Debug & db, const Header & h) {
             db << "{" << h._dst << "," << h._src << "," << h.prot() << "}";
@@ -53,20 +129,26 @@ public:
 
         Protocol prot() const { return ntohs(_prot); }
 
-    protected:
-        Address _dst;
-        Address _src;
+    public:
+    //protected:
+        Frame_Control _frame_control;
+        Reg8 _sequence_number;
+        Reg16 _dst_pan_id;
+        Short_Address _dst;
+        Short_Address _src;
         Protocol _prot;
     } __attribute__((packed, may_alias));
 
 
-    // The Ethernet Frame (RFC 894)
+    // The IEEE 802.15.4 Frame
     class Frame: public Header
     {
     public:
         Frame() {}
         Frame(const Address & src, const Address & dst, const Protocol & prot) : Header(src, dst, prot) {}
-        Frame(const Address & src, const Address & dst, const Protocol & prot, const void * data, unsigned int size): Header(src, dst, prot) {
+        Frame(const Address & src, const Address & dst, const Protocol & prot, const void * data, Reg8 size)
+            : Header(size+sizeof(CRC), src, dst, prot)
+        {
             memcpy(_data, data, size);
         }
         
@@ -83,7 +165,7 @@ public:
     protected:
         Data _data;
         CRC _crc;
-    } __attribute__((packed));
+    } __attribute__((packed, may_alias));
 
     typedef Frame PDU;
 
@@ -128,8 +210,10 @@ public:
         unsigned int _size;
         Element _link;
     };
+//    } __attribute__((packed, may_alias));
 
 
+public:
     // Observers of a protocol get a also a pointer to the received buffer
     typedef Data_Observer<Buffer, Protocol> Observer;
     typedef Data_Observed<Buffer, Protocol> Observed;
@@ -160,6 +244,9 @@ public:
         unsigned int carrier_errors;
         unsigned int collisions;
     };
+
+    virtual void listen() = 0;
+    virtual void stop_listening() = 0;
 
 protected:
     IEEE802_15_4() {}

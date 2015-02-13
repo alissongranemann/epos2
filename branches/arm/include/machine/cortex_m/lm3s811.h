@@ -13,6 +13,8 @@ private:
     typedef CPU::Log_Addr Log_Addr;
 
 public:
+    static const unsigned int IRQS = 30;
+
     // Base address for memory-mapped System Control Registers
     enum {
         UART0_BASE      = 0x4000c000,
@@ -268,7 +270,25 @@ public:
 protected:
     LM3S811() {}
 
+    void config_UART(volatile Log_Addr * base)
+    {
+        if(base == reinterpret_cast<Log_Addr *>(UART0_BASE)) {
+            scr(RCGC1) |= RCGC1_UART0;                   // Activate UART 0 clock
+            scr(RCGC2) |= RCGC2_GPIOA;                   // Activate port A clock
+            gpioa(AFSEL) |= (AFSEL_ALTP0 | AFSEL_ALTP1); // Pins A[1:0] are multiplexed between GPIO and UART 0. Select UART.
+            gpioa(DEN) |= (DEN_DIGP0 | DEN_DIGP1);       // Enable digital I/O on Pins A[1:0]
+        } else {
+            scr(RCGC1) |= RCGC1_UART1;                   // Activate UART 1 clock
+            scr(RCGC2) |= RCGC2_GPIOB;                   // Activate port B clock
+            gpiod(AFSEL) |= (AFSEL_ALTP2 | AFSEL_ALTP3); // Pins D[3:2] are multiplexed between GPIO and UART 1. Select UART.
+            gpiod(DEN) |= (DEN_DIGP2 | DEN_DIGP3);       // Enable digital I/O on Pins D[3:2]
+        }
+    }
+
 public:
+    static void radio_enable(){};
+    static void radio_disable(){};
+
     static Log_Addr & scr(unsigned int o) { return reinterpret_cast<Log_Addr *>(SCR_BASE)[o / sizeof(Log_Addr)]; }
     static Log_Addr & scs(unsigned int o) { return reinterpret_cast<Log_Addr *>(SCS_BASE)[o / sizeof(Log_Addr)]; }
 

@@ -12,6 +12,7 @@ class eMote3
 {
 private:
     typedef CPU::Log_Addr Log_Addr;
+    typedef CPU::Reg32 Reg32;
 
 public:
     // Base address for memory-mapped System Control Registers
@@ -68,6 +69,12 @@ public:
     enum DCGCUART {
         DCGCUART_UART0  = 1 << 0,
         DCGCUART_UART1  = 1 << 1
+    };
+    enum RCGCRFC {
+        RCGCRFC_RFC0  = 1 << 0,
+    };
+    enum I_MAP {
+        I_MAP_ALTMAP = 1 << 0,
     };
 
     // Useful Bits in the Clock Control Register
@@ -290,11 +297,21 @@ public:
         STCTRL          = 0x010,        // SysTick Control and Status Register                  R/W     0x00000000
         STRELOAD        = 0x014,        // SysTick Reload Value Register                        R/W     0x00000000
         STCURRENT       = 0x018,        // SysTick Current Value Register                       R/WC    0x00000000
-        IRQ_ENABLE      = 0x100,        // Interrupt 0-29 Set Enable                            R/W     0x00000000
-        IRQ_DISABLE     = 0x180,        // Interrupt 0-29 Clear Enable                          R/W     0x00000000
-        IRQ_PEND        = 0x200,        // Interrupt 0-29 Set Pending                           R/W     0x00000000
-        IRQ_UNPEND      = 0x280,        // Interrupt 0-29 Clear Pending                         R/W     0x00000000
-        IRQ_ACTIVE      = 0x300,        // Interrupt 0-29 Active Bit                            R/W     0x00000000
+        IRQ_ENABLE      = 0x100,        // Interrupt 0-32 Set Enable                            R/W     0x00000000
+        IRQ_ENABLE1     = 0x104,        // Interrupt 0-64 Set Enable                            R/W     0x00000000
+        IRQ_ENABLE2     = 0x108,        // Interrupt 0-96 Set Enable                            R/W     0x00000000
+        IRQ_DISABLE     = 0x180,        // Interrupt 0-32 Clear Enable                          R/W     0x00000000
+        IRQ_DISABLE1    = 0x184,        // Interrupt 0-32 Clear Enable                          R/W     0x00000000
+        IRQ_DISABLE2    = 0x188,        // Interrupt 0-32 Clear Enable                          R/W     0x00000000
+        IRQ_PEND        = 0x200,        // Interrupt 0-32 Set Pending                           R/W     0x00000000
+        IRQ_PEND1       = 0x204,        // Interrupt 0-32 Set Pending                           R/W     0x00000000
+        IRQ_PEND2       = 0x208,        // Interrupt 0-32 Set Pending                           R/W     0x00000000
+        IRQ_UNPEND      = 0x280,        // Interrupt 0-32 Clear Pending                         R/W     0x00000000
+        IRQ_UNPEND1     = 0x284,        // Interrupt 0-32 Clear Pending                         R/W     0x00000000
+        IRQ_UNPEND2     = 0x288,        // Interrupt 0-32 Clear Pending                         R/W     0x00000000
+        IRQ_ACTIVE      = 0x300,        // Interrupt 0-32 Active Bit                            R/W     0x00000000
+        IRQ_ACTIVE1     = 0x304,        // Interrupt 0-32 Active Bit                            R/W     0x00000000
+        IRQ_ACTIVE2     = 0x308,        // Interrupt 0-32 Active Bit                            R/W     0x00000000
         CPUID           = 0xd00,        // CPUID Base Register                                  RO      0x410fc231
         INTCTRL         = 0xd04,        // Interrupt Control and State Register                 R/W     0x00000000
         VTOR            = 0xd08,        // Vector Table Offset Register                         R/W     0x00000000
@@ -371,7 +388,6 @@ public:
         PDR		= 0x514,	// Pull-Down Select 	        R/W	0x0000.0000
         SLR		= 0x518,	// Slew Rate Control Select	R/W	0x0000.0000
         DEN		= 0x51c,	// Digital Enable 	        R/W	0x0000.00ff
-    /*
         PeriphID4	= 0xfd0,	// Peripheral Identification 4	RO	0x0000.0000
         PeriphID5	= 0xfd4,	// Peripheral Identification 5 	RO	0x0000.0000
         PeriphID6	= 0xfd8,	// Peripheral Identification 6	RO	0x0000.0000
@@ -384,94 +400,18 @@ public:
         PCellID1	= 0xff4,	// PrimeCell Identification 1	RO	0x0000.00f0
         PCellID2	= 0xff8,	// PrimeCell Identification 2	RO	0x0000.0005
         PCellID3	= 0xffc		// PrimeCell Identification 3	RO	0x0000.00b1
-        */
     };
 
-    // UART Register offsets
-    enum {                              // Description                  Type    Value after reset
-        DR	        = 0x000,	// Data	                        r/w	0x00000000
-        RSR             = 0x004,        // Receive Status               r/w     0x00000000
-        ECR             = 0x004,        // Error Clear                  r/w     0x00000000
-        FR	        = 0x018,	// Flag	                        ro	0x00000090
-        IBRD	        = 0x024,	// Integer Baud-Rate Divisor	r/w	0x00000000
-        FBRD    	= 0x028,	// Fractional Baud-Rate Divisor	r/w	0x00000000
-        LCRH	        = 0x02c,	// Line Control         	r/w	0x00000000
-        UCR	        = 0x030,	// Control	                r/w	0x00000300
-        IFLS    	= 0x034,	// Interrupt FIFO Level Select	r/w	0x00000012
-        UIM	        = 0x038,	// Interrupt Mask	        r/w	0x00000000
-        RIS     	= 0x03c,	// Raw Interrupt Status	        ro	0x0000000f
-        MIS     	= 0x040,	// Masked Interrupt Status	ro	0x00000000
-        ICR             = 0x044,        // Interrupt Clear              w1c     0x00000000
-        DMACR           = 0x048,        // DMA Control                  rw      0x00000000
-        PeriphID4	= 0xfd0,	// Peripheral Identification 4	ro	0x00000000
-        PeriphID5	= 0xfd4,	// Peripheral Identification 5	ro	0x00000000
-        PeriphID6	= 0xfd8,	// Peripheral Identification 6	ro	0x00000000
-        PeriphID7	= 0xfdc,	// Peripheral Identification 7	ro	0x00000000
-        PeriphID0	= 0xfe0,	// Peripheral Identification 0	ro	0x00000011
-        PeriphID1	= 0xfe4,	// Peripheral Identification 1	ro	0x00000000
-        PeriphID2	= 0xfe8,	// Peripheral Identification 2	ro	0x00000018
-        PeriphID3	= 0xfec,	// Peripheral Identification 3	ro	0x00000001
-        PCellID0	= 0xff0,	// PrimeCell Identification 0	ro	0x0000000d
-        PCellID1	= 0xff4,	// PrimeCell Identification 1	ro	0x000000f0
-        PCellID2	= 0xff8,	// PrimeCell Identification 2	ro	0x00000005
-        PCellID3	= 0xffc		// PrimeCell Identification 3	ro	0x000000b1
-    };
-    // Useful Bits in the UART Flag Register
-    enum {                              // Description                  Type    Value after reset
-        CTS             = 1 <<  0,      // Clear to Send                r/w     0
-        DSR             = 1 <<  1,      // Data Set Ready               r/w     0
-        DCD             = 1 <<  2,      // Data Carrier Detect          r/w     0
-        BUSY            = 1 <<  3,      // Busy transmitting data       r/w     0
-        RXFE            = 1 <<  4,      // Receive FIFO Empty           r/w     1
-        TXFF            = 1 <<  5,      // Transmit FIFO Full           r/w     0
-        RXFF            = 1 <<  6,      // Receive FIFO Full            r/w     0
-        TXFE            = 1 <<  7,      // Transmit FIFO Empty          r/w     1
-        RI              = 1 <<  8,      // Ring Indicator               r/w     0
-    };
-
-    // Useful Bits in the Control Register
-    enum {                              // Description                  Type    Value after reset
-        UEN             = 1 <<  0,      // Enable                       r/w     0
-        HSE             = 1 <<  5,      // High-speed Enable            r/w     0
-        LBE             = 1 <<  7,      // Loop Back Enable             r/w     0
-        TXE             = 1 <<  8,      // Transmit Enable              r/w     1
-        RXE             = 1 <<  9       // Receive Enable               r/w     1
-    };
-    // Useful Bits in the Interrupt Mask Register
-    enum {                              // Description                  Type    Value after reset
-        UIMRX           = 1 <<  4,      // Receive                      r/w     0
-        UIMTX           = 1 <<  5,      // Transmit                     r/w     0
-        UIMRT           = 1 <<  6,      // Receive Time-Out             r/w     0
-        UIMFE           = 1 <<  7,      // Framing Error                r/w     0
-        UIMPE           = 1 <<  8,      // Parity Error                 r/w     0
-        UIMBE           = 1 <<  9,      // Break Error                  r/w     0
-        UIMOE           = 1 << 10,      // Overrun Error                r/w     0
-        UIMALL          = 0
-    };
-    // Useful Bits in the Line Control
-    enum {                              // Description                  Type    Value after reset
-        BRK             = 1 <<  0,      // Send Break                   r/w     0
-        PEN             = 1 <<  1,      // Parity Enable                r/w     0
-        EPS             = 1 <<  2,      // Even Parity Select           r/w     0
-        STP2            = 1 <<  3,      // Two Stop Bits Select         r/w     0
-        FEN             = 1 <<  4,      // FIFOs Enable                 r/w     0
-        WLEN5           = 0 <<  5,      // Word Length 5 bits           r/w     0
-        WLEN6           = 1 <<  5,      // Word Length 6 bits           r/w     0
-        WLEN7           = 2 <<  5,      // Word Length 7 bits           r/w     0
-        WLEN8           = 3 <<  5,      // Word Length 8 bits           r/w     0
-        SPS             = 1 <<  7       // Stick Parity Select          r/w     0
-    };
-
-    // Useful Bits in the Alternate Function Select Register
-    enum AFSEL {                        // Description                  Type    Value after reset
-        AFSEL_ALTP0     = 1 <<  0,      // Pin 0 (0 -> GPIO | 1 -> Alt) r/w     0
-        AFSEL_ALTP1     = 1 <<  1,      // Pin 1 (0 -> GPIO | 1 -> Alt) r/w     0
-        AFSEL_ALTP2     = 1 <<  2,      // Pin 2 (0 -> GPIO | 1 -> Alt) r/w     0
-        AFSEL_ALTP3     = 1 <<  3,      // Pin 3 (0 -> GPIO | 1 -> Alt) r/w     0
-        AFSEL_ALTP4     = 1 <<  4,      // Pin 4 (0 -> GPIO | 1 -> Alt) r/w     0
-        AFSEL_ALTP5     = 1 <<  5,      // Pin 5 (0 -> GPIO | 1 -> Alt) r/w     0
-        AFSEL_ALTP6     = 1 <<  6,      // Pin 6 (0 -> GPIO | 1 -> Alt) r/w     0
-        AFSEL_ALTP7     = 1 <<  7       // Pin 7 (0 -> GPIO | 1 -> Alt) r/w     0
+    // Common pin codes for GPIO registers
+    enum GPIO_PINS {                       
+        PIN0     = 1 <<  0,      
+        PIN1     = 1 <<  1,      
+        PIN2     = 1 <<  2,      
+        PIN3     = 1 <<  3,      
+        PIN4     = 1 <<  4,      
+        PIN5     = 1 <<  5,      
+        PIN6     = 1 <<  6,      
+        PIN7     = 1 <<  7       
     };
 
     // Useful Bits in the Digital Enable Register
@@ -486,61 +426,22 @@ public:
         DEN_DIGP7     = 1 <<  7       // Pin 7 (1 -> Digital Enable)    r/w     1
     };
 
-    static void init_clock()
+    // Enable clock to the RF CORE module
+    static void radio_enable()
     {
-        CPU::Reg32 clock = scr(CLOCK_CTRL);
-        // Delay qualification of crystal oscillator (XOSC) until it is stable
-        clock |= AMP_DET;
-        
-        // Select 32k RC oscillator and 32MHz crystal system oscillator
-        unsigned int val = clock & ~(OSC32K | OSC | (SYS_DIV * 7));
-        val |= OSC32K;
-        clock = val;
-
-        // Wait until oscillator stabilizes
-        while((scr(CLOCK_STA) & (STA_OSC)));
-
-        // Set IO clock to 32MHz
-        clock &= ~(IO_DIV * 7);
+        scr(RCGCRFC) |= RCGCRFC_RFC0;
     }
-
+    // Disable clock to the RF CORE module
+    static void radio_disable()
+    {
+        scr(RCGCRFC) &= ~RCGCRFC_RFC0;
+    }
 protected:
+    static void init();
     eMote3() {}
 
-public:
-    static Log_Addr & ioc(unsigned int o) { return reinterpret_cast<Log_Addr *>(IOC_BASE)[o / sizeof(Log_Addr)]; }
-    static Log_Addr & scr(unsigned int o) { return reinterpret_cast<Log_Addr *>(SCR_BASE)[o / sizeof(Log_Addr)]; }
-    static Log_Addr & scs(unsigned int o) { return reinterpret_cast<Log_Addr *>(SCS_BASE)[o / sizeof(Log_Addr)]; }
-
-    static Log_Addr & gpioa(unsigned int o) { return reinterpret_cast<Log_Addr *>(GPIOA_BASE)[o / sizeof(Log_Addr)]; }
-    static Log_Addr & gpiob(unsigned int o) { return reinterpret_cast<Log_Addr *>(GPIOB_BASE)[o / sizeof(Log_Addr)]; }
-    static Log_Addr & gpioc(unsigned int o) { return reinterpret_cast<Log_Addr *>(GPIOC_BASE)[o / sizeof(Log_Addr)]; }
-    static Log_Addr & gpiod(unsigned int o) { return reinterpret_cast<Log_Addr *>(GPIOD_BASE)[o / sizeof(Log_Addr)]; }
-};
-
-typedef eMote3 Cortex_Model_Specifics;
-
-
-// eMote3 UART
-class XYZ: protected eMote3
-{
-private:
-    typedef CPU::Log_Addr Log_Addr;
-    typedef CPU::Reg8 Reg8;
-    typedef CPU::Reg32 Reg32;
-
-    static const unsigned int UNITS = Traits<UART>::UNITS;
-    static const unsigned int CLOCK = Traits<UART>::CLOCK / 16;
-
-public:
-    XYZ(unsigned int unit, unsigned int baud_rate, unsigned int data_bits, unsigned int parity, unsigned int stop_bits):
-        _base(reinterpret_cast<Log_Addr *>(unit ? UART1_BASE : UART0_BASE)) {
-        assert(unit < UNITS);
-        config(baud_rate, data_bits, parity, stop_bits);
-    }
-
-    void config(unsigned int baud_rate, unsigned int data_bits, unsigned int parity, unsigned int stop_bits) {
-        if(_base == reinterpret_cast<Log_Addr *>(UART0_BASE)) {
+    void config_UART(volatile Log_Addr * base) {
+        if(base == reinterpret_cast<Log_Addr *>(UART0_BASE)) {
             //1. Enable the UART module using the SYS_CTRL_RCGCUART register.
             scr(RCGCUART) |= RCGCUART_UART0; // Enable clock for UART0 while in Running mode
 
@@ -557,89 +458,34 @@ public:
             ioc(UARTRXD_UART0) = (0 << 3) + 0;
 
             //5. Set GPIO pins A1 and A0 to peripheral mode
-            gpioa(AFSEL) |= (AFSEL_ALTP0) + (AFSEL_ALTP1);
-        } else {
-            while(1)
-            ;
+            gpioa(AFSEL) |= (PIN0) + (PIN1);
+        } 
+        // TODO: UART1 configuration
+        /*
+        else 
+        {        
         }
-
-        // Disable UART        
-        reg(LCRH) &= ~(FEN);             // Disable FIFOs
-        reg(UCR) &= ~(UEN | TXE | RXE);  // Disable UART for configuration
-        reg(ICR) = ~0;                   // Clear all interrupts
-        reg(UIM) = UIMALL;               // Disable all interrupts
-
-        // Baud rate setup
-        Reg32 clock;
-        switch(scr(CLOCK_STA) & 7)
-        {
-            /*
-            * These are the possible values on SYS_CTRL_CLOCK_STA register,
-            * should be replaced by Traits' CLOCK when the clock configuration
-            * is done in its right place.
-            */
-            case 0: clock = 32000000; break;
-            case 1: clock = 16000000; break;
-            case 2: clock =  8000000; break;
-            case 3: clock =  4000000; break;
-            case 4: clock =  2000000; break;
-            case 5: clock =  1000000; break;
-            case 6: clock =   500000; break;
-            case 7: clock =   250000; break;
-        }
-        Reg32 br = (((clock * 8) / baud_rate) + 1) / 2;
-        reg(IBRD) = br / 64;
-        reg(FBRD) = br % 64;
-
-        reg(LCRH) = WLEN8 | FEN;      // 8 bit word length (no parity bits, one stop bit, FIFOs)
-        reg(UIM) &= ~(UIMTX | UIMRX); // Mask TX and RX interrupts for polling operation
-        reg(FR) = 0;                  // Clear flags
-        reg(UCR) |= UEN | TXE | RXE;  // Enable UART
-        
+        */
     }
 
-    void config(unsigned int * baud_rate, unsigned int * data_bits, unsigned int * parity, unsigned int * stop_bits) {
-//        *data_bits = (reg(LCRH) & WLEN8) ? 8 : (reg(LCRH) & WLEN7) ? 7 : (reg(LCRH) & WLEN6) ? 6 : 5;
-//        *parity = (reg(LCRH) & PEN) ? (reg(LCRH) & EPS) ? UART_Common::EVEN : UART_Common::ODD : UART_Common::NONE;
-//        *stop_bits = (reg(LCRH) & STP2) ? 2 : 1;
-    }
+public:
+    static volatile Reg32 & ioc(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(IOC_BASE)[o / sizeof(Reg32)]; }
+    static volatile Reg32 & scr(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(SCR_BASE)[o / sizeof(Reg32)]; }
+    static volatile Reg32 & scs(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(SCS_BASE)[o / sizeof(Reg32)]; }
 
-    Reg8 rxd() { return reg(DR); }
-    void txd(Reg8 c) { reg(DR) = c; }
-
-    void int_enable(bool receive = true, bool send = true, bool line = true, bool modem = true) {
-        reg(UIM) &= ~((receive ? UIMRX : 0) | (send ? UIMTX : 0));
-    }
-    void int_disable(bool receive = true, bool send = true, bool line = true, bool modem = true) {
-        reg(UCR) |= (receive ? UIMRX : 0) | (send ? UIMTX : 0);
-    }
-
-    void reset() {
-        // There is no software reset on the PL011, so the best we can do is refresh its configuration
-        unsigned int b, db, p, sb;
-        config(&b, &db, &p, &sb);
-        config(b, db, p, sb);
-    }
-
-    void loopback(bool flag) {
-        if(flag)
-            reg(UCR) |= int(LBE);
-        else
-            reg(UCR) &= ~LBE;
-    }
-
-    bool rxd_ok() { return !(reg(FR) & RXFE); }
-    bool txd_ok() { return !(reg(FR) & TXFF); }
-
-private:
-    Log_Addr & reg(unsigned int o) { return _base[o / sizeof(Log_Addr)]; }
-
-private:
-    Log_Addr * _base;
+    static volatile Reg32 & gpioa(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(GPIOA_BASE)[o / sizeof(Reg32)]; }
+    static volatile Reg32 & gpiob(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(GPIOB_BASE)[o / sizeof(Reg32)]; }
+    static volatile Reg32 & gpioc(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(GPIOC_BASE)[o / sizeof(Reg32)]; }
+    static volatile Reg32 & gpiod(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(GPIOD_BASE)[o / sizeof(Reg32)]; }
 };
 
-typedef XYZ Cortex_Model_UART;
+typedef eMote3 Cortex_M_Model;
+
+class PL011;
+typedef PL011 Cortex_M_Model_UART;
 
 __END_SYS
 
 #endif
+
+#include "pl011.h"

@@ -18,6 +18,8 @@ void Cortex_M::init()
         Cortex_M_Timer::init();
 //    if(Traits<Cortex_M_Scratchpad>::enabled)
 //        Cortex_M_Scratchpad::init();
+    if(Traits<Cortex_M_NIC>::enabled)
+        Cortex_M_NIC::init();
 }
 
 __END_SYS

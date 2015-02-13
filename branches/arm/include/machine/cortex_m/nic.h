@@ -7,17 +7,19 @@
 
 #include <ieee802_15_4.h>
 #include <system.h>
-#include "machine.h"
+#include "emote3_radio.h"
 #include "radio.h"
 
 __BEGIN_SYS
 
-class Cortex_M_NIC: public IEEE802_15_4
+class Cortex_M_NIC: public IEEE802_15_4, public IEEE802_15_4::Observed
 {
     friend class Cortex_M;
 
 private:
     typedef Traits<Cortex_M_NIC>::NICS NICS;
+    typedef IEEE802_15_4::Observed Observed;
+    typedef IEEE802_15_4::Observer Observer;
 
 public:
     template<unsigned int UNIT = 0>
@@ -53,8 +55,14 @@ public:
 
     void attach(Observer * obs, const Protocol & prot) { _dev->attach(obs, prot); }
     void detach(Observer * obs, const Protocol & prot) { _dev->detach(obs, prot); }
-    void notify(const Protocol & prot, Buffer * buf) { _dev->notify(prot, buf); }
+    void notify(const Protocol & prot, Buffer * buf) 
+    { 
+        db<Cortex_M_NIC>(TRC) << "NIC::notify(prot=" << prot << ",buf=" << buf << endl;
+        _dev->notify(prot, buf); 
+    }
 
+    void listen() {_dev->listen();}
+    void stop_listening() {_dev->stop_listening();}
 private:
     static void init();
 

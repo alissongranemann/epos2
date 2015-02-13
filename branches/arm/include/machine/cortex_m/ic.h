@@ -55,8 +55,8 @@ public:
 public:
     Cortex_M_IC() {}
 
-    static int irq2int(int i) { return i; }
-    static int int2irq(int i) { return i; }
+    static int irq2int(int i) { return i + 16; }
+    static int int2irq(int i) { return i - 16; }
 
     static Interrupt_Handler int_vector(const Interrupt_Id & i) {
         assert(i < INTS);
@@ -90,6 +90,18 @@ public:
         assert(i < IRQS);
         scs(IRQ_DISABLE) |= 1 << i;
     }
+
+    static void unpend() {
+        db<IC>(TRC) << "IC::unpend()" << endl;
+        scs(IRQ_UNPEND) = ~0;
+    }
+
+    static void unpend(const IRQ & i) {
+        db<IC>(TRC) << "IC::unpend(irq=" << i << ")" << endl;
+        assert(i < IRQS);
+        scs(IRQ_UNPEND) |= 1 << i;
+    }
+
 
     static void ipi_send(unsigned int cpu, unsigned int interrupt) {}
 

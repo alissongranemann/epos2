@@ -3,8 +3,6 @@
 #ifndef __cortex_m_pl011_h__
 #define __cortex_m_pl011_h__
 
-#include __MODEL_H
-
 __BEGIN_SYS
 
 // PrimeCell UART (PL011)
@@ -104,17 +102,8 @@ public:
     }
 
     void config(unsigned int baud_rate, unsigned int data_bits, unsigned int parity, unsigned int stop_bits) {
-        if(_base == reinterpret_cast<Log_Addr *>(UART0_BASE)) {
-            scr(RCGC1) |= RCGC1_UART0;                   // Activate UART 0 clock
-            scr(RCGC2) |= RCGC2_GPIOA;                   // Activate port A clock
-            gpioa(AFSEL) |= (AFSEL_ALTP0 | AFSEL_ALTP1); // Pins A[1:0] are multiplexed between GPIO and UART 0. Select UART.
-            gpioa(DEN) |= (DEN_DIGP0 | DEN_DIGP1);       // Enable digital I/O on Pins A[1:0]
-        } else {
-            scr(RCGC1) |= RCGC1_UART1;                   // Activate UART 1 clock
-            scr(RCGC2) |= RCGC2_GPIOB;                   // Activate port B clock
-            gpiod(AFSEL) |= (AFSEL_ALTP2 | AFSEL_ALTP3); // Pins D[3:2] are multiplexed between GPIO and UART 1. Select UART.
-            gpiod(DEN) |= (DEN_DIGP2 | DEN_DIGP3);       // Enable digital I/O on Pins D[3:2]
-        }
+
+        Cortex_M_Model::config_UART(_base);
 
         reg(UCR) &= ~UEN;                       // Disable UART for configuration
         reg(ICR) = ~0;                          // Clear all interrupts
@@ -126,6 +115,7 @@ public:
         reg(UCR) |= UEN | TXE | RXE;            // Enable UART
         reg(UIM) = UIMTX | UIMRX;               // Mask TX and RX interrupts for polling operation
     }
+
     void config(unsigned int * baud_rate, unsigned int * data_bits, unsigned int * parity, unsigned int * stop_bits) {
 //        *data_bits = (reg(LCRH) & WLEN8) ? 8 : (reg(LCRH) & WLEN7) ? 7 : (reg(LCRH) & WLEN6) ? 6 : 5;
 //        *parity = (reg(LCRH) & PEN) ? (reg(LCRH) & EPS) ? UART_Common::EVEN : UART_Common::ODD : UART_Common::NONE;
@@ -157,13 +147,13 @@ public:
     }
 
     bool rxd_ok() { return !(reg(FR) & RXFE); }
-    bool txd_ok() { return !(reg(FR) & TXFF); }
+    volatile bool txd_ok() { return !(reg(FR) & TXFF); }
 
 private:
-    Log_Addr & reg(unsigned int o) { return _base[o]; }
+    volatile Reg32 & reg(unsigned int o) { return reinterpret_cast<volatile Reg32*>(_base)[o / sizeof(Reg32)]; }
 
 private:
-    Log_Addr * _base;
+    volatile Log_Addr * _base;
 };
 
 __END_SYS
