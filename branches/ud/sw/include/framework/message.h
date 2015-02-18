@@ -6,6 +6,7 @@
 #include "../component_manager.h"
 
 #include "id.h"
+#include "serializer.h"
 
 extern "C" { int _syscall(void *); }
 
@@ -132,15 +133,25 @@ public:
 
     template<typename ... Tn>
     int act(const Method & m, const Tn & ... an) {
-        unsigned int * data;
+        int ret;
+
         _method = m;
-        out(an ...);
+        //out(an ...);
+        _ser.reset();
+        _ser.serialize(an ...);
         // TODO: Find a way to set the instance ID. n_ret should depend on
         // the serdes packet width. Change data for _parms.
         Component_Manager::call(_id, _method, sizeof...(an), (sizeof(int)/4),
-            data);
-        return 0;
+            _ser.get_pkt_buffer());
+        _ser.set_pkt_cnt(1);
+        _ser.reset();
+        _ser.deserialize(ret);
+
+        return ret;
     }
+
+private:
+    Serializer<8> _ser;
 };
 
 __END_SYS
