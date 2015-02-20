@@ -1,5 +1,6 @@
 #include <utility/ostream.h>
 #include <nic.h>
+#include <alarm.h>
 
 using namespace EPOS;
 
@@ -7,21 +8,27 @@ OStream cout;
 
 void sender()
 {
-    
-    const char data[] = "Hello, World!";
-//    const char data[] = {2, 0, 0}; // Valid ACK frame
-//    const char data[] = {0, 192, 0, 0xff, 0xff, 0xee, 0xee,0xee,0xee,0xee,0xee,0xee,0xee, 'H', 'i'}; // Valid BEACON frame
-//      const char data[] = {0, 128, 0, 0xff, 0xff, 0xff, 0xff, 'H', 'i'}; // Valid BEACON frame
-//      const char data[] = {1, 128, 0, 0xff, 0xff, 0x10, 0x10, 0xde, 0xde, 'H', 'i', '\0'}; // Valid DATA frame
-//      const char data[] = {1, 136, 0, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x10, 0x10, 0xde, 0xde, 'H', 'i', '\0'}; // Valid DATA frame
-//      const char data[] = {65, 136, 0, 0xff, 0xff, 0xff, 0xff, 0xff,0xff,0x10, 0x10, 'H', 'i', '\0'}; // Valid DATA frame
+    // These are frames built by hand while implementing IEEE802.15.4
+    // These headers are correctly handled by the radio and IEEE802.15.4
+    // const char data[] = {2, 0, 0}; // Valid ACK frame
+    // const char data[] = {0, 192, 0, 0xff, 0xff, 0xee, 0xee,0xee,0xee,0xee,0xee,0xee,0xee, 'H', 'i'}; // Valid BEACON frame
+    // const char data[] = {0, 128, 0, 0xff, 0xff, 0xff, 0xff, 'H', 'i'}; // Valid BEACON frame
+    // const char data[] = {1, 128, 0, 0xff, 0xff, 0x10, 0x10, 0xde, 0xde, 'H', 'i', '\0'}; // Valid DATA frame
+    // const char data[] = {1, 136, 0, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x10, 0x10, 0xde, 0xde, 'H', 'i', '\0'}; // Valid DATA frame
+    // const char data[] = {65, 136, 0, 0xff, 0xff, 0xff, 0xff, 0xff,0xff,0x10, 0x10, 'H', 'i', '\0'}; // Valid DATA frame
 
+    char data[] = "0 Hello, World!";
     NIC * nic = new NIC();
+    const unsigned int delay_time = 3000000;
+    cout << "Hello, I am the sender." << endl;
+    cout << "I will send a message every " << delay_time << " microseconds." << endl;
     while(1)
     {
-        cout << "Sending..." << endl;
+        cout << "Sending message: " << data << endl;
         nic->send(nic->broadcast(), 0x1010, data, sizeof data);
         cout << "Sent" << endl;
+        data[0] = ((data[0] - '0' + 1) % 10) + '0';
+        Alarm::delay(delay_time);
     }
 }
 
@@ -44,10 +51,11 @@ public:
         {
             Frame * f = b->frame();
             char * d = f->data<char>();
-            cout << "Data received from " << f->src() << " :" << endl;
+            cout << endl << "=====================" << endl;
+            cout << "Received " << b->size() << " bytes of payload from " << f->src() << " :" << endl;
             for(int i=0; i<b->size(); i++)
                 cout << d[i];
-            cout << endl << "==============" << endl;
+            cout << endl << "=====================" << endl;
             _nic->free(b);
 //            _nic->stop_listening();
         }
@@ -58,16 +66,20 @@ private:
     NIC * _nic;
 };
 
-int main()
+void receiver()
 {
-    kout << "Hello main" << endl;
+    cout << "Hello, I am the receiver." << endl; 
+    cout << "I will attach myself to the NIC and print every message I get." << endl;
     NIC * nic = new NIC();
     Receiver * r = new Receiver(0x1010, nic);
-//    nic->listen();
-    kout << "Hello again" << endl;
-//   sender();
     while(1);
+}
 
+int main()
+{
+    cout << "Hello main" << endl;
+//     sender();
+    receiver();
 
     return 0;
 }

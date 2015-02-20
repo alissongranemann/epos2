@@ -5,13 +5,21 @@
 
 //============================================================================
 // ARCHITECTURE, MACHINE, AND APPLICATION SELECTION
-// This section is generated automatically from makedefs
+// This section is generated automatically from makedefs by $EPOS/etc/makefile
 //============================================================================
-#define MODExxx
+#define MODE xxx
 #define ARCH xxx
 #define MACH xxx
 #define MMOD xxx
 #define APPL xxx
+#define __mode_xxx__
+#define __arch_xxx__
+#define __mach_xxx__
+#define __mmod_xxx__
+
+#if defined (__arch_avr__) || defined (__mmod_lm3s811__)
+#define __no_networking__
+#endif
 
 //============================================================================
 // NAMESPACES AND DEFINITIONS
@@ -37,7 +45,7 @@ namespace EPOS {
 #define __USING_SYS             using namespace EPOS::S;
 #define _SYS                    ::EPOS::S
 
-#ifndef MODEkernel
+#ifndef __mode_kernel__
 namespace EPOS {
     using namespace S;
     using namespace S::U;

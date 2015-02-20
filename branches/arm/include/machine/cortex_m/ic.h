@@ -106,7 +106,8 @@ public:
     static void ipi_send(unsigned int cpu, unsigned int interrupt) {}
 
 private:
-    static void dispatch();
+    static void dispatch() __attribute__((naked));
+    static void _dispatch();
 
     static void int_not(const Interrupt_Id & i);
 

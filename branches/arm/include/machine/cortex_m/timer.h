@@ -108,7 +108,7 @@ public:
         return percentage;
     }
 
-    void handler(const Handler * handler) { _handler = handler; }
+    void handler(const Handler & handler) { _handler = handler; }
 
     static void enable() { Engine::enable(); }
     static void disable() { Engine::disable(); }
@@ -131,7 +131,7 @@ private:
     Count _initial;
     bool _retrigger;
     volatile Count _current[Traits<Machine>::CPUS];
-    Handler * _handler;
+    Handler _handler;
 
     static Cortex_M_Timer * _channels[CHANNELS];
 };

@@ -64,6 +64,8 @@ prebuild_$(APPLICATION):
 posbuild_$(APPLICATION):
 		@echo "done!"
 prerun_$(APPLICATION):
+		@echo "Cooling down for 10s ..."
+		sleep 10
 		@echo "Running $(APPLICATION) ..."
 
 clean: FORCE

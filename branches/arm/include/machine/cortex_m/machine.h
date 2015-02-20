@@ -43,9 +43,14 @@ private:
 
 __END_SYS
 
-#include "timer.h"
-#include "rtc.h"
-#include "uart.h"
-#include "nic.h"
+#ifdef __TIMER_H
+#include __TIMER_H
+#endif
+#ifdef __UART_H
+#include __UART_H
+#endif
+#ifdef __NIC_H
+#include __NIC_H
+#endif
 
 #endif

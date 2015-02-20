@@ -18,8 +18,10 @@ void Cortex_M::init()
         Cortex_M_Timer::init();
 //    if(Traits<Cortex_M_Scratchpad>::enabled)
 //        Cortex_M_Scratchpad::init();
-    if(Traits<Cortex_M_NIC>::enabled)
-        Cortex_M_NIC::init();
+#ifndef __no_networking__
+    if(Traits<Cortex_M_Radio>::enabled)
+        Cortex_M_Radio::init();
+#endif
 }
 
 __END_SYS

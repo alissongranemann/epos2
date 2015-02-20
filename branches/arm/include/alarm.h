@@ -7,6 +7,7 @@
 #include <utility/handler.h>
 #include <tsc.h>
 #include <rtc.h>
+#include <ic.h>
 #include <timer.h>
 #include <semaphore.h>
 
@@ -55,7 +56,7 @@ private:
     static void lock() { Thread::lock(); }
     static void unlock() { Thread::unlock(); }
 
-    static void handler();
+    static void handler(const IC::Interrupt_Id & i);
 
 private:
     Tick _ticks;

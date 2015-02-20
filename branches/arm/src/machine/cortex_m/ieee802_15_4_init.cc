@@ -1,4 +1,4 @@
-// EPOS Cortex-M NIC Mediator Initialization
+// EPOS Cortex-M Radio Mediator Initialization
 
 #include <machine/cortex_m/nic.h>
 
@@ -7,7 +7,7 @@ __BEGIN_SYS
 template<int unit>
 inline static void call_init()
 {
-    typedef typename Traits<Cortex_M_NIC>::NICS::template Get<unit>::Result NIC;
+    typedef typename Traits<Cortex_M_Radio>::NICS::template Get<unit>::Result NIC;
 
     // TODO: unit should be reset for each different NIC
     if(Traits<NIC>::enabled)
@@ -17,11 +17,11 @@ inline static void call_init()
 };
 
 template<>
-inline void call_init<Traits<Cortex_M_NIC>::NICS::Length>()
+inline void call_init<Traits<Cortex_M_Radio>::NICS::Length>()
 {
 };
 
-void Cortex_M_NIC::init()
+void Cortex_M_Radio::init()
 {
     call_init<0>();
 }

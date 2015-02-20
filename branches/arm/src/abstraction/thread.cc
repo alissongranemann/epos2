@@ -323,7 +323,7 @@ void Thread::rescheduler(const IC::Interrupt_Id & interrupt)
 }
 
 
-void Thread::time_slicer()
+void Thread::time_slicer(const IC::Interrupt_Id & i)
 {
     lock();
 

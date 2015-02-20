@@ -1,18 +1,21 @@
-// EPOS eMote3 IEEE802.15.4 Radio Mediator Initialization
+// EPOS CC2538 IEEE 802.15.4 NIC Mediator Initialization
+
+#include <system/config.h>
+#ifndef __no_networking__
 
 #include <system.h>
 #include <machine/cortex_m/machine.h>
-#include <machine/cortex_m/emote3_radio.h>
+#include "../../../include/machine/cortex_m/cc2538_radio.h"
 
 __BEGIN_SYS
 
-eMote3_Radio::eMote3_Radio(unsigned int unit, IO_Irq irq)
+CC2538::CC2538(unsigned int unit, IO_Irq irq)
 {
-    db<eMote3_Radio>(TRC) << "eMote3_Radio(unit=" << unit << ",irq=" << irq << ")" << endl;
+    db<CC2538>(TRC) << "CC2538(unit=" << unit << ",irq=" << irq << ")" << endl;
     // TODO: it has been observed that at least the FRMCTRL1 register does not get
     // its value updated on a write if this instruction is executed.
     // Disable clock to the RF CORE module
-    Cortex_M_Model::radio_disable();
+//     Cortex_M_Model::radio_disable();
 
     _tx_cur = _rx_cur = 0;
     _unit = unit;
@@ -59,11 +62,6 @@ eMote3_Radio::eMote3_Radio(unsigned int unit, IO_Irq irq)
 	// Enable auto-CRC
 	xreg(FRMCTRL0) |= AUTO_CRC;
 
-    if(Traits<eMote3_Radio>::auto_listen)
-	    xreg(FRMCTRL1) |= SET_RXENMASK_ON_TX; // Enter receive mode after TX
-    else
-	    xreg(FRMCTRL1) &= ~SET_RXENMASK_ON_TX; // Do not enter receive mode after TX
-
     set_channel(11);
 
 	// Disable counting of MAC overflows
@@ -86,8 +84,10 @@ eMote3_Radio::eMote3_Radio(unsigned int unit, IO_Irq irq)
     // Enable clock to the RF CORE module
     Cortex_M_Model::radio_enable();
 
-    if(Traits<eMote3_Radio>::auto_listen)
+    if(Traits<CC2538>::auto_listen)
     {
+	    xreg(FRMCTRL1) |= SET_RXENMASK_ON_TX; // Enter receive mode after TX
+
         // Enable device interrupts
         xreg(RFIRQM0) = ~0;
         xreg(RFIRQM1) = ~0;
@@ -95,12 +95,14 @@ eMote3_Radio::eMote3_Radio(unsigned int unit, IO_Irq irq)
         // Issue the listen command
         sfr(RFST) = ISRXON; 
     }
+    else
+	    xreg(FRMCTRL1) &= ~SET_RXENMASK_ON_TX; // Do not enter receive mode after TX
 }
 
 
-void eMote3_Radio::init(unsigned int unit)
+void CC2538::init(unsigned int unit)
 {
-    db<Init, eMote3_Radio>(TRC) << "eMote3_Radio::init(unit=" << unit << ")" << endl;
+    db<Init, CC2538>(TRC) << "CC2538::init(unit=" << unit << ")" << endl;
 
     // Allocate a DMA Buffer for init block, rx and tx rings
     //DMA_Buffer * dma_buf = new (SYSTEM) DMA_Buffer(DMA_BUFFER_SIZE);
@@ -108,7 +110,7 @@ void eMote3_Radio::init(unsigned int unit)
     IO_Irq irq = 26;
 
     // Initialize the device
-    eMote3_Radio * dev = new (SYSTEM) eMote3_Radio(unit, irq);
+    CC2538 * dev = new (SYSTEM) CC2538(unit, irq);
 
     // Register the device
     _devices[unit].interrupt = IC::irq2int(irq);
@@ -121,3 +123,5 @@ void eMote3_Radio::init(unsigned int unit)
 }
 
 __END_SYS
+
+#endif

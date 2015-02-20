@@ -34,7 +34,7 @@ typedef Cortex_M_RTC         RTC;
 typedef Cortex_M_EEPROM      EEPROM;
 typedef Cortex_M_UART        UART;
 typedef IF<Traits<Serial_Display>::enabled, Serial_Display, Cortex_M_Display>::Result Display;
-typedef Cortex_M_NIC         NIC;
+typedef Cortex_M_Radio       NIC;
 typedef Cortex_M_Scratchpad  Scratchpad;
 
 __END_SYS

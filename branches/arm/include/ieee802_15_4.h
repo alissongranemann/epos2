@@ -245,8 +245,10 @@ public:
         unsigned int collisions;
     };
 
+/*
     virtual void listen() = 0;
     virtual void stop_listening() = 0;
+    */
 
 protected:
     IEEE802_15_4() {}

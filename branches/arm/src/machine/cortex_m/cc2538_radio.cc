@@ -1,23 +1,25 @@
-// EPOS PC AMD PCNet II (Am79C970A) Ethernet NIC Mediator Implementation
+// EPOS CC2538 IEEE 802.15.4 NIC Mediator Implementation
+
+#include <system/config.h>
+#ifndef __no_networking__
 
 #include <machine/cortex_m/machine.h>
-#include <machine/cortex_m/emote3_radio.h>
+#include "../../../include/machine/cortex_m/cc2538_radio.h"
 #include <utility/malloc.h>
 #include <alarm.h>
 
 __BEGIN_SYS
 
 // Class attributes
-eMote3_Radio::Device eMote3_Radio::_devices[UNITS];
-
+CC2538::Device CC2538::_devices[UNITS];
 
 // Methods
-eMote3_Radio::~eMote3_Radio()
+CC2538::~CC2538()
 {
-    db<eMote3_Radio>(TRC) << "~eMote3_Radio(unit=" << _unit << ")" << endl;
+    db<CC2538>(TRC) << "~Radio(unit=" << _unit << ")" << endl;
 }
 
-void eMote3_Radio::listen() 
+void CC2538::listen() 
 { 
     // Clear interrupts
     sfr(RFIRQF0) = 0;
@@ -29,7 +31,7 @@ void eMote3_Radio::listen()
     sfr(RFST) = ISRXON; 
 }
 
-void eMote3_Radio::stop_listening() 
+void CC2538::stop_listening() 
 { 
     // Disable device interrupts
     xreg(RFIRQM0) = 0;
@@ -38,14 +40,14 @@ void eMote3_Radio::stop_listening()
     sfr(RFST) = ISRFOFF; 
 }
 
-void eMote3_Radio::set_channel(unsigned int channel)
+void CC2538::set_channel(unsigned int channel)
 {
     if((channel < 11) || (channel > 26)) return;
 	/*
 	   The carrier frequency is set by programming the 7-bit frequency word in the FREQ[6:0] bits of the
 	   FREQCTRL register. Changes take effect after the next recalibration. Carrier frequencies in the range
-	   from 2394 to 2507 MHz are supported. The carrier frequency f C , in MHz, is given by f C = (2394 +
-	   FREQCTRL.FREQ[6:0]) MHz, and is programmable in 1-MHz steps.
+	   from 2394 to 2507 MHz are supported. The carrier frequency f C , in MHz, is given by 
+       f C = (2394 + FREQCTRL.FREQ[6:0]) MHz, and is programmable in 1-MHz steps.
 	   IEEE 802.15.4-2006 specifies 16 channels within the 2.4-GHz band. These channels are numbered 11
 	   through 26 and are 5 MHz apart. The RF frequency of channel k is given by Equation 1.
 	   f c = 2405 + 5(k –11) [MHz] k [11, 26]
@@ -56,7 +58,7 @@ void eMote3_Radio::set_channel(unsigned int channel)
     xreg(FREQCTRL) = 11+5*(channel-11);
 }
 
-int eMote3_Radio::send(const Address & dst, const Protocol & prot, const void * data, unsigned int size)
+int CC2538::send(const Address & dst, const Protocol & prot, const void * data, unsigned int size)
 {
     // Wait for the buffer to become free and seize it
     for(bool locked = false; !locked; ) {
@@ -66,7 +68,7 @@ int eMote3_Radio::send(const Address & dst, const Protocol & prot, const void * 
 
     Buffer * buf = _tx_buffer[_tx_cur];
 
-    db<eMote3_Radio>(TRC) << "eMote3_Radio::send(s=" << _address << ",d=" << dst << ",p=" << prot
+    db<CC2538>(TRC) << "CC2538::send(s=" << _address << ",d=" << dst << ",p=" << prot
                      << ",d=" << data << ",s=" << size << ")" << endl;
 
     char * f = reinterpret_cast<char *>(new (buf->frame()) Frame(_address, dst, prot, data, size));
@@ -75,10 +77,7 @@ int eMote3_Radio::send(const Address & dst, const Protocol & prot, const void * 
     // For now, we'll just copy using the RFDATA register
     sfr(RFST) = ISFLUSHTX; // Clear TXFIFO
     for(int i=0; i<f[0]+1; i++) // First field is length of MAC
-    {
-        kout << (int)f[i] << endl;
         sfr(RFDATA) = f[i];
-    }
 
     // Trigger an immediate send poll
     _cmd_send_now();
@@ -89,7 +88,7 @@ int eMote3_Radio::send(const Address & dst, const Protocol & prot, const void * 
     // Wait for packet to be sent
     while(!_tx_done());
 
-    db<eMote3_Radio>(INF) << "eMote3_Radio::send done" << endl;
+    db<CC2538>(INF) << "CC2538::send done" << endl;
 
     buf->unlock();
 
@@ -97,9 +96,9 @@ int eMote3_Radio::send(const Address & dst, const Protocol & prot, const void * 
 }
 
 
-int eMote3_Radio::receive(Address * src, Protocol * prot, void * data, unsigned int size)
+int CC2538::receive(Address * src, Protocol * prot, void * data, unsigned int size)
 {
-    db<eMote3_Radio>(TRC) << "eMote3_Radio::receive(s=" << *src << ",p=" << hex << *prot << dec
+    db<CC2538>(TRC) << "CC2538::receive(s=" << *src << ",p=" << hex << *prot << dec
                      << ",d=" << data << ",s=" << size << ") => " << endl;
 
     // Wait for a received frame and seize it
@@ -135,7 +134,7 @@ int eMote3_Radio::receive(Address * src, Protocol * prot, void * data, unsigned 
     _statistics.rx_packets++;
     _statistics.rx_bytes += buf->size();
 
-    db<eMote3_Radio>(INF) << "eMote3_Radio::receive done" << endl;
+    db<CC2538>(INF) << "CC2538::receive done" << endl;
 
     int tmp = buf->size();
 
@@ -148,14 +147,14 @@ int eMote3_Radio::receive(Address * src, Protocol * prot, void * data, unsigned 
 
 
 // Allocated buffers must be sent or release IN ORDER as assumed by the Radio
-eMote3_Radio::Buffer * eMote3_Radio::alloc(NIC * nic, const Address & dst, const Protocol & prot, unsigned int once, unsigned int always, unsigned int payload)
+CC2538::Buffer * CC2538::alloc(NIC * nic, const Address & dst, const Protocol & prot, unsigned int once, unsigned int always, unsigned int payload)
 {
-    db<eMote3_Radio>(TRC) << "eMote3_Radio::alloc(s=" << _address << ",d=" << dst << ",p=" << hex << prot << dec << ",on=" << once << ",al=" << always << ",ld=" << payload << ")" << endl;
+    db<CC2538>(TRC) << "CC2538::alloc(s=" << _address << ",d=" << dst << ",p=" << hex << prot << dec << ",on=" << once << ",al=" << always << ",ld=" << payload << ")" << endl;
 
     int max_data = MTU - always;
 
     if((payload + once) / max_data > TX_BUFS) {
-        db<eMote3_Radio>(WRN) << "eMote3_Radio::alloc: sizeof(Network::Packet::Data) > sizeof(NIC::Frame::Data) * TX_BUFS!" << endl;
+        db<CC2538>(WRN) << "CC2538::alloc: sizeof(Network::Packet::Data) > sizeof(NIC::Frame::Data) * TX_BUFS!" << endl;
         return 0;
     }
 
@@ -173,7 +172,7 @@ eMote3_Radio::Buffer * eMote3_Radio::alloc(NIC * nic, const Address & dst, const
         // Initialize the buffer and assemble the Ethernet Frame Header
         new (buf) Buffer(nic, _address, dst, prot, (size > max_data) ? MTU : size + always);
 
-        db<eMote3_Radio>(INF) << "eMote3_Radio::alloc[" << _tx_cur << "]" << endl;
+        db<CC2538>(INF) << "CC2538::alloc[" << _tx_cur << "]" << endl;
 
         ++_tx_cur %= TX_BUFS;
 
@@ -183,15 +182,14 @@ eMote3_Radio::Buffer * eMote3_Radio::alloc(NIC * nic, const Address & dst, const
     return pool.head()->object();
 }
 
-
-int eMote3_Radio::send(Buffer * buf)
+int CC2538::send(Buffer * buf)
 {
     unsigned int size = 0;
 
     for(Buffer::Element * el = buf->link(); el; el = el->next()) {
         buf = el->object();
 
-        db<eMote3_Radio>(TRC) << "eMote3_Radio::send(buf=" << buf << ")" << endl;
+        db<CC2538>(TRC) << "CC2538::send(buf=" << buf << ")" << endl;
 
         // Trigger an immediate send poll
         _cmd_send_now();
@@ -201,7 +199,7 @@ int eMote3_Radio::send(Buffer * buf)
         _statistics.tx_packets++;
         _statistics.tx_bytes += buf->size();
 
-        db<eMote3_Radio>(INF) << "eMote3_Radio::send" << endl;
+        db<CC2538>(INF) << "CC2538::send" << endl;
 
         // Wait for packet to be sent and unlock the respective buffer
         while(!_tx_done());
@@ -212,9 +210,9 @@ int eMote3_Radio::send(Buffer * buf)
 }
 
 
-void eMote3_Radio::free(Buffer * buf)
+void CC2538::free(Buffer * buf)
 {
-    db<eMote3_Radio>(TRC) << "eMote3_Radio::free(buf=" << buf << ")" << endl;
+    db<CC2538>(TRC) << "CC2538::free(buf=" << buf << ")" << endl;
 
     for(Buffer::Element * el = buf->link(); el; el = el->next()) {
         buf = el->object();
@@ -225,14 +223,14 @@ void eMote3_Radio::free(Buffer * buf)
         // Release the buffer to the OS
         buf->unlock();
 
-        db<eMote3_Radio>(INF) << "eMote3_Radio::free" << endl;
+        db<CC2538>(INF) << "CC2538::free" << endl;
     }
 }
 
 
-void eMote3_Radio::reset()
+void CC2538::reset()
 {
-    db<eMote3_Radio>(TRC) << "eMote3_Radio::reset()" << endl;
+    db<CC2538>(TRC) << "Radio::reset()" << endl;
 
 
     // Reset statistics
@@ -240,7 +238,7 @@ void eMote3_Radio::reset()
 }
 
 
-void eMote3_Radio::handle_int()
+void CC2538::handle_int()
 {
     if(sfr(RFIRQF0) & FIFOP) { // Frame received
         // Clear interrupt
@@ -265,10 +263,10 @@ void eMote3_Radio::handle_int()
             // For the upper layers, size will represent the size of frame->data<T>()
             buf->size(buf->frame()->frame_length() - sizeof(Header) - sizeof(CRC) + sizeof(Phy_Header)); // Phy_Header is included in Header, but is already discounted in frame_length
 
-            db<eMote3_Radio>(TRC) << "eMote3_Radio::int:receive(s=" << frame->src() << ",p=" << hex << frame->header()->prot() << dec
+            db<CC2538>(TRC) << "CC2538::int:receive(s=" << frame->src() << ",p=" << hex << frame->header()->prot() << dec
                 << ",d=" << frame->data<void>() << ",s=" << buf->size() << ")" << endl;
 
-            db<eMote3_Radio>(INF) << "eMote3_Radio::handle_int[" << _rx_cur << "]" << endl;
+            db<CC2538>(INF) << "CC2538::handle_int[" << _rx_cur << "]" << endl;
 
             IC::disable(_irq);
             if(!notify(frame->header()->prot(), buf)) // No one was waiting for this frame, so let it free for receive()
@@ -279,42 +277,44 @@ void eMote3_Radio::handle_int()
     }
 
     if(false) { // Error
-        db<eMote3_Radio>(WRN) << "eMote3_Radio::int:error =>";
+        db<CC2538>(WRN) << "CC2538::int:error =>";
 
 //            if(csr0 & CSR0_MERR) { // Memory
-//        	db<eMote3_Radio>(WRN) << " memory";
+//        	db<CC2538>(WRN) << " memory";
 //            }
 //
 //            if(csr0 & CSR0_MISS) { // Missed Frame
-//        	db<eMote3_Radio>(WRN) << " missed frame";
+//        	db<CC2538>(WRN) << " missed frame";
 //        	_statistics.rx_overruns++;
 //            }
 //
 //            if(csr0 & CSR0_CERR) { // Collision
-//        	db<eMote3_Radio>(WRN) << " collision";
+//        	db<CC2538>(WRN) << " collision";
 //        	_statistics.collisions++;
 //            }
 //
 //            if(csr0 & CSR0_BABL) { // Bable transmitter time-out
-//        	db<eMote3_Radio>(WRN) << " overrun";
+//        	db<CC2538>(WRN) << " overrun";
 //        	_statistics.tx_overruns++;
 //            }
 
-        db<eMote3_Radio>(WRN) << endl;
+        db<CC2538>(WRN) << endl;
     }
 }
 
 
-void eMote3_Radio::int_handler(const IC::Interrupt_Id & interrupt)
+void CC2538::int_handler(const IC::Interrupt_Id & interrupt)
 {
-    eMote3_Radio * dev = get_by_interrupt(interrupt);
+    CC2538 * dev = get_by_interrupt(interrupt);
 
-    db<eMote3_Radio>(TRC) << "eMote3_Radio::int_handler(int=" << interrupt << ",dev=" << dev << ")" << endl;
+    db<CC2538>(TRC) << "Radio::int_handler(int=" << interrupt << ",dev=" << dev << ")" << endl;
 
     if(!dev)
-        db<eMote3_Radio>(WRN) << "eMote3_Radio::int_handler: handler not assigned!" << endl;
+        db<CC2538>(WRN) << "Radio::int_handler: handler not assigned!" << endl;
     else
         dev->handle_int();
 }
 
 __END_SYS
+
+#endif

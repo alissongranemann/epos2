@@ -68,28 +68,23 @@ template <> struct Traits<Cortex_M_UART>: public Traits<Cortex_M_Common>
     static const unsigned int DEF_STOP_BITS = 1;
 };
 
-template <> struct Traits<Cortex_M_NIC>: public Traits<Cortex_M_Common>
+template <> struct Traits<Cortex_M_Radio>: public Traits<Cortex_M_Common>
 {
     static const bool enabled = (Traits<Build>::NODES > 1);
 
-    typedef LIST<eMote3_Radio> NICS;
+    typedef LIST<CC2538> NICS;
     static const unsigned int UNITS = NICS::Length;
 };
 
-template <> struct Traits<eMote3_Radio>: public Traits<Cortex_M_NIC>
+template <> struct Traits<CC2538>: public Traits<Cortex_M_Radio>
 {
+    static const unsigned int UNITS = NICS::Count<CC2538>::Result;
+    static const unsigned int SEND_BUFFERS = 1;
+    static const unsigned int RECEIVE_BUFFERS = 1;
+   
+    // There is no listen command on the radio interface yet,
+    // so the only way to receive data is setting this flag
     static const bool auto_listen = true;
-
-    static const unsigned int UNITS = NICS::Count<eMote3_Radio>::Result;
-    static const unsigned int SEND_BUFFERS = 1; // per unit
-    static const unsigned int RECEIVE_BUFFERS = 1; // per unit
-};
-
-template <> struct Traits<Radio>: public Traits<Cortex_M_NIC>
-{
-    static const unsigned int UNITS = NICS::Count<Radio>::Result;
-    static const unsigned int SEND_BUFFERS = 64; // per unit
-    static const unsigned int RECEIVE_BUFFERS = 256; // per unit
 };
 
 

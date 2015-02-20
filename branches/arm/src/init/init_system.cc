@@ -61,14 +61,18 @@ public:
             db<Init>(INF) << "Randomizing the Random Numbers Generator's seed: " << endl;
             if(Traits<TSC>::enabled)
                 Random::seed(TSC::time_stamp());
+#ifdef __NIC_H
             if(Traits<NIC>::enabled) {
                 NIC nic;
                 Random::seed(Random::random() ^ nic.address());
             }
-//            if(Traits<ADC>::enabled) {
-//                ADC adc;
-//                Random::seed(Random::random() ^ adc.read);
-//            }
+#endif
+#ifdef __ADC_H
+            if(Traits<ADC>::enabled) {
+                ADC adc;
+                Random::seed(Random::random() ^ adc.read());
+            }
+#endif
             if(!Traits<TSC>::enabled && !Traits<NIC>::enabled)
                 db<Init>(WRN) << "Due to lack of entropy, Random is a pseudo random numbers generator!" << endl;
             db<Init>(INF) << "done!" << endl;
