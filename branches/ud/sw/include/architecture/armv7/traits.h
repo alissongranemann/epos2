@@ -1,9 +1,11 @@
+// EPOS ARMv7 Architecture Metainfo
 #ifndef __armv7_traits_h
 #define __armv7_traits_h
 
+#include <system/config.h>
+
 __BEGIN_SYS
 
-// ARMv7
 template <> struct Traits<ARMv7>: public Traits<void>
 {
     enum {LITTLE, BIG};
@@ -13,13 +15,14 @@ template <> struct Traits<ARMv7>: public Traits<void>
     static const bool unaligned_memory_access   = false;
 };
 
-template <> struct Traits<ARMv7_TSC>: public Traits<void>
-{
-};
-
 template <> struct Traits<ARMv7_MMU>: public Traits<void>
 {
 	static const unsigned int MMU_TABLE_ADDR = 0x104000;
+};
+
+template <> struct Traits<ARMv7_TSC>: public Traits<void>
+{
+    static const bool enabled = (Traits<Build>::MACHINE == Traits<Build>::Cortex_A);
 };
 
 __END_SYS

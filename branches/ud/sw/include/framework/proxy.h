@@ -38,9 +38,11 @@ public:
 };
 
 template<typename Component>
-class Proxy: public IF<Traits<Component>::Hardware, Message_UD, Message_Kernel>::Result
+//class Proxy: public IF<Traits<Component>::hardware, Message_UD, Message_Kernel>::Result
+class Proxy: Message_UD
 {
-    typedef IF<Traits<Component>::Hardware, Message_UD, Message_Kernel>::Result Base;
+    //typedef IF<Traits<Component>::hardware, Message_UD, Message_Kernel>::Result Base;
+    typedef Message_UD Base;
 
     template<typename> friend class Proxy;
     template<typename> friend class Proxied;
