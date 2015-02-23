@@ -15,7 +15,7 @@ void Component_Manager::call(Id id, Method m, unsigned int n_args,
 
     db<Component_Manager>(TRC) << "))" << endl;
 
-    // TODO: Fix the hardcored id
+    // TODO: Fix the hardcoded id
     Component_Controller::send_call(0, m);
     Component_Controller::send_call_data(0, n_args, data);
     Component_Controller::receive_return_data(0, n_ret, data);
