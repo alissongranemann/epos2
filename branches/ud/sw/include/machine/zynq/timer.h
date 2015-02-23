@@ -19,11 +19,11 @@ protected:
     Channel _channel;
     static const unsigned int CHANNELS = 3;
     static Zynq_Timer * _channels[CHANNELS];
-    volatile Count _current[Traits<Machine>::MAX_CPUS];
+    volatile Count _current[Traits<Machine>::CPUS];
     Count _initial;
 
 public:
-    static const unsigned int CLOCK = Traits<Machine>::CLOCK;
+    static const unsigned int CLOCK = Traits<CPU>::CLOCK;
 
     enum {
         TSC         = 0,
@@ -50,7 +50,7 @@ public:
         }
 
 
-        for(unsigned int i = 0; i < Traits<Machine>::MAX_CPUS; i++)
+        for(unsigned int i = 0; i < Traits<Machine>::CPUS; i++)
             _current[i] = _initial;
 
         enable();

@@ -78,7 +78,7 @@ public:
 public:
     ARMv7() {}
 
-    static Hertz clock() { return Traits<Machine>::CLOCK; }
+    static Hertz clock() { return Traits<CPU>::CLOCK; }
 
     static void int_enable() {
         irq_enable();
