@@ -69,8 +69,6 @@
 *
 ******************************************************************************/
 
-#include "xparameters.h"
-
 .globl MMUTable
 .global _prestart
 .global _boot
