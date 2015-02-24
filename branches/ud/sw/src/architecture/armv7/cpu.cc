@@ -1,62 +1,56 @@
 // EPOS ARMv7 CPU Mediator Implementation
 
 #include <architecture/armv7/cpu.h>
-#include <system/config.h>
-#include <machine.h>
+#include <system.h>
 
 __BEGIN_SYS
 
-ARMv7::OP_Mode ARMv7::_mode = ARMv7::FULL;
-bool ARMv7::_int_enabled = false;
+// Class attributes
+unsigned int ARMv7::_cpu_clock;
+unsigned int ARMv7::_bus_clock;
 
+// Class methods
 void ARMv7::Context::save() volatile
 {
-	ASM("nop\n");
+    ASM("       mov     r2, pc                  \n"
+        "       push    {r2}                    \n"
+        "       push    {r0-r12, lr}            \n"
+        "       mrs     r2, cpsr                \n"
+        "       push    {r2}                    \n"
+        "       str     sp, [%0]                \n"
+        : : "r"(this));
 }
 
 void ARMv7::Context::load() const volatile
 {
-	db<CPU>(TRC) << "CPU::Context::load(this=" << (void*)this << ")\n";
-
-	ASM("ldr r0, [%0, #64]\n"
-         "msr spsr_cfsx, r0\n"
-         "ldmfd %0, {r0-r12,sp,lr,pc}^\n"
-		 :
-		 : "r" (this)
-		 : "r0");
+    System::_heap->free(reinterpret_cast<void *>(Memory_Map<Machine>::SYS_STACK), Traits<System>::STACK_SIZE);
+    ASM("       mov     sp, %0                  \n"
+        "       isb                             \n"     // serialize the pipeline so that SP gets updated before the pop
+        "       pop     {r2}                    \n"
+        "       msr     cpsr, r2                \n"
+        "       pop     {r0-r12, lr}            \n"
+        "       pop     {pc}                    \n"
+        : : "r"(this));
 }
-
 
 void ARMv7::switch_context(Context * volatile * o, Context * volatile n)
 {
-	kout << "Switch_context\n";
-    Context * old = *o;
+    ASM("       adr     r2, .ret                \n"
+        "       push    {r2}                    \n"
+        "       push    {r0-r12, lr}            \n"
+        "       mrs     r2, cpsr                \n"
+        "       push    {r2}                    \n"
+        "       str     sp, [%0]                \n"
 
-    old->_cpsr = CPU::flags();
-
-    //ASM("ldr r2, [%0, #64]" : : "r"(n) : "r2"); //geting n->_cpsr
-    //ASM("msr spsr_cfsx, r2");
-
-    ASM("msr spsr_cfsx, %0" : : "r"(n->_cpsr) :);
-    ASM("stmia %0, {r0-r12,sp,lr,pc} \n"              // pc is always read with a +8 offset
-         "ldmfd %1, {r0-r12,sp,lr,pc}^"
-          : : "r"(old), "r"(n) :);
-    ASM("nop");                                        // so the pc read above is poiting here
-}
-
-
-void ARMv7::power(ARMv7::OP_Mode mode)
-{
-    if (mode == _mode) return;
-        _mode = mode;
-}
-
-extern "C" void __cxa_guard_acquire() {
-    CPU::int_disable();
-}
-extern "C" void __cxa_guard_release() {
-    CPU::int_enable();
+        "       mov     sp, %1                  \n"
+        "       isb                             \n"     // serialize the pipeline so that SP gets updated before the pop
+        "       pop     {r2}                    \n"
+        "       msr     cpsr, r2                \n"
+        "       pop     {r0-r12, lr}            \n"
+        "       pop     {r2}                    \n"
+        "       mov     pc, r2                  \n"     // popping directly into PC causes an Usage Fault???
+        ".ret:  bx      lr                      \n"
+        : : "r"(o), "r"(n));
 }
 
 __END_SYS
-

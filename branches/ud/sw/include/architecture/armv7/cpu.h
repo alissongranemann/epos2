@@ -1,61 +1,87 @@
-// EPOS-- ARMv7 CPU Mediator Declarations
+// EPOS ARMv7 CPU Mediator Declarations
 
 #ifndef __armv7_h
 #define __armv7_h
 
-#include <system/config.h>
 #include <cpu.h>
 
 __BEGIN_SYS
 
-class ARMv7: public CPU_Common
+class ARMv7: private CPU_Common
 {
     friend class Init_System;
 
 public:
+    // CPU Native Data Types
+    using CPU_Common::Reg8;
+    using CPU_Common::Reg16;
+    using CPU_Common::Reg32;
+    using CPU_Common::Log_Addr;
+    using CPU_Common::Phy_Addr;
+
     // CPU Flags
     typedef Reg32 Flags;
+    enum {
+        FLAG_THUMB      = 1 << 24,      // Thumb state
+        FLAG_Q          = 1 << 27,      // DSP Overflow
+        FLAG_V          = 1 << 28,      // Overflow
+        FLAG_C          = 1 << 29,      // Carry
+        FLAG_Z          = 1 << 30,      // Zero
+        FLAG_N          = 1 << 31,      // Negative
+        FLAG_DEFAULTS   = FLAG_THUMB
+    };
+
+    // Exceptions
+    typedef Reg32 Exception_Id;
+    enum {                      // Priority
+        EXC_RESET       = 1,    // -3 (highest)
+        EXC_NMI         = 2,    // -2
+        EXC_HARD        = 3,    // -1
+        EXC_MPU         = 4,    // programmable
+        EXC_BUS         = 5,    // programmable
+        EXC_USAGE       = 6,    // programmable
+        EXC_SVCALL      = 11,   // programmable
+        EXC_DEBUG       = 12,   // programmable
+        EXC_PENDSV      = 14,   // programmable
+        EXC_SYSTICK     = 15    // programmable
+    };
 
     // CPU Context
     class Context
     {
     public:
-        Context(Log_Addr entry, Log_Addr stack_bottom, Log_Addr exit) :
-            _r0(0xA), _r1(0xB), _r2(0xC), _r3(0xD), _r4(0xE), _r5(0xF), _r6(0),
-            _r7(0), _r8(0), _r9(0), _r10(0), _r11(0), _r12(0),
-            _sp(stack_bottom), _lr(exit), _pc(entry),
-            _cpsr(0x60000013) {} // all interrupts enabled by default. 0x13 is SVC mode.
+        // All interrupts enabled by default. 0x13 is SVC mode.
+        Context(const Log_Addr & entry, const Log_Addr & exit): _psr(0x60000013), _lr(exit), _pc(entry) {}
+//        _r0(0), _r1(1), _r2(2), _r3(3), _r4(4), _r5(5), _r6(6), _r7(7), _r8(8), _r9(9), _r10(10), _r11(11), _r12(12),
 
-        Context() {}
-
-        void save() volatile;
+        void save() volatile  __attribute__ ((naked));
         void load() const volatile;
 
-        friend Debug & operator << (Debug & db, const Context & c) {
-            db << hex;
-            db << "{r0=" << c._r0
-               << ",r1=" << c._r1
-               << ",r2=" << c._r2
-               << ",r3=" << c._r3
-               << ",r4=" << c._r4
-               << ",r5=" << c._r5
-               << ",r6=" << c._r6
-               << ",r7=" << c._r7
-               << ",r8=" << c._r8
-               << ",r9=" << c._r9
+        friend Debug & operator<<(Debug & db, const Context & c) {
+            db << hex
+               << "{r0="  << c._r0
+               << ",r1="  << c._r1
+               << ",r2="  << c._r2
+               << ",r3="  << c._r3
+               << ",r4="  << c._r4
+               << ",r5="  << c._r5
+               << ",r6="  << c._r6
+               << ",r7="  << c._r7
+               << ",r8="  << c._r8
+               << ",r9="  << c._r9
                << ",r10=" << c._r10
                << ",r11=" << c._r11
                << ",r12=" << c._r12
-               << ",SP=" << c._sp
-               << ",LR=" << c._lr
-               << ",PC=" << c._pc
-               << ",CPSR=" << c._cpsr
-               << "}" ;
-            db << dec;
+               << ",sp="  << &c
+               << ",lr="  << c._lr
+               << ",pc="  << c._pc
+               << ",psr=" << c._psr
+               << "}" << dec;
             return db;
         }
 
     public:
+        Reg32 _psr;
         Reg32 _r0;
         Reg32 _r1;
         Reg32 _r2;
@@ -69,241 +95,168 @@ public:
         Reg32 _r10;
         Reg32 _r11;
         Reg32 _r12;
-        Reg32 _sp;
         Reg32 _lr;
         Reg32 _pc;
-        Reg32 _cpsr; // Current Program Status Register
     };
+
+    // I/O ports
+    typedef Reg16 IO_Irq;
+
+    // Interrupt Service Routines
+    typedef void (ISR)();
+
+    // Fault Service Routines (exception handlers)
+    typedef void (FSR)();
 
 public:
     ARMv7() {}
 
-    static Hertz clock() { return Traits<CPU>::CLOCK; }
+    static Hertz clock() { return _cpu_clock; }
+    static Hertz bus_clock() { return _bus_clock; }
 
     static void int_enable() {
-        irq_enable();
-        fiq_enable();
-        _int_enabled = true;
-    }
+        Reg32 flags;
+        ASM("mrs %0, cpsr               \n"
+            "bic %0, %0, #0xC0          \n"
+            "msr cpsr_c, %0             \n"
+            : "=r"(flags) : : "cc");
 
+    }
     static void int_disable() {
-        irq_disable();
-        fiq_disable();
-        _int_enabled = false;
-    }
-
-    static bool int_enabled() { return _int_enabled; }
-
-    static bool int_disabled() { return !_int_enabled; }
-
-    static void irq_enable() {
         Reg32 flags;
-        ASM("mrs %0, cpsr\n"
-            "bic %0, %0, #0x80\n"
-            "msr cpsr_c, %0\n":  "=r"(flags) : : "cc");
+        ASM("mrs %0, cpsr               \n"
+            "orr %0, %0, #0xC0          \n"
+            "msr cpsr_c, %0             \n"
+            : "=r"(flags) : : "cc");
     }
 
-    static void irq_disable() {
-        Reg32 flags;
-        ASM("mrs %0, cpsr\n"
-            "orr %0, %0, #0x80\n"
-            "msr cpsr_c, %0\n":  "=r"(flags) : : "cc");
+    static bool int_enabled() {
+        return !int_disabled();
+    }
+    static bool int_disabled() {
+        // TODO: The check must be performed in one instruction?
+        bool disabled;
+        ASM("mrs %0, cpsr               \n"
+            "and %0, %0, #0xC0          \n"
+            : "=r"(disabled));
+        return disabled;
     }
 
-    static void fiq_enable() {
-        Reg32 flags;
-        ASM("mrs %0, cpsr\n"
-            "bic %0, %0, #0x40\n"
-            "msr cpsr_c, %0\n":  "=r"(flags) : : "cc");
+    static void halt() { ASM("wfi"); }
 
-    }
+    static void switch_context(Context * volatile * o, Context * volatile n) __attribute__ ((naked));
 
-    static void fiq_disable() {
-        Reg32 flags;
-        ASM("mrs %0, cpsr\n"
-            "orr %0, %0, #0x40\n"
-            "msr cpsr_c, %0\n":  "=r"(flags) : : "cc");
-    }
-
-    static void halt() {
-        int_enable();
-        //power(DOZE);
-        while(true);
-    }
-
-    static void reboot() {
-        ASM("b _init\n");//Should do more than that...TODO
-    }
-
-    static void switch_context(Context * volatile * o, Context * volatile n);
+    static int syscall(void * message);
+    static void syscalled();
 
     static Flags flags() {
-        register Reg32 result;
-        ASM("mrs %0, cpsr" : "=r"(result) ::);
-        return result;
+        register Reg32 value;
+        ASM("mrs %0, cpsr" : "=r"(value) ::);
+        return value;
     }
-
-    static void flags(Flags flags) {
+    static void flags(const Flags & flags) {
         ASM("msr cpsr_c, %0" : : "r"(flags) :);
     }
 
-    static void sp(Reg32 sp) {
+    static Reg32 sp() {
+        Reg32 value;
+        ASM("mov %0, sp" : "=r"(value) : : );
+        return value;
+    }
+    static void sp(const Reg32 & sp) {
         ASM("mov sp, %0" : : "r"(sp) : "sp");
+        ASM("isb");
     }
 
     static Reg32 fr() {
-        Reg32 return_value;
-        ASM("mov %0, r0" : "=r" (return_value) : : "r0");
-        return return_value;
+        Reg32 value;
+        ASM("" : "=r"(value) : : "r0");
+        return value;
+    }
+    static void fr(const Reg32 & fr) {
+        ASM("" : : "r"(fr) : "r0");
     }
 
-    static void fr(Reg32 fr) {
-        ASM("mov r0, %0" : : "r" (fr) : "r0");
-    }
-
-    static Reg32 sp() {
-        Reg32 return_value;
-        ASM("mov %0, sp" : "=r" (return_value) : : );
-        return return_value;
-    }
-
-    static Reg32 pdp() {
-        //Translation table 0 base address
-        Reg32 return_value;
-        ASM("mrc p15,0,%0,c2,c0,0" : "=r" (return_value) : : );
-        return return_value;
-    }
-
-    static void pdp(Reg32 value) {
-        //Translation table 0 base address
-        ASM("mcr p15,0,%0,c2,c0,0" : : "r"(value) : );
-    }
-
-    // PC is read with a +8 offset
-    static Log_Addr ip()
+    static Log_Addr ip() // due to RISC pipelining PC is read with a +8 (4 for thumb) offset
     {
-        register Reg32 result;
-        ASM("mov %0, pc" : "=r"(result) : :);
-        return result;
+        Reg32 value;
+        ASM("mov %0, pc" : "=r"(value) : :);
+        return value;
     }
 
-    static bool tsl(volatile bool & lock) {
-        register bool result;
-        register unsigned int value = 1;
-        static volatile bool old=lock;
+    static Reg32 pdp() { return 0; }
+    static void pdp(const Reg32 & pdp) {}
 
-        ASM("1: ldrexb %0, [%1]      \n"
-             "   strexb r4, %2, [%1]  \n"
-             "   cmp r4, #0          \n"
-             "   bne 1b              \n"
-           : "=&r" (result)
-           : "r"(&lock), "r"(value)
-           : "r4" );
-
+    template <typename T>
+    static T tsl(volatile T & lock) {
+        register T old;
+        register T one = 1;
+        ASM("1: ldrexb  %0, [%1]        \n"
+            "   strexb  r4, %2, [%1]    \n"
+            "   cmp     r4, #0          \n"
+            "   bne     1b              \n" : "=&r" (old) : "r"(&lock), "r"(one) : "r4" );
         return old;
     }
 
     template <typename T>
     static T finc(volatile T & value) {
-        register int result;
-        volatile register T old = value;
-        ASM("1: ldrex %0, [%1]     \n"
-             "   add %0, %0, #1     \n"
-             "   strex r1, %0, [%1] \n"
-             "   cmp r1, #0         \n"
-             "   bne 1b             \n"
-           : "=&r"(result)
-           : "r" (&value)
-           : "r1");
-
+        T old;
+        static bool lock = false;
+        while(tsl(lock));
+        old = value;
+        value++;
+        lock = false;
         return old;
     }
 
     template <typename T>
-    static int fdec(volatile T & value) {
-        register int result;
-        volatile register T old = value;
-
-        ASM("1: ldrex %0, [%1]     \n"
-             "   sub %0, %0, #1     \n"
-             "   strex r1, %0, [%1] \n"
-             "   cmp r1, #0         \n"
-             "   bne 1b             \n"
-           : "=&r"(result)
-           : "r" (&value)
-           : "r1");
-
+    static T fdec(volatile T & value) {
+        T old;
+        static bool lock = false;
+        while(tsl(lock));
+        old = value;
+        value--;
+        lock = false;
         return old;
     }
 
-    static void init_cpu1() {
-        unsigned int addr=0xfffffff0, init;
-        //Write the first instruction to be
-        //executed by CPU1 at the position 0xfffffff0
-        ASM("ldr %0, =boot_return \n"
-            "str %0, [%1] \n"
-            "dsb \n"
-            "SEV \n"
-            : "=r"(init)
-            : "r"(addr)
-            :);
-        kout << "Starting cpu 1!\n";
-        //kout << "boot_return addr = " << init << endl;
-        //kout << "0xfffffff0 = " << *((unsigned int*)0xfffffff0) << endl;
-    }
+    template <typename T>
+    static T cas(volatile T & value, T compare, T replacement) {
+        static bool lock = false;
+        while(tsl(lock));
+        if(value == compare)
+            value = replacement;
+        lock = false;
+        return compare;
+   }
 
     static Reg32 htonl(Reg32 v) { return swap32(v); }
     static Reg16 htons(Reg16 v) { return swap16(v); }
     static Reg32 ntohl(Reg32 v) { return swap32(v); }
     static Reg16 ntohs(Reg16 v) { return swap16(v); }
 
-    static Context * init_stack(const Log_Addr & usp, Log_Addr stack,
-            unsigned int size, void (* exit)(), int (* entry)()) {
+    template<typename ... Tn>
+    static Context * init_stack(const Log_Addr & usp, const Log_Addr & stack, unsigned int size, void (* exit)(), int (* entry)(Tn ...), Tn ... an) {
         Log_Addr sp = stack + size;
-        sp -= sizeof(Context); // Stack bottom
-        return new(sp) Context(entry, sp - sizeof(unsigned int), Log_Addr(exit));
-    }
-
-    // Registers r0 - r3 are used for parameter passing (ARM calling convention)
-    template<typename T1>
-    static Context * init_stack(const Log_Addr & usp, Log_Addr stack, unsigned
-            int size, void (* exit)(), int (* entry)(T1 a1), T1 a1) {
-        Log_Addr sp = stack + size;
-        sp -= sizeof(Context); // Stack bottom
-        Context * ctx = new(sp) Context(entry, sp - sizeof(unsigned int),
-            Log_Addr(exit));
-        ctx->_r0 = (Reg32)(a1);
-        return ctx;
-    }
-
-    template<typename T1, typename T2>
-    static Context * init_stack(const Log_Addr & usp, Log_Addr stack, unsigned
-            int size, void (* exit)(), int (* entry)(T1 a1, T2 a2), T1 a1,
-            T2 a2) {
-        Log_Addr sp = stack + size;
-        sp -= sizeof(Context); // Stack bottom
-        Context * ctx = new(sp) Context(entry, sp - sizeof(unsigned int),
-            Log_Addr(exit));
-        ctx->_r0 = (Reg32)(a1);
-        ctx->_r1 = (Reg32)(a2);
-        return ctx;
-    }
-
-    template<typename T1, typename T2, typename T3>
-    static Context * init_stack(const Log_Addr & usp, Log_Addr stack, unsigned
-            int size, void (* exit)(), int (* entry)(T1 a1, T2 a2, T3 a3),
-            T1 a1, T2 a2, T3 a3) {
-        Log_Addr sp = stack + size;
-        sp -= sizeof(Context); // Stack bottom
-        Context * ctx = new(sp) Context(entry, sp - sizeof(unsigned int), Log_Addr(exit));
-        ctx->_r0 = (Reg32)(a1);
-        ctx->_r1 = (Reg32)(a2);
-        ctx->_r2 = (Reg32)(a3);
+        sp -= sizeof(Context);
+        Context * ctx = new(sp) Context(entry, exit);
+        init_stack_helper(&ctx->_r0, an ...);
         return ctx;
     }
 
 public:
     // ARMv7 specific methods
+    static unsigned int int_id() { return flags() & 0x3f; }
+
+private:
+    template<typename Head, typename ... Tail>
+    static void init_stack_helper(Log_Addr sp, Head head, Tail ... tail) {
+        *static_cast<Head *>(sp) = head;
+        init_stack_helper(sp + sizeof(Head), tail ...);
+    }
+    static void init_stack_helper(Log_Addr sp) {}
+
+public:
     static Reg8 in8(const Reg32 port) {
         return (*(volatile Reg8 *)port);
     }
@@ -332,29 +285,12 @@ public:
         (*(volatile Reg32 *)port) = value | (in32(port) & mask);
     }
 
-    typedef char OP_Mode;
-
-    enum {
-        OFF         = 0,
-        HIBERNATE   = 1,
-        DOZE        = 2,
-        FULL        = 3,
-        STANDBY     = HIBERNATE,
-        LIGHT       = DOZE
-
-    };
-
-    static OP_Mode power() { return _mode; }
-    static void power(OP_Mode mode);
-
 private:
     static void init();
 
 private:
-    static OP_Mode _mode;
-    // TODO: Maybe there's a cleaner way to signal when the interruptions are
-    // enabled
-    static bool _int_enabled;
+    static unsigned int _cpu_clock;
+    static unsigned int _bus_clock;
 };
 
 inline CPU::Reg32 htonl(CPU::Reg32 v) { return CPU::htonl(v); }
