@@ -27,11 +27,14 @@ struct Memory_Map<Zynq>
         IO          = Traits<Zynq>::IO_BASE,
 
         SYS         = Traits<Zynq>::SYS,
-        SYS_INFO    = Traits<Zynq>::SYS,
+        // Not used during boot. Dynamically built during initialization.
+        SYS_INFO    = unsigned(-1),
         SYS_CODE    = Traits<Zynq>::SYS_CODE,
         SYS_DATA    = Traits<Zynq>::SYS_DATA,
-		SYS_HEAP    = 0x00508000,
-        SYS_STACK   = SYS + 0x00080000
+        SYS_HEAP    = SYS_DATA,
+        // This stack is used before main(). The stack pointer is initialized at
+        // crt0.S
+        SYS_STACK   = MEM_TOP + 1 - Traits<Zynq>::STACK_SIZE
     };
 };
 
