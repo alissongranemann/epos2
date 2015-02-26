@@ -243,6 +243,7 @@ void CC2538::handle_int()
     if(sfr(RFIRQF0) & FIFOP) { // Frame received
         // Clear interrupt
         sfr(RFIRQF0) &= ~FIFOP;
+        db<CC2538>(TRC) << "CC2538::int FIFOP" << endl;
 
         // Note that ISRs in EPOS are reentrant, that's why locking was carefully made atomic
         // Therefore, several instances of this code can compete to handle received buffers
@@ -274,6 +275,10 @@ void CC2538::handle_int()
             // TODO: this serialization is much too restrictive. It was done this way for students to play with
             IC::enable(_irq);
         }
+    }
+    else
+    {
+        db<CC2538>(TRC) << "CC2538::other int: " << sfr(RFIRQF0) << endl;
     }
 
     if(false) { // Error

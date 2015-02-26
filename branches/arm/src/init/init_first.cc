@@ -20,6 +20,8 @@ public:
         db<Init>(INF) << "INIT ends here!" << endl;
         if(Traits<Thread>::enabled)
             Thread::init();
+        else
+            CPU::int_enable();
     }
 };
 

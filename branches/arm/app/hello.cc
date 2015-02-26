@@ -13,6 +13,9 @@ int print(const char * string)
 
 int main()
 {
+    while(1)
+    cout << "Hello, World!" << endl;
+    while(1);
     register unsigned int a,b;
     ASM("mov %0, sp\n":"=r"(a));
     UART u;

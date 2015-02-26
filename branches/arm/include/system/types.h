@@ -45,6 +45,9 @@ class Random;
 class Spin;
 class SREC;
 class Vectors;
+class Bignum;
+class Cipher;
+template <typename> class Key_Database;
 __END_UTIL
 
 __BEGIN_SYS
@@ -163,6 +166,9 @@ class ICMP;
 class UDP;
 class TCP;
 class DHCP;
+class Diffie_Hellman;
+class Secure_NIC;
+class AES;
 
 template<typename Channel, typename Network, bool connectionless>
 class Link;

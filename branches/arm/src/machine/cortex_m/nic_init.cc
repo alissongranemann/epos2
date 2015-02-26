@@ -89,8 +89,8 @@ CC2538::CC2538(unsigned int unit, IO_Irq irq)
 	    xreg(FRMCTRL1) |= SET_RXENMASK_ON_TX; // Enter receive mode after TX
 
         // Enable device interrupts
-        xreg(RFIRQM0) = ~0;
-        xreg(RFIRQM1) = ~0;
+        xreg(RFIRQM0) = FIFOP;
+        // xreg(RFIRQM1) = ~0;
 
         // Issue the listen command
         sfr(RFST) = ISRXON; 

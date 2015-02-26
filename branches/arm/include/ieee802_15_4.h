@@ -14,10 +14,10 @@ __BEGIN_SYS
 class IEEE802_15_4: private NIC_Common
 {
 protected:
-    static const unsigned int MTU = 127;
 //    static const unsigned int HEADER_SIZE = 14;
 
 public:
+    static const unsigned int MTU = 127;
     typedef NIC_Common::Address<2> Short_Address;
     typedef NIC_Common::Address<8> Extended_Address;
     typedef Short_Address Address;

@@ -57,7 +57,46 @@ template<> struct Traits<Heaps>: public Traits<void>
 {
     static const bool debugged = hysterically_debugged;
 };
+template <> struct Traits<Bignum> : public Traits<void>
+{
+	// You can edit these values
+	typedef unsigned int digit;
+	typedef unsigned long long double_digit;
+	static const unsigned int word = 4;
 
+	// You shouldn't edit these
+	static const unsigned int sz_digit = sizeof(digit);
+	static const unsigned int sz_word = sz_digit * word;
+	static const unsigned int double_word = 2 * word;
+	static const unsigned int bits_in_digit = sz_digit * 8;
+};
+
+template <> struct Traits<AES> : public Traits<void>
+{
+    // The number of columns comprising a state in AES. This is a constant in AES. Value=4
+    static const unsigned int Nb = 4;
+    // The number of 32 bit words in a key.
+    static const unsigned int Nk = 4;
+    // The number of rounds in AES _Cipher.
+    static const unsigned int Nr = 10;
+    // Key length in bytes [128 bit]
+    static const unsigned int KEYLEN = 16;
+};
+
+template <> struct Traits<Diffie_Hellman> : public Traits<void>
+{
+	// Don't edit these, unless you really know what you're doing
+	static const unsigned int SECRET_SIZE = Traits<Bignum>::sz_word;
+	static const unsigned int PUBLIC_KEY_SIZE = Traits<Bignum>::sz_word * 2;
+};
+template <> struct Traits<Secure_NIC> : public Traits<void>
+{
+	static const int PROTOCOL_ID = 42;    
+	static const unsigned int ID_SIZE = 2;
+	static const unsigned long long TIME_WINDOW = 100000000U; // In Microseconds
+//	static const bool is_gateway = true;
+//	static const bool is_sensor = !is_gateway;
+};
 
 // System Parts (mostly to fine control debugging)
 template<> struct Traits<Boot>: public Traits<void>

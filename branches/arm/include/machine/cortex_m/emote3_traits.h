@@ -36,7 +36,7 @@ template <> struct Traits<Cortex_M>: public Traits<Cortex_M_Common>
     static const unsigned int SYS_DATA  = 0x20000000; // Library mode only => APP + SYS
 
     // Default Sizes and Quantities
-    static const unsigned int STACK_SIZE = 1024;
+    static const unsigned int STACK_SIZE = 2048;
     static const unsigned int HEAP_SIZE = 512;
     static const unsigned int MAX_THREADS = 5;
 };
@@ -78,6 +78,8 @@ template <> struct Traits<Cortex_M_Radio>: public Traits<Cortex_M_Common>
 
 template <> struct Traits<CC2538>: public Traits<Cortex_M_Radio>
 {
+    static const bool debugged = true;
+
     static const unsigned int UNITS = NICS::Count<CC2538>::Result;
     static const unsigned int SEND_BUFFERS = 1;
     static const unsigned int RECEIVE_BUFFERS = 1;
