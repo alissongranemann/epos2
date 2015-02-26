@@ -25,7 +25,7 @@ public:
     typedef IEEE802_15_4::Frame Frame;
     typedef IEEE802_15_4::Buffer Buffer;
     typedef IEEE802_15_4::Address Address;
-    typedef Key_Database<Address> Key_Database;
+    typedef Key_Database<Address> Key_Db;
 
     void free(Buffer *b){_nic->free(b);}
 
@@ -34,7 +34,7 @@ public:
 	// Round up to a multiple of 16, for AES
     static unsigned int round16(const unsigned int n) { return n + 15 - (n - 1) % 16; }
 
-	Secure_NIC(bool is_gateway, Cipher *c, Poly1305 *p, NIC *nic = new NIC(), Key_Database *db = new Key_Database())
+	Secure_NIC(bool is_gateway, Cipher *c, Poly1305 *p, NIC *nic = new NIC(), Key_Db *db = new Key_Db())
 		: Diffie_Hellman()
 	{
 		_is_gateway = is_gateway;
@@ -159,7 +159,7 @@ public:
 
 	// Internal functions
 	NIC * _nic;
-	Key_Database * _keydb;
+	Key_Db * _keydb;
 	Cipher * _cipher;
 	Poly1305 * _poly;
 	volatile bool _waiting_dh_response;
