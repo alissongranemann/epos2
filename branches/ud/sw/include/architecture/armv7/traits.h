@@ -17,7 +17,6 @@ template <> struct Traits<ARMv7>: public Traits<void>
 
 template <> struct Traits<ARMv7_MMU>: public Traits<void>
 {
-	static const unsigned int MMU_TABLE_ADDR = 0x104000;
 };
 
 template <> struct Traits<ARMv7_TSC>: public Traits<void>
