@@ -1,4 +1,3 @@
-#include "boot.S"
 .file "armv7_crt0.S"
 
 .section .init
@@ -47,34 +46,19 @@ _reserved_addr:             .word _reserved
 _irq_handler_addr:          .word _irq_handler
 _fiq_handler_addr:          .word _fiq_handler
 
-// EPOS fits in less than 64KB without debug flags. The values below are fairly
-// arbitrary
-// 0x00100000 = 1mb
-.set __supervisor_stack,        0x00100000 // 512kb (way bigger than necessary, I know
-.set __stack,                   0x00100040 // 64 bytes, sys stack
-.set __irq_stack,               0x00100080 // 64 bytes
-.set __abort_stack,             0x001000c0 // 64 bytes
-.set __fiq_stack,               0x00100100 // 64 bytes
-.set __undef_stack,             0x00100140 // 64 bytes
-
-// MMU uses a two-level memory mapped table. The first level has 4k entries
-// (with 4 bytes each), which points to a second level (l2) table, which has 256
-// word-sized entries.  In total, it is needed 4kb*256*4 + 4kb*4 = 4mb + 16kb to
-// map the whole address space.
-
-// Must be aligned in a 16kb boundary
-.set MMUTable, 0x00104000
-
 .section .init
 .align 2
 .global _start
 .type _start, function
 _start:
-    // Do not remove this jump unless you set each stack somewhere else
-    b _boot
-
-    .global boot_return
-    boot_return:
+    // TODO: Oddly, Zynq is booting in system mode instead of supervisor mode as
+    // stated in its Technical Reference Manual. Here, we're forcing it to
+    // supervisor mode. This issue must be further investigated.
+    mrs r0, cpsr
+    mvn r1, #0x1f
+    and r2, r1, r0
+    orr r2, r2, #0x13
+    msr cpsr, r2
 
     // Clear BSS
     mov r0, #0
