@@ -16,28 +16,30 @@ template <> struct Traits<Zynq>: public Traits<Zynq_Common>
     static const unsigned int CPUS = Traits<Build>::CPUS;
 
     // Physical Memory
-    // TODO: Using only OCM's first 192 KB, add support to DDR
-    static const unsigned int MEM_BASE  = 0x00000000;
-    static const unsigned int MEM_TOP   = 0x0002FFFF;
+    // Using only DDR memory, OCM doesn't support exclusive accesses needed for
+    // atomic operations
+    static const unsigned int MEM_BASE  = 0x00100000;
+    static const unsigned int MEM_TOP   = 0x080FFFFF; // 512 MB
 
     // Logical Memory Map
-    static const unsigned int APP_LOW   = 0x00000000;
-    static const unsigned int APP_CODE  = 0x00000000;
-    static const unsigned int APP_DATA  = 0x00010000; // 64 KB
-    static const unsigned int APP_HIGH  = 0x00020000; // 128 KB
+    static const unsigned int APP_LOW   = 0x00100000;
+    static const unsigned int APP_CODE  = 0x00100000;
+    static const unsigned int APP_DATA  = 0x03100000; // 192 MB
+    static const unsigned int APP_HIGH  = 0x06100000; // 384 MB
 
+    // TODO: Use real values
     static const unsigned int PHY_MEM   = 0x00000000;
-    static const unsigned int IO_BASE   = 0x48000000;
-    //static const unsigned int IO_TOP    = 0x00000000;
+    static const unsigned int IO_BASE   = 0x00000000;
+    static const unsigned int IO_TOP    = 0x00000000;
 
-    static const unsigned int SYS       = 0x00020000;
-    static const unsigned int SYS_CODE  = 0x00026000;
-    static const unsigned int SYS_DATA  = 0x0002A000;
+    static const unsigned int SYS       = 0x06100000;
+    static const unsigned int SYS_CODE  = 0x06100000;
+    static const unsigned int SYS_DATA  = 0x07100000;
 
     // Default Sizes and Quantities
-    static const unsigned int STACK_SIZE = 1024;
-    static const unsigned int HEAP_SIZE = 512;
-    static const unsigned int MAX_THREADS = 3;
+    static const unsigned int STACK_SIZE = 16 * 1024;
+    static const unsigned int HEAP_SIZE = 16 * 1024 * 1024;
+    static const unsigned int MAX_THREADS = 16;
 };
 
 template <> struct Traits<Zynq_IC>: public Traits<Zynq_Common>
