@@ -28,6 +28,9 @@ public:
 
     static void panic();
     static void reboot() { 
+        db<Machine>(ERR) << "Machine::reboot() : There is an error in this method. Will just loop forever to avoid int_not spam." << endl;
+        for(;;);
+
         db<Machine>(WRN) << "Machine::reboot()" << endl;
         scs(AIRCR) |=  SYSRESREQ ;
         for(;;); // TODO: the above is not working!

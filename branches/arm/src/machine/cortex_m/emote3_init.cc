@@ -4,6 +4,10 @@
 
 __BEGIN_SYS
 
+// eMote3 TSC static values
+CC2538_TSC::Time_Stamp CC2538_TSC::_offset = 0;
+bool CC2538_TSC::_positive_offset;
+
 void eMote3::init()
 {
     // Clock setup

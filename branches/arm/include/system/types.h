@@ -96,6 +96,7 @@ class Cortex_M_Display;
 class Cortex_M_Scratchpad;
 class Cortex_M_Radio;
 class Cortex_M_IEEE802_15_4;
+class CC2538_TSC;
 
 class ATmega;
 class ATmega_IC;

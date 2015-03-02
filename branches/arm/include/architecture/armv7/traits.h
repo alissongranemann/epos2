@@ -21,7 +21,9 @@ template <> struct Traits<ARMv7_MMU>: public Traits<void>
 
 template <> struct Traits<ARMv7_TSC>: public Traits<void>
 {
-    static const bool enabled = (Traits<Build>::MACHINE == Traits<Build>::Cortex_A);
+    static const bool enabled = 
+        (Traits<Build>::MACHINE == Traits<Build>::Cortex_A) || 
+        (Traits<Build>::MODEL == Traits<Build>::eMote3); 
 };
 
 __END_SYS

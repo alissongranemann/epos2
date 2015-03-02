@@ -491,3 +491,4 @@ __END_SYS
 #endif
 
 #include "pl011.h"
+#include "emote3_tsc.h"

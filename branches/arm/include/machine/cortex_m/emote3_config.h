@@ -7,7 +7,7 @@
 #include __APPL_TRAITS_H
 
 #define __CPU_H         __HEADER_ARCH(cpu)
-#define __TSC_H         __HEADER_ARCH(tsc)
+#define __TSC_H         __HEADER_MACH(emote3_tsc)
 #define __MMU_H         __HEADER_ARCH(mmu)
 
 #define __MACH_H        __HEADER_MACH(machine)
@@ -25,7 +25,7 @@ __BEGIN_SYS
 
 typedef ARMv7              CPU;
 typedef ARMv7_MMU          MMU;
-typedef ARMv7_TSC          TSC;
+typedef CC2538_TSC         TSC;
 
 typedef Cortex_M             Machine;
 typedef Cortex_M_IC          IC;
