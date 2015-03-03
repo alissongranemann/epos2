@@ -9,6 +9,9 @@ OUTPUT := $(addsuffix .out,$(APPLICATION))
 
 all:		strip $(IMAGE)
 
+deploy:		strip $(FLASH)
+		$(DEPLOYER) $(IMG)/$(FLASH)
+
 run:		strip $(IMAGE)
 ifeq ($(NODES),1)
 		$(EMULATOR) $(IMAGE) | $(TEE) $(OUTPUT)

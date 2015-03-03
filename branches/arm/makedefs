@@ -91,6 +91,12 @@ cortex_m_AS_FLAGS       := -mcpu=cortex-m3 -mthumb -mfpu=fpa
 cortex_m_LD_FLAGS       := 
 cortex_m_EMULATOR       = timeout --foreground 20s qemu-system-arm -cpu cortex-m3 -machine lm3s811evb -m $(MEM_SIZE)k -nographic -no-reboot -kernel
 
+ifeq ($(GDB),1)
+emote3_DEPLOYER         := $(TOP)/tools/emote3_tst_env/jtag_gdb.sh
+else
+emote3_DEPLOYER         := $(TOP)/tools/emote3_tst_env/jtag.sh
+endif
+
 $(MACH)_CODE_NAME       := .init
 $(MACH)_DATA_NAME       := .ctors
 ifeq ($(GDB),1)
@@ -118,6 +124,8 @@ endif
 ifneq ($(wildcard $(IMG)/$(MACH)_system),) 
 MACH_DEBUGGER           := $(MACH_DEBUGGER) -ex "add-symbol-file $(SRC)/system/$(MACH)_system $(SYS_CODE_ADDR)"
 endif
+
+MMOD_DEPLOYER           := $($(MMOD)_DEPLOYER)
 
 # Architecture specifics
 ARCH_LITTLE	:= little
@@ -172,6 +180,8 @@ DD		:= dd
 DEBUGGER	= $(MACH_DEBUGGER) 
 
 EMULATOR	= $(MACH_EMULATOR) 
+
+DEPLOYER	= $(MMOD_DEPLOYER) 
 
 INSTALL		:= install
 
