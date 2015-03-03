@@ -28,7 +28,14 @@ public:
     void lap() { if(_start != 0) _stop = tsc.time_stamp(); }
     void stop() { lap(); }
 
-    Microsecond read() { return ticks() * 1000000 / frequency(); }
+    Microsecond read() 
+    { 
+        // The parenthesis may cause a precision loss, but enables
+        // the compiler to perform the division.
+        // This code causes an exception in eMote3 without the
+        // parenthesis
+        return ticks() * (1000000ULL / frequency()); 
+    }
 
 private:
     Time_Stamp ticks() {
@@ -64,7 +71,11 @@ public:
     void lap() { if(_start != 0) _stop = Alarm::_elapsed; }
     void stop() { lap(); }
 
-    Microsecond read() { return ticks() * 1000000 / frequency(); }
+    // The parenthesis may cause a precision loss, but enables
+    // the compiler to perform the division.
+    // This code causes an exception in eMote3 without the
+    // parenthesis
+    Microsecond read() { return ticks() * (1000000ULL / frequency()); }
 
 private:
     Time_Stamp ticks() {

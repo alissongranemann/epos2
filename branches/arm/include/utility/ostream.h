@@ -105,7 +105,7 @@ public:
     }
 
     OStream & operator<<(unsigned long long int u) {
-        char buf[64];
+        char buf[sizeof(unsigned long long int)];
         buf[llutoa(u, buf)] = '\0';
         print(buf);
         return *this;
