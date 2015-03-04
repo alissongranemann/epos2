@@ -1,5 +1,4 @@
 // EPOS EPOSMoteIII (Cortex-M4) MCU Mediator Declarations
-
 #ifndef __emote3_h
 #define __emote3_h
 
@@ -10,7 +9,7 @@ __BEGIN_SYS
 
 class eMote3
 {
-private:
+public:
     typedef CPU::Log_Addr Log_Addr;
     typedef CPU::Reg32 Reg32;
 
@@ -58,17 +57,9 @@ public:
         DCGCRFC         = 0xB0,
         EMUOVR          = 0xB4
     };
-    enum RCGCUART {
-        RCGCUART_UART0  = 1 << 0,
-        RCGCUART_UART1  = 1 << 1
-    };
-    enum SCGCUART {
-        SCGCUART_UART0  = 1 << 0,
-        SCGCUART_UART1  = 1 << 1
-    };
-    enum DCGCUART {
-        DCGCUART_UART0  = 1 << 0,
-        DCGCUART_UART1  = 1 << 1
+    enum {
+        UART0  = 1 << 0,
+        UART1  = 1 << 1
     };
     enum RCGCRFC {
         RCGCRFC_RFC0  = 1 << 0,
@@ -445,7 +436,7 @@ protected:
     void config_UART(volatile Log_Addr * base) {
         if(base == reinterpret_cast<Log_Addr *>(UART0_BASE)) {
             //1. Enable the UART module using the SYS_CTRL_RCGCUART register.
-            scr(RCGCUART) |= RCGCUART_UART0; // Enable clock for UART0 while in Running mode
+            scr(RCGCUART) |= UART0; // Enable clock for UART0 while in Running mode
 
             //2. Set the GPIO pin configuration through the Pxx_SEL registers for the desired output
             ioc(PA1_SEL) = UART0_TXD;
@@ -485,6 +476,53 @@ typedef eMote3 Cortex_M_Model;
 
 class PL011;
 typedef PL011 Cortex_M_Model_UART;
+
+class GPIO : private eMote3
+{
+public:
+    GPIO(char port_letter, int port_number, bool output)
+    {
+        int port_bit = 1 << port_number;
+        switch(port_letter)
+        {
+            case 'a':
+            case 'A':
+                gpioa(AFSEL) &= ~port_bit; // Set pin as software controlled
+                if(output) gpioa(DIR) |= port_bit;
+                else gpioa(DIR) &= ~port_bit;
+                _data = &gpioa(port_bit << 2);
+                break;
+            case 'b':
+            case 'B':
+                gpiob(AFSEL) &= ~port_bit; // Set pin as software controlled
+                if(output) gpiob(DIR) |= port_bit;
+                else gpiob(DIR) &= ~port_bit;
+                _data = &gpiob(port_bit << 2);
+                break;
+            case 'c':
+            case 'C':
+                gpioc(AFSEL) &= ~port_bit; // Set pin as software controlled
+                if(output) gpioc(DIR) |= port_bit;
+                else gpioc(DIR) &= ~port_bit;
+                _data = &gpioc(port_bit << 2);
+                break;
+            case 'd':
+            case 'D':
+                gpiod(AFSEL) &= ~port_bit; // Set pin as software controlled
+                if(output) gpiod(DIR) |= port_bit;
+                else gpiod(DIR) &= ~port_bit;
+                _data = &gpiod(port_bit << 2);
+                break;
+        }
+    }
+    
+    void set(bool value = true) { *_data = 0xff*value; }
+    void clear() { set(false); }
+    bool read() { return *_data; }
+
+private:
+    volatile Reg32 * _data;
+};
 
 __END_SYS
 
