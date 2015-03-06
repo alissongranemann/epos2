@@ -66,7 +66,7 @@ void _irq_handler() {
             "stmfd sp!, {r1} \n"   // save irq-spsr
     );
 
-    IC::int_handler();
+    //IC::dispatch();
 
     ASM(
             "ldmfd sp!, {r0}              \n"

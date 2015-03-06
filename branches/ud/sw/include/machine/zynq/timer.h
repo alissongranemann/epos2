@@ -1,40 +1,35 @@
+// EPOS Zynq Timer Mediator Declarations
+
 #ifndef __zynq_timer_h
 #define __zynq_timer_h
 
 #include <timer.h>
 #include <ic.h>
 #include <system/meta.h>
-
 __BEGIN_SYS
 
 class Zynq_Timer: public Timer_Common
 {
 protected:
+    static const unsigned int CHANNELS = 3;
+    static const unsigned int FREQUENCY = Traits<Zynq_Timer>::FREQUENCY;
+
     typedef unsigned long Hertz;
     typedef CPU::Reg32 Count;
     typedef short Channel;
-
-    static const unsigned int FREQUENCY = Traits<Zynq_Timer>::FREQUENCY;
-    Handler _handler;
-    Channel _channel;
-    static const unsigned int CHANNELS = 3;
-    static Zynq_Timer * _channels[CHANNELS];
-    volatile Count _current[Traits<Machine>::CPUS];
-    Count _initial;
 
 public:
     static const unsigned int CLOCK = Traits<CPU>::CLOCK;
 
     enum {
-        TSC         = 0,
-        ALARM       = 1,
-        SCHEDULER   = 2,
+        TSC,
+        ALARM,
+        SCHEDULER
     };
 
 public:
-    Zynq_Timer(const Hertz & freq, const Handler & handler, const Channel & channel):
-        _handler(handler), _channel(channel)
-    {
+    Zynq_Timer(const Hertz & freq, const Handler & handler,
+        const Channel & channel): _channel(channel), _handler(handler) {
         set_initial(freq);
 
         // _initial will be 0 if f > CLOCK, which is reasonable.
@@ -42,13 +37,8 @@ public:
             _channels[channel] = this;
             if (channel == ALARM)
                 frequency(freq);
-        } else {
-            db<Timer>(ERR) << "Timer not installed!" << endl;
-            db<Timer>(ERR) << "Freq: " << freq << endl;
-            db<Timer>(ERR) << "_channel["<<channel<<"] = " << _channels[channel] << endl;
-            db<Timer>(ERR) << "_initial: "<<_initial << endl;
-        }
-
+        } else
+            db<Timer>(WRN) << "Timer not installed!"<< endl;
 
         for(unsigned int i = 0; i < Traits<Machine>::CPUS; i++)
             _current[i] = _initial;
@@ -67,12 +57,12 @@ public:
     void reset() { value(load()); }
 
     void enable() {
-        db<IC>(TRC) << "Timer_"<<_channel<<"::enable()\n";
+        db<IC>(TRC) << "Timer_" << _channel << "::enable()" << endl;
         control(control() | TIMER_ENABLE);
     }
 
     void disable() {
-        db<IC>(TRC) << "Timer_"<<_channel<<"::disable()\n";
+        db<IC>(TRC) << "Timer_" << _channel << "::disable()" << endl;
         control(control() & ~(TIMER_ENABLE));
     }
 
@@ -116,7 +106,7 @@ private:
         TIMER_PRESCALE_SHIFT    = 8,
     };
 
-    static const CPU::Reg8 IRQ = IC::TIMERINT0;
+    static const CPU::Reg8 IRQ = IC::INT_TIMER;
 
 private:
     static void load(CPU::Reg32 val) { CPU::out32(PRIVATE_TIMER_BASE + PTLR, val); }
@@ -151,6 +141,14 @@ private:
     static void set_prescale(const Hertz& f) {
         control(control() | ((prescale(f)-1) << TIMER_PRESCALE_SHIFT));
     }
+
+private:
+    Channel _channel;
+    Count _initial;
+    volatile Count _current[Traits<Machine>::CPUS];
+    Handler _handler;
+
+    static Zynq_Timer * _channels[CHANNELS];
 };
 
 class Alarm_Timer: public Zynq_Timer
@@ -180,4 +178,3 @@ public:
 __END_SYS
 
 #endif
-
