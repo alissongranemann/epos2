@@ -97,8 +97,8 @@ else
 emote3_DEPLOYER         := $(TOP)/tools/emote3_tst_env/jtag.sh
 endif
 
+$(MACH)_DATA_NAME       := .bss
 $(MACH)_CODE_NAME       := .init
-$(MACH)_DATA_NAME       := .ctors
 ifeq ($(GDB),1)
 MACH_CC_FLAGS           := -g -feliminate-unused-debug-symbols $($(MACH)_CC_FLAGS)
 MACH_AS_FLAGS           := -g $($(MACH)_AS_FLAGS)

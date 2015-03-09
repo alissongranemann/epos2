@@ -4,7 +4,7 @@
         // Interrupt Vector Table
         .type   _vector_table, object
 _vector_table:
-        .word   0x20002000              // Stack pointer at reset
+        .word   0x20008000              // Stack pointer at reset
         .word   _start + 1              // Reset  (lsb must be 1 in thumb mode)
         .word   _int_dispatch + 1       // NMI
         .word   _int_dispatch + 1       // Hard fault
@@ -58,7 +58,11 @@ _vector_table:
 _start:
         // Clear BSS
         mov     r0, #0
-        ldr     r1, =__bss_start__
+# Loading 0x20000000 into r1
+# FIXME: This value should not be hardcoded, but __bss_start__ is pointing to the wrong address!
+        mov     r1, #32
+        lsl     r1, r1, #24
+#        ldr     r1, =__bss_start__
         ldr     r2, =__bss_end__
   .L1:  str     r0, [r1]
         add     r1, #4

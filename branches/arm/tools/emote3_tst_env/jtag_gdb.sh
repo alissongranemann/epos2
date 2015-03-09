@@ -31,7 +31,8 @@ sed 's:APPLICATION_NAME:'"$APP"':g' $BASE_SCRIPT > $SCRIPT
 #(sleep 3 && rm $SCRIPT) & 
 JLinkExe -CommanderScript $SCRIPT 
 rm $SCRIPT
-xterm -e "JLinkGDBServer -device CC2538SF53" &
+#xterm -e "JLinkGDBServer -device CC2538SF53" &
+JLinkGDBServer -device CC2538SF53 &
 KILL_THIS=$!
 sleep 1
 echo $APP
