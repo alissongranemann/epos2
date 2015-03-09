@@ -11,10 +11,7 @@ void Zynq_IC::init()
     db<Init, IC>(TRC) << "IC::init()" << endl;
 
     CPU::int_disable(); // Will be reenabled at Thread::init()
-
-    if(Machine::cpu_id() == 0)
-        interrupt_distributor_init();
-
+    interrupt_distributor_init();
     disable(); // Will be enabled on demand as handlers are registered
 
     // Set all interrupt handlers to int_not()
