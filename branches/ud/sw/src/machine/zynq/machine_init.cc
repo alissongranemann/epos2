@@ -8,8 +8,6 @@ void Zynq::init()
 {
     db<Init, Zynq>(TRC) << "Zynq::init()" << endl;
 
-    CPU::int_disable();
-
     // Unlock SLCR and reset FPGA
     CPU::out32(0xF8000008, 0xDF0D);
     CPU::out32(0xF8000240, 0xF);
