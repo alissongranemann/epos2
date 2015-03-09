@@ -3,13 +3,16 @@
 #ifndef __zynq_timer_h
 #define __zynq_timer_h
 
-#include <timer.h>
 #include <ic.h>
-#include <system/meta.h>
+#include <timer.h>
+
 __BEGIN_SYS
 
 class Zynq_Timer: public Timer_Common
 {
+    friend class Zynq;
+    friend class Init_System;
+
 protected:
     static const unsigned int CHANNELS = 3;
     static const unsigned int FREQUENCY = Traits<Zynq_Timer>::FREQUENCY;
@@ -17,6 +20,7 @@ protected:
     typedef unsigned long Hertz;
     typedef CPU::Reg32 Count;
     typedef short Channel;
+    typedef IC::Interrupt_Id Interrupt_Id;
 
 public:
     static const unsigned int CLOCK = Traits<CPU>::CLOCK;
@@ -31,9 +35,11 @@ public:
     Zynq_Timer(const Hertz & freq, const Handler & handler,
         const Channel & channel): _channel(channel), _handler(handler) {
         set_initial(freq);
+        db<Timer>(TRC) << "Timer(f=" << freq << ",h=" << reinterpret_cast<void*>(handler)
+                       << ",ch=" << channel << ") => {count=" << _initial << "}" << endl;
 
         // _initial will be 0 if f > CLOCK, which is reasonable.
-        if(_initial && !_channels[channel]) {
+        if(_initial && (unsigned(channel) < CHANNELS) && !_channels[channel]) {
             _channels[channel] = this;
             if (channel == ALARM)
                 frequency(freq);
@@ -46,43 +52,27 @@ public:
         enable();
     }
 
-    Hertz frequency() {
-        return (CLOCK/(2*prescale())) / load();
+    ~Zynq_Timer() {
+        db<Timer>(TRC) << "~Timer(f=" << frequency() << ",h=" << reinterpret_cast<void*>(_handler)
+                       << ",ch=" << _channel << ") => {count=" << _initial << "}" << endl;
+
+        _channels[_channel] = 0;
     }
 
-    static void init();
-
-    static void int_handler(const IC::Interrupt_Id & id);
-
-    void reset() { value(load()); }
-
-    void enable() {
-        db<IC>(TRC) << "Timer_" << _channel << "::enable()" << endl;
-        control(control() | TIMER_ENABLE);
-    }
-
-    void disable() {
-        db<IC>(TRC) << "Timer_" << _channel << "::disable()" << endl;
-        control(control() & ~(TIMER_ENABLE));
-    }
+    Hertz frequency() { return (CLOCK/(2*prescale()))/load(); }
+    static void frequency(const Hertz& f) { load((CLOCK/(2*prescale()))/f); }
 
     Tick read() { return value(); }
 
-    static void value(CPU::Reg32 val) {
-        CPU::out32(PRIVATE_TIMER_BASE + PTCTR, val);
-    }
-
-    static CPU::Reg32 value() { return CPU::in32(PRIVATE_TIMER_BASE + PTCTR); }
+    void reset() { value(load()); }
 
     void handler(const Handler & handler) { _handler = handler; }
 
-    static void frequency(const Hertz& f) {
-        //set_prescale(f); //set_initial is already doing this job
-        load( (CLOCK/(2*prescale())) / f );
-    }
+    void enable() { control(control() | TIMER_ENABLE); }
+    void disable() { control(control() & ~(TIMER_ENABLE)); }
 
 private:
-    static const unsigned int PRIVATE_TIMER_BASE = 0xf8f00600;
+    static const unsigned int PRIVATE_TIMER_BASE = 0XF8F00600;
 
     enum {
         PTLR    = 0x00, // Private Timer Load Register
@@ -109,6 +99,13 @@ private:
     static const CPU::Reg8 IRQ = IC::INT_TIMER;
 
 private:
+    static void init();
+
+    static void int_handler(const Interrupt_Id & id);
+
+    static void value(CPU::Reg32 val) { CPU::out32(PRIVATE_TIMER_BASE + PTCTR, val); }
+    static CPU::Reg32 value() { return CPU::in32(PRIVATE_TIMER_BASE + PTCTR); }
+
     static void load(CPU::Reg32 val) { CPU::out32(PRIVATE_TIMER_BASE + PTLR, val); }
     static CPU::Reg32 load() { return CPU::in32(PRIVATE_TIMER_BASE + PTLR); }
 

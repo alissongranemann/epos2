@@ -11,7 +11,7 @@ void Zynq_Timer::init()
 
     status(INTERRUPT_CLEAR);
     control(TIMER_AUTO_RELOAD | TIMER_IT_ENABLE);
-    IC::int_vector(IC::INT_TIMER, &Zynq_Timer::int_handler);
+    IC::int_vector(IC::INT_TIMER, int_handler);
     IC::enable(IC::INT_TIMER);
 }
 
