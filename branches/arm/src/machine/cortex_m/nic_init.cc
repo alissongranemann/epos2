@@ -81,22 +81,28 @@ CC2538::CC2538(unsigned int unit, IO_Irq irq)
     // Reset statistics
     reset();
 
-    // Enable clock to the RF CORE module
-    Cortex_M_Model::radio_enable();
-
     if(Traits<CC2538>::auto_listen)
     {
 	    xreg(FRMCTRL1) |= SET_RXENMASK_ON_TX; // Enter receive mode after TX
 
-        // Enable device interrupts
+        // Enable useful device interrupts
+        // WARNING: do not enable TXDONE, because _send_and_wait handles it
         xreg(RFIRQM0) = FIFOP;
-        // xreg(RFIRQM1) = ~0;
+        xreg(RFIRQM1) = 0;
+
+        // Enable clock to the RF CORE module
+        Cortex_M_Model::radio_enable();
 
         // Issue the listen command
         sfr(RFST) = ISRXON; 
     }
     else
+    {
 	    xreg(FRMCTRL1) &= ~SET_RXENMASK_ON_TX; // Do not enter receive mode after TX
+
+        // Enable clock to the RF CORE module
+        Cortex_M_Model::radio_enable();
+    }
 }
 
 

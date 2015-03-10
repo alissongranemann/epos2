@@ -80,13 +80,10 @@ int CC2538::send(const Address & dst, const Protocol & prot, const void * data, 
         sfr(RFDATA) = f[i];
 
     // Trigger an immediate send poll
-    _cmd_send_now();
+    _send_and_wait();
 
     _statistics.tx_packets++;
     _statistics.tx_bytes += size;
-
-    // Wait for packet to be sent
-    while(!_tx_done());
 
     db<CC2538>(INF) << "CC2538::send done" << endl;
 
@@ -192,7 +189,7 @@ int CC2538::send(Buffer * buf)
         db<CC2538>(TRC) << "CC2538::send(buf=" << buf << ")" << endl;
 
         // Trigger an immediate send poll
-        _cmd_send_now();
+        _send_and_wait();
 
         size += buf->size();
 
@@ -201,8 +198,6 @@ int CC2538::send(Buffer * buf)
 
         db<CC2538>(INF) << "CC2538::send" << endl;
 
-        // Wait for packet to be sent and unlock the respective buffer
-        while(!_tx_done());
         buf->unlock();
     }
 

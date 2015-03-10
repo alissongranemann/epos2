@@ -137,17 +137,14 @@ protected:
     volatile Reg32 & ffsm (unsigned int offset) { return *(reinterpret_cast<volatile Reg32*>(FFSM_BASE + offset)); }
     volatile Reg32 & sfr  (unsigned int offset) { return *(reinterpret_cast<volatile Reg32*>(SFR_BASE  + offset)); }
 
-    // Trigger an immediate send poll
-    void _cmd_send_now() { sfr(RFST) = ISTXON; }
-
-    // Checks whether the TXDONE interrupt is set and if so, clears it
-    volatile bool _tx_done() 
-    { 
-        volatile bool ret = sfr(RFIRQF1) & TXDONE; 
-        if(ret)
-            sfr(RFIRQF1) &= ~TXDONE;
-        return ret;
+    // Immediately send a message and wait for it to be correctly sent
+    void _send_and_wait() 
+    {
+        sfr(RFST) = ISTXON; 
+        while(!(sfr(RFIRQF1) & TXDONE));
+        sfr(RFIRQF1) &= ~TXDONE;
     }
+
     volatile bool _rx_done() { return (xreg(FSMSTAT1) & FIFOP); }
 };
 
