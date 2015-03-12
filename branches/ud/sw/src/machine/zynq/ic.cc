@@ -2,6 +2,9 @@
 
 #include <machine/zynq/ic.h>
 
+extern "C" { void _exit(int s); }
+extern "C" { void _int_dispatch() __attribute__ ((alias("_ZN4EPOS1S7Zynq_IC8dispatchEv"))); }
+
 __BEGIN_SYS
 
 // Class attributes
@@ -13,19 +16,19 @@ void Zynq_IC::dispatch()
     // TODO: Save context?
 
     // Interrupt Acknowledge Register (ICCIAR)
-    unsigned int icciar_value = CPU::in32(PROC_INTERFACE | ICCIAR);
-    IC::Interrupt_Id id = icciar_value & INTERRUPT_MASK; // 0x3FF bits 0 to 9
+    //unsigned int icciar_value = CPU::in32(PROC_INTERFACE | ICCIAR);
+    //IC::Interrupt_Id id = icciar_value & INTERRUPT_MASK; // 0x3FF bits 0 to 9
 
-    if((id != INT_TIMER) || Traits<IC>::hysterically_debugged)
-        db<IC>(TRC) << "IC::dispatch(i=" << id << ")" << endl;
+    //if((id != INT_TIMER) || Traits<IC>::hysterically_debugged)
+        //db<IC>(TRC) << "IC::dispatch(i=" << id << ")" << endl;
 
-    _int_vector[id](id);
+    //_int_vector[id](id);
 
     // For every read of a valid Interrupt ID from the ICCIAR, the interrupt
     // service routine on the connected processor must perform a matching write
     // to the ICCEOIR, see End of Interrupt Register (ICCEOIR)
     CPU::int_disable();
-    CPU::out32(PROC_INTERFACE | ICCEOI, icciar_value);
+    //CPU::out32(PROC_INTERFACE | ICCEOI, icciar_value);
 }
 
 void Zynq_IC::int_not(const Interrupt_Id & i)

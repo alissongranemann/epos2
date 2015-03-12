@@ -11,97 +11,84 @@ __BEGIN_SYS
 class GIC_PL390
 {
 protected:
-    // Distributor Register Description
-    enum {
-        ICDDCR      = 0x000, // Distributor Control Register
-        ICDISRN     = 0x080, // 0x080 - 0x09C - Interrupt Security Registers
-        ICDISERN    = 0x100, // 0x104-0x11C Interrupt Set-Enable Registers
-        ICDICERN    = 0x180, // 0x184-0x19C Interrupt Clear-Enable Registers
-        ICDIPRN     = 0x400, // 0x400-0x4FC Interrupt Priority Registers
-        ICDIPTRN    = 0x800, // 0x800-0x8FC Interrupt Processor Targets Registers
-        ICDICFRN    = 0xC00, // 0xC00, 0xC08, 0xC08-0xC3C Interrupt Configuration Registers
-    };
-
-    // Processor Interface Register
-    enum {
-        ICCICR  = 0x000, // CPU Interface Control Register
-        ICCPMR  = 0x004, // Interrupt Priority Mask Register
-        ICCBPR  = 0x008, // Binary Point Register
-        ICCIAR  = 0x00C, // Interrupt Ack Register
-        ICCEOI  = 0x010, // End Of Interrupt Register
-    };
-
-    static const unsigned int PROC_INTERFACE    = 0xF8F00100;
-    static const unsigned int INTR_DISTRIBUTOR  = 0xF8F01000;
-
     static const unsigned int INTERRUPT_MASK = 0x000003FF;
 
 protected:
-    static void interrupt_distributor_init(void) {
-        // TODO: Maybe that's not necessary, it's already disabled after reset
-        disable_distributor();
-
-        // Configure every Shared Peripheral Interrupt (SPI)
-        // TODO: WTF?
-        CPU::out32(INTR_DISTRIBUTOR + ICDICFRN + 8, 0x555D5757);
-        CPU::out32(INTR_DISTRIBUTOR + ICDICFRN + 12, 0x5555D5D5);
-        CPU::out32(INTR_DISTRIBUTOR + ICDICFRN + 16, 0x75555555);
-        CPU::out32(INTR_DISTRIBUTOR + ICDICFRN + 20, 0xFF555555);
-
-        // Reset interrupt priorities of every SPI. Temporarily setting
-        // everybody to the highest priority (0).
-        for(unsigned int i = 0; i < 24; i++)
-            CPU::out32(INTR_DISTRIBUTOR + ICDIPRN + i*4, 0x00);
-
-        // Set CPU target of every SPI
-        for(unsigned int i = 0; i < 24; i++)
-            CPU::out32(INTR_DISTRIBUTOR + ICDIPTRN + i*4, 0xFF);
-
-        // Enable PPIs
-        // TODO: It's not necessary to enable all PPIs!
-        for(unsigned int i = 0; i < 3; i++)
-            CPU::out32(INTR_DISTRIBUTOR + ICDISERN + i*4, 0xFFFFFFFF);
-
-        // Set all interrupts as non-secure
-        for(unsigned int i = 0; i < 3; i++) // (!) Secure accesses only
-            CPU::out32(INTR_DISTRIBUTOR + ICDISRN + i*4, 0xFFFFFFFF);
-
-        cpu_interface_init();
-        enable_distributor();
+    static void enable() {
+        dist(ICDISERN + 0) = ~0;
+        dist(ICDISERN + 4) = ~0;
+        dist(ICDISERN + 8) = ~0;
     }
 
-    static void cpu_interface_init(void) {
+    static void enable(int i) { dist(ICDISERN + (i/32)*4) = 1 << (i%32); }
+
+    static void disable() {
+        dist(ICDICERN + 0) = ~0;
+        dist(ICDICERN + 4) = ~0;
+        dist(ICDICERN + 8) = ~0;
+    }
+
+    static void disable(int i) { dist(ICDICERN + (i/32)*4) = 1 << (i%32); }
+
+    static void init(void) {
+        // Enable distributor
+        dist(ICDDCR) = DIST_EN_S;
+
         // Mask no interrupt
-        CPU::out32(PROC_INTERFACE + ICCPMR, 0xFF);
+        cpu_itf(ICCPMR) = 0xF0;
 
-        // Disable interrupt handling preemption
-        CPU::out32(PROC_INTERFACE + ICCBPR, 0x07);
-
-        enable_cpu_interface();
+        // Enable interrupts signaling by the CPU interfaces to the connected
+        // processors
+        cpu_itf(ICCICR) = ACK_CTL | ITF_EN_NS | ITF_EN_S;
     }
 
-    static void enable_distributor() {
-        CPU::out32(INTR_DISTRIBUTOR + ICDDCR, 0x00000001);
-    }
+private:
+    typedef CPU::Log_Addr Log_Addr;
 
-    static void disable_distributor() {
-        CPU::out32(INTR_DISTRIBUTOR + ICDDCR, 0x00000000);
-    }
+    // Base address for memory-mapped registers
+    enum {
+        CPU_ITF_BASE  = 0xF8F00100,
+        DIST_BASE     = 0xF8F01000
+    };
 
-    static void enable_cpu_interface() {
-        CPU::out32(PROC_INTERFACE + ICCICR, 0x00000001);
-    }
+    // Distributor Registers offsets
+    enum {
+        ICDDCR      = 0x000, // Distributor Control
+        ICDISERN    = 0x100, // Interrupt Set-Enable
+        ICDICERN    = 0x180  // Interrupt Clear-Enable
+    };
+    enum ICDDCR {
+        DIST_EN_S   = 1 << 0
+    };
 
-    static void disable_cpu_interface() {
-        CPU::out32(PROC_INTERFACE + ICCICR, 0x00000000);
-    }
+    // CPU Interface Registers offsets
+    enum {
+        ICCICR  = 0x000, // CPU Interface Control
+        ICCPMR  = 0x004, // Interrupt Priority Mask
+        ICCIAR  = 0x00C, // Interrupt Ack
+        ICCEOI  = 0x010  // End Of Interrupt
+    };
+    enum ICCICR {
+        ITF_EN_S    = 1 << 0,
+        ITF_EN_NS   = 1 << 1,
+        ACK_CTL = 1 << 2
+    };
+
+    static Log_Addr & cpu_itf(unsigned int o) { return reinterpret_cast<Log_Addr *>(CPU_ITF_BASE)[o / sizeof(Log_Addr)]; }
+    static Log_Addr & dist(unsigned int o) { return reinterpret_cast<Log_Addr *>(DIST_BASE)[o / sizeof(Log_Addr)]; }
 };
 
-class Zynq_IC: public IC_Common, private GIC_PL390
+class Zynq_IC: private IC_Common, private GIC_PL390
 {
     friend class Zynq;
 
+protected:
+    typedef GIC_PL390 Engine;
+
 public:
+    using IC_Common::Interrupt_Id;
+    using IC_Common::Interrupt_Handler;
+
     static const unsigned int INTS = 96;
     enum {
         INT_TIMER       = 29,   // Each core has its own private timer interrupt
@@ -124,34 +111,22 @@ public:
 
     static void enable() {
         db<IC>(TRC) << "IC::enable()" << endl;
-        enable_cpu_interface();
-        enable_distributor();
+        Engine::enable();
     }
 
     static void enable(Interrupt_Id i) {
         db<IC>(TRC) << "IC::enable(irq=" << i << ")" << endl;
-        unsigned int word = i/32;
-
-        i %= 32;
-        i = 1 << i;
-
-        CPU::out32(INTR_DISTRIBUTOR + ICDISERN + (word*4), CPU::in32(INTR_DISTRIBUTOR + ICDISERN + (word*4)) | i);
+        Engine::enable(i);
     }
 
     static void disable() {
         db<IC>(TRC) << "IC::disable()" << endl;
-        disable_distributor();
-        disable_cpu_interface();
+        Engine::disable();
     }
 
     static void disable(Interrupt_Id i) {
         db<IC>(TRC) << "IC::disable(irq=" << i << ")" << endl;
-        unsigned int word = i/32;
-
-        i %= 32;
-        i = 1 << i;
-
-        CPU::out32(INTR_DISTRIBUTOR + ICDICERN + (word*4), i);
+        Engine::disable(i);
     }
 
     static void ipi_send(unsigned int cpu, Interrupt_Id int_id) {}
