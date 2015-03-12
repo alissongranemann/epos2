@@ -33,7 +33,6 @@ void Component_Manager::init() {
 
     // TODO: Is this really needed?
     Component_Controller::enable_agent_receive_int(&int_handler);
-    CPU::int_enable();
 }
 
 __END_SYS
