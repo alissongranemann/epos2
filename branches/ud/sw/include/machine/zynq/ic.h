@@ -139,7 +139,6 @@ private:
 
 private:
     static Interrupt_Handler _int_vector[INTS];
-
 };
 
 __END_SYS
