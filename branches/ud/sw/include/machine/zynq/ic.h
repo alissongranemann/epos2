@@ -11,9 +11,6 @@ __BEGIN_SYS
 class GIC_PL390
 {
 protected:
-    static const unsigned int INTERRUPT_MASK = 0x000003FF;
-
-protected:
     static void enable() {
         dist(ICDISERN + 0) = ~0;
         dist(ICDISERN + 4) = ~0;
@@ -42,7 +39,7 @@ protected:
         cpu_itf(ICCICR) = ACK_CTL | ITF_EN_NS | ITF_EN_S;
     }
 
-private:
+protected:
     typedef CPU::Log_Addr Log_Addr;
 
     // Base address for memory-mapped registers
@@ -66,13 +63,15 @@ private:
         ICCICR  = 0x000, // CPU Interface Control
         ICCPMR  = 0x004, // Interrupt Priority Mask
         ICCIAR  = 0x00C, // Interrupt Ack
-        ICCEOI  = 0x010  // End Of Interrupt
+        ICCEOIR = 0x010  // End Of Interrupt
     };
     enum ICCICR {
         ITF_EN_S    = 1 << 0,
         ITF_EN_NS   = 1 << 1,
-        ACK_CTL = 1 << 2
+        ACK_CTL     = 1 << 2
     };
+
+    static const unsigned int INT_ID_MASK = 0x3FF;
 
     static Log_Addr & cpu_itf(unsigned int o) { return reinterpret_cast<Log_Addr *>(CPU_ITF_BASE)[o / sizeof(Log_Addr)]; }
     static Log_Addr & dist(unsigned int o) { return reinterpret_cast<Log_Addr *>(DIST_BASE)[o / sizeof(Log_Addr)]; }

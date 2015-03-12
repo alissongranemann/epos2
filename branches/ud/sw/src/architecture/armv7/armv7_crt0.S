@@ -1,8 +1,14 @@
 .file "armv7_crt0.S"
 
-.section .init
-.align 2
+// Currently, there are two exception models in the ARM architecture. In the
+// classic model, used in pre-Cortex chips and current Cortex-A/R chips, the
+// memory at 0 contains several exception handlers. In the new model used in the
+// Cortex-M chips, the vector table at 0 is actually a table of pointers, not
+// instructions. Thus, Cortex-A9 and Cortex-M3 vector tables are not compatible.
 
+.section .init
+// Interrupt Vector Table
+.type _vector_table, object
 _vector_table:
     ldr pc, _start_addr
     ldr pc, _undefined_instruction_addr
@@ -10,34 +16,10 @@ _vector_table:
     ldr pc, _prefetch_abort_addr
     ldr pc, _data_abort_addr
     ldr pc, _reserved_addr
-    ldr pc, _irq_handler_addr
+    ldr pc, _int_dispatch_addr
     ldr pc, _fiq_handler_addr
 
-    // These vectors and code are used for rom patching
-    .org 0x20
-    .code 16
-    _RPTV_0_START:
-    bx lr
-
-    .org 0x60
-    _RPTV_1_START:
-    bx lr
-
-    .org 0xa0
-    _RPTV_2_START:
-    bx lr
-
-    .org 0xe0
-    _RPTV_3_START:
-    bx lr
-
-    .org 0x120
-    ROM_var_start: .word 0
-    .org 0x7ff
-    ROM_var_end:   .word 0
-    .code 32
-
-_start_addr:                .word _init
+_start_addr:                .word _start
 _undefined_instruction_addr:.word _undefined_instruction
 _software_interrupt_addr:   .word _prefetch_abort
 _prefetch_abort_addr:       .word _undefined_instruction
@@ -45,21 +27,13 @@ _data_abort_addr:           .word _data_abort
 _reserved_addr:             .word _reserved
 _irq_handler_addr:          .word _irq_handler
 _fiq_handler_addr:          .word _fiq_handler
+_int_dispatch_addr:         .word _int_dispatch
 
 .section .init
 .align 2
 .global _start
 .type _start, function
 _start:
-    // TODO: Oddly, Zynq is booting in system mode instead of supervisor mode as
-    // stated in its Technical Reference Manual. Here, we're forcing it to
-    // supervisor mode. This issue must be further investigated.
-    mrs r0, cpsr
-    mvn r1, #0x1f
-    and r2, r1, r0
-    orr r2, r2, #0x13
-    msr cpsr, r2
-
     // Clear BSS
     mov r0, #0
     ldr r1, =__bss_start__

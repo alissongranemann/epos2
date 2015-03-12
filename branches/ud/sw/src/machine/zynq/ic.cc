@@ -14,21 +14,17 @@ Zynq_IC::Interrupt_Handler Zynq_IC::_int_vector[Zynq_IC::INTS];
 void Zynq_IC::dispatch()
 {
     // TODO: Save context?
+    unsigned int icciar = cpu_itf(ICCIAR);
+    register Interrupt_Id id = icciar & INT_ID_MASK;
 
-    // Interrupt Acknowledge Register (ICCIAR)
-    //unsigned int icciar_value = CPU::in32(PROC_INTERFACE | ICCIAR);
-    //IC::Interrupt_Id id = icciar_value & INTERRUPT_MASK; // 0x3FF bits 0 to 9
+    if((id != INT_TIMER) || Traits<IC>::hysterically_debugged)
+        db<IC>(TRC) << "IC::dispatch(i=" << id << ")" << endl;
 
-    //if((id != INT_TIMER) || Traits<IC>::hysterically_debugged)
-        //db<IC>(TRC) << "IC::dispatch(i=" << id << ")" << endl;
+    _int_vector[id](id);
 
-    //_int_vector[id](id);
-
-    // For every read of a valid Interrupt ID from the ICCIAR, the interrupt
-    // service routine on the connected processor must perform a matching write
-    // to the ICCEOIR, see End of Interrupt Register (ICCEOIR)
-    CPU::int_disable();
-    //CPU::out32(PROC_INTERFACE | ICCEOI, icciar_value);
+    // For every read of a valid interrupt id from the ICCIAR, the ISR must
+    // perform a matching write to the ICCEOIR
+    cpu_itf(ICCEOIR) = icciar;
 }
 
 void Zynq_IC::int_not(const Interrupt_Id & i)
