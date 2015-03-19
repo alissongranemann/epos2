@@ -82,5 +82,6 @@ __END_SYS
 #include "display.h"
 #include "nic.h"
 #include "scratchpad.h"
+#include "boot_image.h"
 
 #endif

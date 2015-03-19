@@ -144,6 +144,12 @@ template<> struct Traits<PC_Scratchpad>: public Traits<PC_Common>
     static const unsigned int SIZE = Traits<PC_Display>::LINES * Traits<PC_Display>::COLUMNS;
 };
 
+template<> struct Traits<PC_Boot_Image>: public Traits<PC_Common>
+{
+    static const bool enabled = true;
+    static const bool debugged = false;
+};
+
 __END_SYS
 
 #endif

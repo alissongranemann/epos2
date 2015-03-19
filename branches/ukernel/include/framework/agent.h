@@ -292,6 +292,60 @@ public:
     }
 };
 
+template<>
+class Agent<Boot_Image>
+{
+public:
+    static void act(Message * msg) {
+        Result res = 0;
+        Boot_Image * bi = Boot_Image::self(); // As Boot_Image is a singleton there is no need to recover it from a message.
+        switch(msg->method()) {
+        case Method::BOOT_IMAGE_ELF: {
+            res = bi->next_extra_elf();
+        }
+        }
+
+        msg->reply(res);
+    }
+};
+
+
+template<>
+class Agent<ELF>
+{
+public:
+    static void act(Message * msg) {
+        Result res = 0;
+        Adapter<ELF> * elf = reinterpret_cast<Adapter<ELF> *>(msg->id().unit());
+        switch(msg->method()) {
+        case Method::ELF_SEGMENTS: {
+            res = elf->segments();
+        } break;
+        case Method::ELF_LOAD_SEGMENT: {
+            int i;
+            unsigned long dst_addr;
+            msg->in(i, dst_addr);
+            res = elf->load_segment(i, dst_addr);
+        } break;
+        case Method::ELF_SEGMENT_ADDRESS: {
+            int i;
+            msg->in(i);
+            res = elf->segment_address(i);
+        } break;
+        case Method::ELF_SEGMENT_SIZE: {
+            int i;
+            msg->in(i);
+            res = elf->segment_size(i);
+        } break;
+        case Method::ELF_ENTRY: {
+            res = elf->entry();
+        } break;
+        }
+
+        msg->reply(res);
+    }
+};
+
 __END_SYS
 
 #endif

@@ -139,6 +139,54 @@ public:
     template<typename T1, typename T2, typename T3>
     int receive(T1 a1, T2 a2, T3 a3) { Message msg(_adapter); msg.invoke(Method::SELF, a1, a2, a3); return msg.result(); }
 
+
+    // ELF
+    int segments() 
+    { 
+        Message msg(_adapter);
+        msg.invoke(Method::ELF_SEGMENTS);
+        return msg.result();
+    }
+
+    int load_segment(int i, unsigned long dst_addr) 
+    { 
+        Message msg(_adapter);
+        msg.out(i, dst_addr);
+        msg.invoke(Method::ELF_LOAD_SEGMENT);
+        return msg.result();
+    }
+    
+    unsigned long segment_address(int i) 
+    { 
+        Message msg(_adapter);
+        msg.out(i);
+        msg.invoke(Method::ELF_SEGMENT_ADDRESS);
+        return msg.result();
+    }
+    
+    int segment_size(int i) 
+    { 
+        Message msg(_adapter);
+        msg.out(i);
+        msg.invoke(Method::ELF_SEGMENT_SIZE);
+        return msg.result();
+    }
+    
+    unsigned long entry() 
+    { 
+        Message msg(_adapter);
+        msg.invoke(Method::ELF_ENTRY);
+        return msg.result();
+    }
+
+    // Boot_Image
+    Proxy<ELF> * next_extra_elf() 
+    { 
+        Message msg(_adapter); 
+        msg.invoke(Method::BOOT_IMAGE_ELF);
+        return new (reinterpret_cast<Adapter<ELF> *>(msg.result())) Proxied<ELF>;
+    }
+
 private:
     Adapter<Component> * _adapter;
 };

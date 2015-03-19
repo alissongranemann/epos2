@@ -123,6 +123,16 @@ public:
     template<typename ... Tn>
     int write(Tn ... an) { return _stub->write(an ...);}
 
+    // ELF
+    int segments() { return _stub->segments(); }
+    int load_segment(int i, unsigned long dst_addr) { return _stub->load_segment(i, dst_addr); }
+    unsigned long segment_address(int i) { return _stub->segment_address(i); }
+    int segment_size(int i) { return _stub->segment_size(i); }
+    unsigned long entry() { return _stub->entry(); }
+
+    // Boot_Image
+    Handle<ELF> * next_extra_elf() { return new (_stub->next_extra_elf()) Handled<ELF>; }
+
 private:
     _Stub * _stub;
 };

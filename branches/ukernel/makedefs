@@ -22,7 +22,8 @@ LINITNAME	:= init
 LUTILNAME	:= utility
 
 # Makefile hacks
-APPLICATIONS	:= $(subst .cc,,$(shell find $(APP) -name \*.cc -printf "%f\n"))
+# APPLICATIONS	:= $(subst .cc,,$(shell find $(APP) -name \*.cc -printf "%f\n"))
+APPLICATIONS	:= pc_app task_a task_b
 
 ifeq ($(words $(APPLICATIONS)),1)
 ifndef APPLICATION

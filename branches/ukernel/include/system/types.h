@@ -54,6 +54,7 @@ class Boot;
 class Setup;
 class Init;
 class Utility;
+class PC_Boot_Image;
 
 // Architecture Hardware Mediators
 class IA32;
@@ -87,6 +88,7 @@ class Active;
 class Periodic_Thread;
 class RT_Thread;
 class Task;
+class Application_Loader;
 
 template<typename> class Scheduler;
 namespace Scheduling_Criteria
@@ -177,6 +179,9 @@ enum
 
     UTILITY_ID = 50,
 
+    BOOT_IMAGE_ID,
+    ELF_ID,
+
     UNKNOWN_TYPE_ID,
     LAST_TYPE_ID = UNKNOWN_TYPE_ID - 1
 };
@@ -209,6 +214,9 @@ template<> struct Type<ICMP> { static const Type_Id ID = ICMP_ID; };
 template<> struct Type<UDP> { static const Type_Id ID = UDP_ID; };
 template<> struct Type<TCP> { static const Type_Id ID = TCP_ID; };
 template<> struct Type<DHCP> { static const Type_Id ID = DHCP_ID; };
+
+template<> struct Type<PC_Boot_Image> { static const Type_Id ID = BOOT_IMAGE_ID; };
+template<> struct Type<ELF> { static const Type_Id ID = ELF_ID; };
 
 __END_SYS
 

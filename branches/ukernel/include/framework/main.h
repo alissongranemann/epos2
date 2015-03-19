@@ -45,6 +45,9 @@ BIND(Clock);
 BIND(Chronometer);
 BIND(Alarm);
 BIND(Delay);
+BIND(Boot_Image);
+// BIND(ELF);
+typedef _SYS::Handle<_SYS::U::ELF> User_Space_ELF;
 
 __END_API
 

@@ -31,6 +31,8 @@ extern "C" {
         case SEGMENT_ID: Agent<Segment>::act(msg); break;
         case UTILITY_ID: Agent<Utility>::act(msg); break;
         case ALARM_ID: Agent<Alarm>::act(msg); break;
+        case BOOT_IMAGE_ID: Agent<Boot_Image>::act(msg); break;
+        case ELF_ID: Agent<ELF>::act(msg); break;
         default: msg->reply(Result(-1));
         }
 

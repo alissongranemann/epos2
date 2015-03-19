@@ -21,6 +21,7 @@
 #define __DISPLAY_H     __HEADER_MACH(display)
 #define __NIC_H         __HEADER_MACH(nic)
 #define __SCRATCHPAD_H  __HEADER_MACH(scratchpad)
+#define __BOOT_IMAGE_H  __HEADER_MACH(boot_image)
 
 __BEGIN_SYS
 
@@ -39,6 +40,7 @@ typedef PC_UART         UART;
 typedef IF<Traits<Serial_Display>::enabled, Serial_Display, PC_Display>::Result Display;
 typedef PC_Ethernet     NIC;
 typedef PC_Scratchpad   Scratchpad;
+typedef PC_Boot_Image   Boot_Image;
 
 __END_SYS
 

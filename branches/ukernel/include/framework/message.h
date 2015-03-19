@@ -55,6 +55,15 @@ public:
         SYNCHRONIZER_BROADCAST,
         ALARM_DELAY = COMPONENT,
         PRINT = COMPONENT,
+
+        BOOT_IMAGE_ELF = COMPONENT,
+
+        ELF_SEGMENTS = COMPONENT,
+        ELF_LOAD_SEGMENT,
+        ELF_SEGMENT_ADDRESS,
+        ELF_SEGMENT_SIZE,
+        ELF_ENTRY,
+
         UNDEFINED = -1
     };
 
