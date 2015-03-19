@@ -25,8 +25,8 @@ EXPORT(CPU);
 EXPORT(Handler);
 EXPORT(Function_Handler);
 // typedef _SYS::Functor_Handler Functor_Handler;
-EXPORT(Semaphore_Observed);
-EXPORT(Semaphore_Observer);
+EXPORT(Concurrent_Observed);
+EXPORT(Concurrent_Observer);
 EXPORT(User_Timer); // It should be a BIND, or?
 
 EXPORT(System);

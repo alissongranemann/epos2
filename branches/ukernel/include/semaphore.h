@@ -4,7 +4,6 @@
 #define __semaphore_h
 
 #include <utility/handler.h>
-#include <utility/observer.h>
 #include <synchronizer.h>
 
 __BEGIN_SYS
@@ -24,7 +23,7 @@ private:
 
 
 // An event handler that triggers a semaphore (see handler.h)
-class Semaphore_Handler: public Handler
+class Semaphore_Handler: public Dual_Handler
 {
 public:
     Semaphore_Handler(Semaphore * h) : _handler(h) {}
@@ -32,37 +31,11 @@ public:
 
     void operator()() { _handler->v(); }
 
+    void dual() { _handler->p(); }
+
 private:
     Semaphore * _handler;
 };
-
-
-// An asynchronous observer/observed based on semaphore
-typedef Concurrent_Observed Semaphore_Observed;
-
-class Semaphore_Observer : public Concurrent_Observer
-{
-protected:
-    Semaphore_Observer() : Concurrent_Observer(), _notify(0)
-    {
-    }
-
-
-    void signal_notify()             
-    {
-       _notify.v();
-    }
-
-
-   void wait_notify()
-   {
-       _notify.p();
-   }
-                
-private:
-    Semaphore _notify;
-};
-
 
 __END_SYS
 

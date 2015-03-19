@@ -23,13 +23,15 @@ private:
 
 
 // An event handler that triggers a mutex (see handler.h)
-class Mutex_Handler: public Handler
+class Mutex_Handler: public Dual_Handler
 {
 public:
     Mutex_Handler(Mutex * h) : _handler(h) {}
     ~Mutex_Handler() {}
 
     void operator()() { _handler->unlock(); }
+
+    void dual() { _handler->lock(); }
 
 private:
     Mutex * _handler;

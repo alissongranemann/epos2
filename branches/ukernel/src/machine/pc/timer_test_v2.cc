@@ -12,6 +12,9 @@
 #include <chronometer.h>
 
 
+#define CONCURRENT_OBSERVER 1 /* Should have the same value as in
+                                 _SYS::Traits<Application>::concurrent_observer */
+
 using namespace EPOS;
 
 OStream cout;
@@ -21,12 +24,12 @@ static unsigned int dropped_interrupts = 0;
 
 
 class Timer_HM : public _SYS::IF<_SYS::Traits<Application>::concurrent_observer,
-                           Semaphore_Observed,
+                           Concurrent_Observed,
                            Observed>::Result
 {
 public:
     typedef _SYS::IF<_SYS::Traits<Application>::concurrent_observer,
-                     Semaphore_Observed,
+                     Concurrent_Observed,
                      Observed>::Result Base;
 public:
     static Timer_HM* instance()
@@ -143,11 +146,19 @@ protected:
 };
 
 
-class Concurrent_Timer_Manager : public Abstract_Timer_Manager, public Active, public Semaphore_Observer
+#if CONCURRENT_OBSERVER
+class Concurrent_Timer_Manager : public Abstract_Timer_Manager, public Active, public Concurrent_Observer
 {
 public:
-    Concurrent_Timer_Manager() : Abstract_Timer_Manager(), Active(), Semaphore_Observer()
+    Concurrent_Timer_Manager(Dual_Handler * handler, Timer_HM * hm) : Abstract_Timer_Manager(), Active(), Concurrent_Observer(handler, hm)
     {
+        hm->attach(_handler);
+    }
+
+
+    ~Concurrent_Timer_Manager()
+    {
+        Timer_HM::instance()->detach(_handler);
     }
 
 protected:
@@ -169,13 +180,24 @@ protected:
         return 0;
     }
 };
+#else
+typedef void Concurrent_Timer_Manager;
+#endif
 
 
+#if ! CONCURRENT_OBSERVER
 class Sequential_Timer_Manager : public Abstract_Timer_Manager, public Observer
 {
 public:
-    Sequential_Timer_Manager() : Abstract_Timer_Manager(), Observer()
+    Sequential_Timer_Manager(Dual_Handler * handler, Timer_HM * hm) : Abstract_Timer_Manager(), Observer()
     {
+        hm->attach(this);
+    }
+
+
+    ~Sequential_Timer_Manager()
+    {
+        Timer_HM::instance()->detach(this);
     }
 
 
@@ -197,6 +219,9 @@ protected:
         _update((Timer_HM*) observed);
     }
 };
+#else
+typedef void Sequential_Timer_Manager;
+#endif
 
 
 class Timer_Manager : public _SYS::IF<_SYS::Traits<Application>::concurrent_observer,
@@ -208,14 +233,12 @@ public:
                      Concurrent_Timer_Manager,
                      Sequential_Timer_Manager>::Result Base;
 public:
-    Timer_Manager(Timer_HM* hm) : Base()
+    Timer_Manager(Dual_Handler * handler, Timer_HM * hm) : Base(handler, hm)
     {
-        hm->attach(this);
     }
 
     ~Timer_Manager()
     {
-        Timer_HM::instance()->detach(this);
     }
 };
 
@@ -227,13 +250,17 @@ int main()
     else
         cout << "PC_Timer test sequential" << endl;
 
+    Semaphore * sem = new Semaphore(0);
+    Dual_Handler * sem_handler = new Semaphore_Handler(sem);
     User_Timer timer(10000, Timer_HM::handler);
 
-    Timer_Manager* tm = new Timer_Manager(Timer_HM::instance());
+    Timer_Manager* tm = new Timer_Manager(sem_handler, Timer_HM::instance());
     tm->start();
     tm->join();
 
     delete tm;
+    delete sem_handler;
+    delete sem;
 
     cout << endl << "Set to generate: " << _SYS::Traits<Application>::iterations << " interrupts" << endl;
     cout << generated_interrupts << " interrupts were generated" << endl;
