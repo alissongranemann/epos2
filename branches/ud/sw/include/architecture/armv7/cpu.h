@@ -51,8 +51,7 @@ public:
     {
     public:
         // All interrupts enabled by default. 0x13 is SVC mode.
-        Context(const Log_Addr & entry, const Log_Addr & exit): _psr(0x60000013), _lr(exit), _pc(entry) {}
-//        _r0(0), _r1(1), _r2(2), _r3(3), _r4(4), _r5(5), _r6(6), _r7(7), _r8(8), _r9(9), _r10(10), _r11(11), _r12(12),
+        Context(const Log_Addr & entry, const Log_Addr & exit): _psr(0x00000013), _lr(exit), _pc(entry) {}
 
         void save() volatile  __attribute__ ((naked));
         void load() const volatile;
@@ -246,7 +245,8 @@ public:
 
 public:
     // ARMv7 specific methods
-    static unsigned int int_id() { return flags() & 0x3f; }
+    // TODO: Implement int_id()
+    //static unsigned int int_id() { return 0x00; }
 
 private:
     template<typename Head, typename ... Tail>
