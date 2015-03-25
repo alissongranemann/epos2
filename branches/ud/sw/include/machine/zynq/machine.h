@@ -17,33 +17,25 @@ class Zynq: public Machine_Common
 public:
     Zynq() {}
 
-    static void panic() {
-        db<Zynq>(ERR) << "PANIC!" << endl;
-        CPU::int_disable();
-        for(;;);
-    }
-
-    static void reboot() {
-        db<Zynq>(TRC) << "Machine::reboot()" << endl;
-        // qemu is messing with the console when we reset the board
-        // this for() will avoid reseting by now
-        //for(;;);
-        CPU::out32(CM_CTRL, CPU::in32(CM_CTRL) | (1 << 3));
-    }
-
-    static void poweroff() {  for(;;); }
-
-    static unsigned int n_cpus() { return Traits<Zynq>::CPUS; }
-
+    static unsigned int n_cpus() { return Traits<Machine>::CPUS; }
     static unsigned int cpu_id() {
         int id;
         ASM("mrc p15, 0, %0, c0, c0, 5"
             : "=r"(id)
             : : );
-        return id & 0x3; //cpu ID varies from 0 to 3
+        return id & 0x3;
     }
 
-    static void smp_init(unsigned int n_cpus) {};
+    static void panic() {}
+    static void reboot() {
+        db<Machine>(WRN) << "Machine::reboot()" << endl;
+        // qemu is messing with the console when we reset the board
+        // this for() will avoid reseting by now
+        CPU::out32(CM_CTRL, CPU::in32(CM_CTRL) | (1 << 3));
+        for(;;); // TODO: the above must be tested!
+    }
+
+    static void poweroff() { reboot(); }
 
     static void smp_barrier(unsigned int n_cpus = n_cpus()) {
         static volatile unsigned int ready[2];
@@ -61,7 +53,9 @@ public:
             } else
                 while(ready[j]);          // wait for CPU[0] signal
         }
-    };
+    }
+    static void smp_init(unsigned int n_cpus) {};
+
 private:
     static const unsigned long CM_CTRL = 0x1000000C;
 
