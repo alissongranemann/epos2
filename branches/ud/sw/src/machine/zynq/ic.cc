@@ -13,7 +13,6 @@ Zynq_IC::Interrupt_Handler Zynq_IC::_int_vector[Zynq_IC::INTS];
 // Class methods
 void Zynq_IC::dispatch()
 {
-    // TODO: Save context?
     unsigned int icciar = cpu_itf(ICCIAR);
     register Interrupt_Id id = icciar & INT_ID_MASK;
 

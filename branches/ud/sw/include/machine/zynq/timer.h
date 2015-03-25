@@ -151,13 +151,8 @@ private:
     static Zynq_Timer * _channels[CHANNELS];
 };
 
-class Alarm_Timer: public Zynq_Timer
-{
-public:
-    Alarm_Timer(const Handler & handler): Zynq_Timer(Zynq_Timer::FREQUENCY,
-        handler, ALARM) {}
-};
 
+// Timer used by Thread::Scheduler
 class Scheduler_Timer: public Zynq_Timer
 {
 private:
@@ -167,6 +162,18 @@ public:
     Scheduler_Timer(const Microsecond & quantum, const Handler & handler):
         Zynq_Timer(1000000 / quantum, handler, SCHEDULER) {}
 };
+
+
+// Timer used by Alarm
+class Alarm_Timer: public Zynq_Timer
+{
+public:
+    static const unsigned int FREQUENCY = Timer::FREQUENCY;
+
+public:
+    Alarm_Timer(const Handler & handler): Zynq_Timer(FREQUENCY, handler, ALARM) {}
+};
+
 
 // TODO: Use a different timer
 class User_Timer: public Zynq_Timer
