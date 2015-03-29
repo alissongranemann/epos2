@@ -27,6 +27,8 @@ void Zynq_Timer::int_handler(const Interrupt_Id & i)
             _channels[USER]->_current[0] = _channels[USER]->_initial;
         _channels[USER]->_handler(i);
     }
+
+    isr_clr();
 }
 
 __END_SYS

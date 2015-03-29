@@ -51,9 +51,11 @@ public:
 
     static Hertz clock() { return CLOCK; }
 
+    static void isr_clr() { priv_timer(PTISR) = INT_CLR; }
+
     static void init(unsigned int f) {
         priv_timer(PTCLR) = 0;
-        priv_timer(PTISR) = INT_CLR;
+        isr_clr();
         priv_timer(PTLR) = CLOCK / f;
         priv_timer(PTCLR) = IRQ_EN | AUTO_RELOAD;
     }
@@ -136,6 +138,8 @@ private:
     static Count freq2count(const Hertz & f) {
         return f ? Engine::clock() / f : 0;
     }
+
+    static void isr_clr() { Engine::isr_clr(); }
 
     static void int_handler(const Interrupt_Id & id);
 
