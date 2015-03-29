@@ -33,6 +33,18 @@ _fiq_addr:                  .word _fiq
 .global _start
 .type _start, function
 _start:
+    // Let CPU 0 pass and Trap CPU 1
+    // TODO: This is only necessary for qemu, when running on Zedboard only CPU
+    // 0 seems to be awaken and CPU 1 needs to be implicitly woken
+    mrc p15, 0, r1, c0, c0, 5
+    and r1, r1, #0xf
+    cmp r1, #0
+    beq _pass_cpu0
+_trap_cpu1:
+    wfe
+    b _trap_cpu1
+
+_pass_cpu0:
     // Clear BSS
     mov r0, #0
     ldr r1, =__bss_start__
