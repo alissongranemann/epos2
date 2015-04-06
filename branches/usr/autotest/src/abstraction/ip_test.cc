@@ -168,6 +168,7 @@ int tcp_test()
     cout << "TCP Test" << endl;
 
     char data[PDU];
+    //const char _send_m[11] = {'h','e','l','l','o',' ', 'w','o','r','l','d'};
     Link<TCP> * com;
 
     IP * ip = IP::get_by_nic(0);
@@ -182,7 +183,8 @@ int tcp_test()
         peer_ip[3]--;
 
         com = new Link<TCP>(8000, Link<TCP>::Address(peer_ip, TCP::Port(8000))); // connect
-
+        //com->write("agora vai",9);
+        //int sent = com->write(&_send_m, sizeof(_send_m));
         for(int i = 0; i < ITERATIONS; i++) {
             data[0] = '\n';
             data[1] = ' ';
@@ -219,7 +221,8 @@ int tcp_test()
             else
                 cout << "  Data was not correctly sent. It was " << sizeof(data) << " bytes long, but only " << sent << "bytes were sent!"<< endl;
         }
-    } else { // receiver
+   
+    } /*else { // receiver
         cout << "Receiver:" << endl;
 
         IP::Address peer_ip = ip->address();
@@ -234,7 +237,7 @@ int tcp_test()
             else
                 cout << "  Data was not correctly received. It was " << sizeof(data) << " bytes long, but " << received << " bytes were received!"<< endl;
         }
-    }
+    }*/
 
     delete com;
 
@@ -258,10 +261,10 @@ int main()
     cout << "  IP::Header => " << sizeof(IP::Header) << endl;
     cout << "  UDP::Header => " << sizeof(UDP::Header) << endl;
 
-    icmp_test();
-    Alarm::delay(2000000);
-    udp_test();
-    Alarm::delay(2000000);
+    //icmp_test();
+    //Alarm::delay(2000000);
+    //udp_test();
+    //Alarm::delay(2000000);
     tcp_test();
 
     return 0;
