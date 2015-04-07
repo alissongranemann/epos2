@@ -2,7 +2,7 @@
 
 # Functions
 GETTK		= $(shell sed -n -e '/^.* $(1)[ ]*=.*;.*$$/s/^.* =[ ]*\(.*\)[ ]*;.*$$/\1/p' $(2) 2> /dev/null)
-TOLOWER         = $(shell echo $(1) | tr A-Z a-z)
+TOLOWER		= $(shell echo $(1) | tr A-Z a-z)
 
 # Paths, prefixes and suffixes
 EPOS		:= $(abspath $(dir $(filter %makedefs, $(MAKEFILE_LIST))))
@@ -45,8 +45,8 @@ endif
 TRAITS		= $(APP)/$(APPLICATION)_traits.h
 MODE		= $(call TOLOWER,$(call GETTK,MODE,$(TRAITS)))
 ARCH		= $(call TOLOWER,$(call GETTK,ARCHITECTURE,$(TRAITS)))
-MACH            = $(call TOLOWER,$(call GETTK,MACHINE,$(TRAITS)))
-MMOD            = $(call TOLOWER,$(call GETTK,MODEL,$(TRAITS)))
+MACH		= $(call TOLOWER,$(call GETTK,MACHINE,$(TRAITS)))
+MMOD		= $(call TOLOWER,$(call GETTK,MODEL,$(TRAITS)))
 CPUS		= $(call GETTK,CPUS,$(TRAITS))
 NODES		= $(call GETTK,NODES,$(TRAITS))
 LIBARCH		= $(LIB)/lib$(LARCHNAME)_$(ARCH).a
@@ -63,7 +63,7 @@ LUTIL		= $(LUTILNAME)_$(ARCH)
 # Compiler prefixes
 ia32_COMP_PREFIX	:= /usr/local/ia32/gcc-4.4.4/bin/ia32-
 armv7_COMP_PREFIX	:= /usr/local/arm/gcc-4.4.4/bin/arm-
-avr8_COMP_PREFIX        := /usr/local/avr/gcc-4.4.4/bin/avr-
+avr8_COMP_PREFIX	:= /usr/local/avr/gcc-4.4.4/bin/avr-
 COMP_PREFIX		= $($(ARCH)_COMP_PREFIX)
 
 # Boot Memory Map
@@ -82,52 +82,53 @@ BOOT_LENGTH_MIN	= $(call GETTK,BOOT_LENGTH_MIN,$(MACH_TRAITS))
 BOOT_LENGTH_MAX = $(call GETTK,BOOT_LENGTH_MAX,$(MACH_TRAITS))
 
 #Machine specifics
-pc_CC_FLAGS             := -Wa,--32
-pc_AS_FLAGS             := --32
-pc_LD_FLAGS             := 
-pc_EMULATOR             = qemu-system-i386 -smp $(CPUS) -m $(MEM_SIZE)k -nographic -no-reboot -fda
+pc_CC_FLAGS		:= -Wa,--32
+pc_AS_FLAGS		:= --32
+pc_LD_FLAGS		:= 
+pc_EMULATOR		= qemu-system-i386 -smp $(CPUS) -m $(MEM_SIZE)k -nographic -no-reboot -fda
 
-cortex_m_CC_FLAGS       := -mcpu=cortex-m3 -mthumb -mno-thumb-interwork -mfpu=fpa #-Wa,-mimplicit-it=arm -marm 
-cortex_m_AS_FLAGS       := -mcpu=cortex-m3 -mthumb -mfpu=fpa
-cortex_m_LD_FLAGS       := 
-cortex_m_EMULATOR       = timeout --preserve-status --foreground 20s qemu-system-arm -cpu cortex-m3 -machine lm3s811evb -m $(MEM_SIZE)k -nographic -no-reboot -kernel
+cortex_m_CC_FLAGS	:= -mcpu=cortex-m3 -mthumb -mno-thumb-interwork -mfpu=fpa #-Wa,-mimplicit-it=arm -marm 
+cortex_m_AS_FLAGS	:= -mcpu=cortex-m3 -mthumb -mfpu=fpa
+cortex_m_LD_FLAGS	:= 
+cortex_m_EMULATOR	= timeout --preserve-status --foreground 20s qemu-system-arm -cpu cortex-m3 -machine lm3s811evb -m $(MEM_SIZE)k -nographic -no-reboot -kernel
 
-atmega_CC_FLAGS         := -mmcu=atmega128 -Wno-inline
-atmega_AS_FLAGS         := -mmcu=atmega128
-atmega_LD_FLAGS         := -m avr5
-atmega_EMULATOR         = 
+atmega_CC_FLAGS		:= -mmcu=atmega128 -Wno-inline
+atmega_AS_FLAGS		:= -mmcu=atmega128
+atmega_LD_FLAGS		:= -m avr5
+atmega_EMULATOR		= 
 
-zynq_CC_FLAGS	:= -mcpu=cortex-a9 -mfpu=fpa #-mthumb-interwork
-zynq_AS_FLAGS	:= -mcpu=cortex-a9 -mfpu=fpa #-mthumb-interwork
-zynq_LD_FLAGS	:= 
-zynq_EMULATOR	:=
+zynq_CC_FLAGS		:= -mcpu=cortex-a9 -mfpu=fpa
+zynq_AS_FLAGS		:= -mcpu=cortex-a9 -mfpu=fpa
+zynq_LD_FLAGS		:= 
+# The smp flag must be 2 else, qemu gives an assertion error
+zynq_EMULATOR		:= qemu-system-arm -cpu cortex-a9 -machine arm-generic-fdt -dtb ../devicetree.dtb -smp 2 -m $(MEM_SIZE)k -nographic -no-reboot -kernel
 
-$(MACH)_CODE_NAME       := .init
-$(MACH)_DATA_NAME       := .ctors
+$(MACH)_CODE_NAME	:= .init
+$(MACH)_DATA_NAME	:= .ctors
 ifeq ($(GDB),1)
-MACH_CC_FLAGS           := -g -feliminate-unused-debug-symbols $($(MACH)_CC_FLAGS)
-MACH_AS_FLAGS           := -g $($(MACH)_AS_FLAGS)
+MACH_CC_FLAGS		:= -g -feliminate-unused-debug-symbols $($(MACH)_CC_FLAGS)
+MACH_AS_FLAGS		:= -g $($(MACH)_AS_FLAGS)
 else
-MACH_CC_FLAGS           := $($(MACH)_CC_FLAGS)
-MACH_AS_FLAGS           := $($(MACH)_AS_FLAGS)
+MACH_CC_FLAGS		:= $($(MACH)_CC_FLAGS)
+MACH_AS_FLAGS		:= $($(MACH)_AS_FLAGS)
 endif
-MACH_LD_FLAGS           := $($(MACH)_LD_FLAGS)
-MACH_CODE_NAME          := $($(MACH)_CODE_NAME)
-MACH_DATA_NAME          := $($(MACH)_DATA_NAME)
+MACH_LD_FLAGS		:= $($(MACH)_LD_FLAGS)
+MACH_CODE_NAME		:= $($(MACH)_CODE_NAME)
+MACH_DATA_NAME		:= $($(MACH)_DATA_NAME)
 ifeq ($(GDB),1)
-MACH_EMULATOR           = $(subst -m ,-s -S -m ,$($(MACH)_EMULATOR))
+MACH_EMULATOR		= $(subst -m ,-s -S -m ,$($(MACH)_EMULATOR))
 else
-MACH_EMULATOR           = $($(MACH)_EMULATOR)
+MACH_EMULATOR		= $($(MACH)_EMULATOR)
 endif
-MACH_DEBUGGER           = $(TERM) gdb -ex "target remote:1234" -ex "set confirm off"
+MACH_DEBUGGER		= $(TERM) gdb -ex "target remote:1234" -ex "set confirm off"
 ifneq ($(wildcard $(IMG)/$(MACH)_setup),) 
-MACH_DEBUGGER           := $(MACH_DEBUGGER) -ex "add-symbol-file $(SRC)/setup/$(MACH)_setup $(SETUP_ADDR)"
+MACH_DEBUGGER		:= $(MACH_DEBUGGER) -ex "add-symbol-file $(SRC)/setup/$(MACH)_setup $(SETUP_ADDR)"
 endif
 ifneq ($(wildcard $(IMG)/$(MACH)_init),) 
-MACH_DEBUGGER           := $(MACH_DEBUGGER) -ex "add-symbol-file $(SRC)/init/$(MACH)_init $(INIT_ADDR)"
+MACH_DEBUGGER		:= $(MACH_DEBUGGER) -ex "add-symbol-file $(SRC)/init/$(MACH)_init $(INIT_ADDR)"
 endif
 ifneq ($(wildcard $(IMG)/$(MACH)_system),) 
-MACH_DEBUGGER           := $(MACH_DEBUGGER) -ex "add-symbol-file $(SRC)/system/$(MACH)_system $(SYS_CODE_ADDR)"
+MACH_DEBUGGER		:= $(MACH_DEBUGGER) -ex "add-symbol-file $(SRC)/system/$(MACH)_system $(SYS_CODE_ADDR)"
 endif
 
 # Architecture specifics
@@ -186,21 +187,21 @@ EMULATOR	= $(MACH_EMULATOR)
 
 INSTALL		:= install
 
-LD              = $(COMP_PREFIX)ld
-LDFLAGS         = $(MACH_LD_FLAGS) -nostdlib -L$(LIB) -Bstatic
+LD		= $(COMP_PREFIX)ld
+LDFLAGS		= $(MACH_LD_FLAGS) -nostdlib -L$(LIB) -Bstatic
 
-MAKE            := make --print-directory
-MAKECLEAN       := make -i clean
-MAKETEST        := make --no-print-directory --silent
-MAKEFLAGS       := --no-builtin-rules
+MAKE		:= make --print-directory
+MAKECLEAN	:= make -i clean
+MAKETEST	:= make --no-print-directory --silent
+MAKEFLAGS	:= --no-builtin-rules
 
-MKBI            := $(BIN)/eposmkbi $(EPOS)
+MKBI		:= $(BIN)/eposmkbi $(EPOS)
 
-OBJCOPY         = $(COMP_PREFIX)objcopy
-OBJCOPYFLAGS    := -R .note -R .comment
+OBJCOPY		= $(COMP_PREFIX)objcopy
+OBJCOPYFLAGS	:= -R .note -R .comment
 
-OBJDUMP         = $(COMP_PREFIX)objdump
-OBJDUMPFLAGS    :=
+OBJDUMP		= $(COMP_PREFIX)objdump
+OBJDUMPFLAGS	:=
 
 SHELL		:= bash
 
