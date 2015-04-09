@@ -40,8 +40,8 @@ template<> struct Traits<Debug>
 {
     static const bool error   = true;
     static const bool warning = true;
-    static const bool info    = true;
-    static const bool trace   = true;
+    static const bool info    = false;
+    static const bool trace   = false;
 };
 
 template<> struct Traits<Lists>: public Traits<void>
@@ -224,6 +224,8 @@ template<> struct Traits<Adder>: public Traits<void>
 
 template<> struct Traits<Component_Manager>: public Traits<void>
 {
+    static const bool enabled = true;
+
     // Node local
     enum {NN, NE, EE, SE, SS, SW, WW, NW};
 

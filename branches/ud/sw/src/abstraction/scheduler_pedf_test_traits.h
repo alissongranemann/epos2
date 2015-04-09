@@ -215,6 +215,34 @@ template<> struct Traits<DHCP>: public Traits<Network>
 {
 };
 
+template<> struct Traits<Component_Manager>: public Traits<void>
+{
+    static const bool enabled = false;
+
+    // Node local
+    enum {NN, NE, EE, SE, SS, SW, WW, NW};
+
+    // Buffer type
+    enum {PROXY, AGENT};
+
+    struct Default_Node {
+        static const unsigned int TYPE_ID = UNKNOWN_TYPE_ID;
+        // TODO: Find a better way to manage UNIT_ID
+        static const unsigned int UNIT_ID = 0;
+
+        static const unsigned int BUFFER = PROXY;
+        static const unsigned int X = 0;
+        static const unsigned int Y = 0;
+        static const unsigned int LOCAL = NN;
+    };
+
+    template<unsigned int UNIT>
+    struct Node: public Default_Node {};
+
+    // TODO: Calculate UNITS automatically
+    static const unsigned int UNITS = 0;
+};
+
 __END_SYS
 
 #endif
