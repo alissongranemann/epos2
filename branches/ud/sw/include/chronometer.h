@@ -60,8 +60,15 @@ public:
     Hertz frequency() { return Alarm::frequency(); }
 
     void reset() { _start = 0; _stop = 0; }
-    void start() { if(_start == 0) _start = Alarm::_elapsed; }
-    void lap() { if(_start != 0) _stop = Alarm::_elapsed; }
+    void start() {
+        // FIXME: _start is 0 if start() is called before the first Alarm
+        // interrupt, implying that the Chronometer wasn't started. Adding 1 to
+        // Alarm::_elapsed allows the Chronometer to work as expected.
+        assert(Alarm::_elapsed);
+        if(_start == 0)
+            _start = Alarm::_elapsed + 1;
+    }
+    void lap() { if(_start != 0) _stop = Alarm::_elapsed + 1; }
     void stop() { lap(); }
 
     Microsecond read() { return ticks() * 1000000 / frequency(); }
@@ -71,7 +78,7 @@ private:
         if(_start == 0)
             return 0;
         if(_stop == 0)
-            return Alarm::_elapsed - _start;
+            return Alarm::_elapsed + 1 - _start;
         return _stop - _start;
     }
 
