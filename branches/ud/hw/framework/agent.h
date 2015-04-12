@@ -1,15 +1,15 @@
 #ifndef __agent_hw_h
 #define __agent_hw_h
 
+#include <system/config.h>
+#include <framework/agent.h>
+
 #include "catapult.h"
-#include "../../unified/framework/meta.h"
-#include "../../unified/framework/agent.h"
 
-namespace Implementation {
+__BEGIN_SYS
 
-template<class Component>
-class Agent_Common<Component, Configurations::EPOS_SOC_Catapult, true>:
-        public Serializer<Traits<Component>::serdes_buffer>
+template<class T>
+class Agent_Common<T, true>: public Serializer<Traits<T>::serdes_buffer>
 {
 public:
     Agent_Common(Channel_t & rx_ch, Channel_t & tx_ch, unsigned int inst_id):
@@ -38,7 +38,7 @@ public:
         _msg.phy_addr.Y = _last_call_Y;
         _msg.phy_addr.local = _last_call_local;
 
-        _msg.phy_data.header.type_id = Type2Id<Component>::ID;
+        _msg.phy_data.header.type_id = Type2Id<T>::ID;
         _msg.phy_data.header.instance_id = _inst_id;
         //FIXME RESP initiation msgs are not really needed
         //ret_msg.header.msg_type = MSG_TYPE_RESP;
@@ -54,7 +54,7 @@ public:
         }
     }
 
-    void top_level() { static_cast<Agent<Component>*>(this)->dispatch(read_header()); }
+    void top_level() { static_cast<Agent<T>*>(this)->dispatch(read_header()); }
 
 protected:
     unsigned int _inst_id;
@@ -71,7 +71,7 @@ private:
     }
 
 private:
-    typedef Serializer<Traits<Component>::serdes_buffer> Base;
+    typedef Serializer<Traits<T>::serdes_buffer> Base;
 
     Channel_t & _call_ch;
     Channel_t & _return_ch;
@@ -83,7 +83,7 @@ private:
     Catapult::RMI_Msg _msg;
 };
 
-template<typename Component>
+template<typename T>
 class Agent_Dummy
 {
 public:
@@ -102,13 +102,13 @@ private:
     Catapult::RMI_Msg _msg;
 };
 
-};
+__END_SYS
 
-#define HLS_TOP_LEVEL(Component)\
-void Component (Implementation::Channel_t &rx_ch, Implementation::Channel_t &tx_ch, unsigned int inst_id) {\
-    static Implementation::IF<Implementation::Traits<Implementation::Component>::hardware,\
-                              Implementation::Agent<Implementation::Component>,\
-                              Implementation::Agent_Dummy<Implementation::Component> >::Result\
+#define HLS_TOP_LEVEL(T)\
+void T (Implementation::Channel_t &rx_ch, Implementation::Channel_t &tx_ch, unsigned int inst_id) {\
+    static Implementation::IF<Implementation::Traits<Implementation::T>::hardware,\
+                              Implementation::Agent<Implementation::T>,\
+                              Implementation::Agent_Dummy<Implementation::T> >::Result\
         agent(rx_ch, tx_ch, inst_id);\
 \
     agent.top_level();\

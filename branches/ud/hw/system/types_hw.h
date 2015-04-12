@@ -5,12 +5,10 @@
 
 #include "../framework/catapult.h"
 
-namespace Implementation {
+__BEGIN_SYS
 
 typedef Catapult::Channel_t Channel_t;
 
-#define HW_NODE(name) name##_Node
-
-};
+__END_SYS
 
 #endif
