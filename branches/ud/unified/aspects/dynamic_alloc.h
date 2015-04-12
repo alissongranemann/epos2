@@ -1,26 +1,16 @@
-#ifndef DYNAMIC_ALLOC2_H_
-#define DYNAMIC_ALLOC2_H_
+#ifndef __dynamic_alloc_unified_h
+#define __dynamic_alloc_unified_h
 
-//TODO remover essa gabiarra
+// TODO: Remove this mess
 #ifdef HIGH_LEVEL_SYNTHESIS
-namespace EPOS {
-template<typename Obj_Type, bool system_heap>
+__BEGIN_SYS
+
+template<typename Obj_Type>
 class Dynamic_Allocation {};
-};
+
+__END_SYS
 #else
-//EPOS_SoC Dynamic allocation
 #include "../../sw/include/framework/dynamic_alloc.h"
 #endif
-
-namespace Implementation {
-
-template<typename Obj_Type>
-class Dynamic_Allocation : public EPOS::Dynamic_Allocation<Obj_Type,false>{};
-
-template<typename Obj_Type>
-class System_Dynamic_Allocation : public EPOS::Dynamic_Allocation<Obj_Type,true>{};
-
-};
-
 
 #endif
