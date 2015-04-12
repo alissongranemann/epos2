@@ -213,7 +213,7 @@ architecture structural of top is
             noc_int_o           : out   std_logic);
     end component;
 
-    component recfg_node is
+    component app_node is
         generic (
             SIZE_X          : integer;
             SIZE_Y          : integer;
@@ -298,10 +298,6 @@ architecture structural of top is
     signal gpio_0_tri_o_s   : std_logic_vector(63 downto 0);
     signal gpio_0_tri_t_s   : std_logic_vector(63 downto 0);
     signal irq_f2p_s        : std_logic_vector(15 downto 0);
-
-    signal recfg_node_din_s : noc_array_of_stdvec38;
-    signal recfg_node_wr_s  : noc_array_of_stdlogic;
-    signal recfg_node_rd_s  : noc_array_of_stdlogic;
 begin
     u_ps : ps
         port map (
@@ -526,7 +522,7 @@ begin
             o_nd_nw     => noc_nd_s(ROUTER_NW)
         );
 
-    u_recfg_node_0 : recfg_node
+    u_app_node_0 : app_node
         generic map (
             SIZE_X          => NET_SIZE_X_LOG2,
             SIZE_Y          => NET_SIZE_Y_LOG2,
@@ -536,10 +532,10 @@ begin
         port map (
             clk_i           => fclk_clk0_s,
             rst_i           => noc_rst_s,
-            din_o           => recfg_node_din_s(ROUTER_NE),
+            din_o           => noc_din_s(ROUTER_NE),
             dout_i          => noc_dout_s(ROUTER_NE),
-            wr_o            => recfg_node_wr_s(ROUTER_NE),
-            rd_o            => recfg_node_rd_s(ROUTER_NE),
+            wr_o            => noc_wr_s(ROUTER_NE),
+            rd_o            => noc_rd_s(ROUTER_NE),
             wait_i          => noc_wait_s(ROUTER_NE),
             nd_i            => noc_nd_s(ROUTER_NE),
             x               => "0",
@@ -550,41 +546,6 @@ begin
             db_tx_vz        => open,
             db_tx_lz        => open
         );
-
-    -- u_recfg_node_0 decoupling
-    noc_din_s(ROUTER_NE)    <= recfg_node_din_s(ROUTER_NE) when (gpio_0_tri_o_s(ROUTER_NE) = '1') else (others => '0');
-    noc_wr_s(ROUTER_NE)     <= recfg_node_wr_s(ROUTER_NE) when (gpio_0_tri_o_s(ROUTER_NE) = '1') else '0';
-    noc_rd_s(ROUTER_NE)     <= recfg_node_rd_s(ROUTER_NE) when (gpio_0_tri_o_s(ROUTER_NE) = '1') else '0';
-
-    u_recfg_node_1 : recfg_node
-        generic map (
-            SIZE_X          => NET_SIZE_X_LOG2,
-            SIZE_Y          => NET_SIZE_Y_LOG2,
-            SIZE_DATA       => NET_DATA_WIDTH,
-            RMI_MSG_SIZE    => RMI_MSG_SIZE
-        )
-        port map (
-            clk_i           => fclk_clk0_s,
-            rst_i           => noc_rst_s,
-            din_o           => recfg_node_din_s(ROUTER_EE),
-            dout_i          => noc_dout_s(ROUTER_EE),
-            wr_o            => recfg_node_wr_s(ROUTER_EE),
-            rd_o            => recfg_node_rd_s(ROUTER_EE),
-            wait_i          => noc_wait_s(ROUTER_EE),
-            nd_i            => noc_nd_s(ROUTER_EE),
-            x               => "0",
-            y               => "0",
-            local_addr      => std_logic_vector(to_unsigned(ROUTER_EE, 3)),
-            db_rx_vz        => open,
-            db_rx_lz        => open,
-            db_tx_vz        => open,
-            db_tx_lz        => open
-        );
-
-    -- u_recfg_node_1 decoupling
-    noc_din_s(ROUTER_EE)    <= recfg_node_din_s(ROUTER_EE) when (gpio_0_tri_o_s(ROUTER_EE) = '1') else (others => '0');
-    noc_wr_s(ROUTER_EE)     <= recfg_node_wr_s(ROUTER_EE) when (gpio_0_tri_o_s(ROUTER_EE) = '1') else '0';
-    noc_rd_s(ROUTER_EE)     <= recfg_node_rd_s(ROUTER_EE) when (gpio_0_tri_o_s(ROUTER_EE) = '1') else '0';
 
     led         <= gpio_0_tri_o_s(7 downto 0);
     noc_rst_s   <= not rst_n_s;
