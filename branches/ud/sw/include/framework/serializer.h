@@ -1,10 +1,6 @@
 #ifndef __serializer_sw_h
 #define __serializer_sw_h
 
-#include "../../../unified/framework/serializer_common.h"
-
-__BEGIN_SYS
-
 // Specializations for int
 template<> template<>
 inline void Serialization<unsigned int>::serialize(unsigned int * pkt, const int &arg) {
@@ -35,7 +31,7 @@ inline void Serialization<unsigned int>::deserialize(unsigned int * pkt, unsigne
     arg = *pkt;
 }
 
-template<unsigned int BUFFER_SIZE>
+template<unsigned int BUF_SIZE>
 class Serializer
 {
 public:
@@ -49,7 +45,7 @@ public:
 private:
     pkt_type * _begin;
     unsigned int _data_cnt;
-    pkt_type _buffer[DIV_ROUNDUP<BUFFER_SIZE, 4>::Result];
+    pkt_type _buffer[DIV_ROUNDUP<BUF_SIZE, 4>::Result];
 
 public:
     Serializer(): _begin(&_buffer[0]), _data_cnt(0) {}
@@ -96,7 +92,5 @@ public:
         deserialize(an...);
     }
 };
-
-__END_SYS
 
 #endif

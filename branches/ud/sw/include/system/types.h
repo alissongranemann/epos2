@@ -5,7 +5,7 @@ typedef __SIZE_TYPE__ size_t;
 #ifndef __types_h
 #define __types_h
 
-#include "../../../unified/framework/types.h"
+#include "../../../unified/system/types.h"
 
 // Memory allocators
 __BEGIN_API
