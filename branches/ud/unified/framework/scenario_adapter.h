@@ -1,13 +1,12 @@
 #ifndef __scenario_adapter_h
 #define __scenario_adapter_h
 
-#include "../traits.h"
-#include "meta.h"
-#include "scenario.h"
+#include <system/config.h>
+#include <framework/scenario.h>
 
-namespace Implementation {
+__BEGIN_SYS
 
-// Default declaration. Used when no enter/leave operations are needed
+// Default declaration, used when no enter/leave operations are needed
 template<typename C>
 class Scenario_Adapter: public C,
         public IF<Traits<C>::hardware,
@@ -47,6 +46,6 @@ public:\
 
 #define ADAPTER_END };
 
-};
+__END_SYS
 
 #endif

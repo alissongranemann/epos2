@@ -3,8 +3,6 @@
 #ifndef __unified_types_h
 #define __unified_types_h
 
-namespace Implementation {
-
 // TODO: Find a better place to put this
 enum {
     MSG_TYPE_CALL = 0,
@@ -14,18 +12,23 @@ enum {
     MSG_TYPE_ERROR
 };
 
+__BEGIN_SYS
+
+// System parts
+class Build;
+
 // Unified components
-class Add;
+class Adder;
 
 // System Components IDs
 typedef unsigned int Type_Id;
 enum {
-    ADD_ID = 0,
+    ADDER_ID = 0,
     UNKNOWN_TYPE_ID,
     LAST_TYPE_ID = UNKNOWN_TYPE_ID - 1,
 };
 
-};
+__END_SYS
 
 #ifdef HIGH_LEVEL_SYNTHESIS
 #include "../../hw/system/types_hw.h"
