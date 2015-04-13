@@ -18,7 +18,7 @@ public:
 
     template<unsigned int N_ARGS>
     bool read_args() {
-        typename Base::pkt_type * buff = Base::get_pkt_buffer();
+        typename Base::pkt * buff = Base::get_pkt_buf();
 
         for (int i = 0; i < N_ARGS; i++) {
             _call_ch.read(_msg);
@@ -38,15 +38,15 @@ public:
         _msg.phy_addr.Y = _last_call_Y;
         _msg.phy_addr.local = _last_call_local;
 
-        _msg.phy_data.header.type_id = Type2Id<T>::ID;
+        _msg.phy_data.header.type_id = Type<T>::ID;
         _msg.phy_data.header.instance_id = _inst_id;
-        //FIXME RESP initiation msgs are not really needed
+        // FIXME: RESP initiation msgs aren't needed
         //ret_msg.header.msg_type = MSG_TYPE_RESP;
         //Msg_Payload_Init init(ret_msg.payload); init.set_op_id(op_id);
         //return_ch.write(ret_msg);
         _msg.phy_data.header.msg_type = MSG_TYPE_RESP_DATA;
 
-        typename Base::pkt_type * buff = Base::get_pkt_buffer();
+        typename Base::pkt * buff = Base::get_pkt_buf();
 
         for (int i = 0; i < N_RET; i++) {
             _msg.phy_data.payload = buff[i];
@@ -105,10 +105,10 @@ private:
 __END_SYS
 
 #define HLS_TOP_LEVEL(T)\
-void T (Implementation::Channel_t &rx_ch, Implementation::Channel_t &tx_ch, unsigned int inst_id) {\
-    static Implementation::IF<Implementation::Traits<Implementation::T>::hardware,\
-                              Implementation::Agent<Implementation::T>,\
-                              Implementation::Agent_Dummy<Implementation::T> >::Result\
+void T##_Top(_SYS::Channel_t &rx_ch, _SYS::Channel_t &tx_ch, unsigned int inst_id) {\
+    static _SYS::IF<_SYS::Traits<_SYS::T>::hardware,\
+                    _SYS::Agent<_SYS::T>,\
+                    _SYS::Agent_Dummy<_SYS::T> >::Result\
         agent(rx_ch, tx_ch, inst_id);\
 \
     agent.top_level();\

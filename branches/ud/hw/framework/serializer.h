@@ -66,6 +66,7 @@ private:
         PKT_N_BITS  = 8*PKT_N_BYTES
     };
 
+protected:
     typedef ac_int<PKT_N_BITS, false> pkt;
 
 public:
