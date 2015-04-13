@@ -28,6 +28,11 @@ enum {
     LAST_TYPE_ID = UNKNOWN_TYPE_ID - 1,
 };
 
+// Type IDs for system components
+template<typename T> struct Type { static const Type_Id ID = UNKNOWN_TYPE_ID; };
+
+template<> struct Type<Adder> { static const Type_Id ID = ADDER_ID; };
+
 __END_SYS
 
 #ifdef HIGH_LEVEL_SYNTHESIS
