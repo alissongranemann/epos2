@@ -28,4 +28,3 @@ directive set -CLOCKS {clk {-CLOCK_PERIOD 10.0 -CLOCK_EDGE rising -CLOCK_UNCERTA
 directive set -TECHLIBS {{mgc_Xilinx-ARTIX-7-1_beh_psr.lib {{mgc_Xilinx-ARTIX-7-1_beh_psr part 7A100TFGG484}}} {ram_Xilinx-ARTIX-7-1_RAMDB.lib ram_Xilinx-ARTIX-7-1_RAMDB} {ram_Xilinx-ARTIX-7-1_PIPE.lib ram_Xilinx-ARTIX-7-1_PIPE} {ram_Xilinx-ARTIX-7-1_RAMSB.lib ram_Xilinx-ARTIX-7-1_RAMSB} {rom_Xilinx-ARTIX-7-1.lib rom_Xilinx-ARTIX-7-1} {rom_Xilinx-ARTIX-7-1_SYNC_regin.lib rom_Xilinx-ARTIX-7-1_SYNC_regin} {rom_Xilinx-ARTIX-7-1_SYNC_regout.lib rom_Xilinx-ARTIX-7-1_SYNC_regout}}
 go compile
 
-

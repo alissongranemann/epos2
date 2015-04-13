@@ -1,10 +1,8 @@
-solution rename toplevel
+solution rename XXNAMEXX_Top
 
-set toplevel [regexp -inline ".*_Node" [directive get -DESIGN_HIERARCHY]]
+directive set /XXNAMEXX_Top/tx_ch:rsc -MAP_TO_MODULE mgc_ioport.mgc_out_stdreg_wait
+directive set /XXNAMEXX_Top/rx_ch:rsc -MAP_TO_MODULE mgc_ioport.mgc_in_wire_wait
 
-directive set /$toplevel/tx_ch:rsc -MAP_TO_MODULE mgc_ioport.mgc_out_stdreg_wait
-directive set /$toplevel/rx_ch:rsc -MAP_TO_MODULE mgc_ioport.mgc_in_wire_wait
-
-directive set /$toplevel -EFFORT_LEVEL high
-directive set /$toplevel/core -DESIGN_GOAL area
+directive set /XXNAMEXX_Top -EFFORT_LEVEL high
+directive set /XXNAMEXX_Top/core -DESIGN_GOAL area
 
