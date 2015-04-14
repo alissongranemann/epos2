@@ -56,33 +56,32 @@ protected:
     typedef unsigned long pkt;
 
 public:
-    Serializer(): _begin(&_buf[0]), _data_cnt(0) {}
+    Serializer(): _begin(&_buf[0]), _pkt_cnt(0) {}
 
     pkt * get_pkt_buf() { return &_buf[0]; }
 
-    int get_pkt_cnt() { return _data_cnt; }
-    void set_pkt_cnt(int d) { _data_cnt = d; }
-
-    void reset() { _begin = &_buf[0]; }
+    void set_pkt_cnt(int cnt) { _pkt_cnt = cnt; }
 
     template<typename T0>
     void serialize(T0 &a0) {
         Serialization<pkt>::serialize(_begin, a0);
         _begin = &_begin[data_to_pkt<T0>::Result];
-        _data_cnt += data_to_pkt<T0>::Result;
+        _pkt_cnt += data_to_pkt<T0>::Result;
     }
 
     template<typename T0>
     void deserialize(T0 &a0) {
         Serialization<pkt>::deserialize(_begin, a0);
         _begin = &_begin[data_to_pkt<T0>::Result];
-        _data_cnt -= data_to_pkt<T0>::Result;
+        _pkt_cnt -= data_to_pkt<T0>::Result;
     }
+
+    void reset() { _begin = &_buf[0]; }
 
 private:
     pkt * _begin;
-    unsigned int _data_cnt;
     pkt _buf[DIV_ROUNDUP<BUF_SIZE, sizeof(pkt)>::Result];
+    unsigned int _pkt_cnt;
 };
 
 #endif
