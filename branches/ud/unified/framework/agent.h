@@ -34,25 +34,6 @@ public:\
         switch (op) {
 
 #define AGENT_END \
-        case _T::SET_INST_ID: {\
-            if(!Base::read_args<type_to_npkt_1<unsigned int>::Result>())\
-                return;\
-\
-            Base::reset();\
-            unsigned int id;\
-            Base::deserialize(id);\
-            _inst_id = id;\
-            Base::finish();\
-            break;\
-        }\
-        case _T::GET_INST_ID: {\
-            Base::reset();\
-            Base::serialize(_inst_id);\
-\
-            Base::write_return<type_to_npkt_1<unsigned int>::Result>();\
-            Base::finish();\
-            break;\
-        }\
         default:\
             break;\
         }\

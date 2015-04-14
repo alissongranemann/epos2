@@ -37,8 +37,7 @@ namespace EPOS {
 //============================================================================
 // CONFIGURATION
 //============================================================================
-#include <system/types.h>
-//#include "../../sw/include/system/types.h"
+#include "../../sw/include/system/types.h"
 #include <system/meta.h>
 #include <system/traits.h>
 

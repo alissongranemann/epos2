@@ -334,6 +334,7 @@ template<> struct Type<Utility> { static const Type_Id ID = UTILITY_ID; };
 
 __END_SYS
 
+// FIXME: Remove ifdef
 #ifdef HIGH_LEVEL_SYNTHESIS
 #include "../../../hw/framework/catapult.h"
 

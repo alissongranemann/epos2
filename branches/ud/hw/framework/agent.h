@@ -13,8 +13,7 @@ class Agent_Common<T, true>: public Serializer<Traits<T>::serdes_buffer>
 {
 public:
     Agent_Common(Channel_t & rx_ch, Channel_t & tx_ch): Base(), _call_ch(rx_ch),
-        _return_ch(tx_ch), _last_call_X(0xFF), _last_call_Y(0xFF),
-        _last_call_local(0xFF) {}
+        _return_ch(tx_ch) {}
 
     template<unsigned int N_ARGS>
     bool read_args() {
@@ -22,7 +21,7 @@ public:
 
         for (int i = 0; i < N_ARGS; i++) {
             _call_ch.read(_msg);
-            buff[i] = _msg.phy_data.payload;
+            buff[i] = _msg.payload;
         }
 
         Base::set_pkt_cnt(N_ARGS);
@@ -30,44 +29,29 @@ public:
         return true;
     }
 
-    void finish() {}
-
     template<unsigned int N_RET>
     void write_return() {
-        _msg.phy_addr.X = _last_call_X;
-        _msg.phy_addr.Y = _last_call_Y;
-        _msg.phy_addr.local = _last_call_local;
-
-        _msg.phy_data.header.type_id = Type<T>::ID;
-        _msg.phy_data.header.instance_id = _inst_id;
-        // FIXME: RESP initiation msgs aren't needed
-        //ret_msg.header.msg_type = MSG_TYPE_RESP;
-        //Msg_Payload_Init init(ret_msg.payload); init.set_op_id(op_id);
-        //return_ch.write(ret_msg);
-        _msg.phy_data.header.msg_type = MSG_TYPE_RESP_DATA;
-
         typename Base::pkt * buff = Base::get_pkt_buf();
 
-        for (int i = 0; i < N_RET; i++) {
-            _msg.phy_data.payload = buff[i];
+        // _msg.addr.{x,y,local} and _msg.header.{type_id, inst_id} are the same
+        // from the received message
+        _msg.header.type = MSG_TYPE_RESP_DATA;
+
+        for (unsigned int i = 0; i < N_RET; i++) {
+            _msg.payload = buff[i].to_uint();
             _return_ch.write(_msg);
         }
     }
 
-    void top_level() { static_cast<Agent<T>*>(this)->dispatch(read_header()); }
+    void finish() {}
 
-protected:
-    unsigned int _inst_id;
+    void top_level() { static_cast<Agent<T>*>(this)->dispatch(read_header()); }
 
 private:
     unsigned int read_header() {
         _call_ch.read(_msg);
 
-        _last_call_X = _msg.phy_addr.X;
-        _last_call_Y = _msg.phy_addr.Y;
-        _last_call_local = _msg.phy_addr.local;
-
-        return _msg.phy_data.payload.to_uint();
+        return _msg.payload;
     }
 
 private:
@@ -75,10 +59,6 @@ private:
 
     Channel_t & _call_ch;
     Channel_t & _return_ch;
-
-    unsigned char _last_call_X;
-    unsigned char _last_call_Y;
-    unsigned char _last_call_local;
 
     Catapult::RMI_Msg _msg;
 };

@@ -1,6 +1,8 @@
 #ifndef __serializer_hw_h
 #define __serializer_hw_h
 
+#include <ac_int.h>
+
 #include "catapult.h"
 
 // Specialization for pkt 'ac_int<32,false>'
@@ -35,7 +37,7 @@ inline void Serialization<ac_int<32, false> >::serialize(ac_int<32, false> pkts[
 
 template<> template<>
 inline void Serialization<ac_int<32, false> >::deserialize(ac_int<32, false> pkts[1], int &arg) {
-    arg = pkts[0];
+    arg = pkts[0].to_int();
 }
 
 // Specializations for unsigned long long
