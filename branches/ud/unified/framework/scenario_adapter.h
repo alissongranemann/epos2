@@ -14,8 +14,7 @@ class Scenario_Adapter: public C,
             SW_Scenario<C, typename Traits<C>::Alloc_Obj_Type, typename Traits<C>::Alloc_Idx, Traits<C>::Alloc_Max> >::Result
 {
 public:
-    Scenario_Adapter(Channel_t &rx_ch, Channel_t &tx_ch, unsigned int inst_id):
-            C(rx_ch, tx_ch, inst_id) {}
+    Scenario_Adapter(Channel_t &rx_ch, Channel_t &tx_ch): C(rx_ch, tx_ch) {}
 
 private:
     typedef typename IF<Traits<C>::hardware,
@@ -41,8 +40,7 @@ private:\
 \
 public:\
     typedef Scenario::Link Link;\
-    Scenario_Adapter(Channel_t &rx_ch, Channel_t &tx_ch, unsigned int inst_id):\
-            name(rx_ch, tx_ch, inst_id) {}\
+    Scenario_Adapter(Channel_t &rx_ch, Channel_t &tx_ch): name(rx_ch, tx_ch) {}\
 
 #define ADAPTER_END };
 

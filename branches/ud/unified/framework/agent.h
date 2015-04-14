@@ -21,9 +21,9 @@ template<>\
 class Agent<name>: public Scenario_Adapter<name>,\
         public Agent_Common<name, Traits<Build>::hardware_domain> {\
 public:\
-    Agent(Channel_t &rx_ch, Channel_t &tx_ch, unsigned int inst_id):\
-            Scenario_Adapter<name>(rx_ch, tx_ch, inst_id),\
-            Agent_Common<name, Traits<Build>::hardware_domain>(rx_ch, tx_ch, inst_id) {}\
+    Agent(Channel_t &rx_ch, Channel_t &tx_ch):\
+            Scenario_Adapter<name>(rx_ch, tx_ch),\
+            Agent_Common<name, Traits<Build>::hardware_domain>(rx_ch, tx_ch) {}\
 \
     typedef name _T;\
     typedef Scenario_Adapter<name> T;\

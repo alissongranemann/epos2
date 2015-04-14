@@ -14,8 +14,8 @@ class Proxy_Common<Component, Configurations::EPOS_SOC_Catapult, true>:
     public Serializer<Traits<Component>::serdes_buffer>
 {
 protected:
-    Proxy_Common(Channel_t &rx_ch, Channel_t &tx_ch, unsigned char inst_id):
-        Base(), _call_ch(tx_ch), _return_ch(rx_ch), _inst_id(inst_id) {}
+    Proxy_Common(Channel_t &rx_ch, Channel_t &tx_ch): Base(), _call_ch(tx_ch),
+        _return_ch(rx_ch) {}
 
     // No arguments, return
     template<unsigned int OP, typename RET>

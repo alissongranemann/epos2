@@ -12,9 +12,9 @@ template<class T>
 class Agent_Common<T, true>: public Serializer<Traits<T>::serdes_buffer>
 {
 public:
-    Agent_Common(Channel_t & rx_ch, Channel_t & tx_ch, unsigned int inst_id):
-            Base(), _call_ch(rx_ch), _return_ch(tx_ch), _inst_id(inst_id),
-            _last_call_X(0xFF), _last_call_Y(0xFF), _last_call_local(0xFF) {}
+    Agent_Common(Channel_t & rx_ch, Channel_t & tx_ch): Base(), _call_ch(rx_ch),
+        _return_ch(tx_ch), _last_call_X(0xFF), _last_call_Y(0xFF),
+        _last_call_local(0xFF) {}
 
     template<unsigned int N_ARGS>
     bool read_args() {
@@ -87,8 +87,8 @@ template<typename T>
 class Agent_Dummy
 {
 public:
-    Agent_Dummy(Channel_t & rx_ch, Channel_t & tx_ch, unsigned int inst_id):
-            _rx_ch(rx_ch), _tx_ch(tx_ch) {}
+    Agent_Dummy(Channel_t & rx_ch, Channel_t & tx_ch): _rx_ch(rx_ch),
+        _tx_ch(tx_ch) {}
 
     void top_level() {
         _rx_ch.read(_msg);
@@ -105,11 +105,11 @@ private:
 __END_SYS
 
 #define HLS_TOP_LEVEL(T)\
-void T##_Top(_SYS::Channel_t &rx_ch, _SYS::Channel_t &tx_ch, unsigned int inst_id) {\
+void T##_Top(_SYS::Channel_t &rx_ch, _SYS::Channel_t &tx_ch) {\
     static _SYS::IF<_SYS::Traits<_SYS::T>::hardware,\
                     _SYS::Agent<_SYS::T>,\
                     _SYS::Agent_Dummy<_SYS::T> >::Result\
-        agent(rx_ch, tx_ch, inst_id);\
+        agent(rx_ch, tx_ch);\
 \
     agent.top_level();\
 }
