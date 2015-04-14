@@ -18,6 +18,8 @@ public:
 
 public:
     Adder(Channel_t &rx_ch, Channel_t &tx_ch, unsigned int inst_id) {}
+    Adder() {}
+
     ~Adder() {}
 
     int add(int a, int b) { return (a + b); }
