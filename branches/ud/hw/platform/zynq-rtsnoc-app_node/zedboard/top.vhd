@@ -213,7 +213,7 @@ architecture structural of top is
             noc_int_o           : out   std_logic);
     end component;
 
-    component app_node is
+    component adder is
         generic (
             SIZE_X          : integer;
             SIZE_Y          : integer;
@@ -238,9 +238,6 @@ architecture structural of top is
             db_tx_lz        : out   std_logic
         );
     end component;
-
-    attribute black_box                 : string;
-    attribute black_box of recfg_node   : component is "yes";
 
     signal fclk_clk0_s      : std_logic;
     signal fclk_rst0_n_s    : std_logic;
@@ -522,7 +519,7 @@ begin
             o_nd_nw     => noc_nd_s(ROUTER_NW)
         );
 
-    u_app_node_0 : app_node
+    u_adder_0 : adder
         generic map (
             SIZE_X          => NET_SIZE_X_LOG2,
             SIZE_Y          => NET_SIZE_Y_LOG2,

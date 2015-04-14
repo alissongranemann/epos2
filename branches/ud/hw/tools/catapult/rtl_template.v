@@ -70,7 +70,7 @@ module XXNAMEXX (
         .tx_ch_lz_i(tx_ch_lz)
     );
 
-    XXNAMEXX_Top top(
+    XXTOPXX_Top top(
         .rx_ch_rsc_z(rx_ch_z),
         .rx_ch_rsc_vz(rx_ch_vz),
         .rx_ch_rsc_lz(rx_ch_lz),

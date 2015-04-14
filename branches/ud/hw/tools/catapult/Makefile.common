@@ -8,7 +8,7 @@ VLOG_RTL	:= concat_rtl.v
 
 # Markers for string replacement
 NAME_REPLACE	:= XXNAMEXX
-NIDS_REPLACE	:= XXNIDSXX
+TOP_REPLACE	:= XXTOPXX
 
 # Helper variables
 RTL_TEMPLATE	:= $(TOOLS_DIR)/rtl_template.v
@@ -35,8 +35,8 @@ $(RTL_DIR):	$(TOP_LEVEL) $(CMDS)
 
 $(COMP_RTL):	$(RTL_DIR) $(RTL_TEMPLATE)
 	cp $(RTL_TEMPLATE) $(COMP_RTL)
-	sed -i 's/$(NIDS_REPLACE)/$(COMP_NIDS)/g' $(COMP_RTL)
 	sed -i 's/$(NAME_REPLACE)/$(COMP_NAME_LOWER)/g' $(COMP_RTL)
+	sed -i 's/$(TOP_REPLACE)/$(COMP_NAME)/g' $(COMP_RTL)
 	cat $(RTL_DIR)/$(VLOG_RTL) >> $(COMP_RTL)
 
 all:	$(COMP_RTL)

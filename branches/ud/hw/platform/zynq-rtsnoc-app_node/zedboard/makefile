@@ -15,16 +15,16 @@ include ../../../mach/common/amba/hw.srcs
 STATIC_SRCS	+= $(addprefix ../../../mach/common/amba/, $(SRCS))
 
 include ../../../mach/common/rtsnoc_router/hw.srcs
-STATIC_SRCS += $(addprefix ../../../mach/common/rtsnoc_router/, $(SRCS))
+STATIC_SRCS	+= $(addprefix ../../../mach/common/rtsnoc_router/, $(SRCS))
 
 include ../../../mach/common/comp_manager/hw.srcs
-STATIC_SRCS += $(addprefix ../../../mach/common/comp_manager/, $(SRCS))
+STATIC_SRCS	+= $(addprefix ../../../mach/common/comp_manager/, $(SRCS))
 
 include ../../../mach/common/amba_wishbone/hw.srcs
-STATIC_SRCS += $(addprefix ../../../mach/common/amba_wishbone/, $(SRCS))
+STATIC_SRCS	+= $(addprefix ../../../mach/common/amba_wishbone/, $(SRCS))
 
 include ../../../components/catapult/adder/hw.srcs
-STATIC_SRCS	:= $(addprefix ../../../components/catapult/adder/, $(SRCS))
+STATIC_SRCS	+= $(addprefix ../../../components/catapult/adder/, $(SRCS))
 
 HLS_COMPONENTS	:= adder	
 
