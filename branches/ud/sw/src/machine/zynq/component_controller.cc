@@ -96,7 +96,7 @@ void Zynq_Component_Controller::send_return_data(unsigned int buf_id,
     db<Zynq_Component_Controller>(TRC) << "))" << endl;
 
     while(buf_tx(buf_id));
-    buf_msg_type(buf_id, Implementation::MSG_TYPE_RESP_DATA);
+    buf_msg_type(buf_id, MSG_TYPE_RESP_DATA);
 
     for (unsigned int i = 0; i < n_ret; i++) {
         buf_data_tx(buf_id, data[i]);
@@ -116,7 +116,7 @@ unsigned int Zynq_Component_Controller::receive_call(unsigned int buf_id) {
     if(buf_rx(buf_id)) {
         unsigned int msg_type = buf_msg_type(buf_id);
 
-        if(msg_type == Implementation::MSG_TYPE_CALL)
+        if(msg_type == MSG_TYPE_CALL)
             op_id = buf_data_rx(buf_id);
         else
             db<Zynq_Component_Controller>(WRN)
@@ -143,7 +143,7 @@ unsigned int Zynq_Component_Controller::receive_call_data(unsigned int buf_id) {
     if(buf_rx(buf_id)) {
         unsigned int msg_type = buf_msg_type(buf_id);
 
-        if(msg_type == Implementation::MSG_TYPE_CALL_DATA)
+        if(msg_type == MSG_TYPE_CALL_DATA)
             call_data = buf_data_rx(buf_id);
         else
             db<Zynq_Component_Controller>(WRN)
@@ -168,7 +168,7 @@ void Zynq_Component_Controller::send_call (unsigned int buf_id,
 
     while(buf_tx(buf_id));
 
-    buf_msg_type(buf_id, Implementation::MSG_TYPE_CALL);
+    buf_msg_type(buf_id, MSG_TYPE_CALL);
     buf_data_tx(buf_id, op_id);
 
     buf_tx(buf_id, true);
@@ -187,7 +187,7 @@ void Zynq_Component_Controller::send_call_data(unsigned int buf_id,
     db<Zynq_Component_Controller>(TRC) << "))" << endl;
 
     while(buf_tx(buf_id));
-    buf_msg_type(buf_id, Implementation::MSG_TYPE_CALL_DATA);
+    buf_msg_type(buf_id, MSG_TYPE_CALL_DATA);
 
     for (unsigned int i = 0; i < n_args; i++) {
         buf_data_tx(buf_id, data[i]);
@@ -207,7 +207,7 @@ void Zynq_Component_Controller::receive_return_data(unsigned int buf_id,
 
         unsigned int msg_type = buf_msg_type(buf_id);
 
-        if(msg_type == Implementation::MSG_TYPE_RESP_DATA)
+        if(msg_type == MSG_TYPE_RESP_DATA)
             data[i] = buf_data_rx(buf_id);
         else
             db<Zynq_Component_Controller>(WRN)

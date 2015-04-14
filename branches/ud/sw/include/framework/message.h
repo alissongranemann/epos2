@@ -6,7 +6,7 @@
 #include "../component_manager.h"
 
 #include "id.h"
-#include "serializer.h"
+#include "../../../unified/framework/serializer.h"
 
 extern "C" { int _syscall(void *); }
 
