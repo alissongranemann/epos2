@@ -5,14 +5,13 @@ typedef __SIZE_TYPE__ size_t;
 #ifndef __types_h
 #define __types_h
 
-#include "../../../unified/system/types.h"
-
 // Memory allocators
 __BEGIN_API
 enum System_Allocator { SYSTEM };
 enum Scratchpad_Allocator { SCRATCHPAD };
 __END_API
 
+#ifndef HIGH_LEVEL_SYNTHESIS
 extern "C"
 {
     void * malloc(size_t);
@@ -27,6 +26,7 @@ void * operator new[](size_t, const EPOS::System_Allocator &);
 
 void * operator new(size_t, const EPOS::Scratchpad_Allocator &);
 void * operator new[](size_t, const EPOS::Scratchpad_Allocator &);
+#endif
 
 // Utilities
 __BEGIN_UTIL
@@ -197,6 +197,15 @@ template<typename Component> class Shared;
 template<typename Component> class Hardware;
 template<typename Component> class Remote;
 
+// TODO: Find a better place to put this
+enum {
+    MSG_TYPE_CALL = 0,
+    MSG_TYPE_RESP,
+    MSG_TYPE_CALL_DATA,
+    MSG_TYPE_RESP_DATA,
+    MSG_TYPE_ERROR
+};
+
 // System Components IDs
 // The order in this enumeration defines many things in the system (e.g. init)
 typedef unsigned int Type_Id;
@@ -324,5 +333,20 @@ template<> struct Type<Adder> { static const Type_Id ID = ADDER_ID; };
 template<> struct Type<Utility> { static const Type_Id ID = UTILITY_ID; };
 
 __END_SYS
+
+#ifdef HIGH_LEVEL_SYNTHESIS
+#include "../../../hw/framework/catapult.h"
+
+__BEGIN_SYS
+
+typedef Catapult::Channel_t Channel_t;
+__END_SYS
+#else
+__BEGIN_SYS
+
+typedef unsigned int Channel_t;
+
+__END_SYS
+#endif
 
 #endif
