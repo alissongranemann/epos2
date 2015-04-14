@@ -258,7 +258,7 @@ template<> struct Traits<Component_Manager>::Node<0>
     static const unsigned int BUFFER = PROXY;
     static const unsigned int X = 0;
     static const unsigned int Y = 0;
-    static const unsigned int LOCAL = NN;
+    static const unsigned int LOCAL = NE;
 };
 
 __END_SYS
