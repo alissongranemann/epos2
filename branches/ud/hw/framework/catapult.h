@@ -22,7 +22,7 @@ private:
 
 public:
     // TODO: Payload size should be Traits<System>::pkt_size
-    unsigned int payload;
+    unsigned long payload;
     Header header;
     // Source address for received messages, destination address for transmitted
     // messages

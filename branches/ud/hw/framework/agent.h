@@ -38,7 +38,7 @@ public:
         _msg.header.type = MSG_TYPE_RESP_DATA;
 
         for (unsigned int i = 0; i < N_RET; i++) {
-            _msg.payload = buff[i].to_uint();
+            _msg.payload = buff[i];
             _return_ch.write(_msg);
         }
     }

@@ -18,7 +18,7 @@ public:
 
 template<typename DATA>
 struct data_to_pkt {
-    enum { Result = DIV_ROUNDUP<sizeof(DATA), 4>::Result };
+    enum { Result = DIV_ROUNDUP<sizeof(DATA), sizeof(unsigned long)>::Result };
 };
 
 template<typename T0>
