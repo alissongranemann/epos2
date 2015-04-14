@@ -36,9 +36,20 @@ template<> struct Type<Adder> { static const Type_Id ID = ADDER_ID; };
 __END_SYS
 
 #ifdef HIGH_LEVEL_SYNTHESIS
-#include "../../hw/system/types_hw.h"
+#include "../../hw/framework/catapult.h"
+
+__BEGIN_SYS
+
+typedef Catapult::Channel_t Channel_t;
+
+__END_SYS
 #else
-#include "../../sw/include/system/types_sw.h"
+namespace Implementation {
+
+// Channel is a dummy type in software
+typedef unsigned int Channel_t;
+
+};
 #endif
 
 #endif
