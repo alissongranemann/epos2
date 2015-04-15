@@ -16,6 +16,7 @@ public:
     static void deserialize(Pkt_T * pkts, Arg_T &arg);
 };
 
+// unsigned long is Serializer::pkt type
 template<typename DATA>
 struct data_to_pkt {
     enum { Result = DIV_ROUNDUP<sizeof(DATA), sizeof(unsigned long)>::Result };

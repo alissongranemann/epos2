@@ -13,5 +13,12 @@ int main()
     Adder add;
 
     cout << "Hello World!" << endl;
-    cout << "1 + 2 = " << add.add(1, 2) << endl;
+
+    cout << "3 - 4 = " << add.add(3, -4) << endl;
+    cout << "-3 + 4 = " << add.add(-3, 4) << endl;
+    cout << "3 + 4 = " << add.add(3, 4) << endl;
+    cout << "12648448 + 12648448 = " << add.add(12648448, 12648448) << endl;
+    cout << "-12648448 - 12648448 = " << add.add(-12648448, -12648448) << endl;
+
+    return 0;
 }

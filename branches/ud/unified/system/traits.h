@@ -29,7 +29,6 @@ template<> struct Traits<Adder>: public Traits<void>
 
     static const unsigned int Alloc_Max = 0;
     static const unsigned int serdes_buffer = 8;
-    static const unsigned int n_ids = 1;
 
     typedef void Alloc_Obj_Type;
     typedef void Alloc_Idx;

@@ -17,25 +17,23 @@ public:
 
     template<unsigned int N_ARGS>
     bool read_args() {
-        typename Base::pkt * buff = Base::get_pkt_buf();
+        Base::pkt * buff = Base::get_pkt_buf();
 
-        for (int i = 0; i < N_ARGS; i++) {
+        for (unsigned int i = 0; i < N_ARGS; i++) {
             _call_ch.read(_msg);
             buff[i] = _msg.payload;
         }
-
-        Base::set_pkt_cnt(N_ARGS);
 
         return true;
     }
 
     template<unsigned int N_RET>
     void write_return() {
-        typename Base::pkt * buff = Base::get_pkt_buf();
+        Base::pkt * buff = Base::get_pkt_buf();
 
         // _msg.addr.{x,y,local} and _msg.header.{type_id, inst_id} are the same
         // from the received message
-        _msg.header.type = MSG_TYPE_RESP_DATA;
+        _msg.header.type = RMI_Msg::TYPE_RESP_DATA;
 
         for (unsigned int i = 0; i < N_RET; i++) {
             _msg.payload = buff[i];
@@ -60,7 +58,7 @@ private:
     Channel_t & _call_ch;
     Channel_t & _return_ch;
 
-    Catapult::RMI_Msg _msg;
+    RMI_Msg _msg;
 };
 
 template<typename T>
@@ -79,7 +77,7 @@ private:
     Channel_t & _rx_ch;
     Channel_t & _tx_ch;
 
-    Catapult::RMI_Msg _msg;
+    RMI_Msg _msg;
 };
 
 __END_SYS

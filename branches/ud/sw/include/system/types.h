@@ -197,15 +197,6 @@ template<typename Component> class Shared;
 template<typename Component> class Hardware;
 template<typename Component> class Remote;
 
-// TODO: Find a better place to put this
-enum {
-    MSG_TYPE_CALL = 0,
-    MSG_TYPE_RESP,
-    MSG_TYPE_CALL_DATA,
-    MSG_TYPE_RESP_DATA,
-    MSG_TYPE_ERROR
-};
-
 // System Components IDs
 // The order in this enumeration defines many things in the system (e.g. init)
 typedef unsigned int Type_Id;
@@ -332,15 +323,54 @@ template<> struct Type<Adder> { static const Type_Id ID = ADDER_ID; };
 
 template<> struct Type<Utility> { static const Type_Id ID = UTILITY_ID; };
 
+// TODO: Get this shit outta here!
+struct RMI_Msg
+{
+public:
+    enum {
+        TYPE_CALL = 0,
+        TYPE_RESP,
+        TYPE_CALL_DATA,
+        TYPE_RESP_DATA,
+        TYPE_ERROR
+    };
+
+private:
+    struct Header {
+        unsigned char type;
+        unsigned char inst_id;
+        unsigned char type_id;
+    };
+
+    // Source address for received messages, destination address for transmitted
+    // messages
+    struct Address {
+        unsigned char x;
+        unsigned char y;
+        unsigned char local;
+    };
+
+public:
+    // TODO: Payload size should be Traits<System>::pkt_size
+    unsigned long payload;
+    Header header;
+    Address addr;
+};
+
 __END_SYS
 
 // FIXME: Remove ifdef
 #ifdef HIGH_LEVEL_SYNTHESIS
-#include "../../../hw/framework/catapult.h"
+#include <ac_channel.h>
 
 __BEGIN_SYS
 
-typedef Catapult::Channel_t Channel_t;
+// The message's members order above will yield the following packet
+// organization:
+// 79...72 71...64 63...56 55...48 47...49 39...32 31...0
+// local   y       x       type_id inst_id type    payload
+typedef ac_channel<RMI_Msg> Channel_t;
+
 __END_SYS
 #else
 __BEGIN_SYS

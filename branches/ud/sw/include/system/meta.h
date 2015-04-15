@@ -68,6 +68,16 @@ template<typename T>
 struct EQUAL<T, T>
 { enum { Result = true }; };
 
+template<int T1, int T2>
+struct DIV_ROUNDUP
+{
+    enum {
+        _aux = T1/T2,
+        _aux_mod = T1%T2,
+        Result = IF_INT<(_aux_mod != 0),(_aux + 1),_aux>::Result
+    };
+};
+
 
 // SIZEOF Type Package
 template<typename ... Tn>
