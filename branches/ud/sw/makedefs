@@ -103,6 +103,12 @@ zynq_LD_FLAGS		:=
 # The smp flag must be 2 else, qemu gives an assertion error
 zynq_EMULATOR		:= qemu-system-arm -cpu cortex-a9 -machine arm-generic-fdt -dtb ../devicetree.dtb -smp 2 -m $(MEM_SIZE)k -nographic -no-reboot -kernel
 
+ifeq ($(GDB),1)
+#zynq_DEPLOYER       := $(TOP)/tools/zynq/jtag_gdb.sh
+else
+zynq_DEPLOYER       := $(TOP)/tools/zynq/jtag.sh
+endif
+
 $(MACH)_CODE_NAME	:= .init
 $(MACH)_DATA_NAME	:= .ctors
 ifeq ($(GDB),1)
@@ -130,6 +136,8 @@ endif
 ifneq ($(wildcard $(IMG)/$(MACH)_system),) 
 MACH_DEBUGGER		:= $(MACH_DEBUGGER) -ex "add-symbol-file $(SRC)/system/$(MACH)_system $(SYS_CODE_ADDR)"
 endif
+
+MACH_DEPLOYER       := $($(MACH)_DEPLOYER)
 
 # Architecture specifics
 ARCH_LITTLE	:= little
@@ -184,6 +192,8 @@ DD		:= dd
 DEBUGGER	= $(MACH_DEBUGGER) 
 
 EMULATOR	= $(MACH_EMULATOR) 
+
+DEPLOYER    = $(MACH_DEPLOYER) 
 
 INSTALL		:= install
 

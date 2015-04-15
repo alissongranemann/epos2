@@ -9,6 +9,9 @@ OUTPUT := $(addsuffix .out,$(APPLICATION))
 
 all:		strip $(IMAGE)
 
+deploy:		strip $(IMAGE)
+		$(DEPLOYER) $(IMG)/$(IMAGE)
+
 run:		strip $(IMAGE)
 ifeq ($(NODES),1)
 		$(EMULATOR) $(IMAGE) | $(TEE) $(OUTPUT)
@@ -30,7 +33,9 @@ debug:		$(IMAGE)
 flash:		$(FLASH)
 
 strip:		$(SYSTEM) $(APPLICATION)
+ifeq ($(GDB),0)
 		@for file in $^; do $(STRIP) "$${file}"; done;
+endif
 		
 clean:
 		$(CLEAN) $(SYSTEM) $(APPLICATION)
