@@ -17,7 +17,7 @@ public:
     };
 
 public:
-    Adder(Channel_t &rx_ch, Channel_t &tx_ch) {}
+    Adder(Channel &rx_ch, Channel &tx_ch) {}
     Adder() {}
 
     ~Adder() {}

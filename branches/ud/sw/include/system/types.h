@@ -369,13 +369,13 @@ __BEGIN_SYS
 // organization:
 // 79...72 71...64 63...56 55...48 47...49 39...32 31...0
 // local   y       x       type_id inst_id type    payload
-typedef ac_channel<RMI_Msg> Channel_t;
+typedef ac_channel<RMI_Msg> Channel;
 
 __END_SYS
 #else
 __BEGIN_SYS
 
-typedef unsigned int Channel_t;
+typedef unsigned int Channel;
 
 __END_SYS
 #endif

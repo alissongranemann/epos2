@@ -14,7 +14,7 @@ class Proxy_Common<Component, Configurations::EPOS_SOC_Catapult, true>:
     public Serializer<Traits<Component>::serdes_buffer>
 {
 protected:
-    Proxy_Common(Channel_t &rx_ch, Channel_t &tx_ch): Base(), _call_ch(tx_ch),
+    Proxy_Common(Channel &rx_ch, Channel &tx_ch): Base(), _call_ch(tx_ch),
         _return_ch(rx_ch) {}
 
     // No arguments, return
@@ -162,8 +162,8 @@ private:
 
 private:
     Catapult::RMI_Msg _msg;
-    Channel_t &_call_ch;
-    Channel_t &_return_ch;
+    Channel &_call_ch;
+    Channel &_return_ch;
     unsigned char _inst_id;
 };
 

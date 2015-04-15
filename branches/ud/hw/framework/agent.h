@@ -4,15 +4,13 @@
 #include <system/config.h>
 #include <framework/agent.h>
 
-#include "catapult.h"
-
 __BEGIN_SYS
 
 template<class T>
 class Agent_Common<T, true>: public Serializer<Traits<T>::serdes_buffer>
 {
 public:
-    Agent_Common(Channel_t & rx_ch, Channel_t & tx_ch): Base(), _call_ch(rx_ch),
+    Agent_Common(Channel & rx_ch, Channel & tx_ch): Base(), _call_ch(rx_ch),
         _return_ch(tx_ch) {}
 
     template<unsigned int N_ARGS>
@@ -55,8 +53,8 @@ private:
 private:
     typedef Serializer<Traits<T>::serdes_buffer> Base;
 
-    Channel_t & _call_ch;
-    Channel_t & _return_ch;
+    Channel & _call_ch;
+    Channel & _return_ch;
 
     RMI_Msg _msg;
 };
@@ -65,7 +63,7 @@ template<typename T>
 class Agent_Dummy
 {
 public:
-    Agent_Dummy(Channel_t & rx_ch, Channel_t & tx_ch): _rx_ch(rx_ch),
+    Agent_Dummy(Channel & rx_ch, Channel & tx_ch): _rx_ch(rx_ch),
         _tx_ch(tx_ch) {}
 
     void top_level() {
@@ -74,8 +72,8 @@ public:
     }
 
 private:
-    Channel_t & _rx_ch;
-    Channel_t & _tx_ch;
+    Channel & _rx_ch;
+    Channel & _tx_ch;
 
     RMI_Msg _msg;
 };
@@ -83,7 +81,7 @@ private:
 __END_SYS
 
 #define HLS_TOP_LEVEL(T)\
-void T##_Top(_SYS::Channel_t &rx_ch, _SYS::Channel_t &tx_ch) {\
+void T##_Top(_SYS::Channel &rx_ch, _SYS::Channel &tx_ch) {\
     static _SYS::IF<_SYS::Traits<_SYS::T>::hardware,\
                     _SYS::Agent<_SYS::T>,\
                     _SYS::Agent_Dummy<_SYS::T> >::Result\

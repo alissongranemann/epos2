@@ -22,7 +22,7 @@ public:
     };
 
 protected:
-    Component(Channel_t &rx_ch, Channel_t &tx_ch, unsigned int inst_id) {}
+    Component(Channel &rx_ch, Channel &tx_ch, unsigned int inst_id) {}
 };
 
 };

@@ -23,7 +23,7 @@ template<typename Component>
 class Handle_Common<Component, Configurations::EPOS_SOC_Catapult, true>
 {
 protected:
-    Handle_Common(Channel_t &rx_ch, Channel_t &tx_ch) {}
+    Handle_Common(Channel &rx_ch, Channel &tx_ch) {}
 
     void enter_recfg() {}
     void leave_recfg() {}

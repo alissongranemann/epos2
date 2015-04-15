@@ -21,7 +21,7 @@ template<>\
 class Agent<name>: public Scenario_Adapter<name>,\
         public Agent_Common<name, Traits<Build>::hardware_domain> {\
 public:\
-    Agent(Channel_t &rx_ch, Channel_t &tx_ch):\
+    Agent(Channel &rx_ch, Channel &tx_ch):\
             Scenario_Adapter<name>(rx_ch, tx_ch),\
             Agent_Common<name, Traits<Build>::hardware_domain>(rx_ch, tx_ch) {}\
 \

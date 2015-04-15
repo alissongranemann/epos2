@@ -21,7 +21,7 @@ class Handle<name>:\
 public:\
     typedef Handle_Common<name, Traits<Sys>::Platform, Traits<Sys>::hardware_domain> Base;\
 \
-    Handle(Channel_t &rx_ch, Channel_t &tx_ch): Base(rx_ch, tx_ch) {}
+    Handle(Channel &rx_ch, Channel &tx_ch): Base(rx_ch, tx_ch) {}
 
 #define HANDLE_END };
 

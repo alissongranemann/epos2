@@ -21,7 +21,7 @@ class Proxy<name>:\
 public:\
     typedef Proxy_Common<name, Traits<Sys>::Platform, Traits<Sys>::hardware_domain> Base;\
 \
-    Proxy(Channel_t &rx_ch, Channel_t &tx_ch):\
+    Proxy(Channel &rx_ch, Channel &tx_ch):\
             Base(rx_ch, tx_ch) {}
 
 #define PROXY_END };
