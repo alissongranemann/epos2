@@ -47,7 +47,7 @@ public:
     static void init_buffer();
 
     static void call(Id id, const Method m, unsigned int n_args,
-        unsigned int n_ret, unsigned int * data);
+        unsigned int n_ret, unsigned long * data);
 
 private:
     static void int_handler(const unsigned int & interrupt);

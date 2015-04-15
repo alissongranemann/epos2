@@ -84,7 +84,7 @@ unsigned int Zynq_Component_Controller::free_buf(unsigned int buf_id) {
 
 // Send return data to component associated with buffer buf_id
 void Zynq_Component_Controller::send_return_data(unsigned int buf_id,
-        unsigned int n_ret, unsigned int * data) {
+        unsigned int n_ret, unsigned long * data) {
     db<Zynq_Component_Controller>(TRC)
         << "Component_Controller::send_return_data(buf_id=" << buf_id
         << ",n_ret=" << n_ret << ",data(";
@@ -175,7 +175,7 @@ void Zynq_Component_Controller::send_call (unsigned int buf_id,
 }
 
 void Zynq_Component_Controller::send_call_data(unsigned int buf_id,
-        unsigned int n_args, unsigned int * data) {
+        unsigned int n_args, unsigned long * data) {
     db<Zynq_Component_Controller>(TRC)
         << "Component_Controller::send_call_data(buf_id=" << buf_id
         << ",n_args=" << n_args << ",data(";
@@ -197,7 +197,7 @@ void Zynq_Component_Controller::send_call_data(unsigned int buf_id,
 }
 
 void Zynq_Component_Controller::receive_return_data(unsigned int buf_id,
-        unsigned int n_ret, unsigned int * data) {
+        unsigned int n_ret, unsigned long * data) {
     db<Zynq_Component_Controller>(TRC)
         << "Component_Controller::receive_return_data(buf_id=" << buf_id
         << ",n_ret=" << n_ret << ")" << endl;

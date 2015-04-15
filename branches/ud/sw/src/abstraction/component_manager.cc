@@ -5,7 +5,7 @@
 __BEGIN_SYS
 
 void Component_Manager::call(Id id, Method m, unsigned int n_args,
-        unsigned int n_ret, unsigned int * data) {
+        unsigned int n_ret, unsigned long * data) {
     db<Component_Manager>(TRC) << "Component_Manager::call(id=" << id
         << ",m=" << m << ",n_args=" << n_args << ",n_ret=" << n_ret
         << ",data=" << data << "(";

@@ -58,6 +58,29 @@ struct type_to_npkt_8 {
     };
 };
 
+// unsigned long pkts
+// Specializations for int
+template<> template<>
+void Serialization<unsigned long>::serialize(unsigned long pkts[1], const int &arg) {
+    pkts[0] = arg;
+}
+
+template<> template<>
+void Serialization<unsigned long>::deserialize(unsigned long pkts[1], int &arg) {
+    arg = pkts[0];
+}
+
+// Specializations for unsigned int
+template<> template<>
+void Serialization<unsigned long>::serialize(unsigned long pkts[1], const unsigned int &arg) {
+    pkts[0] = arg;
+}
+
+template<> template<>
+void Serialization<unsigned long>::deserialize(unsigned long pkts[1], unsigned int &arg) {
+    arg = pkts[0];
+}
+
 // TODO: Don't use ifdefs!
 #ifdef HIGH_LEVEL_SYNTHESIS
 #include "../../hw/framework/serializer.h"

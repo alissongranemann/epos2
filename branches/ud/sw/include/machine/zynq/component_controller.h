@@ -37,13 +37,13 @@ public:
     static unsigned int receive_call(unsigned int buf_id);
     static unsigned int receive_call_data(unsigned int buf_id);
     static void receive_return_data(unsigned int buf_id, unsigned int n_ret,
-            unsigned int * data);
+            unsigned long * data);
 
     static void send_call (unsigned int buf_id, unsigned int op_id);
     static void send_call_data(unsigned int buf_id, unsigned int n_args,
-            unsigned int * data);
+            unsigned long * data);
     static void send_return_data(unsigned int buf_id, unsigned int n_ret,
-            unsigned int * data);
+            unsigned long * data);
 
     static bool agent_has_call(agent_call_info &info);
     static void enable_agent_receive_int(IC::Interrupt_Handler h);

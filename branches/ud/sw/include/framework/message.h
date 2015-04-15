@@ -141,8 +141,7 @@ public:
         // TODO: Find a way to set the instance ID. n_ret should depend on
         // the serdes packet width.
         Component_Manager::call(_id, _method, sizeof...(an), (sizeof(int)/4),
-            _ser.get_pkt_buffer());
-        _ser.set_pkt_cnt(1);
+            _ser.get_pkt_buf());
         _ser.reset();
         _ser.deserialize(ret);
 

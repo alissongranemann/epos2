@@ -1,52 +1,6 @@
 #ifndef __serializer_hw_h
 #define __serializer_hw_h
 
-// unsigned long pkts
-// Specializations for int
-template<> template<>
-void Serialization<unsigned long >::serialize(unsigned long pkts[1], int &arg) {
-    pkts[0] = arg;
-}
-
-template<> template<>
-void Serialization<unsigned long >::deserialize(unsigned long pkts[1], int &arg) {
-    arg = pkts[0];
-}
-
-// Specializations for unsigned int
-template<> template<>
-void Serialization<unsigned long >::serialize(unsigned long pkts[1], unsigned int &arg) {
-    pkts[0] = arg;
-}
-
-template<> template<>
-void Serialization<unsigned long >::deserialize(unsigned long pkts[1], unsigned int &arg) {
-    arg = pkts[0];
-}
-
-// unsigned int pkts
-// Specializations for int
-template<> template<>
-void Serialization<unsigned int >::serialize(unsigned int pkts[1], int &arg) {
-    pkts[0] = arg;
-}
-
-template<> template<>
-void Serialization<unsigned int >::deserialize(unsigned int pkts[1], int &arg) {
-    arg = pkts[0];
-}
-
-// Specializations for unsigned int
-template<> template<>
-void Serialization<unsigned int >::serialize(unsigned int pkts[1], unsigned int &arg) {
-    pkts[0] = arg;
-}
-
-template<> template<>
-void Serialization<unsigned int >::deserialize(unsigned int pkts[1], unsigned int &arg) {
-    arg = pkts[0];
-}
-
 template<unsigned int BUF_SIZE>
 class Serializer
 {
@@ -59,7 +13,7 @@ public:
     pkt * get_pkt_buf() { return _buf; }
 
     template<typename T0>
-    void serialize(T0 &a0) {
+    void serialize(T0 const &a0) {
         Serialization<pkt>::serialize(_begin, a0);
         _begin = &_begin[data_to_pkt<T0>::Result];
     }
