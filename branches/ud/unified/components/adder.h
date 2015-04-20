@@ -8,16 +8,6 @@ __BEGIN_SYS
 class Adder
 {
 public:
-    enum {
-        COMPONENT = 0x10,
-        ADDER_ADD = COMPONENT,
-        GET_INST_ID,
-        SET_INST_ID,
-        UNDEFINED = -1
-    };
-
-public:
-    Adder(Channel &rx_ch, Channel &tx_ch) {}
     Adder() {}
 
     ~Adder() {}

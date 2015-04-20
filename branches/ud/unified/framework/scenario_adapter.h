@@ -14,7 +14,7 @@ class Scenario_Adapter: public C,
             SW_Scenario<C, typename Traits<C>::Alloc_Obj_Type, typename Traits<C>::Alloc_Idx, Traits<C>::Alloc_Max> >::Result
 {
 public:
-    Scenario_Adapter(Channel &rx_ch, Channel &tx_ch): C(rx_ch, tx_ch) {}
+    Scenario_Adapter(): C() {}
 
 private:
     typedef typename IF<Traits<C>::hardware,
