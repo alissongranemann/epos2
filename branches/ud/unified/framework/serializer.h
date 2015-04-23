@@ -17,44 +17,39 @@ public:
 };
 
 // unsigned long is Serializer::pkt type
-template<typename DATA>
-struct data_to_pkt {
-    enum { Result = DIV_ROUNDUP<sizeof(DATA), sizeof(unsigned long)>::Result };
-};
-
 template<typename T0>
 struct type_to_npkt_1 {
-    enum { Result = data_to_pkt<T0>::Result };
+    enum { Result = DIV_ROUNDUP<sizeof(T0), sizeof(unsigned long)>::Result };
 };
 
 template<typename T0, typename T1>
 struct type_to_npkt_2 {
-    enum { Result = data_to_pkt<T0>::Result + data_to_pkt<T1>::Result };
+    enum { Result = type_to_npkt_1<T0>::Result + type_to_npkt_1<T1>::Result };
 };
 
 template<typename T0, typename T1, typename T2>
 struct type_to_npkt_3 {
     enum {
-        Result = data_to_pkt<T0>::Result + data_to_pkt<T1>::Result +
-            data_to_pkt<T2>::Result
+        Result = type_to_npkt_1<T0>::Result + type_to_npkt_1<T1>::Result +
+            type_to_npkt_1<T2>::Result
     };
 };
 
 template<typename T0, typename T1, typename T2, typename T3>
 struct type_to_npkt_4 {
     enum {
-        Result = data_to_pkt<T0>::Result + data_to_pkt<T1>::Result +
-            data_to_pkt<T2>::Result + data_to_pkt<T3>::Result
+        Result = type_to_npkt_1<T0>::Result + type_to_npkt_1<T1>::Result +
+            type_to_npkt_1<T2>::Result + type_to_npkt_1<T3>::Result
     };
 };
 
 template<typename T0, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7>
 struct type_to_npkt_8 {
     enum {
-        Result = data_to_pkt<T0>::Result + data_to_pkt<T1>::Result +
-            data_to_pkt<T2>::Result + data_to_pkt<T3>::Result +
-            data_to_pkt<T4>::Result + data_to_pkt<T5>::Result +
-            data_to_pkt<T6>::Result + data_to_pkt<T7>::Result
+        Result = type_to_npkt_1<T0>::Result + type_to_npkt_1<T1>::Result +
+            type_to_npkt_1<T2>::Result + type_to_npkt_1<T3>::Result +
+            type_to_npkt_1<T4>::Result + type_to_npkt_1<T5>::Result +
+            type_to_npkt_1<T6>::Result + type_to_npkt_1<T7>::Result
     };
 };
 
