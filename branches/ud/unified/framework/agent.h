@@ -2,7 +2,6 @@
 #define __agent_h
 
 #include <system/config.h>
-#include <framework/serializer.h>
 #include <framework/scenario_adapter.h>
 #include <components/adder.h>
 
@@ -35,9 +34,9 @@ public:
         switch(method()) {
         case ADDER_ADD: {
             int a0, a1, res;
-            in2<type_to_npkt_2<int, int>::Result>(a0, a1);
+            in2(a0, a1);
             res = T.add(a0, a1);
-            ret<type_to_npkt_1<int>::Result>(res);
+            ret(res);
             break;
         }
         default:
