@@ -5,7 +5,7 @@
 #include <framework/scenario_adapter.h>
 #include <components/adder.h>
 
-#include "../../hw/framework/agent.h"
+#include "../../hw/framework/message.h"
 
 __BEGIN_SYS
 

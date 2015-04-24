@@ -372,12 +372,6 @@ __BEGIN_SYS
 typedef ac_channel<RMI_Msg> Channel;
 
 __END_SYS
-#else
-__BEGIN_SYS
-
-typedef unsigned int Channel;
-
-__END_SYS
 #endif
 
 #endif

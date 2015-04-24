@@ -1,5 +1,5 @@
-#ifndef __agent_hw_h
-#define __agent_hw_h
+#ifndef __message_hw_h
+#define __message_hw_h
 
 #include <system/config.h>
 
