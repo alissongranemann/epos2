@@ -3,86 +3,76 @@
 
 #include <system/config.h>
 
+// This file is included by both g++ in EPOS compilation and Catapult in UD
+// components synthesis. We use only C++ standard integer types in order to keep
+// it portable. Remember that for Catapult, char has 8 bits, int has 16 bits and
+// long has 32 bits; in g++, the standard states that they have AT LEAST this
+// width.
+
 __BEGIN_SYS
 
-template<typename Pkt_T>
-class Serialization
+class Serializer_Common
 {
 public:
-    template<typename Arg_T>
-    static void serialize(Pkt_T * pkts, Arg_T &arg);
+    typedef unsigned long Packet;
 
-    template<typename Arg_T>
-    static void deserialize(Pkt_T * pkts, Arg_T &arg);
-};
-
-// unsigned long is Serializer::pkt type
-template<typename T0>
-struct type_to_npkt_1 {
-    // TODO: Change unsigned long to Serializer::Packet
-    enum { Result = DIV_ROUNDUP<sizeof(T0), sizeof(unsigned long)>::Result };
-};
-
-template<typename T0, typename T1>
-struct type_to_npkt_2 {
-    enum { Result = type_to_npkt_1<T0>::Result + type_to_npkt_1<T1>::Result };
-};
-
-template<typename T0, typename T1, typename T2>
-struct type_to_npkt_3 {
-    enum {
-        Result = type_to_npkt_1<T0>::Result + type_to_npkt_1<T1>::Result +
-            type_to_npkt_1<T2>::Result
+    // FIXME: npkt* can be simplified using variadic templates but Catapult
+    // doesn't support it
+    template<typename T0>
+    struct npkt1 {
+        enum { Result = DIV_ROUNDUP<sizeof(T0), sizeof(Packet)>::Result };
     };
-};
 
-template<typename T0, typename T1, typename T2, typename T3>
-struct type_to_npkt_4 {
-    enum {
-        Result = type_to_npkt_1<T0>::Result + type_to_npkt_1<T1>::Result +
-            type_to_npkt_1<T2>::Result + type_to_npkt_1<T3>::Result
+    template<typename T0, typename T1>
+    struct npkt2 {
+        enum { Result = npkt1<T0>::Result + npkt1<T1>::Result };
     };
-};
 
-template<typename T0, typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7>
-struct type_to_npkt_8 {
-    enum {
-        Result = type_to_npkt_1<T0>::Result + type_to_npkt_1<T1>::Result +
-            type_to_npkt_1<T2>::Result + type_to_npkt_1<T3>::Result +
-            type_to_npkt_1<T4>::Result + type_to_npkt_1<T5>::Result +
-            type_to_npkt_1<T6>::Result + type_to_npkt_1<T7>::Result
+    template<typename T0, typename T1, typename T2>
+    struct npkt3 {
+        enum { Result = npkt1<T0>::Result + npkt1<T1>::Result +
+            npkt1<T2>::Result };
     };
+
+    template<typename T0, typename T1, typename T2, typename T3>
+    struct npkt4 {
+        enum {
+            Result = npkt1<T0>::Result + npkt1<T1>::Result +
+                npkt1<T2>::Result + npkt1<T3>::Result
+        };
+    };
+
+    template<typename T0, typename T1, typename T2, typename T3, typename T4,
+        typename T5, typename T6, typename T7>
+    struct npkt8 {
+        enum {
+            Result = npkt1<T0>::Result + npkt1<T1>::Result + npkt1<T2>::Result +
+                npkt1<T3>::Result + npkt1<T4>::Result + npkt1<T5>::Result +
+                npkt1<T6>::Result + npkt1<T7>::Result
+        };
+    };
+
+protected:
+    template<typename P, typename A>
+    static void pack(P * p, A & a);
+
+    template<typename P, typename A>
+    static void unpack(P * p, A & a);
 };
 
-// unsigned long pkts
-// Specializations for int
-template<> template<>
-void Serialization<unsigned long>::serialize(unsigned long pkts[1], const int &arg) {
-    pkts[0] = arg;
-}
+// TODO: Put the specializations in a .cc file
+// unsigned long p
+template<>
+void Serializer_Common::pack(unsigned long * p, const int & a) { *p = a; }
 
-template<> template<>
-void Serialization<unsigned long>::deserialize(unsigned long pkts[1], int &arg) {
-    arg = pkts[0];
-}
+template<>
+void Serializer_Common::unpack(unsigned long * p, int & a) { a = *p; }
 
-// Specializations for unsigned int
-template<> template<>
-void Serialization<unsigned long>::serialize(unsigned long pkts[1], const unsigned int &arg) {
-    pkts[0] = arg;
-}
+template<>
+void Serializer_Common::pack(unsigned long * p, const unsigned int & a) { *p = a; }
 
-template<> template<>
-void Serialization<unsigned long>::deserialize(unsigned long pkts[1], unsigned int &arg) {
-    arg = pkts[0];
-}
-
-// TODO: Don't use ifdefs!
-#ifdef HIGH_LEVEL_SYNTHESIS
-#include "../../hw/framework/serializer.h"
-#else
-#include "../../sw/include/framework/serializer.h"
-#endif
+template<>
+void Serializer_Common::unpack(unsigned long * p, unsigned int & a) { a = *p; }
 
 __END_SYS
 

@@ -1,21 +1,27 @@
 #ifndef __serializer_hw_h
 #define __serializer_hw_h
 
-class Serializer
-{
-public:
-    typedef unsigned long Packet;
+#include <framework/serializer.h>
 
+// TODO: Keep only one Serializer version when Catapult starts supporting
+// variadic templates
+
+__BEGIN_SYS
+
+class Serializer: public Serializer_Common
+{
 public:
     template<typename T>
     static void serialize(Packet * buf, int index, const T & a) {
-        Serialization<Packet>::serialize(&buf[index], a);
+        pack(&buf[index], a);
     }
 
     template<typename T>
     static void deserialize(Packet * buf, int index, T & a) {
-        Serialization<Packet>::deserialize(&buf[index], a);
+        unpack(&buf[index], a);
     }
 };
+
+__END_SYS
 
 #endif

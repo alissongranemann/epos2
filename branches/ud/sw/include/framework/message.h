@@ -4,8 +4,8 @@
 #define __message_h
 
 #include "id.h"
+#include "serializer.h"
 #include "../component_manager.h"
-#include "../../../unified/framework/serializer.h"
 
 extern "C" { int _syscall(void *); }
 
@@ -156,7 +156,7 @@ public:
         out(an ...);
         // TODO: Find a way to set the instance ID
         Component_Manager::call(_id, _method, sizeof...(an),
-            type_to_npkt_1<int>::Result, _parms);
+            Serializer::npkt1<int>::Result, _parms);
         in(ret);
         return ret;
     }
