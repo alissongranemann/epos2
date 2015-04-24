@@ -19,6 +19,7 @@ public:
 // unsigned long is Serializer::pkt type
 template<typename T0>
 struct type_to_npkt_1 {
+    // TODO: Change unsigned long to Serializer::Packet
     enum { Result = DIV_ROUNDUP<sizeof(T0), sizeof(unsigned long)>::Result };
 };
 
