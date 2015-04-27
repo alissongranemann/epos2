@@ -53,26 +53,26 @@ public:
     };
 
 protected:
-    template<typename P, typename A>
-    static void pack(P * p, A & a);
+    template<typename B, typename A>
+    static void pack(B * b, A & a);
 
-    template<typename P, typename A>
-    static void unpack(P * p, A & a);
+    template<typename B, typename A>
+    static void unpack(B * b, A & a);
 };
 
 // TODO: Put the specializations in a .cc file
-// unsigned long p
+// unsigned long b
 template<>
-void Serializer_Common::pack(unsigned long * p, const int & a) { *p = a; }
+void Serializer_Common::pack(unsigned long * b, const int & a) { *b = a; }
 
 template<>
-void Serializer_Common::unpack(unsigned long * p, int & a) { a = *p; }
+void Serializer_Common::unpack(unsigned long * b, int & a) { a = *b; }
 
 template<>
-void Serializer_Common::pack(unsigned long * p, const unsigned int & a) { *p = a; }
+void Serializer_Common::pack(unsigned long * b, const unsigned int & a) { *b = a; }
 
 template<>
-void Serializer_Common::unpack(unsigned long * p, unsigned int & a) { a = *p; }
+void Serializer_Common::unpack(unsigned long * b, unsigned int & a) { a = *b; }
 
 __END_SYS
 

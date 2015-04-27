@@ -52,7 +52,6 @@ public:
     };
 
     struct Packet {
-        // TODO: Payload size should be Traits<System>::pkt_size
         unsigned long payload;
         Header header;
         Address addr;
