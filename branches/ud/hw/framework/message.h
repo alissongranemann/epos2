@@ -18,8 +18,7 @@ private:
     static const unsigned int MAX_PARAMETERS_SIZE = 20;
 
 public:
-    // The message's members order above will yield the following packet
-    // organization:
+    // Packet has the following organization:
     // 79...72 71...64 63...56 55...48 47...49 39...32 31...0
     // local   y       x       type_id inst_id type    payload
     typedef ac_channel<Packet> Channel;
@@ -77,12 +76,5 @@ private:
 };
 
 __END_SYS
-
-#define HLS_TOP_LEVEL(T)\
-void T##_Top(Message::Channel & rx_ch, Message::Channel & tx_ch) {\
-    static Agent<T> agent(rx_ch, tx_ch);\
-\
-    agent.exec();\
-}
 
 #endif

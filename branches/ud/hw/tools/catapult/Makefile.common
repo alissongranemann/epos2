@@ -8,16 +8,17 @@ VLOG_RTL	:= concat_rtl.v
 
 # Markers for string replacement
 NAME_REPLACE	:= XXNAMEXX
-TOP_REPLACE	:= XXTOPXX
+TOP_REPLACE		:= XXTOPXX
 
 # Helper variables
 RTL_TEMPLATE	:= $(TOOLS_DIR)/rtl_template.v
+TOP_TEMPLATE	:= $(TOOLS_DIR)/top_template.cc
 COMP_NAME_LOWER	:= $(shell echo $(COMP_NAME) | tr A-Z a-z)
 COMP_RTL	:= $(COMP_NAME_LOWER).v
+COMP_TOP	:= $(COMP_NAME_LOWER).cc
 CMDS		:= cmds.tcl
 DIRECTIVES	:= directives.tcl
 SOURCES		:= sources.tcl
-TOP_LEVEL	:= top_level.cc
 
 $(CMDS): $(DIRECTIVES) $(SOURCES)
 	cat $(TOOLS_DIR)/00_prologue.tcl > $(CMDS)
@@ -29,7 +30,7 @@ $(CMDS): $(DIRECTIVES) $(SOURCES)
 	cat $(DIRECTIVES) >> $(CMDS)
 	cat $(TOOLS_DIR)/05_architect_and_extract.tcl >> $(CMDS)
 
-$(RTL_DIR):	$(TOP_LEVEL) $(CMDS)
+$(RTL_DIR):	$(COMP_TOP) $(CMDS)
 	sed -i 's/$(NAME_REPLACE)/$(COMP_NAME)/g' $(CMDS)
 	catapult -logfile $(RTL_DIR)/catapult.log -shell -file $(CMDS)
 
@@ -39,11 +40,17 @@ $(COMP_RTL):	$(RTL_DIR) $(RTL_TEMPLATE)
 	sed -i 's/$(TOP_REPLACE)/$(COMP_NAME)/g' $(COMP_RTL)
 	cat $(RTL_DIR)/$(VLOG_RTL) >> $(COMP_RTL)
 
+$(COMP_TOP):	$(TOP_TEMPLATE)
+	cp $(TOP_TEMPLATE) $(COMP_TOP)
+	sed -i 's/$(NAME_REPLACE)/$(COMP_NAME_LOWER)/g' $(COMP_TOP)
+	sed -i 's/$(TOP_REPLACE)/$(COMP_NAME)/g' $(COMP_TOP)
+
 all:	$(COMP_RTL)
     
 clean: 
 	rm -rf Catapult
 	rm -rf $(CMDS)
 	rm -rf $(COMP_RTL)
+	rm -rf $(COMP_TOP)
 
 .PHONY: all clean
