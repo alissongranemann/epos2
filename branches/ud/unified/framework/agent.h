@@ -14,6 +14,9 @@ __BEGIN_SYS
 template<typename Component>
 class Agent_Common: public Message
 {
+protected:
+    typedef Message::Channel Channel;
+
 public:
     Agent_Common(Channel & rx_ch, Channel & tx_ch): Message(rx_ch, tx_ch), T() {}
 

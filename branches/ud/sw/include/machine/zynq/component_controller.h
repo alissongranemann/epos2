@@ -3,9 +3,10 @@
 #ifndef __zynq_component_controller_h
 #define __zynq_component_controller_h
 
-#include <system/resource.h>
 #include <ic.h>
 #include <component_controller.h>
+
+#include "../../../../unified/framework/rtsnoc.h"
 
 __BEGIN_SYS
 
@@ -13,7 +14,7 @@ class Zynq_Component_Controller: public Component_Controller_Common
 {
 public:
     // RTSNoC address
-    typedef Implementation::Address Address;
+    typedef RTSNoC::Address Address;
 
     // Error return result
     enum {

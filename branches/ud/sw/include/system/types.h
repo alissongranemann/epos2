@@ -323,55 +323,6 @@ template<> struct Type<Adder> { static const Type_Id ID = ADDER_ID; };
 
 template<> struct Type<Utility> { static const Type_Id ID = UTILITY_ID; };
 
-// TODO: Get this shit outta here!
-struct RMI_Msg
-{
-public:
-    enum {
-        TYPE_CALL = 0,
-        TYPE_RESP,
-        TYPE_CALL_DATA,
-        TYPE_RESP_DATA,
-        TYPE_ERROR
-    };
-
-private:
-    struct Header {
-        unsigned char type;
-        unsigned char inst_id;
-        unsigned char type_id;
-    };
-
-    // Source address for received messages, destination address for transmitted
-    // messages
-    struct Address {
-        unsigned char x;
-        unsigned char y;
-        unsigned char local;
-    };
-
-public:
-    // TODO: Payload size should be Traits<System>::pkt_size
-    unsigned long payload;
-    Header header;
-    Address addr;
-};
-
 __END_SYS
-
-// FIXME: Remove ifdef
-#ifdef HIGH_LEVEL_SYNTHESIS
-#include <ac_channel.h>
-
-__BEGIN_SYS
-
-// The message's members order above will yield the following packet
-// organization:
-// 79...72 71...64 63...56 55...48 47...49 39...32 31...0
-// local   y       x       type_id inst_id type    payload
-typedef ac_channel<RMI_Msg> Channel;
-
-__END_SYS
-#endif
 
 #endif

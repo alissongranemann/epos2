@@ -8,6 +8,8 @@
 #include <machine.h>
 #include <component_controller.h>
 
+#include "../../unified/framework/rtsnoc.h"
+
 __BEGIN_SYS
 
 class Component_Manager
@@ -17,7 +19,7 @@ public:
     // TODO: Fix circular dependency between Component_Manager and Message
     //typedef Message_Common::Method Method;
     typedef int Method;
-    typedef Component_Controller::Address Address;
+    typedef RTSNoC::Address Address;
 
     // Component_Controller's internal buffers, they are used to implement
     // RTSNoC's handshake

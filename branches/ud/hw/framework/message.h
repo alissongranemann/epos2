@@ -2,6 +2,8 @@
 #define __message_hw_h
 
 #include <system/config.h>
+#include <framework/rtsnoc.h>
+#include <ac_channel.h>
 
 #include "serializer.h"
 
@@ -9,6 +11,13 @@ __BEGIN_SYS
 
 class Message
 {
+public:
+    // The message's members order above will yield the following packet
+    // organization:
+    // 79...72 71...64 63...56 55...48 47...49 39...32 31...0
+    // local   y       x       type_id inst_id type    payload
+    typedef ac_channel<RTSNoC::Packet> Channel;
+
 private:
     typedef Serializer::Packet Packet;
 
@@ -49,7 +58,7 @@ public:
     void ret(T0 & a0) {
         // _msg.addr.{x,y,local} and _msg.header.{type_id, inst_id} are the same
         // from the received message
-        _msg.header.type = RMI_Msg::TYPE_RESP_DATA;
+        _msg.header.type = RTSNoC::RESP_DATA;
 
         Serializer::serialize(&_parms[0], 0, a0);
 
@@ -62,14 +71,14 @@ public:
 private:
     Channel & _rx_ch;
     Channel & _tx_ch;
-    RMI_Msg _msg;
+    RTSNoC::Packet _msg;
     Packet _parms[MAX_PARAMETERS_SIZE];
 };
 
 __END_SYS
 
 #define HLS_TOP_LEVEL(T)\
-void T##_Top(Channel & rx_ch, Channel & tx_ch) {\
+void T##_Top(Message::Channel & rx_ch, Message::Channel & tx_ch) {\
     static Agent<T> agent(rx_ch, tx_ch);\
 \
     agent.exec();\

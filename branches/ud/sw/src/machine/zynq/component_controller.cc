@@ -6,13 +6,11 @@ __BEGIN_SYS
 
 // Allocate a proxy buffer in the Component_Controller. Returns the number of
 // the allocated buffer.
-unsigned int Zynq_Component_Controller::alloc_proxy(
-        Zynq_Component_Controller::Address addr, Type_Id type_id,
-        unsigned int inst_id) {
-    db<Zynq_Component_Controller>(TRC)
-        << "Component_Controller::alloc_proxy(x=" << addr.x << ",y=" << addr.y
-        << ",local=" << addr.local << ",type_id=" << type_id << ",inst_id="
-        << inst_id << ")" << endl;
+unsigned int Zynq_Component_Controller::alloc_proxy(Address addr,
+        Type_Id type_id, unsigned int inst_id) {
+    db<Zynq_Component_Controller>(TRC) << "Component_Controller::alloc_proxy(x="
+        << addr.x() << ",y=" << addr.y() << ",local=" << addr.local()
+        << ",type_id=" << type_id << ",inst_id=" << inst_id << ")" << endl;
 
     while(!ctrl_cmd_idle());
     ctrl_cmd(CMD_ALLOC_PROXY);
@@ -22,9 +20,9 @@ unsigned int Zynq_Component_Controller::alloc_proxy(
 
     if(buf_id != CMD_RESULT_ERR) {
         // Set buffer registers
-        buf_proxy_phy_x(buf_id, addr.x);
-        buf_proxy_phy_y(buf_id, addr.y);
-        buf_proxy_phy_local(buf_id, addr.local);
+        buf_proxy_phy_x(buf_id, addr.x());
+        buf_proxy_phy_y(buf_id, addr.y());
+        buf_proxy_phy_local(buf_id, addr.local());
         buf_type_id(buf_id, type_id);
         buf_instance_id(buf_id, inst_id);
     }
@@ -96,7 +94,7 @@ void Zynq_Component_Controller::send_return_data(unsigned int buf_id,
     db<Zynq_Component_Controller>(TRC) << "))" << endl;
 
     while(buf_tx(buf_id));
-    buf_msg_type(buf_id, RMI_Msg::TYPE_RESP_DATA);
+    buf_msg_type(buf_id, RTSNoC::RESP_DATA);
 
     for (unsigned int i = 0; i < n_ret; i++) {
         buf_data_tx(buf_id, data[i]);
@@ -116,7 +114,7 @@ unsigned int Zynq_Component_Controller::receive_call(unsigned int buf_id) {
     if(buf_rx(buf_id)) {
         unsigned int msg_type = buf_msg_type(buf_id);
 
-        if(msg_type == RMI_Msg::TYPE_CALL)
+        if(msg_type == RTSNoC::CALL)
             op_id = buf_data_rx(buf_id);
         else
             db<Zynq_Component_Controller>(WRN)
@@ -143,7 +141,7 @@ unsigned int Zynq_Component_Controller::receive_call_data(unsigned int buf_id) {
     if(buf_rx(buf_id)) {
         unsigned int msg_type = buf_msg_type(buf_id);
 
-        if(msg_type == RMI_Msg::TYPE_CALL_DATA)
+        if(msg_type == RTSNoC::CALL_DATA)
             call_data = buf_data_rx(buf_id);
         else
             db<Zynq_Component_Controller>(WRN)
@@ -168,7 +166,7 @@ void Zynq_Component_Controller::send_call (unsigned int buf_id,
 
     while(buf_tx(buf_id));
 
-    buf_msg_type(buf_id, RMI_Msg::TYPE_CALL);
+    buf_msg_type(buf_id, RTSNoC::CALL);
     buf_data_tx(buf_id, op_id);
 
     buf_tx(buf_id, true);
@@ -187,7 +185,7 @@ void Zynq_Component_Controller::send_call_data(unsigned int buf_id,
     db<Zynq_Component_Controller>(TRC) << "))" << endl;
 
     while(buf_tx(buf_id));
-    buf_msg_type(buf_id, RMI_Msg::TYPE_CALL_DATA);
+    buf_msg_type(buf_id, RTSNoC::CALL_DATA);
 
     for (unsigned int i = 0; i < n_args; i++) {
         buf_data_tx(buf_id, data[i]);
@@ -207,7 +205,7 @@ void Zynq_Component_Controller::receive_return_data(unsigned int buf_id,
 
         unsigned int msg_type = buf_msg_type(buf_id);
 
-        if(msg_type == RMI_Msg::TYPE_RESP_DATA)
+        if(msg_type == RTSNoC::RESP_DATA)
             data[i] = buf_data_rx(buf_id);
         else
             db<Zynq_Component_Controller>(WRN)
