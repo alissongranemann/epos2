@@ -12,12 +12,12 @@ class Serializer: public Serializer_Common
 {
 public:
     template<typename T>
-    static void serialize(Packet * buf, int index, const T & a) {
+    static void serialize(Buffer * buf, int index, const T & a) {
         pack(&buf[index], a);
     }
 
     template<typename T>
-    static void deserialize(Packet * buf, int index, T & a) {
+    static void deserialize(Buffer * buf, int index, T & a) {
         unpack(&buf[index], a);
     }
 };

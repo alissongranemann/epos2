@@ -14,13 +14,13 @@ __BEGIN_SYS
 class Serializer_Common
 {
 public:
-    typedef unsigned long Packet;
+    typedef unsigned long Buffer;
 
     // FIXME: npkt* can be simplified using variadic templates but Catapult
     // doesn't support it
     template<typename T0>
     struct npkt1 {
-        enum { Result = DIV_ROUNDUP<sizeof(T0), sizeof(Packet)>::Result };
+        enum { Result = DIV_ROUNDUP<sizeof(T0), sizeof(Buffer)>::Result };
     };
 
     template<typename T0, typename T1>

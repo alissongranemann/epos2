@@ -11,17 +11,18 @@ __BEGIN_SYS
 
 class Message
 {
+private:
+    typedef Serializer::Buffer Buffer;
+    typedef RTSNoC::Packet Packet;
+
+    static const unsigned int MAX_PARAMETERS_SIZE = 20;
+
 public:
     // The message's members order above will yield the following packet
     // organization:
     // 79...72 71...64 63...56 55...48 47...49 39...32 31...0
     // local   y       x       type_id inst_id type    payload
-    typedef ac_channel<RTSNoC::Packet> Channel;
-
-private:
-    typedef Serializer::Packet Packet;
-
-    static const unsigned int MAX_PARAMETERS_SIZE = 20;
+    typedef ac_channel<Packet> Channel;
 
 public:
     enum {
@@ -71,8 +72,8 @@ public:
 private:
     Channel & _rx_ch;
     Channel & _tx_ch;
-    RTSNoC::Packet _msg;
-    Packet _parms[MAX_PARAMETERS_SIZE];
+    Packet _msg;
+    Buffer _parms[MAX_PARAMETERS_SIZE];
 };
 
 __END_SYS

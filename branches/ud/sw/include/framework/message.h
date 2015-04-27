@@ -130,7 +130,7 @@ protected:
 class Message_UD: public Message_Common
 {
 private:
-    typedef Serializer::Packet Packet;
+    typedef Serializer::Buffer Buffer;
 
 public:
     Message_UD(const Id & id): Message_Common(id) {}
@@ -170,7 +170,7 @@ public:
     }
 
 protected:
-    Packet _parms[MAX_PARAMETERS_SIZE];
+    Buffer _parms[MAX_PARAMETERS_SIZE];
 };
 
 __END_SYS
