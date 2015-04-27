@@ -5,8 +5,7 @@
 #include <components/adder.h>
 
 #include "adapter.h"
-
-#include "../../hw/framework/message.h"
+#include "message.h"
 
 __BEGIN_SYS
 

@@ -1,10 +1,10 @@
-#ifndef __message_hw_h
-#define __message_hw_h
+#ifndef __message_h
+#define __message_h
 
-#include <system/config.h>
-#include <framework/rtsnoc.h>
 #include <ac_channel.h>
+#include <system/config.h>
 
+#include "../../unified/rtsnoc.h"
 #include "serializer.h"
 
 __BEGIN_SYS
@@ -18,12 +18,10 @@ private:
     static const unsigned int MAX_PARAMETERS_SIZE = 20;
 
 public:
-    // Packet has the following organization:
-    // 79...72 71...64 63...56 55...48 47...49 39...32 31...0
-    // local   y       x       type_id inst_id type    payload
     typedef ac_channel<Packet> Channel;
 
-public:
+    // FIXME: This should be shared between software and hardware Message to
+    // avoid inconsistencies
     enum {
         COMPONENT = 0x10,
 

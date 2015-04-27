@@ -51,6 +51,9 @@ public:
         unsigned char _local;
     };
 
+    // Packet has the following organization:
+    // 79...72 71...64 63...56 55...48 47...49 39...32 31...0
+    // local   y       x       type_id inst_id type    payload
     struct Packet {
         unsigned long payload;
         Header header;

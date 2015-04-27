@@ -1,7 +1,7 @@
 #define HIGH_LEVEL_SYNTHESIS
 
 #include <framework/agent.h>
-#include "../../XXNAMEXX.h"
+#include <components/XXNAMEXX.h>
 
 __USING_SYS
 

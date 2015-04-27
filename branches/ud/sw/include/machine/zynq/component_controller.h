@@ -6,7 +6,7 @@
 #include <ic.h>
 #include <component_controller.h>
 
-#include "../../../../unified/framework/rtsnoc.h"
+#include "../../../../unified/rtsnoc.h"
 
 __BEGIN_SYS
 

@@ -8,7 +8,7 @@ VLOG_RTL	:= concat_rtl.v
 
 # Markers for string replacement
 NAME_REPLACE	:= XXNAMEXX
-TOP_REPLACE		:= XXTOPXX
+TOP_REPLACE	:= XXTOPXX
 
 # Helper variables
 RTL_TEMPLATE	:= $(TOOLS_DIR)/rtl_template.v
@@ -23,6 +23,8 @@ SOURCES		:= sources.tcl
 $(CMDS): $(DIRECTIVES) $(SOURCES)
 	cat $(TOOLS_DIR)/00_prologue.tcl > $(CMDS)
 	cat $(SOURCES) >> $(CMDS)
+	# TODO: Catapult technology mapping must be handled without user
+	# intervention in the Makefile
 	#cat $(TOOLS_DIR)/02_analyze_and_compile_BASIC.tcl >> $(CMDS)
 	#cat $(TOOLS_DIR)/02_analyze_and_compile_XC6.tcl >> $(CMDS)
 	cat $(TOOLS_DIR)/02_analyze_and_compile_ARTIX7.tcl >> $(CMDS)

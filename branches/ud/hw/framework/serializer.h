@@ -1,7 +1,7 @@
 #ifndef __serializer_hw_h
 #define __serializer_hw_h
 
-#include <framework/serializer.h>
+#include "../../unified/framework/serializer.h"
 
 // TODO: Keep only one Serializer version when Catapult starts supporting
 // variadic templates
