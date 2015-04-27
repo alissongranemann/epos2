@@ -1,47 +1,33 @@
-#ifndef __scenario_unified_h
-#define __scenario_unified_h
+// EPOS Component Framework - Execution Scenario
 
-#include <system/config.h>
-#include <aspects/static_alloc.h>
-#include <aspects/dynamic_alloc.h>
+// Scenario is simply an ordered collection of Aspect programs that are to be
+// applied to a given component through its scenario adapter.
+
+#ifndef __scenario_h
+#define __scenario_h
+
+// TODO: The aspects bellow must be migrated to EPOS 2.0
+//#include <aspect/static_alloc.h>
+//#include <aspect/dynamic_alloc.h>
 
 __BEGIN_SYS
 
-template<class T, typename Alloc_Obj_Type, typename Alloc_Idx, unsigned int Alloc_Max>
-class HW_Scenario: public Static_Allocation<Alloc_Obj_Type, Alloc_Idx, Alloc_Max>
+// TODO: Catapult doesn't support variadic templates thus we can't use the
+// current TLIST implementation. Create a new implementation to allow aspects in
+// hardware components.
+template<typename Component>
+//class Scenario: public Traits<Component>::ASPECTS::template Recur<Component>
+class Scenario
 {
-public:
-    typedef typename Static_Allocation<Alloc_Obj_Type, Alloc_Idx,
-            Alloc_Max>::Idx_Type Link;
-};
+protected:
+    Scenario() {}
 
-// No allocation, empty scenario
-template<class T>
-class HW_Scenario<T, void, void, 0>
-{
 public:
-    typedef void Link;
-};
+    ~Scenario() {}
 
-template<class T, typename Alloc_Obj_Type, typename Alloc_Idx, unsigned int Alloc_Max>
-class SW_Scenario: public IF<Traits<T>::static_alloc,
-                          Static_Allocation<Alloc_Obj_Type, Alloc_Idx, Alloc_Max>,
-                          Dynamic_Allocation<Alloc_Obj_Type> >::Result
-{
-public:
-    typedef typename IF<Traits<T>::static_alloc,
-                     Static_Allocation<Alloc_Obj_Type, Alloc_Idx, Alloc_Max>,
-                     Dynamic_Allocation<Alloc_Obj_Type> >::Result
-                     Allocator;
-    typedef typename Allocator::Idx_Type Link;
-};
-
-// No allocation, empty scenario
-template<class T>
-class SW_Scenario<T, void, void, 0>
-{
-public:
-    typedef void Link;
+    // TODO: Not sure if those operators are supported in Catapult
+    //void * operator new(size_t bytes) { return ::operator new(bytes, SYSTEM); }
+    //void operator delete(void * ptr) { ::operator delete(ptr); }
 };
 
 __END_SYS

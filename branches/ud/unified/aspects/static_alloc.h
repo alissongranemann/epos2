@@ -1,5 +1,7 @@
-#ifndef __static_alloc_unified_h
-#define __static_alloc_unified_h
+// EPOS Component Static Allocation Aspect Program
+
+#ifndef __static_alloc_h
+#define __static_alloc_h
 
 __BEGIN_SYS
 

@@ -2,8 +2,9 @@
 #define __agent_h
 
 #include <system/config.h>
-#include <framework/scenario_adapter.h>
 #include <components/adder.h>
+
+#include "adapter.h"
 
 #include "../../hw/framework/message.h"
 
@@ -21,7 +22,7 @@ public:
     Agent_Common(Channel & rx_ch, Channel & tx_ch): Message(rx_ch, tx_ch), T() {}
 
 public:
-    Scenario_Adapter<Component> T;
+    Adapter<Component> T;
 };
 
 template<typename Component>

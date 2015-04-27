@@ -1,3 +1,5 @@
+// EPOS Component Dynamic Allocation Aspect Program
+
 #ifndef __dynamic_alloc_h
 #define __dynamic_alloc_h
 
@@ -58,9 +60,9 @@ public:
 
     void free(Idx_Type idx) { delete idx; }
 
-    Obj_Type* get(Idx_Type idx){ return idx; }
+    Obj_Type * get(Idx_Type idx){ return idx; }
 
-    Obj_Type* null() { return &_null; }
+    Obj_Type * null() { return &_null; }
 
 private:
     Obj_Type _null;

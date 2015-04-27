@@ -23,15 +23,6 @@ template<> struct Traits<Build>
 template<> struct Traits<Adder>: public Traits<void>
 {
     static const bool hardware = true;
-
-    static const bool singleton = false;
-    static const bool static_alloc = false;
-
-    static const unsigned int Alloc_Max = 0;
-    static const unsigned int serdes_buffer = 8;
-
-    typedef void Alloc_Obj_Type;
-    typedef void Alloc_Idx;
 };
 
 __END_SYS
