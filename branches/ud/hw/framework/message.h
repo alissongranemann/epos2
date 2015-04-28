@@ -43,13 +43,13 @@ public:
 
     template<typename T0, typename T1>
     void in2(T0 & a0, T1 & a1) {
-        for (unsigned int i = 0; i < Serializer::npkt2<T0, T1>::Result; i++) {
+        for (unsigned int i = 0; i < Serializer::NPKT2<T0, T1>::Result; i++) {
             _rx_ch.read(_msg);
             _parms[i] = _msg.payload;
         }
 
         Serializer::deserialize(&_parms[0], 0, a0);
-        Serializer::deserialize(&_parms[0], Serializer::npkt1<T0>::Result, a1);
+        Serializer::deserialize(&_parms[0], Serializer::NPKT1<T0>::Result, a1);
     }
 
     template<typename T0>
@@ -60,7 +60,7 @@ public:
 
         Serializer::serialize(&_parms[0], 0, a0);
 
-        for (unsigned int i = 0; i < Serializer::npkt1<T0>::Result; i++) {
+        for (unsigned int i = 0; i < Serializer::NPKT1<T0>::Result; i++) {
             _msg.payload = _parms[i];
             _tx_ch.write(_msg);
         }

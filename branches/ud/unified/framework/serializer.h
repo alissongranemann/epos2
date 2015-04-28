@@ -16,29 +16,29 @@ class Serializer_Common
 public:
     typedef unsigned long Buffer;
 
-    // FIXME: npkt* can be simplified using variadic templates but Catapult
+    // FIXME: NPKT* can be simplified using variadic templates but Catapult
     // doesn't support it
     template<typename T0>
-    struct npkt1 {
+    struct NPKT1 {
         enum { Result = DIV_ROUNDUP<sizeof(T0), sizeof(Buffer)>::Result };
     };
 
     template<typename T0, typename T1>
-    struct npkt2 {
-        enum { Result = npkt1<T0>::Result + npkt1<T1>::Result };
+    struct NPKT2 {
+        enum { Result = NPKT1<T0>::Result + NPKT1<T1>::Result };
     };
 
     template<typename T0, typename T1, typename T2>
-    struct npkt3 {
-        enum { Result = npkt1<T0>::Result + npkt1<T1>::Result +
-            npkt1<T2>::Result };
+    struct NPKT3 {
+        enum { Result = NPKT1<T0>::Result + NPKT1<T1>::Result +
+            NPKT1<T2>::Result };
     };
 
     template<typename T0, typename T1, typename T2, typename T3>
-    struct npkt4 {
+    struct NPKT4 {
         enum {
-            Result = npkt1<T0>::Result + npkt1<T1>::Result +
-                npkt1<T2>::Result + npkt1<T3>::Result
+            Result = NPKT1<T0>::Result + NPKT1<T1>::Result +
+                NPKT1<T2>::Result + NPKT1<T3>::Result
         };
     };
 
@@ -46,9 +46,9 @@ public:
         typename T5, typename T6, typename T7>
     struct npkt8 {
         enum {
-            Result = npkt1<T0>::Result + npkt1<T1>::Result + npkt1<T2>::Result +
-                npkt1<T3>::Result + npkt1<T4>::Result + npkt1<T5>::Result +
-                npkt1<T6>::Result + npkt1<T7>::Result
+            Result = NPKT1<T0>::Result + NPKT1<T1>::Result + NPKT1<T2>::Result +
+                NPKT1<T3>::Result + NPKT1<T4>::Result + NPKT1<T5>::Result +
+                NPKT1<T6>::Result + NPKT1<T7>::Result
         };
     };
 

@@ -35,7 +35,8 @@ public:
 
     // Source address for received messages, destination address for transmitted
     // messages
-    class Address {
+    class Address
+    {
     public:
         Address() {}
         Address(unsigned char x, unsigned char y, unsigned char local): _x(x),
