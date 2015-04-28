@@ -4,11 +4,11 @@
 
 __BEGIN_SYS
 
-void Component_Manager::call(Id id, Method m, unsigned int n_args,
-        unsigned int n_ret, unsigned long * data) {
-    db<Component_Manager>(TRC) << "Component_Manager::call(id=" << id
-        << ",m=" << m << ",n_args=" << n_args << ",n_ret=" << n_ret
-        << ",data=" << data << "(";
+void Component_Manager::call(unsigned int type, unsigned int unit, unsigned int m,
+        unsigned int n_args, unsigned int n_ret, unsigned long * data) {
+    db<Component_Manager>(TRC) << "Component_Manager::call(type=" << type
+        << ",unit=" << unit << ",m=" << m << ",n_args=" << n_args << ",n_ret="
+        << n_ret << ",data=" << data << "(";
 
     for (unsigned int i = 0; i < n_args; i++)
         db<Component_Manager>(TRC) << reinterpret_cast<void *>(data[i]) << ",";

@@ -7,7 +7,7 @@ __BEGIN_SYS
 // Allocate a proxy buffer in the Component_Controller. Returns the number of
 // the allocated buffer.
 unsigned int Zynq_Component_Controller::alloc_proxy(Address addr,
-        Type_Id type_id, unsigned int inst_id) {
+        unsigned int type_id, unsigned int inst_id) {
     db<Zynq_Component_Controller>(TRC) << "Component_Controller::alloc_proxy(x="
         << addr.x() << ",y=" << addr.y() << ",local=" << addr.local()
         << ",type_id=" << type_id << ",inst_id=" << inst_id << ")" << endl;
@@ -34,7 +34,7 @@ unsigned int Zynq_Component_Controller::alloc_proxy(Address addr,
 
 // Allocate an agent buffer in the Component_Controller. Returns the number of
 // the allocated buffer.
-unsigned int Zynq_Component_Controller::alloc_agent(Type_Id type_id,
+unsigned int Zynq_Component_Controller::alloc_agent(unsigned int type_id,
         unsigned int inst_id, unsigned int dispatcher_address,
         unsigned int dispatcher_object_address) {
     db<Zynq_Component_Controller>(TRC)

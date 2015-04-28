@@ -12,11 +12,10 @@ void Component_Manager::init_buffer()
 {
     typedef typename Traits<Component_Manager>::Node<UNIT> NODE;
 
-    Id id(NODE::TYPE_ID, NODE::UNIT_ID);
     Address addr(NODE::X, NODE::Y, NODE::LOCAL);
 
     // TODO: Must check if it's a proxy or agent
-    _nodes[UNIT] = new (SYSTEM) Buffer(id, addr);
+    _nodes[UNIT] = new (SYSTEM) Buffer(NODE::TYPE_ID, NODE::UNIT_ID, addr);
 
     init_buffer<UNIT + 1>();
 };

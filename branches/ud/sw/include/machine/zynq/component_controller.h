@@ -3,6 +3,7 @@
 #ifndef __zynq_component_controller_h
 #define __zynq_component_controller_h
 
+#include <machine.h>
 #include <ic.h>
 #include <component_controller.h>
 
@@ -21,11 +22,30 @@ public:
         CMD_RESULT_ERR  = 0xFFFFFFFF
     };
 
-    typedef struct {
+    struct agent_call_info {
         unsigned int buffer;
         unsigned int dispatcher_address;
         unsigned int object_address;
-    } agent_call_info;
+    };
+
+    // Internal buffers used to implement RTSNoC's handshake
+    class Buffer
+    {
+    public:
+        Buffer(unsigned int type, unsigned int unit, Address addr) {
+            proxy_id = alloc_proxy(addr, type, unit);
+
+            if(proxy_id == CMD_RESULT_ERR) {
+                db<Component_Controller>(ERR) << "Couldn't allocate proxy" << endl;
+                Machine::panic();
+            }
+        }
+
+        ~Buffer() { free_buf(proxy_id); }
+
+    private:
+        unsigned int proxy_id;
+    };
 
 public:
     static unsigned int alloc_proxy(Address addr, Type_Id type_id,

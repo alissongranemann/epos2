@@ -3,9 +3,10 @@
 #ifndef __message_h
 #define __message_h
 
+#include <component_manager.h>
+
 #include "id.h"
 #include "serializer.h"
-#include "../component_manager.h"
 
 extern "C" { int _syscall(void *); }
 
@@ -155,9 +156,11 @@ public:
         _method = m;
         out(an ...);
         // TODO: Find a way to set the instance ID
-        Component_Manager::call(_id, _method, sizeof...(an),
-            Serializer::npkt1<int>::Result, _parms);
+        Component_Manager::call(_id.type(), _id.unit(), _method,
+                Serializer::NPKT<Tn ...>::Result, Serializer::NPKT<int>::Result,
+                _parms);
         in(ret);
+
         return ret;
     }
 
