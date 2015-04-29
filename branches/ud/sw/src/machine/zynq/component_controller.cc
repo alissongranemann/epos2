@@ -4,126 +4,111 @@
 
 __BEGIN_SYS
 
-// Allocate a proxy buffer in the Component_Controller. Returns the number of
-// the allocated buffer.
-unsigned int Zynq_Component_Controller::alloc_proxy(Address addr,
-        unsigned int type_id, unsigned int inst_id) {
-    db<Zynq_Component_Controller>(TRC) << "Component_Controller::alloc_proxy(x="
-        << addr.x() << ",y=" << addr.y() << ",local=" << addr.local()
-        << ",type_id=" << type_id << ",inst_id=" << inst_id << ")" << endl;
+bool Zynq_Component_Controller::alloc_proxy(Buffer * buf)
+{
+    db<Zynq_Component_Controller>(TRC)
+        << "Component_Controller::alloc_proxy(buf=" << *buf << ")" << endl;
 
-    while(!ctrl_cmd_idle());
-    ctrl_cmd(CMD_ALLOC_PROXY);
+    // Issue an ALLOC_PROXY command and wait its processing
+    while(!ctrl(IDLE));
+    ctrl(CMD) = ALLOC_PROXY;
+    while(!ctrl(IDLE));
 
-    while(!ctrl_cmd_idle());
-    unsigned int buf_id = ctrl_cmd_result();
-
-    if(buf_id != CMD_RESULT_ERR) {
-        // Set buffer registers
-        buf_proxy_phy_x(buf_id, addr.x());
-        buf_proxy_phy_y(buf_id, addr.y());
-        buf_proxy_phy_local(buf_id, addr.local());
-        buf_type_id(buf_id, type_id);
-        buf_instance_id(buf_id, inst_id);
+    if((buf->_id = ctrl(RESULT)) != CMD_RESULT_ERR) {
+        // Configure Buffer registers
+        buf->reg(ADDR_X) = buf->_addr.x();
+        buf->reg(ADDR_Y) = buf->_addr.y();
+        buf->reg(ADDR_LOCAL) = buf->_addr.local();
+        buf->reg(TYPE) = buf->_type;
+        buf->reg(UNIT) = buf->_unit;
     }
 
-    db<Zynq_Component_Controller>(TRC) << "buf_id=" << buf_id << endl;
+    db<Zynq_Component_Controller>(TRC) << "id=" << buf->_id << endl;
 
-    return buf_id;
+    return buf->_id != CMD_RESULT_ERR;
 }
 
-// Allocate an agent buffer in the Component_Controller. Returns the number of
-// the allocated buffer.
-unsigned int Zynq_Component_Controller::alloc_agent(unsigned int type_id,
-        unsigned int inst_id, unsigned int dispatcher_address,
-        unsigned int dispatcher_object_address) {
+// TODO: Test it!
+bool Zynq_Component_Controller::alloc_agent(Buffer * buf)
+{
     db<Zynq_Component_Controller>(TRC)
-        << "Component_Controller::alloc_agent(type_id="
-        << type_id << ",inst_id=" << inst_id << ",addr="
-        << reinterpret_cast<void *>(dispatcher_address) << ",obj_addr="
-        << reinterpret_cast<void *>(dispatcher_object_address) << ")" << endl;
+        << "Component_Controller::alloc_agent(buf=" << *buf << ")" << endl;
 
-    while(!ctrl_cmd_idle());
-    ctrl_cmd(CMD_ALLOC_AGENT);
+    // Issue an ALLOC_AGENT command and wait its processing
+    while(!ctrl(IDLE));
+    ctrl(CMD) = ALLOC_AGENT;
+    while(!ctrl(IDLE));
 
-    while(!ctrl_cmd_idle());
-    unsigned int buf_id = ctrl_cmd_result();
+    if((buf->_id = ctrl(RESULT)) != CMD_RESULT_ERR) {
+        // Configure Buffer registers
+        buf->reg(DISP_ADDR) = buf->_info.disp_addr;
+        buf->reg(OBJ_ADDR) = buf->_info.obj_addr;
+        buf->reg(TYPE) = buf->_type;
+        buf->reg(UNIT) = buf->_unit;
+    }
 
-    if(buf_id != CMD_RESULT_ERR) {
-        // Set buffer registers
-        buf_type_id(buf_id, type_id);
-        buf_instance_id(buf_id, inst_id);
-        buf_agent_disp_addr(buf_id, dispatcher_address);
-        buf_agent_disp_obj_addr(buf_id, dispatcher_object_address);
-    } else
-        db<Zynq_Component_Controller>(WRN) << "Couldn't allocate buffer"
-            << endl;
+    db<Zynq_Component_Controller>(TRC) << "id=" << buf->_id << endl;
 
-    db<Zynq_Component_Controller>(TRC) << "buf_id=" << buf_id << endl;
-
-    return buf_id;
+    return buf->_id != CMD_RESULT_ERR;
 }
 
-unsigned int Zynq_Component_Controller::free_buf(unsigned int buf_id) {
+bool Zynq_Component_Controller::free_buf(Buffer * buf)
+{
     db<Zynq_Component_Controller>(TRC)
-        << "Component_Controller::free_buf(buf_id=" << buf_id << ")" << endl;
+        << "Component_Controller::free_buf(buf=" << *buf << ")" << endl;
 
-    while(!ctrl_cmd_idle());
+    while(!ctrl(IDLE));
     // TODO: HACK! Fix comp_manager.v someday.
-    ctrl_cmd((buf_id << 2) | CMD_FREE_BUF);
+    ctrl(CMD) = (buf->_id << 2) | FREE_BUF;
 
-    while(!ctrl_cmd_idle());
-    unsigned int result = ctrl_cmd_result();
+    while(!ctrl(IDLE));
 
-    db<Zynq_Component_Controller>(TRC) << "result=" << result << endl;
-
-    return buf_id;
+    return ctrl(RESULT) != CMD_RESULT_ERR;
 }
 
 // Send return data to component associated with buffer buf_id
-void Zynq_Component_Controller::send_return_data(unsigned int buf_id,
-        unsigned int n_ret, unsigned long * data) {
+void Zynq_Component_Controller::send_return_data(Buffer * buf,
+        unsigned int n_ret, unsigned long * data)
+{
     db<Zynq_Component_Controller>(TRC)
-        << "Component_Controller::send_return_data(buf_id=" << buf_id
+        << "Component_Controller::send_return_data(buf=" << *buf
         << ",n_ret=" << n_ret << ",data(";
 
-    for (unsigned int i = 0; i < n_ret; i++)
+    for(unsigned int i = 0; i < n_ret; i++)
         db<Zynq_Component_Controller>(TRC)
             << reinterpret_cast<void *>(data[i]) << ",";
 
     db<Zynq_Component_Controller>(TRC) << "))" << endl;
 
-    while(buf_tx(buf_id));
-    buf_msg_type(buf_id, RTSNoC::RESP_DATA);
+    while(buf->reg(TX));
+    buf->reg(MSG_TYPE) = RTSNoC::RESP_DATA;
 
-    for (unsigned int i = 0; i < n_ret; i++) {
-        buf_data_tx(buf_id, data[i]);
-        buf_tx(buf_id,true);
-        while(buf_tx(buf_id));
+    for(unsigned int i = 0; i < n_ret; i++) {
+        buf->reg(DATA) = data[i];
+        buf->reg(TX) = true;
+        while(buf->reg(TX));
     }
 }
 
 // Return the operation id of the received call
-unsigned int Zynq_Component_Controller::receive_call(unsigned int buf_id) {
+unsigned int Zynq_Component_Controller::receive_call(Buffer * buf)
+{
     db<Zynq_Component_Controller>(TRC)
-        << "Component_Controller::receive_call(buf_id=" << buf_id << ")"
-        << endl;
+        << "Component_Controller::receive_call(buf=" << *buf << ")" << endl;
 
     unsigned int op_id = 0xFFFFFFFF;
 
-    if(buf_rx(buf_id)) {
-        unsigned int msg_type = buf_msg_type(buf_id);
+    if(buf->reg(RX)) {
+        unsigned int msg_type = buf->reg(MSG_TYPE);
 
         if(msg_type == RTSNoC::CALL)
-            op_id = buf_data_rx(buf_id);
+            op_id = buf->reg(DATA);
         else
             db<Zynq_Component_Controller>(WRN)
-                << "Received incorrect msg_type(" << msg_type << ")" << endl;
+                << "Received wrong msg_type: " << msg_type << endl;
 
-        buf_rx(buf_id, false);
-    } else
-        db<Zynq_Component_Controller>(WRN)
-            << "No received data on buffer " << buf_id << endl;
+        buf->reg(RX) = false;
+    }
 
     db<Zynq_Component_Controller>(TRC) << "op_id=" << op_id << endl;
 
@@ -131,26 +116,25 @@ unsigned int Zynq_Component_Controller::receive_call(unsigned int buf_id) {
 }
 
 // Return the received data stored in the buffer buf_id
-unsigned int Zynq_Component_Controller::receive_call_data(unsigned int buf_id) {
+unsigned int Zynq_Component_Controller::receive_call_data(Buffer * buf)
+{
     db<Zynq_Component_Controller>(TRC)
-        << "Component_Controller::receive_call_data(buf_id=" << buf_id << ")"
+        << "Component_Controller::receive_call_data(buf=" << *buf << ")"
         << endl;
 
     unsigned int call_data = 0;
 
-    if(buf_rx(buf_id)) {
-        unsigned int msg_type = buf_msg_type(buf_id);
+    if(buf->reg(RX)) {
+        unsigned int msg_type = buf->reg(MSG_TYPE);
 
         if(msg_type == RTSNoC::CALL_DATA)
-            call_data = buf_data_rx(buf_id);
+            call_data = buf->reg(DATA);
         else
             db<Zynq_Component_Controller>(WRN)
-                << "Received incorrect msg_type(" << msg_type << ")" << endl;
+                << "Received wrong msg_type: " << msg_type << endl;
 
-        buf_rx(buf_id, false);
-    } else
-        db<Zynq_Component_Controller>(WRN)
-            << "No received data on buffer " << buf_id << endl;
+        buf->reg(RX) = false;
+    }
 
     db<Zynq_Component_Controller>(TRC) << "= "
         << reinterpret_cast<void *>(call_data) << endl;
@@ -158,60 +142,62 @@ unsigned int Zynq_Component_Controller::receive_call_data(unsigned int buf_id) {
     return call_data;
 }
 
-void Zynq_Component_Controller::send_call (unsigned int buf_id,
-        unsigned int op_id) {
+void Zynq_Component_Controller::send_call(Buffer * buf,
+        unsigned int op_id)
+{
     db<Zynq_Component_Controller>(TRC)
-        << "Component_Controller::send_call(buf_id=" << buf_id << ",op_id="
-        << op_id << ")" << endl;
+        << "Component_Controller::send_call(buf=" << *buf << ",op_id=" << op_id
+        << ")" << endl;
 
-    while(buf_tx(buf_id));
+    while(buf->reg(TX));
 
-    buf_msg_type(buf_id, RTSNoC::CALL);
-    buf_data_tx(buf_id, op_id);
-
-    buf_tx(buf_id, true);
+    buf->reg(MSG_TYPE) = RTSNoC::CALL;
+    buf->reg(DATA) = op_id;
+    buf->reg(TX) = true;
 }
 
-void Zynq_Component_Controller::send_call_data(unsigned int buf_id,
-        unsigned int n_args, unsigned long * data) {
+void Zynq_Component_Controller::send_call_data(Buffer * buf,
+        unsigned int n_args, unsigned long * data)
+{
     db<Zynq_Component_Controller>(TRC)
-        << "Component_Controller::send_call_data(buf_id=" << buf_id
-        << ",n_args=" << n_args << ",data(";
+        << "Component_Controller::send_call_data(buf=" << *buf << ",n_args="
+        << n_args << ",data(";
 
-    for (unsigned int i = 0; i < n_args; i++)
+    for(unsigned int i = 0; i < n_args; i++)
         db<Zynq_Component_Controller>(TRC) << reinterpret_cast<void *>(data[i])
             << ",";
 
     db<Zynq_Component_Controller>(TRC) << "))" << endl;
 
-    while(buf_tx(buf_id));
-    buf_msg_type(buf_id, RTSNoC::CALL_DATA);
+    while(buf->reg(TX));
+    buf->reg(MSG_TYPE) = RTSNoC::CALL_DATA;
 
-    for (unsigned int i = 0; i < n_args; i++) {
-        buf_data_tx(buf_id, data[i]);
-        buf_tx(buf_id, true);
-        while(buf_tx(buf_id));
+    for(unsigned int i = 0; i < n_args; i++) {
+        buf->reg(DATA) = data[i];
+        buf->reg(TX) = true;
+        while(buf->reg(TX));
     }
 }
 
-void Zynq_Component_Controller::receive_return_data(unsigned int buf_id,
-        unsigned int n_ret, unsigned long * data) {
+void Zynq_Component_Controller::receive_return_data(Buffer * buf,
+        unsigned int n_ret, unsigned long * data)
+{
     db<Zynq_Component_Controller>(TRC)
-        << "Component_Controller::receive_return_data(buf_id=" << buf_id
-        << ",n_ret=" << n_ret << ")" << endl;
+        << "Component_Controller::receive_return_data(buf=" << *buf << ",n_ret="
+        << n_ret << ")" << endl;
 
-    for (unsigned int i = 0; i < n_ret; i++) {
-        while(!buf_rx(buf_id));
+    for(unsigned int i = 0; i < n_ret; i++) {
+        while(!buf->reg(RX));
 
-        unsigned int msg_type = buf_msg_type(buf_id);
+        unsigned int msg_type = buf->reg(MSG_TYPE);
 
         if(msg_type == RTSNoC::RESP_DATA)
-            data[i] = buf_data_rx(buf_id);
+            data[i] = buf->reg(DATA);
         else
             db<Zynq_Component_Controller>(WRN)
-                << "Received incorrect msg_type(" << msg_type << ")" << endl;
+                << "Received wrong msg_type: " << msg_type << ")" << endl;
 
-        buf_rx(buf_id, false);
+        buf->reg(RX) = false;
     }
 
     db<Zynq_Component_Controller>(TRC) << "data(";
@@ -223,28 +209,31 @@ void Zynq_Component_Controller::receive_return_data(unsigned int buf_id,
     db<Zynq_Component_Controller>(TRC) << ")" << endl;
 }
 
-bool Zynq_Component_Controller::agent_has_call(agent_call_info &info) {
-    db<Zynq_Component_Controller>(TRC)
-        << "Component_Controller::agent_has_call()" << endl;
+//bool Zynq_Component_Controller::agent_has_call(agent_call_info &info)
+//{
+    //db<Zynq_Component_Controller>(TRC)
+        //<< "Component_Controller::agent_has_call()" << endl;
 
-    if(ctrl_status_agent_int()) {
-        unsigned int buf_id = ctrl_status_agent_buf();
+    //if(ctrl(AGENT_INT)) {
+        //unsigned int buf_id = ctrl(AGENT_BUF);
 
-        info.buffer = buf_id;
-        info.dispatcher_address = buf_agent_disp_addr(buf_id);
-        info.object_address = buf_agent_disp_obj_addr(buf_id);
+        //info.buffer = buf_id;
+        //info.dispatcher_address = buf_agent_disp_addr(buf_id);
+        //info.object_address = buf_agent_disp_obj_addr(buf_id);
 
-        return true;
-    } else
-        return false;
+        //return true;
+    //} else
+        //return false;
+//}
+
+// TODO: Implement me
+void Zynq_Component_Controller::enable_agent_receive_int(IC::Interrupt_Handler h)
+{
 }
 
 // TODO: Implement me
-void Zynq_Component_Controller::enable_agent_receive_int(IC::Interrupt_Handler h) {
-}
-
-// TODO: Implement me
-void Zynq_Component_Controller::disable_agent_receive_int() {
+void Zynq_Component_Controller::disable_agent_receive_int()
+{
 }
 
 __END_SYS

@@ -42,9 +42,9 @@ public:
         Address(unsigned char x, unsigned char y, unsigned char local): _x(x),
             _y(y), _local(local) {}
 
-        unsigned char x() { return _x; }
-        unsigned char y() { return _y; }
-        unsigned char local() { return _local; }
+        const unsigned char & x() const { return _x; }
+        const unsigned char & y() const { return _y; }
+        const unsigned char & local() const { return _local; }
 
     private:
         unsigned char _x;

@@ -31,7 +31,7 @@ void Component_Manager::init() {
     init_buffer<0>();
 
     // TODO: Is this really needed?
-    Component_Controller::enable_agent_receive_int(&int_handler);
+    //Component_Controller::enable_agent_receive_int(&int_handler);
 }
 
 __END_SYS
