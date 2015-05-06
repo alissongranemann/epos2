@@ -1,1 +1,0 @@
-../src/abstraction/periodic_thread_test.cc

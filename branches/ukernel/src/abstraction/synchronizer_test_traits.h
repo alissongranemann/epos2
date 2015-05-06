@@ -12,6 +12,7 @@ struct Traits
     static const bool enabled = true;
     static const bool debugged = true;
     static const bool hysterically_debugged = false;
+    typedef TLIST<> ASPECTS;
 };
 
 template<> struct Traits<Build>
@@ -19,14 +20,14 @@ template<> struct Traits<Build>
     enum {LIBRARY, BUILTIN, KERNEL};
     static const unsigned int MODE = LIBRARY;
 
-    enum {IA32};
-    static const unsigned int ARCHITECTURE = IA32;
+    enum {IA32, AVR8, ARMv7};
+    static const unsigned int ARCHITECTURE = ARMv7;
 
-    enum {PC};
-    static const unsigned int MACHINE = PC;
+    enum {PC, ATmega, Cortex_M, Cortex_A};
+    static const unsigned int MACHINE = Cortex_M;
 
-    enum {Legacy};
-    static const unsigned int MODEL = Legacy;
+    enum {Legacy, eMote1, eMote2, eMote3, Arduino, LM3S811};
+    static const unsigned int MODEL = LM3S811;
 
     static const unsigned int CPUS = 1;
     static const unsigned int NODES = 1; // > 1 => NETWORKING
@@ -72,7 +73,7 @@ template<> struct Traits<Init>: public Traits<void>
 };
 
 
-// Common Mediators
+// Mediators
 template<> struct Traits<Serial_Display>: public Traits<void>
 {
     static const bool enabled = true;
@@ -89,16 +90,19 @@ __END_SYS
 
 __BEGIN_SYS
 
+
+// Abstractions
 template<> struct Traits<Application>: public Traits<void>
 {
-    static const unsigned int STACK_SIZE = 16 * 1024;
-    static const unsigned int HEAP_SIZE = 16 * 1024 * 1024;
+    static const unsigned int STACK_SIZE = Traits<Machine>::STACK_SIZE;
+    static const unsigned int HEAP_SIZE = Traits<Machine>::HEAP_SIZE;
+    static const unsigned int MAX_THREADS = Traits<Machine>::MAX_THREADS;
 };
 
 template<> struct Traits<System>: public Traits<void>
 {
     static const unsigned int mode = Traits<Build>::MODE;
-    static const bool multithread = true;
+    static const bool multithread = (Traits<Application>::MAX_THREADS > 1);
     static const bool multitask = (mode != Traits<Build>::LIBRARY);
     static const bool multicore = (Traits<Build>::CPUS > 1) && multithread;
     static const bool multiheap = (mode != Traits<Build>::LIBRARY) || Traits<Scratchpad>::enabled;
@@ -108,12 +112,10 @@ template<> struct Traits<System>: public Traits<void>
 
     static const bool reboot = true;
 
-    static const unsigned int STACK_SIZE = 4 * 1024;
-    static const unsigned int HEAP_SIZE = 128 * Traits<Application>::STACK_SIZE;
+    static const unsigned int STACK_SIZE = Traits<Machine>::STACK_SIZE;
+    static const unsigned int HEAP_SIZE = (Traits<Application>::MAX_THREADS + 1) * Traits<Application>::STACK_SIZE;
 };
 
-
-// Abstractions
 template<> struct Traits<Task>: public Traits<void>
 {
     static const bool enabled = Traits<System>::multitask;
@@ -170,10 +172,6 @@ template<> struct Traits<Network>: public Traits<void>
     typedef LIST<IP> NETWORKS;
 };
 
-template<> struct Traits<ARP<NIC, IP> >: public Traits<Network>
-{
-};
-
 template<> struct Traits<IP>: public Traits<Network>
 {
     enum {STATIC, MAC, INFO, RARP, DHCP};
@@ -220,4 +218,3 @@ template<> struct Traits<DHCP>: public Traits<Network>
 __END_SYS
 
 #endif
-

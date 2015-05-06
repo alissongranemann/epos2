@@ -12,93 +12,100 @@ class IA32: public CPU_Common
     friend class Init_System;
 
 public:
+    // CPU Native Data Types
+    using CPU_Common::Reg8;
+    using CPU_Common::Reg16;
+    using CPU_Common::Reg32;
+    using CPU_Common::Log_Addr;
+    using CPU_Common::Phy_Addr;
+
     // CPU Flags
     typedef Reg32 Flags;
     enum {
-        FLAG_CF		= 0x00000001,
-        FLAG_PF		= 0x00000004,
-        FLAG_AF		= 0x00000010,
-        FLAG_ZF		= 0x00000040,
-        FLAG_SF		= 0x00000080,
-        FLAG_TF		= 0x00000100,
-        FLAG_IF		= 0x00000200,
-        FLAG_DF		= 0x00000400,
-        FLAG_OF		= 0x00000800,
-        FLAG_IOPL1	= 0x00001000,
-        FLAG_IOPL2	= 0x00002000,
-        FLAG_NT		= 0x00004000,
-        FLAG_RF		= 0x00010000,
-        FLAG_VM		= 0x00020000,
-        FLAG_AC		= 0x00040000,
-        FLAG_VIF	= 0x00080000,
-        FLAG_VIP	= 0x00100000,
-        FLAG_ID		= 0x00200000,
+        FLAG_CF     = 0x00000001,
+        FLAG_PF     = 0x00000004,
+        FLAG_AF     = 0x00000010,
+        FLAG_ZF     = 0x00000040,
+        FLAG_SF     = 0x00000080,
+        FLAG_TF     = 0x00000100,
+        FLAG_IF     = 0x00000200,
+        FLAG_DF     = 0x00000400,
+        FLAG_OF     = 0x00000800,
+        FLAG_IOPL1  = 0x00001000,
+        FLAG_IOPL2  = 0x00002000,
+        FLAG_NT     = 0x00004000,
+        FLAG_RF     = 0x00010000,
+        FLAG_VM     = 0x00020000,
+        FLAG_AC     = 0x00040000,
+        FLAG_VIF    = 0x00080000,
+        FLAG_VIP    = 0x00100000,
+        FLAG_ID     = 0x00200000,
         FLAG_DEFAULTS   = FLAG_IF,
         // Mask to clear flags (by ANDing)
         FLAG_CLEAR      = ~(FLAG_TF | FLAG_IOPL1 | FLAG_IOPL2 | FLAG_NT |
-        		    FLAG_RF | FLAG_VM | FLAG_AC)
+                            FLAG_RF | FLAG_VM | FLAG_AC)
     };
 
     // CPU Exceptions
     typedef Reg32 Exceptions;
     enum  {
-        EXC_BASE        = 0x00,
-        EXC_DIV0	= 0x00,
-        EXC_DEBUG	= 0x01,
-        EXC_NMI		= 0x02,
-        EXC_BP		= 0x03,
-        EXC_OVFLOW	= 0x04,
-        EXC_BOUND	= 0x05,
-        EXC_INVOP	= 0x06,
-        EXC_NODEV	= 0x07,
-        EXC_DOUBLE	= 0x08,
-        EXC_FPU_OR	= 0x09,
-        EXC_INVTSS	= 0x0a,
-        EXC_NOTPRE	= 0x0b,
-        EXC_STACK	= 0x0c,
-        EXC_GPF		= 0x0d,
-        EXC_PF		= 0x0e,
-        EXC_RESERV	= 0x0f,
-        EXC_FPU		= 0x10,
-        EXC_ALIGN	= 0x11,
-        EXC_BUS		= 0x12,
-        EXC_LAST	= 0x1f
+        EXC_BASE    = 0x00,
+        EXC_DIV0    = 0x00,
+        EXC_DEBUG   = 0x01,
+        EXC_NMI     = 0x02,
+        EXC_BP      = 0x03,
+        EXC_OVFLOW  = 0x04,
+        EXC_BOUND   = 0x05,
+        EXC_INVOP   = 0x06,
+        EXC_NODEV   = 0x07,
+        EXC_DOUBLE  = 0x08,
+        EXC_FPU_OR  = 0x09,
+        EXC_INVTSS  = 0x0a,
+        EXC_NOTPRE  = 0x0b,
+        EXC_STACK   = 0x0c,
+        EXC_GPF     = 0x0d,
+        EXC_PF      = 0x0e,
+        EXC_RESERV  = 0x0f,
+        EXC_FPU     = 0x10,
+        EXC_ALIGN   = 0x11,
+        EXC_BUS     = 0x12,
+        EXC_LAST    = 0x1f
     };
 
     // CR0 Flags
     enum {
-        CR0_PE		= 0x00000001,
-        CR0_MP		= 0x00000002,
-        CR0_EM		= 0x00000004,
-        CR0_TS		= 0x00000008,
-        CR0_ET		= 0x00000010,
-        CR0_NE		= 0x00000020,
-        CR0_WP		= 0x00010000,
-        CR0_AM		= 0x00040000,
-        CR0_NW		= 0x20000000,
-        CR0_CD		= 0x40000000,
-        CR0_PG		= 0x80000000,
+        CR0_PE      = 0x00000001,
+        CR0_MP      = 0x00000002,
+        CR0_EM      = 0x00000004,
+        CR0_TS      = 0x00000008,
+        CR0_ET      = 0x00000010,
+        CR0_NE      = 0x00000020,
+        CR0_WP      = 0x00010000,
+        CR0_AM      = 0x00040000,
+        CR0_NW      = 0x20000000,
+        CR0_CD      = 0x40000000,
+        CR0_PG      = 0x80000000,
         // Mask to clear flags (by ANDing)
-        CR0_CLEAR       = (CR0_PE | CR0_EM | CR0_WP),
+        CR0_CLEAR   = (CR0_PE | CR0_EM | CR0_WP),
         // Mask to set flags (by ORing)
-        CR0_SET         = (CR0_PE | CR0_PG)
+        CR0_SET     = (CR0_PE | CR0_PG)
     };
 
     // Segment Flags
     enum {
-        SEG_ACC		= 0x01,
-        SEG_RW		= 0x02,
-        SEG_CONF	= 0x04,
-        SEG_CODE	= 0x08,
-        SEG_NOSYS 	= 0x10,
-        SEG_DPL1	= 0x20,
-        SEG_DPL2	= 0x40,
-        SEG_PRE		= 0x80,
-        SEG_TSS		= 0x09,
-        SEG_INT		= 0x0e,
-        SEG_TRAP	= 0x0f,
-        SEG_32		= 0x40,
-        SEG_4K		= 0x80,
+        SEG_ACC     = 0x01,
+        SEG_RW      = 0x02,
+        SEG_CONF    = 0x04,
+        SEG_CODE    = 0x08,
+        SEG_NOSYS   = 0x10,
+        SEG_DPL1    = 0x20,
+        SEG_DPL2    = 0x40,
+        SEG_PRE     = 0x80,
+        SEG_TSS     = 0x09,
+        SEG_INT     = 0x0e,
+        SEG_TRAP    = 0x0f,
+        SEG_32      = 0x40,
+        SEG_4K      = 0x80,
         SEG_FLT_CODE    = (SEG_PRE  | SEG_NOSYS	| SEG_CODE | SEG_RW   | SEG_ACC  ),
         SEG_FLT_DATA    = (SEG_PRE  | SEG_NOSYS	| SEG_RW   | SEG_ACC  ),
         SEG_SYS_CODE    = (SEG_PRE  | SEG_NOSYS	| SEG_CODE | SEG_RW   | SEG_ACC  ),
@@ -109,13 +116,13 @@ public:
         SEG_TSS0        = (SEG_PRE  | SEG_TSS   | SEG_DPL2 | SEG_DPL1 )
     };
 
-    // DPL/RPL for application (user) and system (supervisor) modes 
+    // DPL/RPL for application (user) and system (supervisor) modes
     enum {
         PL_APP = 3, // GDT, RPL=3
         PL_SYS = 0  // GDT, RPL=0
     };
 
-    // GDT Layout 
+    // GDT Layout
     enum GDT_Layout { // GCC BUG (anonymous enum in templates)
         GDT_NULL      = 0,
         GDT_FLT_CODE  = 1,
@@ -148,13 +155,13 @@ public:
           g_d_0_a_limit_19_16(((f & SEG_NOSYS) ? (SEG_4K | SEG_32) : 0) | ((Reg8)(l >> 16))), base_31_24((Reg8)(b >> 24)) {}
 
         friend Debug & operator<<(Debug & db, const GDT_Entry & g) {
-            db << "{bas=" << (void *)((g.base_31_24 << 24) | (g.base_23_16 << 16) | g.base_15_00) 
+            db << "{bas=" << (void *)((g.base_31_24 << 24) | (g.base_23_16 << 16) | g.base_15_00)
                << ",lim=" << (void *)(((g.g_d_0_a_limit_19_16 & 0xf) << 16) | g.limit_15_00)
-               << ",p=" << (g.p_dpl_s_type >> 7) 
+               << ",p=" << (g.p_dpl_s_type >> 7)
                << ",dpl=" << ((g.p_dpl_s_type >> 5) & 0x3)
                << ",s=" << ((g.p_dpl_s_type >> 4) & 0x1)
                << ",typ=" << (g.p_dpl_s_type & 0xf)
-               << ",g=" << (g.g_d_0_a_limit_19_16 >> 7) 
+               << ",g=" << (g.g_d_0_a_limit_19_16 >> 7)
                << ",d=" << ((g.g_d_0_a_limit_19_16 >> 6) & 0x1)
                << ",a=" << ((g.g_d_0_a_limit_19_16 >> 4) & 0x1) << "}";
             return db;
@@ -181,7 +188,7 @@ public:
         friend Debug & operator<<(Debug & db, const IDT_Entry & i) {
             db << "{sel=" << i.selector
                << ",off=" << (void *)i.offset()
-               << ",p=" << (i.p_dpl_0_d_1_1_0 >> 7) 
+               << ",p=" << (i.p_dpl_0_d_1_1_0 >> 7)
                << ",dpl=" << ((i.p_dpl_0_d_1_1_0 >> 5) & 0x3)
                << ",d=" << ((i.p_dpl_0_d_1_1_0 >> 4) & 0x1) << "}";
             return db;
@@ -240,15 +247,17 @@ public:
     };
 
     // CPU Context
-    class Context
-    {
+    class Context {
     public:
-        Context(Log_Addr entry): _eflags(FLAG_DEFAULTS), _eip(entry) {}
+        Context(const Log_Addr & usp, const Log_Addr & entry):
+            _esp3(usp),
+            _eip(entry),
+            _cs((Traits<System>::multitask && usp)? SEL_APP_CODE : SEL_SYS_CODE),
+            _eflags(FLAG_DEFAULTS)
+        {}
 
         void save() volatile;
         void load() const volatile;
-
-        void usp(Log_Addr usp) { _esp3 = usp; }
 
         friend Debug & operator<<(Debug & db, const Context & c) {
             db << hex
@@ -275,7 +284,7 @@ public:
         }
 
     private:
-        Reg32 _esp3;
+        Reg32 _esp3; // only used in multitasking environments
         Reg32 _edi;
         Reg32 _esi;
         Reg32 _ebp;
@@ -284,8 +293,9 @@ public:
         Reg32 _edx;
         Reg32 _ecx;
         Reg32 _eax;
-        Reg32 _eflags;
         Reg32 _eip;
+        Reg32 _cs;
+        Reg32 _eflags;
     };
 
     // I/O ports
@@ -357,23 +367,32 @@ public:
         return compare;
    }
 
-    static Reg32 htonl(Reg32 v)	{
- 	ASM("bswap %0" : "=r" (v) : "0" (v), "r" (v)); return v;
-    }
+    static Reg32 htonl(Reg32 v)	{ ASM("bswap %0" : "=r" (v) : "0" (v), "r" (v)); return v; }
     static Reg16 htons(Reg16 v)	{ return swap16(v); }
     static Reg32 ntohl(Reg32 v)	{ return htonl(v); }
     static Reg16 ntohs(Reg16 v)	{ return htons(v); }
 
+    /* BUG: CPU::init_stack don't work for parameters of distinct types (e.g. int, char, int). */
     // IA32 first decrements the stack pointer and then writes into the stack, that's why we decrement it by an int
     template<typename ... Tn>
-    static Context * init_stack(Log_Addr stack, unsigned int size, void (* exit)(), int (* entry)(Tn ...), Tn ... an) {
+    static Context * init_stack(const Log_Addr & usp, void (* user_exit)(), const Log_Addr & stack, unsigned int size, void (* exit)(), int (* entry)(Tn ...), Tn ... an) {
         Log_Addr sp = stack + size - sizeof(int);
         sp -= SIZEOF<Tn ... >::Result;
         init_stack_helper(sp, an ...);
         sp -= sizeof(int *);
         *static_cast<int *>(sp) = Log_Addr(exit);
+
+        if (Traits<System>::multitask && usp) {
+            sp -= sizeof(int *); // making room for SS
+            *static_cast<int *>(sp) = Log_Addr(SEL_APP_DATA);
+            sp -= sizeof(int *); // making room for ESP
+            *static_cast<int *>(sp) = Log_Addr(usp);
+
+            *static_cast<int *>(usp) = Log_Addr(user_exit);
+        }
+
         sp -= sizeof(Context);
-        return new (sp) Context(entry);
+        return new (sp) Context(usp, entry);
     }
 
 public:
@@ -390,23 +409,23 @@ public:
         Reg32 value; ASM("movl %%esp,%0" : "=r"(value) :); return value;
     }
     static void esp(const Reg32 value) {
- 	ASM("movl %0, %%esp" : : "r"(value));
+        ASM("movl %0, %%esp" : : "r"(value));
     }
 
     static Reg32 eax() {
         Reg32 value; ASM("movl %%eax,%0" : "=r"(value) :); return value;
     }
     static void eax(const Reg32 value) {
- 	ASM("movl %0, %%eax" : : "r"(value));
+        ASM("movl %0, %%eax" : : "r"(value));
     }
 
     static Log_Addr eip() {
         Log_Addr value;
-        ASM("		push	%%eax					\n"
-             "		call	1f					\n"
-             "1:	popl	%%eax		# ret. addr.		\n"
-             "		movl	%%eax,%0				\n"
-             "		popl	%%eax					\n" 
+        ASM("       push    %%eax                           \n"
+             "      call    1f                              \n"
+             "1:    popl    %%eax       # ret. addr.        \n"
+             "      movl    %%eax,%0                        \n"
+             "      popl    %%eax                           \n"
              : "=o"(value) : );
         return value;
     }
@@ -418,7 +437,7 @@ public:
         ASM("movl %0, %%cr0" : : "r"(value));
     }
 
-    static Reg32 cr2()	{
+    static Reg32 cr2() {
         Reg32 value; ASM("movl %%cr2, %0" : "=r"(value) :); return value;
     }
 
@@ -454,7 +473,7 @@ public:
         *b = base;
         ASM("lgdt %0" : : "m"(aux[0]));
     }
- 
+
     static void idtr(Reg16 * limit, Reg32 * base) {
         volatile Reg8 aux[6];
         volatile Reg16 * l = reinterpret_cast<volatile Reg16 *>(&aux[0]);
@@ -529,39 +548,39 @@ public:
         ASM("wrmsr" : : "c"(msr), "A"(v));
     }
 
-    static Reg8 in8(const IO_Port port) {
+    static Reg8 in8(const IO_Port & port) {
         Reg8 value;
         ASM("inb %1,%0" : "=a"(value) : "d"(port));
         return value;
     }
-    static Reg16 in16(const IO_Port port) {
+    static Reg16 in16(const IO_Port & port) {
         Reg16 value;
         ASM("inw %1,%0" : "=a"(value) : "d"(port));
         return value;
     }
-    static Reg32 in32(const IO_Port port) {
+    static Reg32 in32(const IO_Port & port) {
         Reg32 value;
         ASM("inl %1,%0" : "=a"(value) : "d"(port));
         return value;
     }
-    static void out8(const IO_Port port, const Reg8 value) {
+    static void out8(const IO_Port & port, const Reg8 & value) {
         ASM("outb %1,%0" : : "d"(port), "a"(value));
     }
-    static void out16(const IO_Port port, const Reg16 value)	{
+    static void out16(const IO_Port & port, const Reg16 & value) {
         ASM("outw %1,%0" : : "d"(port), "a"(value));
     }
-    static void out32(const IO_Port port, const Reg32 value)	{
+    static void out32(const IO_Port & port, const Reg32 & value) {
         ASM("outl %1,%0" : : "d"(port), "a"(value));
     }
 
-    static void switch_tss(const Reg32 tss_selector) {
+    static void switch_tss(const Reg32 & selector) {
         struct {
             Reg32 offset;
             Reg32 selector;
         } address;
 
         address.offset   = 0;
-        address.selector = tss_selector;
+        address.selector = selector;
 
         ASM("ljmp *%0" : "=o" (address));
     }

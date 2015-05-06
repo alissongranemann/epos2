@@ -72,7 +72,7 @@ public:
 
     static Hertz clock() { return CLOCK; }
 
-    static void config(int channel, Count count, bool interrupt = true, bool periodic = true)
+    static void config(int channel, const Count & count, bool interrupt = true, bool periodic = true)
     {
         if(channel > 2)
             return;
@@ -294,19 +294,14 @@ public:
         return percentage;
     }
 
-    void handler(const Handler * handler) { _handler = handler; }
+    void handler(const Handler & handler) { _handler = handler; }
 
     static void enable() { IC::enable(IC::INT_TIMER); }
     static void disable() { IC::disable(IC::INT_TIMER); }
 
  private:
-    static Hertz count2freq(const Count & c) {
-        return c ? Engine::clock() / c : 0;
-    }
-
-    static Count freq2count(const Hertz & f) { 
-        return f ? Engine::clock() / f : 0;
-    }
+    static Hertz count2freq(const Count & c) { return c ? Engine::clock() / c : 0; }
+    static Count freq2count(const Hertz & f) { return f ? Engine::clock() / f : 0; }
 
     static void int_handler(const Interrupt_Id & i);
 
@@ -317,7 +312,7 @@ protected:
     Count _initial;
     bool _retrigger;
     volatile Count _current[Traits<Machine>::CPUS];
-    Handler * _handler;
+    Handler _handler;
 
     static PC_Timer * _channels[CHANNELS];
 };

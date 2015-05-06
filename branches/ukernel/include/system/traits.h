@@ -20,13 +20,13 @@ template<> struct Traits<Build>
     enum {LIBRARY, BUILTIN, KERNEL};
     static const unsigned int MODE = LIBRARY;
 
-    enum {IA32};
+    enum {IA32, ARMv7};
     static const unsigned int ARCHITECTURE = IA32;
 
-    enum {PC};
+    enum {PC, Cortex_M, Cortex_A};
     static const unsigned int MACHINE = PC;
 
-    enum {Legacy};
+    enum {Legacy, eMote3, LM3S811};
     static const unsigned int MODEL = Legacy;
 
     static const unsigned int CPUS = 1;
@@ -125,7 +125,7 @@ template<> struct Traits<Thread>: public Traits<void>
 {
     static const bool smp = Traits<System>::multicore;
 
-    typedef Scheduling_Criteria::FCFS Criterion;
+    typedef Scheduling_Criteria::RR Criterion;
     static const unsigned int QUANTUM = 10000; // us
 
     static const bool trace_idle = hysterically_debugged;
@@ -170,10 +170,6 @@ template<> struct Traits<Network>: public Traits<void>
 
     // This list is positional, with one network for each NIC in traits<NIC>::NICS
     typedef LIST<IP> NETWORKS;
-};
-
-template<> struct Traits<ARP<NIC, IP> >: public Traits<Network>
-{
 };
 
 template<> struct Traits<IP>: public Traits<Network>
@@ -222,4 +218,3 @@ template<> struct Traits<DHCP>: public Traits<Network>
 __END_SYS
 
 #endif
-

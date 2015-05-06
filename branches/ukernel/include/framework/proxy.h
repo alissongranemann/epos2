@@ -1,5 +1,7 @@
 // EPOS Component Framework - Component Proxy
 
+// Proxies and Agents handle RMI within EPOS component framework
+
 #ifndef __proxy_h
 #define __proxy_h
 
@@ -10,188 +12,119 @@ __BEGIN_SYS
 template<typename Component>
 class Proxy;
 
-
+// Proxied is used to create a Proxy for components created either by SETUP before the framework came into place or internally by the framework itself
 template<typename Component>
 class Proxied: public Proxy<Component>
 {
 public:
-    Proxied(): Proxy<Component>(Proxy<Component>::PROXIED) {}
+    Proxied(): Proxy<Component>(Proxy<Component>::PROXIED) {
+        db<Framework>(TRC) << "Proxied(this=" << this << ")" << endl;
+    }
 
-    void * operator new(size_t s, void * c) {
-        db<Framework>(TRC) << "Proxied::new(c=" << c << ")" << endl;
-        return new Proxy<Component>(reinterpret_cast<Adapter<Component> *>(c)); }
+    void * operator new(size_t s, void * adapter) {
+        db<Framework>(TRC) << "Proxied::new(adapter=" << adapter << ")" << endl;
+        Framework::Element * el= Framework::_cache.search_key(reinterpret_cast<unsigned int>(adapter));
+        void * proxy;
+        if(el) {
+            proxy = el->object();
+            db<Framework>(INF) << "Proxied::new(adapter=" << adapter << ") => " << proxy << " (CACHED)" << endl;
+        } else {
+            proxy = new Proxy<Component>(Id(Type<Component>::ID, reinterpret_cast<Id::Unit_Id>(adapter)));
+            el = new Framework::Element(proxy, reinterpret_cast<unsigned int>(adapter));  // the proxied cache is insert-only; object are intentionally never deleted, since they have been created by SETUP!
+            Framework::_cache.insert(el);
+        }
+        return proxy;
+    }
 };
 
-
 template<typename Component>
-class Proxy
+class Proxy: public Message
 {
     template<typename> friend class Proxy;
     template<typename> friend class Proxied;
 
-protected:
-    typedef Adapter<Component> _Adapter;
-
+private:
     enum Private_Proxied{ PROXIED };
-    Proxy(const Private_Proxied & p) {}
 
-    Proxy(_Adapter * c) { _adapter = c; }
+private:
+    Proxy(const Id & id): Message(id) {} // for Proxied::operator new()
+    Proxy(const Private_Proxied & p) { db<Framework>(TRC) << "Proxy(PROXIED) => [id=" << Proxy<Component>::id() << "]" << endl; } // for Proxied
 
 public:
-    Proxy() {
-        Message msg(Type<Component>::ID, 0);
-        if(Type<Component>::ID == THREAD_ID)
-            msg.out(new char[Traits<Application>::STACK_SIZE]);
-        msg.invoke(Method::CREATE);
-        _adapter = reinterpret_cast<_Adapter *>(msg.id().unit());
-    }
-    template<typename T1>
-    Proxy(const T1 & p1) {
-        Message msg(Type<Component>::ID, 0);
-        if(Type<Component>::ID == THREAD_ID)
-            msg.out(p1, new char[Traits<Application>::STACK_SIZE]);
-        else
-            msg.out(p1);
-        msg.invoke(Method::CREATE1);
-        _adapter = reinterpret_cast<_Adapter *>(msg.id().unit());
-    }
-    template<typename T1, typename T2>
-    Proxy(const T1 & p1, const T2 & p2) {
-        Message msg(Type<Component>::ID, 0);
-        if(Type<Component>::ID == THREAD_ID)
-            msg.out(p1, p2, new char[Traits<Application>::STACK_SIZE]);
-        else
-            msg.out(p1, p2); msg.invoke(Method::CREATE2);
-        _adapter = reinterpret_cast<_Adapter *>(msg.id().unit());
-    }
-    template<typename T1, typename T2, typename T3>
-    Proxy(const T1 & p1, const T2 & p2, const T3 & p3) {
-        Message msg(Type<Component>::ID, 0);
-        if(Type<Component>::ID == THREAD_ID)
-            msg.out(p1, p2, p3, new char[Traits<Application>::STACK_SIZE]);
-        else
-            msg.out(p1, p2, p3);
-        msg.invoke(Method::CREATE3);
-        _adapter = reinterpret_cast<_Adapter *>(msg.id().unit()); }
-    template<typename T1, typename T2, typename T3, typename T4>
-    Proxy(const T1 & p1, const T2 & p2, const T3 & p3, const T4 & p4) {
-        Message msg(Type<Component>::ID, 0);
-        if(Type<Component>::ID == THREAD_ID)
-            msg.out(p1, p2, p3, p4, new char[Traits<Application>::STACK_SIZE]);
-        else
-            msg.out(p1, p2, p3, p4);
-        msg.invoke(Method::CREATE4);
-        _adapter = reinterpret_cast<_Adapter *>(msg.id().unit());
-    }
+    template<typename ... Tn>
+    Proxy(const Tn & ... an): Message(Id(Type<Component>::ID, 0)) { invoke(CREATE + sizeof ... (Tn), an ...); }
+    ~Proxy() { invoke(DESTROY); }
 
-    Proxy(const Proxy<Task> & task, void (* entry)()) { Message msg(Type<Component>::ID, 0); msg.out(task._adapter, entry); msg.invoke(Method::CREATE6); _adapter = reinterpret_cast<_Adapter *>(msg.id().unit()); }
-
-    Proxy(const Proxy<Segment> & cs, const Proxy<Segment> & ds) { Message msg(Type<Component>::ID, 0); msg.out(cs._adapter, ds._adapter); msg.invoke(Method::CREATE6); _adapter = reinterpret_cast<_Adapter *>(msg.id().unit()); }
-
-    ~Proxy() { Message msg(Type<Component>::ID, 0); msg.invoke(Method::DESTROY); }
-
-    static Proxy<Component> * self() { Message msg(Type<Component>::ID, 0); msg.invoke(Method::SELF); return new (reinterpret_cast<_Adapter *>(msg.id().unit())) Proxied<Component>; }
+    static Proxy<Component> * self() { return new (reinterpret_cast<void *>(static_invoke(SELF))) Proxied<Component>; }
 
     // Process management
-    void suspend() { Message msg(_adapter); msg.invoke(Method::THREAD_SUSPEND); }
-    void resume() { Message msg(_adapter); msg.invoke(Method::THREAD_RESUME); }
-    int join() { Message msg(_adapter); msg.invoke(Method::THREAD_JOIN); return msg.result(); }
-    int pass() { Message msg(_adapter); msg.invoke(Method::THREAD_PASS); return msg.result(); }
-    const volatile unsigned int state() const { Message msg(_adapter); msg.invoke(Method::THREAD_STATE); return msg.result(); }
-    static int yield() { Message msg(Type<Component>::ID, 0); msg.invoke(Method::THREAD_YIELD); return msg.result(); }
-    static void exit(int r) { Message msg(Type<Component>::ID, 0); msg.out(r); msg.invoke(Method::THREAD_EXIT); }
-    static volatile bool wait_next() { Message msg(Type<Component>::ID, 0); msg.invoke(Method::THREAD_WAIT_NEXT); return msg.result(); }
+    void suspend() { invoke(THREAD_SUSPEND); }
+    void resume() { invoke(THREAD_RESUME); }
+    int join() { return invoke(THREAD_JOIN); }
+    int pass() { return invoke(THREAD_PASS); }
+    static int yield() { return static_invoke(THREAD_YIELD); }
+    static void exit(int r) { static_invoke(THREAD_EXIT, r); }
+    static volatile bool wait_next() { return static_invoke(THREAD_WAIT_NEXT); }
 
-    Proxy<Address_Space> * address_space() { Message msg(_adapter); msg.invoke(Method::TASK_ADDRESS_SPACE); return new (reinterpret_cast<Adapter<Address_Space> *>(msg.result())) Proxied<Address_Space>; }
-    Proxy<Segment> * code_segment() { Message msg(_adapter); msg.invoke(Method::TASK_CODE_SEGMENT); return new (reinterpret_cast<Adapter<Segment> *>(msg.result())) Proxied<Segment>; }
-    Proxy<Segment> * data_segment() { Message msg(_adapter); msg.invoke(Method::TASK_DATA_SEGMENT); return new (reinterpret_cast<Adapter<Segment> *>(msg.result())) Proxied<Segment>; }
-    CPU::Log_Addr code() { Message msg(_adapter); msg.invoke(Method::TASK_CODE); return msg.result(); }
-    CPU::Log_Addr data() { Message msg(_adapter); msg.invoke(Method::TASK_DATA); return msg.result(); }
+    Proxy<Address_Space> * address_space() { return new (reinterpret_cast<Adapter<Address_Space> *>(invoke(TASK_ADDRESS_SPACE))) Proxied<Address_Space>; }
+    Proxy<Segment> * code_segment() { return new (reinterpret_cast<Adapter<Segment> *>(invoke(TASK_CODE_SEGMENT))) Proxied<Segment>; }
+    Proxy<Segment> * data_segment() { return new (reinterpret_cast<Adapter<Segment> *>(invoke(TASK_DATA_SEGMENT))) Proxied<Segment>; }
+    CPU::Log_Addr code() { return invoke(TASK_CODE); }
+    CPU::Log_Addr data() { return invoke(TASK_DATA); }
 
     // Memory management
-    CPU::Phy_Addr pd() { Message msg(_adapter); msg.invoke(Method::ADDRESS_SPACE_PD); return msg.result(); }
-    CPU::Log_Addr attach(const Proxy<Segment> & seg) { Message msg(_adapter); msg.out(seg._adapter); msg.invoke(Method::ADDRESS_SPACE_ATTACH1); return msg.result(); }
-    CPU::Log_Addr attach(const Proxy<Segment> & seg, CPU::Log_Addr addr) { Message msg(_adapter); msg.out(seg._adapter, addr); msg.invoke(Method::ADDRESS_SPACE_ATTACH2); return msg.result(); }
-    void detach(const Proxy<Segment> & seg) { Message msg(_adapter); msg.out(seg._adapter); msg.invoke(Method::ADDRESS_SPACE_DETACH);}
+    CPU::Phy_Addr pd() { return invoke(ADDRESS_SPACE_PD); }
+    CPU::Log_Addr attach(const Proxy<Segment> & seg) { return invoke(ADDRESS_SPACE_ATTACH1, seg.id().unit()); }
+    CPU::Log_Addr attach(const Proxy<Segment> & seg, CPU::Log_Addr addr) { return invoke(ADDRESS_SPACE_ATTACH2, seg.id().unit(), addr); }
+    void detach(const Proxy<Segment> & seg) { invoke(ADDRESS_SPACE_DETACH, seg.id().unit());}
 
-    unsigned int size() { Message msg(_adapter); msg.invoke(Method::SEGMENT_SIZE); return msg.result(); }
-    CPU::Phy_Addr phy_address() { Message msg(_adapter); msg.invoke(Method::SEGMENT_PHY_ADDRESS); return msg.result(); }
-    int resize(int amount) { Message msg(_adapter); msg.invoke(Method::SEGMENT_RESIZE); return msg.result(); }
+    unsigned int size() { return invoke(SEGMENT_SIZE); }
+    CPU::Phy_Addr phy_address() { return invoke(SEGMENT_PHY_ADDRESS); }
+    int resize(int amount) { return invoke(SEGMENT_RESIZE, amount); }
 
     // Synchronization
-    void lock() { Message msg(_adapter); msg.invoke(Method::SYNCHRONIZER_LOCK); }
-    void unlock() { Message msg(_adapter); msg.invoke(Method::SYNCHRONIZER_UNLOCK); }
+    void lock() { invoke(SYNCHRONIZER_LOCK); }
+    void unlock() { invoke(SYNCHRONIZER_UNLOCK); }
 
-    void p() { Message msg(_adapter); msg.invoke(Method::SYNCHRONIZER_P); }
-    void v() { Message msg(_adapter); msg.invoke(Method::SYNCHRONIZER_V); }
+    void p() { invoke(SYNCHRONIZER_P); }
+    void v() { invoke(SYNCHRONIZER_V); }
 
-    void wait() { Message msg(_adapter); msg.invoke(Method::SYNCHRONIZER_WAIT); }
-    void signal() { Message msg(_adapter); msg.invoke(Method::SYNCHRONIZER_SIGNAL); }
-    void broadcast() { Message msg(_adapter); msg.invoke(Method::SYNCHRONIZER_BROADCAST); }
+    void wait() { invoke(SYNCHRONIZER_WAIT); }
+    void signal() { invoke(SYNCHRONIZER_SIGNAL); }
+    void broadcast() { invoke(SYNCHRONIZER_BROADCAST); }
 
     // Timing
     template<typename T>
-    static void delay(T t) { Message msg(Type<Component>::ID, 0); msg.out(t); msg.invoke(Method::ALARM_DELAY); }
+    static void delay(T t) { static_invoke(ALARM_DELAY, t); }
 
     // Communication
     template<typename T1, typename T2, typename T3>
-    int send(T1 a1, T2 a2, T3 a3) { Message msg(_adapter); msg.invoke(Method::SELF, a1, a2, a3); return msg.result(); }
+    int send(T1 a1, T2 a2, T3 a3) { return invoke(SELF, a1, a2, a3); }
     template<typename T1, typename T2, typename T3>
-    int receive(T1 a1, T2 a2, T3 a3) { Message msg(_adapter); msg.invoke(Method::SELF, a1, a2, a3); return msg.result(); }
-
+    int receive(T1 a1, T2 a2, T3 a3) { return invoke(SELF, a1, a2, a3); }
 
     // ELF
-    int segments() 
-    { 
-        Message msg(_adapter);
-        msg.invoke(Method::ELF_SEGMENTS);
-        return msg.result();
-    }
-
-    int load_segment(int i, unsigned long dst_addr) 
-    { 
-        Message msg(_adapter);
-        msg.out(i, dst_addr);
-        msg.invoke(Method::ELF_LOAD_SEGMENT);
-        return msg.result();
-    }
-    
-    unsigned long segment_address(int i) 
-    { 
-        Message msg(_adapter);
-        msg.out(i);
-        msg.invoke(Method::ELF_SEGMENT_ADDRESS);
-        return msg.result();
-    }
-    
-    int segment_size(int i) 
-    { 
-        Message msg(_adapter);
-        msg.out(i);
-        msg.invoke(Method::ELF_SEGMENT_SIZE);
-        return msg.result();
-    }
-    
-    unsigned long entry() 
-    { 
-        Message msg(_adapter);
-        msg.invoke(Method::ELF_ENTRY);
-        return msg.result();
-    }
+    int segments() { return invoke(ELF_SEGMENTS); }
+    int load_segment(int i, unsigned long dst_addr) { return invoke(ELF_LOAD_SEGMENT, i, dst_addr); }
+    unsigned long segment_address(int i) { return invoke(ELF_SEGMENT_ADDRESS, i); }
+    int segment_size(int i) { return invoke(ELF_SEGMENT_SIZE, i); }
+    unsigned long entry() { return invoke(ELF_ENTRY); }
 
     // Boot_Image
-    Proxy<ELF> * next_extra_elf() 
-    { 
-        Message msg(_adapter); 
-        msg.invoke(Method::BOOT_IMAGE_ELF);
-        return new (reinterpret_cast<Adapter<ELF> *>(msg.result())) Proxied<ELF>;
+    Proxy<ELF> * next_extra_elf() { return new (reinterpret_cast<Adapter<ELF> *>(invoke(BOOT_IMAGE_ELF))) Proxied<ELF>; }
+
+public:
+    template<typename ... Tn>
+    static int static_invoke(const Method & m, const Tn & ... an) {
+        Message msg(Id(Type<Component>::ID, 0)); // avoid calling ~Proxy()
+        Result res = msg.act(m, an ...);
+        return (m == SELF) ? msg.id().unit() : res;
     }
 
 private:
-    Adapter<Component> * _adapter;
+    template<typename ... Tn>
+    int invoke(const Method & m, const Tn & ... an) { return act(m, an ...); }
 };
-
-
 
 __END_SYS
 

@@ -18,7 +18,7 @@ Scheduler<Thread> Thread::_scheduler;
 Spin Thread::_lock;
 
 // Methods
-void Thread::common_constructor(Log_Addr entry, unsigned int stack_size) 
+void Thread::constructor(Log_Addr entry, unsigned int stack_size)
 {
     db<Thread>(TRC) << "Thread(task=" << _task
                     << ",entry=" << entry
@@ -55,7 +55,7 @@ Thread::~Thread()
 
     // The running thread cannot delete itself!
     assert(_state != RUNNING);
-    
+
     switch(_state) {
     case RUNNING:  // For switch completion only: the running thread would have deleted itself! Stack wouldn't have been released!
         exit(-1);
@@ -180,7 +180,7 @@ void Thread::resume()
     if(_state == SUSPENDED) {
         _state = READY;
         _scheduler.resume(this);
-        
+
         if(preemptive)
             reschedule(_link.rank().queue());
     } else {
@@ -323,7 +323,7 @@ void Thread::rescheduler(const IC::Interrupt_Id & interrupt)
 }
 
 
-void Thread::time_slicer()
+void Thread::time_slicer(const IC::Interrupt_Id & i)
 {
     lock();
 
@@ -331,9 +331,9 @@ void Thread::time_slicer()
 }
 
 
-void Thread::implicit_exit() 
+void Thread::implicit_exit()
 {
-    exit(CPU::fr()); 
+    exit(CPU::fr());
 }
 
 
@@ -400,8 +400,8 @@ __END_SYS
 
 // Id forwarder to the spin lock
 __BEGIN_UTIL
-unsigned int This_Thread::id() 
-{ 
+unsigned int This_Thread::id()
+{
     return _not_booting ? reinterpret_cast<volatile unsigned int>(Thread::self()) : Machine::cpu_id() + 1;
 }
 __END_UTIL

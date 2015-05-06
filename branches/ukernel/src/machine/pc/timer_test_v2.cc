@@ -56,7 +56,7 @@ protected:
     }
 
 public:
-    static void handler()
+    static void handler(const IC::Interrupt_Id & i)
     {
         if (_instance && (generated_interrupts == 0))
             instance()->_chrono.start(); /* Start counting ISR time here */
@@ -112,7 +112,7 @@ public:
 private:
     static Timer_HM* _instance;
 
-private:    
+private:
     unsigned int _buffer_index;
     Buffer<char>* _buf[_SYS::Traits<Application>::num_buffers];
     Atomic_Queue<Buffer<char> > _produced;
@@ -267,6 +267,8 @@ int main()
     cout << dropped_interrupts << " interrupts were dropped" << endl;
     cout << "Total ISR time: " << Timer_HM::instance()->total_isr_time()  << " us" << endl;
     cout << "The End!" << endl;
+
+    // while(true);
 
     return 0;
 }

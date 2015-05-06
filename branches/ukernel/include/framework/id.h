@@ -17,12 +17,8 @@ public:
     typedef unsigned int Type_Id;
     typedef unsigned int Unit_Id;
 
-protected:
-    Pointer_Id() {
-        //db<Init>(INF) << "Empty id!" << endl;
-    } // for new Scenario
-
 public:
+    Pointer_Id() {}
     Pointer_Id(const Type_Id & t, const Unit_Id & u): _type(t), _unit(u) {}
     template<typename Component>
     Pointer_Id(const Component * c): _type(Type<Component>::ID), _unit(reinterpret_cast<Unit_Id>(c)) {}

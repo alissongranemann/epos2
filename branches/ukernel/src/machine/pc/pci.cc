@@ -38,13 +38,16 @@ void PC_PCI::header(const PC_PCI::Locator & l, PC_PCI::Header * h)
             cfg32(l.bus, l.dev_fn, _base_address[i], h->region[i].phy_addr); 
             cpu.int_enable();
             if( (h->region[i].phy_addr & BASE_ADDRESS_SPACE_MASK) || 
-        	( (h->type&0x7f) == HEADER_TYPE_BRIDGE || (h->type&0x7f) == HEADER_TYPE_CARDBUS) || h->class_id == 257 || h->class_id == 1027 || h->class_id == 1536 || h->class_id == 1537 || h->class_id == 1920 || h->class_id == 3075 || h->class_id == 3077) { // I/O
+        	( (h->type&0x7f) == HEADER_TYPE_BRIDGE || (h->type&0x7f) == HEADER_TYPE_CARDBUS) || h->class_id == 257 || h->class_id == 768 || h->class_id == 1027 || h->class_id == 1536 || h->class_id == 1537 || h->class_id == 1920 || h->class_id == 3075 || h->class_id == 3077) { // I/O
         	h->region[i].memory = false;
         	h->region[i].phy_addr &= BASE_ADDRESS_IO_MASK;
         	h->region[i].log_addr = ~0;
         	h->region[i].size = 
         	    ~(h->region[i].size & BASE_ADDRESS_IO_MASK) + 1;
-            } else {
+            } /* else if (! h->region[i].phy_addr) {
+                kout << h->class_id << " is a bad guy " << endl;
+            } */
+            else {
         	h->region[i].memory = true;
         	h->region[i].phy_addr &= BASE_ADDRESS_MEM_MASK;
         	h->region[i].log_addr = phy2log(h->region[i].phy_addr);

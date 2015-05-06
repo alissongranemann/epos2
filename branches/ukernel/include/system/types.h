@@ -28,6 +28,7 @@ void * operator new[](size_t, const EPOS::Scratchpad_Allocator &);
 
 // Utilities
 __BEGIN_UTIL
+class Dummy;
 class Bitmaps;
 class CRC;
 class ELF;
@@ -62,20 +63,56 @@ class IA32_TSC;
 class IA32_MMU;
 class IA32_PMU;
 
+class ARMv7;
+class ARMv7_TSC;
+class ARMv7_MMU;
+
+class AVR8;
+class AVR8_TSC;
+class AVR8_MMU;
+
 // Machine Hardware Mediators
 class PC;
 class PC_PCI;
 class PC_IC;
 class PC_Timer;
 class PC_RTC;
-class PC_EEPROM;
-class PC_Scratchpad;
 class PC_UART;
+class PC_EEPROM;
 class PC_Display;
+class PC_Scratchpad;
+class PC_NIC;
 class PC_Ethernet;
+
+class Cortex_M;
+class Cortex_M_IC;
+class Cortex_M_Timer;
+class Cortex_M_RTC;
+class Cortex_M_UART;
+class Cortex_M_EEPROM;
+class Cortex_M_Display;
+class Cortex_M_Scratchpad;
+class Cortex_M_Radio;
+
+class ATmega;
+class ATmega_IC;
+class ATmega_Timer;
+class ATmega_RTC;
+class ATmega_EEPROM;
+class ATmega_Flash;
+class ATmega_Scratchpad;
+class ATmega_UART;
+class ATmega_USART;
+class ATmega_SPI;
+class ATmega_ADC;
+class ATmega_Battery;
+class ATmega_Radio;
+
 class PCNet32;
 class C905;
 class E100;
+class CC2538;
+class AT86RF;
 
 class Serial_Display;
 
@@ -105,8 +142,8 @@ namespace Scheduling_Criteria
     class CEDF;
 };
 
-class Segment;
 class Address_Space;
+class Segment;
 
 class Synchronizer;
 class Mutex;
@@ -114,10 +151,11 @@ class Semaphore;
 class Condition;
 
 class Clock;
-class Alarm;
 class Chronometer;
+class Alarm;
+class Delay;
 
-template<typename NIC, typename Network, unsigned int HTYPE = 1>
+template<typename NIC, typename Network, unsigned int HTYPE>
 class ARP;
 class Network;
 class IP;
@@ -126,13 +164,19 @@ class UDP;
 class TCP;
 class DHCP;
 
+template<typename Channel, typename Network, bool connectionless>
+class Link;
+template<typename Channel, typename Network, bool connectionless>
+class Port;
+
 // Framework
 class Framework;
 template<typename Component> class Handle;
 template<typename Component> class Adapter;
 
 // Aspects
-template<typename Component> class Identified;
+class Aspect;
+template<typename Component> class Authenticated;
 template<typename Component> class Shared;
 template<typename Component> class Remote;
 
@@ -177,6 +221,9 @@ enum
     TCP_ID,
     DHCP_ID,
 
+    LINK_ID,
+    PORT_ID,
+
     UTILITY_ID = 50,
 
     BOOT_IMAGE_ID,
@@ -193,6 +240,11 @@ template<> struct Type<IA32> { static const Type_Id ID = CPU_ID; };
 template<> struct Type<IA32_TSC> { static const Type_Id ID = TSC_ID; };
 template<> struct Type<IA32_MMU> { static const Type_Id ID = MMU_ID; };
 
+template<> struct Type<ARMv7> { static const Type_Id ID = CPU_ID; };
+template<> struct Type<ARMv7_TSC> { static const Type_Id ID = TSC_ID; };
+template<> struct Type<ARMv7_MMU> { static const Type_Id ID = MMU_ID; };
+
+
 template<> struct Type<PC> { static const Type_Id ID = MACHINE_ID; };
 template<> struct Type<PC_IC> { static const Type_Id ID = IC_ID; };
 template<> struct Type<PC_Timer> { static const Type_Id ID = TIMER_ID; };
@@ -203,20 +255,45 @@ template<> struct Type<PC_Display> { static const Type_Id ID = DISPLAY_ID; };
 template<> struct Type<PC_Scratchpad> { static const Type_Id ID = SCRATCHPAD_ID; };
 template<> struct Type<PC_Ethernet> { static const Type_Id ID = NIC_ID; };
 
+template<> struct Type<Cortex_M> { static const Type_Id ID = MACHINE_ID; };
+template<> struct Type<Cortex_M_IC> { static const Type_Id ID = IC_ID; };
+template<> struct Type<Cortex_M_Timer> { static const Type_Id ID = TIMER_ID; };
+template<> struct Type<Cortex_M_UART> { static const Type_Id ID = UART_ID; };
+template<> struct Type<Cortex_M_RTC> { static const Type_Id ID = RTC_ID; };
+template<> struct Type<Cortex_M_Display> { static const Type_Id ID = DISPLAY_ID; };
+template<> struct Type<Cortex_M_Scratchpad> { static const Type_Id ID = SCRATCHPAD_ID; };
+template<> struct Type<Cortex_M_Radio> { static const Type_Id ID = NIC_ID; };
+
+
 template<> struct Type<Thread> { static const Type_Id ID = THREAD_ID; };
+template<> struct Type<Periodic_Thread> { static const Type_Id ID = THREAD_ID; };
+template<> struct Type<RT_Thread> { static const Type_Id ID = THREAD_ID; };
 template<> struct Type<Active> { static const Type_Id ID = ACTIVE_ID; };
 template<> struct Type<Task> { static const Type_Id ID = TASK_ID; };
+
 template<> struct Type<Address_Space> { static const Type_Id ID = ADDRESS_SPACE_ID; };
 template<> struct Type<Segment> { static const Type_Id ID = SEGMENT_ID; };
+
+template<> struct Type<Mutex> { static const Type_Id ID = MUTEX_ID; };
+template<> struct Type<Semaphore> { static const Type_Id ID = SEMAPHORE_ID; };
+template<> struct Type<Condition> { static const Type_Id ID = CONDITION_ID; };
+
+template<> struct Type<Clock> { static const Type_Id ID = CLOCK_ID; };
+template<> struct Type<Chronometer> { static const Type_Id ID = CHRONOMETER_ID; };
 template<> struct Type<Alarm> { static const Type_Id ID = ALARM_ID; };
+template<> struct Type<Delay> { static const Type_Id ID = ALARM_ID; };
+
 template<> struct Type<IP> { static const Type_Id ID = IP_ID; };
 template<> struct Type<ICMP> { static const Type_Id ID = ICMP_ID; };
 template<> struct Type<UDP> { static const Type_Id ID = UDP_ID; };
 template<> struct Type<TCP> { static const Type_Id ID = TCP_ID; };
 template<> struct Type<DHCP> { static const Type_Id ID = DHCP_ID; };
 
+template<> struct Type<Utility> { static const Type_Id ID = UTILITY_ID; };
+
 template<> struct Type<PC_Boot_Image> { static const Type_Id ID = BOOT_IMAGE_ID; };
 template<> struct Type<ELF> { static const Type_Id ID = ELF_ID; };
+
 
 __END_SYS
 

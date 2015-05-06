@@ -23,7 +23,7 @@ int consumer()
         full.p();
         cout << "C<-" << buffer[out] << "\t";
         out = (out + 1) % BUF_SIZE;
-        Alarm::delay(1000 * out);
+        Alarm::delay(5000);
         empty.v();
     }
 
@@ -38,12 +38,13 @@ int main()
     int in = 0;
     for(int i = 0; i < iterations; i++) {
         empty.p();
-        Alarm::delay(1000 * in);
+        Alarm::delay(5000);
         buffer[in] = 'a' + in;
         cout << "P->" << buffer[in] << "\t";
         in = (in + 1) % BUF_SIZE;
         full.v();
     }
+
     cons->join();
 
     cout << "The end!" << endl;

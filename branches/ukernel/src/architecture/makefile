@@ -2,7 +2,11 @@
 
 include	../../makedefs
 
+ifeq ($(MAKE),$(MAKECLEAN))
+SUBDIRS := $(shell find * -maxdepth 0 -type d)
+else
 SUBDIRS := $(ARCH)
+endif
 
 all:		$(SUBDIRS)
 

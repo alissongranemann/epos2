@@ -20,14 +20,23 @@ class Handled: public Handle<Component>
 {
 public:
     Handled(): Handle<Component>(Handle<Component>::HANDLED) {
-        db<Framework>(TRC) << "Handled() => [s= " << Handle<Component>::_stub << "]" << endl;
-//        db<Framework>(WRN) << "sizeof(Component) = " << sizeof(Component) << endl;
-//        db<Framework>(WRN) << "sizeof(Stub) = " << sizeof(typename Handle<Component>::_Stub) << endl;
+        db<Framework>(TRC) << "Handled(this=" << this << ")" << endl;
     }
 
-    void * operator new(size_t s, void * c) {
-        db<Framework>(TRC) << "Handled::new(c=" << c << ")" << endl;
-        return new Handle<Component>(reinterpret_cast<typename Handle<Component>::_Stub *>(c)); }
+    void * operator new(size_t s, void * stub) {
+        db<Framework>(TRC) << "Handled::new(stub=" << stub << ")" << endl;
+        Framework::Element * el= Framework::_cache.search_key(reinterpret_cast<unsigned int>(stub));
+        void * handle;
+        if(el) {
+            handle = el->object();
+            db<Framework>(INF) << "Handled::new(stub=" << stub << ") => " << handle << " (CACHED)" << endl;
+        } else {
+            handle = new Handle<Component>(reinterpret_cast<typename Handle<Component>::_Stub *>(stub));
+            el = new Framework::Element(handle, reinterpret_cast<unsigned int>(stub));  // the handled cache is insert-only; object are intentionally never deleted, since they have been created by SETUP!
+            Framework::_cache.insert(el);
+        }
+        return handle;
+    }
 };
 
 
@@ -67,7 +76,6 @@ public:
     void resume() { _stub->resume(); }
     int join() { return _stub->join(); }
     int pass() { return _stub->pass(); }
-    const volatile unsigned int state() const { return _stub->state(); }
     static void yield() { _Stub::yield(); }
     static void exit(int r = 0) { _Stub::exit(r); }
     static volatile bool wait_next() { return _Stub::wait_next(); }

@@ -30,6 +30,7 @@ struct Configuration
 {
     char	  mode[16];
     char          mach[16];
+    char          mmod[16];
     char 	  arch[16];
     unsigned int  clock;
     unsigned char word_size;
@@ -48,7 +49,7 @@ typedef _SYS::System_Info<_SYS::Machine> System_Info;
 // PROTOTYPES
 bool parse_config(FILE * cfg_file, Configuration * cfg);
 void strtolower (char *dst,const char* src);
-bool add_machine_secrets(int fd_img, unsigned int i_size, char * mach);
+bool add_machine_secrets(int fd_img, unsigned int i_size, char * mach, char * mmod);
 
 bool file_exist(char *file);
 
@@ -108,6 +109,7 @@ int main(int argc, char **argv)
     // Show configuration
     printf("  EPOS mode: %s\n", CONFIG.mode);
     printf("  Machine: %s\n", CONFIG.mach);
+    printf("  Model: %s\n", CONFIG.mmod);
     printf("  Processor: %s (%d bits, %s-endian)\n", CONFIG.arch, CONFIG.word_size, CONFIG.endianess ? "little" : "big");
     printf("  Memory: %d KBytes\n", (CONFIG.mem_top - CONFIG.mem_base) / 1024);
     printf("  Boot Length: %d - %d (min - max) KBytes\n", CONFIG.boot_length_min, CONFIG.boot_length_max);
@@ -229,7 +231,7 @@ int main(int argc, char **argv)
       
     // Adding ARCH specificities
     printf("\n  Adding specific boot features of \"%s\":", CONFIG.mach);
-    if(!(add_machine_secrets(fd_img, image_size, CONFIG.mach))) {
+    if(!(add_machine_secrets(fd_img, image_size, CONFIG.mach, CONFIG.mmod))) {
         fprintf(stderr, "Error: specific features error!\n");
         return 1;
     }    
@@ -258,15 +260,6 @@ bool parse_config(FILE * cfg_file, Configuration * cfg)
         return false;
     }
     strtolower(cfg->mode, token);						
-    // Machine
-    fgets(line, 256, cfg_file);
-    token = strtok(line, "=");
-    if(strcmp(token, "MACH") || !(token = strtok(NULL, "\n"))) {
-        fprintf(stderr, "Error: no valid MACH in configuration!\n");
-        return false;
-    }
-    strtolower(cfg->mach, token);	
-
     // Arch
     fgets(line, 256, cfg_file);
     token = strtok(line, "=");
@@ -275,6 +268,22 @@ bool parse_config(FILE * cfg_file, Configuration * cfg)
         return false;
     }
     strtolower(cfg->arch, token);
+    // Machine
+    fgets(line, 256, cfg_file);
+    token = strtok(line, "=");
+    if(strcmp(token, "MACH") || !(token = strtok(NULL, "\n"))) {
+        fprintf(stderr, "Error: no valid MACH in configuration!\n");
+        return false;
+    }
+    strtolower(cfg->mach, token);	
+    // Model
+    fgets(line, 256, cfg_file);
+    token = strtok(line, "=");
+    if(strcmp(token, "MMOD") || !(token = strtok(NULL, "\n"))) {
+        fprintf(stderr, "Error: no valid MMOD in configuration!\n");
+        return false;
+    }
+    strtolower(cfg->mmod, token);	
 
     // Clock
     fgets(line, 256, cfg_file);
@@ -397,7 +406,7 @@ template<typename T> bool add_boot_map(int fd, System_Info * si)
 //=============================================================================
 // ADD_MACHINE_SCRETS
 //=============================================================================
-bool add_machine_secrets(int fd, unsigned int i_size, char * mach)
+bool add_machine_secrets(int fd, unsigned int i_size, char * mach, char *mmod)
 {
     if (!strcmp(mach, "pc")) { //PC 
         const unsigned int   floppy_size   = 1474560;
@@ -436,6 +445,18 @@ bool add_machine_secrets(int fd, unsigned int i_size, char * mach)
             return false;
         }		
         put_buf(fd, key_string, (strlen(key_string)+1));		
+    }
+    else if (!strcmp(mmod, "emote3")) { // EPOSMoteIII
+        //Customer Configuration Area (CCA)
+        char key_string[] = ":020000040027D3\r\n:0CFFD400FFFFFFEF000000000000200015\r\n:00000001FF\r\n";
+        const int key_offset = -strlen(":00000001FF\r\n");
+ 
+        // Write key string to unlock epos
+        if(lseek(fd,key_offset,SEEK_END) < 0) {
+            fprintf(stderr, "Error: can't seek the boot image!\n");
+            return false;
+        }
+        put_buf(fd, key_string, strlen(key_string));
     }
 
     return true;
@@ -515,7 +536,7 @@ int put_buf(int fd, void * buf, int size)
         return 0;
     int written = write(fd, buf, size);
     if(written < 0) {
-        fprintf(stderr, "Error: can't wirte to file!\n");
+        fprintf(stderr, "Error: can't write to file!\n");
         written = 0;
     }
     return written;

@@ -110,8 +110,7 @@ namespace Scheduling_Criteria
 
     public:
         CPU_Affinity(int p = NORMAL, int cpu = ANY)
-        : Priority(p), Variable_Queue(((_priority == IDLE) || (_priority == MAIN)) ?
-                                      Machine::cpu_id() : (cpu != ANY) ? cpu : ++_next_queue %= Machine::n_cpus()) {}
+        : Priority(p), Variable_Queue(((_priority == IDLE) || (_priority == MAIN)) ? Machine::cpu_id() : (cpu != ANY) ? cpu : ++_next_queue %= Machine::n_cpus()) {}
 
         using Variable_Queue::queue;
 

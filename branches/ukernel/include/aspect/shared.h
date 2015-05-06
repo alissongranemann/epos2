@@ -3,7 +3,7 @@
 #ifndef __shared_h
 #define __shared_h
 
-#include <framework/id.h>
+#include <system/config.h>
 
 __BEGIN_SYS
 
@@ -11,10 +11,14 @@ template<typename Component>
 class Shared
 {
 protected:
-    Shared() {
-//        db<Init>(INF) << "Shared not implemented!" << endl;
-    } // for new Scenario
+    Shared() {}
 
+public:
+    void enter() { db<Aspect>(TRC) << "Shared::enter()" << endl; }
+    void leave() { db<Aspect>(TRC) << "Shared::leave()" << endl; }
+
+    static void static_enter() { db<Aspect>(TRC) << "Shared::static_enter()" << endl; }
+    static void static_leave() { db<Aspect>(TRC) << "Shared::static_leave()" << endl; }
 };
 
 __END_SYS

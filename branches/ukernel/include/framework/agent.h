@@ -3,346 +3,383 @@
 #ifndef __agent_h
 #define __agent_h
 
-#include "stub.h"
 #include "message.h"
 
 __BEGIN_SYS
 
+// EPOS Component Framework - Component Agent
+
 template<typename Component>
-class Agent
+class Agent: public Message
 {
 public:
-    static void act(Message * msg) {
-        msg->reply(Result(-1));
-    }
-};
-
-
-#include <alarm.h>
-template <>
-class Agent<Alarm>
-{
-public:
-    static void act(Message * msg) {
-        db<Alarm>(TRC) << "Alarm Agent::act>>" << endl;
-
-        Result res = 0;
-
-        switch(msg->method()) {
-        case Method::DESTROY: {
-            db<Alarm>(TRC) << "Alarm Agent::DESTROY" << endl;
-            Adapter<Alarm> * alarm = reinterpret_cast<Adapter<Alarm> *>(msg->id().unit());
-            delete alarm;
-        }
-        break;
-        case Method::CREATE3: {
-            db<Alarm>(TRC) << "Alarm Agent::CREATE3" << endl;
-            Alarm::Microsecond time;
-            Handler* handler;
-            int times;
-            msg->in(time, handler, times);
-            msg->id(new Adapter<Alarm>(time, handler, times));
-        }
-        break;
-        case Method::ALARM_DELAY: {
-            db<Alarm>(TRC) << "Alarm Agent::ALARM_DELAY" << endl;
-            Alarm::Microsecond time;
-            msg->in(time);
-            Adapter<Alarm>::delay(time);
-        }
-        break;
-        default:
-            db<Alarm>(WRN) << "Alarm Agent: unknown method: " << msg->method() << endl;
-        break;
-        }
-
-        msg->reply(res);
-
-        db<Alarm>(TRC) << "<<Alarm Agent::act" << endl;
-    }
+    void exec() { result(UNDEFINED); }
 };
 
 
 #include <thread.h>
 //#include <periodic_thread.h>
 template<>
-class Agent<Thread>
+class Agent<Thread>: public Message
 {
 public:
-    static void act(Message * msg) {
-        Adapter<Thread> * thread = reinterpret_cast<Adapter<Thread> *>(msg->id().unit());
+    void exec() {
+        Adapter<Thread> * thread = reinterpret_cast<Adapter<Thread> *>(id().unit());
         Result res = 0;
 
-        switch(msg->method()) {
-        case Method::CREATE1: {
+        // db<Framework>(WRN) << "Agent<Thread>: " << *reinterpret_cast<Message *>(this) << endl;
+
+        switch(method()) {
+        case CREATE3: {
             int (*entry)();
-            msg->in(entry);
-            msg->id(new Adapter<Thread>(entry));
+            char * usp;
+            void (*user_implicit_exit)();
+            in(entry, usp, user_implicit_exit);
+            id(Id(THREAD_ID, reinterpret_cast<Id::Unit_Id>(new Adapter<Thread>(Thread::Configuration(Thread::READY, Thread::NORMAL, Thread::STACK_SIZE, usp, user_implicit_exit), entry))));
+            // db<Framework>(WRN) << "Agent<Thread>: CREATE3 " << reinterpret_cast<void *>(usp) << ":" << reinterpret_cast<void *>(user_implicit_exit) << endl;
         }
         break;
-        case Method::CREATE2: {
+        case CREATE4: {
             Adapter<Task> * task;
             int (*entry)();
-            msg->in(task, entry);
-            msg->id(new Adapter<Thread>(*task, entry));
+            char * usp;
+            void (*user_implicit_exit)();
+            in(task, entry, usp, user_implicit_exit);
+            id(Id(THREAD_ID, reinterpret_cast<Id::Unit_Id>(new Adapter<Thread>(Thread::Configuration(Thread::READY, Thread::NORMAL, Thread::STACK_SIZE, usp, user_implicit_exit), *task, entry))));
+            // db<Framework>(WRN) << "Agent<Thread>: CREATE4 " << reinterpret_cast<void *>(usp) << ":" << reinterpret_cast<void *>(user_implicit_exit) << endl;
         }
         break;
-        case Method::DESTROY:
+        case DESTROY:
             delete thread;
             break;
-        case Method::SELF:
-            msg->id(Adapter<Thread>::self());
+        case SELF:
+            id(Id(THREAD_ID, reinterpret_cast<Id::Unit_Id>(Adapter<Thread>::self())));
             break;
-        case Method::THREAD_SUSPEND:
+        case THREAD_SUSPEND:
             thread->suspend();
             break;
-        case Method::THREAD_RESUME:
+        case THREAD_RESUME:
             thread->resume();
             break;
-        case Method::THREAD_JOIN:
+        case THREAD_JOIN:
             res = thread->join();
             break;
-        case Method::THREAD_PASS:
+        case THREAD_PASS:
             thread->pass();
             break;
-        case Method::THREAD_YIELD:
+        case THREAD_YIELD:
             Thread::yield();
             break;
-        case Method::THREAD_WAIT_NEXT:
-//            Periodic_Thread::wait_next();
+        case THREAD_WAIT_NEXT:
+            //            Periodic_Thread::wait_next();
             break;
-        case Method::THREAD_EXIT: {
+        case THREAD_EXIT: {
             int r;
-            msg->in(r);
-            Thread::exit();
+            in(r);
+            Thread::exit(r);
         }
-        break;
-        case Method::THREAD_STATE:
-            res = thread->state();
+        default:
+            res = UNDEFINED;
             break;
         }
-
-        msg->reply(res);
+        result(res);
     }
 };
+
 
 #include <task.h>
 template<>
-class Agent<Task>
+class Agent<Task>: public Message
 {
 public:
-    static void act(Message * msg) {
-        Adapter<Task> * task = reinterpret_cast<Adapter<Task> *>(msg->id().unit());
+    void exec() {
+        Adapter<Task> * task = reinterpret_cast<Adapter<Task> *>(id().unit());
         Result res = 0;
 
-        switch(msg->method()) {
-        case Method::CREATE2: {
+        switch(method()) {
+        case CREATE2: {
             Segment * cs, * ds;
-            msg->in(cs, ds);
-            msg->id(new Adapter<Task>(*cs, *ds));
+            in(cs, ds);
+            id(Id(TASK_ID, reinterpret_cast<Id::Unit_Id>(new Adapter<Task>(*cs, *ds))));
         }
         break;
-        case Method::DESTROY:
+        case DESTROY:
             delete task;
             break;
-        case Method::SELF:
-            msg->id(Adapter<Task>::self());
+        case SELF:
+            id(Id(TASK_ID, reinterpret_cast<Id::Unit_Id>(Adapter<Task>::self())));
             break;
-        case Method::TASK_ADDRESS_SPACE:
-            res = task->address_space();
+        case TASK_ADDRESS_SPACE:
+            res = reinterpret_cast<int>(task->address_space());
             break;
-        case Method::TASK_CODE_SEGMENT:
-            res = task->code_segment();
+        case TASK_CODE_SEGMENT:
+            res = reinterpret_cast<int>(task->code_segment());
             break;
-        case Method::TASK_DATA_SEGMENT:
-            res = task->data_segment();
+        case TASK_DATA_SEGMENT:
+            res = reinterpret_cast<int>(task->data_segment());
             break;
-        case Method::TASK_CODE:
+        case TASK_CODE:
             res = task->code();
             break;
-        case Method::TASK_DATA:
+        case TASK_DATA:
             res = task->data();
             break;
+        default:
+            res = UNDEFINED;
+            break;
         }
-
-        msg->reply(res);
+        result(res);
     }
 };
 
+
 #include <address_space.h>
 template<>
-class Agent<Address_Space>
+class Agent<Address_Space>: public Message
 {
 public:
-    static void act(Message * msg) {
-        Adapter<Address_Space> * as = reinterpret_cast<Adapter<Address_Space> *>(msg->id().unit());
+    void exec() {
+        Adapter<Address_Space> * as = reinterpret_cast<Adapter<Address_Space> *>(id().unit());
         Result res = 0;
 
-        switch(msg->method()) {
-        case Method::CREATE:
-            msg->id(new Adapter<Address_Space>());
+        switch(method()) {
+        case CREATE:
+            id(Id(ADDRESS_SPACE_ID, reinterpret_cast<Id::Unit_Id>(new Adapter<Address_Space>())));
             break;
-        case Method::DESTROY:
+        case DESTROY:
             delete as;
             break;
-        case Method::ADDRESS_SPACE_PD: {
+        case ADDRESS_SPACE_PD:
             res = as->pd();
-        }
-        break;
-        case Method::ADDRESS_SPACE_ATTACH1: {
+            break;
+        case ADDRESS_SPACE_ATTACH1: {
             Segment * seg;
-            msg->in(seg);
+            in(seg);
             res = as->attach(*seg);
         }
         break;
-        case Method::ADDRESS_SPACE_ATTACH2: {
+        case ADDRESS_SPACE_ATTACH2: {
             Segment * seg;
             CPU::Log_Addr addr;
-            msg->in(seg, addr);
+            in(seg, addr);
             res = as->attach(*seg, addr);
         }
         break;
-        case Method::ADDRESS_SPACE_DETACH: {
+        case ADDRESS_SPACE_DETACH: {
             Segment * seg;
-            msg->in(seg);
+            in(seg);
             as->detach(*seg);
         }
         break;
-        case Method::ADDRESS_PHYSICAL: {
+        case ADDRESS_PHYSICAL: {
             CPU::Log_Addr addr;
-            msg->in(addr);
+            in(addr);
             res = as->physical(addr);
         }
         break;
-        }
+        default:
+            res = UNDEFINED;
+            break;
 
-        msg->reply(res);
+        }
+        result(res);
     }
 };
 
 
 #include <segment.h>
 template<>
-class Agent<Segment>
+class Agent<Segment>: public Message
 {
 public:
-    static void act(Message * msg) {
-        Adapter<Segment> * seg = reinterpret_cast<Adapter<Segment> *>(msg->id().unit());
+    void exec() {
+        Adapter<Segment> * seg = reinterpret_cast<Adapter<Segment> *>(id().unit());
         Result res = 0;
 
-        switch(msg->method()) {
-        case Method::CREATE1: {
+        switch(method()) {
+        case CREATE1: {
             unsigned int bytes;
-            msg->in(bytes);
-            msg->id(new Adapter<Segment>(bytes));
+            in(bytes);
+            id(Id(SEGMENT_ID, reinterpret_cast<Id::Unit_Id>(new Adapter<Segment>(bytes))));
         }
         break;
-        case Method::CREATE2: { // *** indistinguishable ***
+        case CREATE2: { // *** indistinguishable ***
             unsigned int bytes;
             Segment::Flags flags;
-            msg->in(bytes, flags);
-            msg->id(new Adapter<Segment>(bytes, flags));
+            in(bytes, flags);
+            id(Id(SEGMENT_ID, reinterpret_cast<Id::Unit_Id>(new Adapter<Segment>(bytes, flags))));
         }
         break;
-        case Method::CREATE3: { // *** indistinguishable ***
+        case CREATE3: { // *** indistinguishable ***
             Segment::Phy_Addr phy_addr;
             unsigned int bytes;
             Segment::Flags flags;
-            msg->in(phy_addr, bytes, flags);
-            msg->id(new Adapter<Segment>(phy_addr, bytes, flags));
+            in(phy_addr, bytes, flags);
+            id(Id(SEGMENT_ID, reinterpret_cast<Id::Unit_Id>(new Adapter<Segment>(phy_addr, bytes, flags))));
         }
         break;
-        case Method::DESTROY:
+        case DESTROY:
             delete seg;
             break;
-        case Method::SEGMENT_SIZE:
+        case SEGMENT_SIZE:
             res = seg->size();
             break;
-        case Method::SEGMENT_PHY_ADDRESS:
+        case SEGMENT_PHY_ADDRESS:
             res = seg->phy_address();
             break;
-        case Method::SEGMENT_RESIZE: {
+        case SEGMENT_RESIZE: {
             int amount;
-            msg->in(amount);
+            in(amount);
             res = seg->resize(amount);
         }
         break;
-        }
+        default:
+            res = UNDEFINED;
+            break;
 
-        msg->reply(res);
+        }
+        result(res);
     }
 };
 
+
+#include <alarm.h>
 template<>
-class Agent<Utility>
+class Agent<Alarm>: public Message
 {
 public:
-    static void act(Message * msg) {
+    void exec() {
+        Adapter<Alarm> * alarm = reinterpret_cast<Adapter<Alarm> *>(id().unit());
         Result res = 0;
 
-        switch(msg->method()) {
-        case Method::PRINT: {
+        switch(method()) {
+        case DESTROY:
+            delete alarm;
+            break;
+        case CREATE3: {
+            Alarm::Microsecond time;
+            Handler * handler;
+            int times;
+            in(time, handler, times);
+            id(Id(ALARM_ID, reinterpret_cast<Id::Unit_Id>(new Adapter<Alarm>(time, handler, times))));
+        }
+        break;
+        case ALARM_DELAY: {
+            Alarm::Microsecond time;
+            in(time);
+            Adapter<Alarm>::delay(time);
+        }
+        break;
+        default:
+            res = UNDEFINED;
+            break;
+        }
+        result(res);
+    }
+};
+
+
+template<>
+class Agent<Utility>: public Message
+{
+public:
+    void exec() {
+        Result res = 0;
+
+        switch(method()) {
+        case PRINT: {
             const char * s;
-            msg->in(s);
+            in(s);
             _print(s);
         }
+        break;
+        default:
+            res = UNDEFINED;
+            break;
         }
-
-        msg->reply(res);
+        result(res);
     }
 };
 
 template<>
-class Agent<Boot_Image>
+class Agent<Boot_Image>: public Message
 {
 public:
-    static void act(Message * msg) {
+    void exec() {
         Result res = 0;
         Boot_Image * bi = Boot_Image::self(); // As Boot_Image is a singleton there is no need to recover it from a message.
-        switch(msg->method()) {
-        case Method::BOOT_IMAGE_ELF: {
-            res = bi->next_extra_elf();
+
+        switch(method()) {
+        case BOOT_IMAGE_ELF: {
+            res = reinterpret_cast<int>(bi->next_extra_elf());
         }
         }
 
-        msg->reply(res);
+       result(res);
     }
 };
 
-
 template<>
-class Agent<ELF>
+class Agent<ELF>: public Message
 {
 public:
-    static void act(Message * msg) {
+    void exec() {
         Result res = 0;
-        Adapter<ELF> * elf = reinterpret_cast<Adapter<ELF> *>(msg->id().unit());
-        switch(msg->method()) {
-        case Method::ELF_SEGMENTS: {
+        Adapter<ELF> * elf = reinterpret_cast<Adapter<ELF> *>(id().unit());
+
+        switch(method()) {
+        case ELF_SEGMENTS: {
             res = elf->segments();
         } break;
-        case Method::ELF_LOAD_SEGMENT: {
+        case ELF_LOAD_SEGMENT: {
             int i;
             unsigned long dst_addr;
-            msg->in(i, dst_addr);
+            in(i, dst_addr);
             res = elf->load_segment(i, dst_addr);
         } break;
-        case Method::ELF_SEGMENT_ADDRESS: {
+        case ELF_SEGMENT_ADDRESS: {
             int i;
-            msg->in(i);
+            in(i);
             res = elf->segment_address(i);
         } break;
-        case Method::ELF_SEGMENT_SIZE: {
+        case ELF_SEGMENT_SIZE: {
             int i;
-            msg->in(i);
+            in(i);
             res = elf->segment_size(i);
         } break;
-        case Method::ELF_ENTRY: {
+        case ELF_ENTRY: {
             res = elf->entry();
         } break;
         }
 
-        msg->reply(res);
+        result(res);
+    }
+};
+
+
+
+template<>
+class Agent<void>: public Message
+{
+public:
+    void exec() {
+        if(id().type() != UTILITY_ID)
+            db<Framework>(TRC) << ":=>" << *reinterpret_cast<Message *>(this) << endl;
+
+        switch(id().type()) {
+        case THREAD_ID:         reinterpret_cast<Agent<Thread>          *>(this)->exec(); break;
+        case TASK_ID:           reinterpret_cast<Agent<Task>            *>(this)->exec(); break;
+        case ADDRESS_SPACE_ID:  reinterpret_cast<Agent<Address_Space>   *>(this)->exec(); break;
+        case SEGMENT_ID:        reinterpret_cast<Agent<Segment>         *>(this)->exec(); break;
+        case ALARM_ID:          reinterpret_cast<Agent<Alarm>           *>(this)->exec(); break;
+        case UTILITY_ID:        reinterpret_cast<Agent<Utility>         *>(this)->exec(); break;
+        case BOOT_IMAGE_ID:     reinterpret_cast<Agent<Boot_Image>      *>(this)->exec(); break;
+        case ELF_ID:            reinterpret_cast<Agent<ELF>             *>(this)->exec(); break;
+        default:                result(Message::UNDEFINED);
+        }
+
+        if(id().type() != UTILITY_ID)
+            db<Framework>(TRC) << "<=:" << *reinterpret_cast<Message *>(this) << endl;
     }
 };
 

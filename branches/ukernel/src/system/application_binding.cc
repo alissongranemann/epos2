@@ -2,31 +2,37 @@
 
 #include <utility/ostream.h>
 #include <application.h>
-#include <framework/main.h>
 #include <cpu.h>
+#include <framework/main.h>
 
+// Framework class attributes
+__BEGIN_SYS
+Framework::Cache Framework::_cache;
+__END_SYS
+
+
+// Global objects
+__BEGIN_SYS
+OStream kerr;
+__END_SYS
+
+
+// Bindings
 extern "C" {
-    void _panic() {
-        _API::Thread::exit(-1); // Could be replaced by a throw, since exceptions should not be a problem for user space
-    }
-
-    void _exit(int s) {
-        _API::Thread::exit(s);
-    }
-
-    void _print(const char * s) {
-        _SYS::Message msg(_SYS::UTILITY_ID, 0);
-        msg.out(reinterpret_cast<unsigned int>(s));
-        msg.invoke(_SYS::Method::PRINT);
-    }
-
-    int _syscall(void * m) {
-        return _SYS::CPU::syscall(m);
+    void _panic() { _API::Thread::exit(-1); }
+    void _exit(int s) { _API::Thread::exit(s); }
+    void _user_implicit_exit() {
+         int s;
+         ASM("mov %%eax, %0" : "=a"(s) : );
+         _API::Thread::exit(s);
     }
 }
 
-__BEGIN_SYS
-
-OStream kerr;
-
-__END_SYS
+__USING_SYS;
+extern "C" {
+    int _syscall(void * m) { return CPU::syscall(m); }
+    void _print(const char * s) {
+        Message msg(Id(UTILITY_ID, 0));
+        msg.act(Message::PRINT, reinterpret_cast<unsigned int>(s));
+    }
+}

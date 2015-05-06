@@ -7,7 +7,7 @@ __BEGIN_SYS
 
 // Conditional Type
 template<bool condition, typename Then, typename Else>
-struct IF
+struct IF 
 { typedef Then Result; };
 
 template<typename Then, typename Else>
@@ -32,8 +32,8 @@ struct Nil_Case {};
 
 template<int tag_, typename Type_, typename Next_ = Nil_Case>
 struct CASE
-{
-    enum { tag = tag_ };
+{ 
+    enum { tag = tag_ }; 
     typedef Type_ Type;
     typedef Next_ Next;
 };
@@ -42,8 +42,8 @@ template<int tag, typename Case>
 class SWITCH
 {
     typedef typename Case::Next Next_Case;
-    enum {
-        case_tag = Case::tag,
+    enum { 
+        case_tag = Case::tag, 
         found = ( case_tag == tag || case_tag == DEFAULT  )
     };
 public:
@@ -61,7 +61,7 @@ public:
 
 // EQUALty of Types
 template<typename T1, typename T2>
-struct EQUAL
+struct EQUAL 
 { enum { Result = false }; };
 
 template<typename T>
@@ -77,15 +77,14 @@ template<typename T1, typename ... Tn>
 struct SIZEOF<T1, Tn ...>
 { static const unsigned int Result = sizeof(T1) + SIZEOF<Tn ...>::Result ; };
 
-
 // LIST of Types
-template<typename ...Tn> class LIST;
-template<typename T1, typename ...Tn>
-class LIST<T1, Tn...>
+template<typename ... Tn> class LIST;
+template<typename T1, typename ... Tn>
+class LIST<T1, Tn ...>
 {
 protected:
     typedef T1 Head;
-    typedef LIST<Tn...> Tail;
+    typedef LIST<Tn ...> Tail;
 
 public:
     enum { Length = Tail::Length + 1 };
@@ -110,9 +109,9 @@ public:
 
 template<>
 class LIST<>
-{
+{ 
 public:
-    enum { Length = 0 };
+    enum { Length = 0 }; 
 
     template<int Index, int Current = 0>
     struct Get
@@ -130,7 +129,7 @@ public:
 
 
 // LIST of Templates
-template<template<typename T> class ...Tn> class TLIST;
+template<template<typename T> class ... Tn> class TLIST;
 template<template<typename T> class T1, template<typename T> class T2, template<typename T> class ... Tn>
 class TLIST<T1, T2, Tn ...>
 {
@@ -146,11 +145,11 @@ public:
         static void static_leave() { T1<T>::static_leave(); T2<T>::static_leave(); }
     };
 };
-template<template<typename T> class T1, template<typename T> class ...Tn>
-class TLIST<T1, Tn...>
+template<template<typename T> class T1, template<typename T> class ... Tn>
+class TLIST<T1, Tn ...>
 {
 public:
-    enum { Length = TLIST<Tn...>::Length + 1 };
+    enum { Length = TLIST<Tn ...>::Length + 1 };
 
     template<typename T>
     struct Recur: public T1<T>, public TLIST<Tn ...>::template Recur<T>
@@ -175,7 +174,7 @@ public:
         void leave() {}
         static void static_enter() {}
         static void static_leave() {}
-};
+    };
 };
 
 

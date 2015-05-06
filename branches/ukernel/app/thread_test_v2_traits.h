@@ -12,7 +12,7 @@ struct Traits
     static const bool enabled = true;
     static const bool debugged = true;
     static const bool hysterically_debugged = false;
-    typedef LIST<> ASPECTS;
+    typedef TLIST<> ASPECTS;
 };
 
 template<> struct Traits<Build>
@@ -20,13 +20,13 @@ template<> struct Traits<Build>
     enum {LIBRARY, BUILTIN, KERNEL};
     static const unsigned int MODE = LIBRARY;
 
-    enum {IA32};
+    enum {IA32, ARMv7};
     static const unsigned int ARCHITECTURE = IA32;
 
-    enum {PC};
+    enum {PC, Cortex_M, Cortex_A};
     static const unsigned int MACHINE = PC;
 
-    enum {Legacy};
+    enum {Legacy, eMote3, LM3S811};
     static const unsigned int MODEL = Legacy;
 
     static const unsigned int CPUS = 1;
@@ -39,8 +39,8 @@ template<> struct Traits<Debug>
 {
     static const bool error   = true;
     static const bool warning = true;
-    static const bool info    = true;
-    static const bool trace   = true;
+    static const bool info    = false;
+    static const bool trace   = false;
 };
 
 template<> struct Traits<Lists>: public Traits<void>
@@ -125,7 +125,7 @@ template<> struct Traits<Thread>: public Traits<void>
 {
     static const bool smp = Traits<System>::multicore;
 
-    typedef Scheduling_Criteria::RR Criterion;
+    typedef Scheduling_Criteria::FCFS Criterion;
     static const unsigned int QUANTUM = 10000; // us
 
     static const bool trace_idle = hysterically_debugged;
@@ -161,7 +161,60 @@ template<> struct Traits<Synchronizer>: public Traits<void>
     static const bool enabled = Traits<System>::multithread;
 };
 
+template<> struct Traits<Network>: public Traits<void>
+{
+    static const bool enabled = (Traits<Build>::NODES > 1);
+
+    static const unsigned int RETRIES = 3;
+    static const unsigned int TIMEOUT = 10; // s
+
+    // This list is positional, with one network for each NIC in traits<NIC>::NICS
+    typedef LIST<IP> NETWORKS;
+};
+
+template<> struct Traits<IP>: public Traits<Network>
+{
+    enum {STATIC, MAC, INFO, RARP, DHCP};
+
+    struct Default_Config {
+        static const unsigned int  TYPE    = DHCP;
+        static const unsigned long ADDRESS = 0;
+        static const unsigned long NETMASK = 0;
+        static const unsigned long GATEWAY = 0;
+    };
+
+    template<unsigned int UNIT>
+    struct Config: public Default_Config {};
+
+    static const unsigned int TTL  = 0x40; // Time-to-live
+};
+
+template<> struct Traits<IP>::Config<0> //: public Traits<IP>::Default_Config
+{
+    static const unsigned int  TYPE      = MAC;
+    static const unsigned long ADDRESS   = 0x0a000100;  // 10.0.1.x x=MAC[5]
+    static const unsigned long NETMASK   = 0xffffff00;  // 255.255.255.0
+    static const unsigned long GATEWAY   = 0;           // 10.0.1.1
+};
+
+template<> struct Traits<IP>::Config<1>: public Traits<IP>::Default_Config
+{
+};
+
+template<> struct Traits<UDP>: public Traits<Network>
+{
+    static const bool checksum = true;
+};
+
+template<> struct Traits<TCP>: public Traits<Network>
+{
+    static const unsigned int WINDOW = 4096;
+};
+
+template<> struct Traits<DHCP>: public Traits<Network>
+{
+};
+
 __END_SYS
 
 #endif
-

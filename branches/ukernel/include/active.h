@@ -10,7 +10,7 @@ __BEGIN_SYS
 class Active: public Thread
 {
 public:
-    Active() : Thread(&entry, this, Thread::SUSPENDED) {}
+    Active(): Thread(Configuration(Thread::SUSPENDED), &entry, this) {}
     virtual ~Active() {}
 
     virtual int run() = 0;

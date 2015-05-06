@@ -20,11 +20,11 @@ public:
     using Grouping_List<char>::size;
 
     Simple_Heap() {
-        db<Init, Simple_Heap>(TRC) << "Heap() => " << this << endl;
+        db<Init, Heaps>(TRC) << "Heap() => " << this << endl;
     }
 
     Simple_Heap(void * addr, unsigned int bytes) {
-        db<Init, Simple_Heap>(TRC) << "Heap(addr=" << addr << ",bytes=" << bytes << ") => " << this << endl;
+        db<Init, Heaps>(TRC) << "Heap(addr=" << addr << ",bytes=" << bytes << ") => " << this << endl;
 
         free(addr, bytes);
     }

@@ -20,6 +20,7 @@ class Thread
     friend class Alarm;
     friend class Task;
     friend class IA32;
+    template<typename> friend class Agent;
 
 protected:
     static const bool smp = Traits<Thread>::smp;
@@ -57,40 +58,30 @@ public:
         IDLE    = Criterion::IDLE
     };
 
+    // Thread Configuration
+    struct Configuration {
+        Configuration(const State & s = READY, const Criterion & c = NORMAL, unsigned int ss = STACK_SIZE, char * usp = 0, void (* uie)() = 0)
+        : state(s), criterion(c), stack_size(ss), user_stack_pointer(usp), user_implicit_exit(uie) {}
+
+        State state;
+        Criterion criterion;
+        unsigned int stack_size;
+        char * user_stack_pointer;
+        void (* user_implicit_exit)();
+    };
+
     // Thread Queue
     typedef Ordered_Queue<Thread, Criterion, Scheduler<Thread>::Element> Queue;
 
 public:
-    Thread(int (* entry)(),
-           const State & state = READY, const Criterion & criterion = NORMAL, unsigned int stack_size  = STACK_SIZE, char * user_stack = 0);
-    template<typename T1>
-    Thread(int (* entry)(T1 a1), T1 a1,
-           const State & state = READY, const Criterion & criterion = NORMAL, unsigned int stack_size  = STACK_SIZE, char * user_stack = 0);
-    template<typename T1, typename T2>
-    Thread(int (* entry)(T1 a1, T2 a2), T1 a1, T2 a2,
-           const State & state = READY, const Criterion & criterion = NORMAL, unsigned int stack_size  = STACK_SIZE, char * user_stack = 0);
-    template<typename T1, typename T2, typename T3>
-    Thread(int (* entry)(T1 a1, T2 a2, T3 a3), T1 a1, T2 a2, T3 a3,
-           const State & state = READY, const Criterion & criterion = NORMAL, unsigned int stack_size  = STACK_SIZE, char * user_stack = 0);
-    template<typename T1, typename T2, typename T3, typename T4>
-    Thread(int (* entry)(T1 a1, T2 a2, T3 a3, T4 a4), T1 a1, T2 a2, T3 a3, T4 a4,
-           const State & state = READY, const Criterion & criterion = NORMAL, unsigned int stack_size  = STACK_SIZE, char * user_stack = 0);
-
-    Thread(const Task & task, int (* entry)(),
-           const State & state = READY, const Criterion & criterion = NORMAL, unsigned int stack_size  = STACK_SIZE, char * user_stack = 0);
-    template<typename T1>
-    Thread(const Task & task, int (* entry)(T1 a1), T1 a1,
-           const State & state = READY, const Criterion & criterion = NORMAL, unsigned int stack_size  = STACK_SIZE, char * user_stack = 0);
-    template<typename T1, typename T2>
-    Thread(const Task & task, int (* entry)(T1 a1, T2 a2), T1 a1, T2 a2,
-           const State & state = READY, const Criterion & criterion = NORMAL, unsigned int stack_size  = STACK_SIZE, char * user_stack = 0);
-    template<typename T1, typename T2, typename T3>
-    Thread(const Task & task, int (* entry)(T1 a1, T2 a2, T3 a3), T1 a1, T2 a2, T3 a3,
-           const State & state = READY, const Criterion & criterion = NORMAL, unsigned int stack_size  = STACK_SIZE, char * user_stack = 0);
-    template<typename T1, typename T2, typename T3, typename T4>
-    Thread(const Task & task, int (* entry)(T1 a1, T2 a2, T3 a3, T4 a4), T1 a1, T2 a2, T3 a3, T4 a4,
-           const State & state = READY, const Criterion & criterion = NORMAL, unsigned int stack_size  = STACK_SIZE, char * user_stack = 0);
-
+    template<typename ... Tn>
+    Thread(int (* entry)(Tn ...), Tn ... an);
+    template<typename ... Tn>
+    Thread(const Task & task, int (* entry)(Tn ...), Tn ... an);
+    template<typename ... Cn, typename ... Tn>
+    Thread(const Configuration & conf, int (* entry)(Tn ...), Tn ... an);
+    template<typename ... Cn, typename ... Tn>
+    Thread(const Configuration & conf, const Task & task, int (* entry)(Tn ...), Tn ... an);
     ~Thread();
 
     const volatile State & state() const { return _state; }
@@ -110,7 +101,7 @@ public:
     static void exit(int status = 0);
 
 protected:
-    void common_constructor(Log_Addr entry, unsigned int stack_size);
+    void constructor(Log_Addr entry, unsigned int stack_size);
 
     static Thread * volatile running() { return _scheduler.chosen(); }
 
@@ -129,7 +120,7 @@ protected:
             _lock.release();
         CPU::int_enable();
     }
-    
+
     static bool locked() { return CPU::int_disabled(); }
 
     void suspend(bool locked);
@@ -141,7 +132,7 @@ protected:
     static void reschedule();
     static void reschedule(unsigned int cpu);
     static void rescheduler(const IC::Interrupt_Id & interrupt);
-    static void time_slicer();
+    static void time_slicer(const IC::Interrupt_Id & interrupt);
 
     static void implicit_exit();
 
@@ -155,7 +146,6 @@ private:
 protected:
     const Task * _task;
     char * _stack;
-    char * _user_stack;
     Context * volatile _context;
     volatile State _state;
     Queue * _waiting;
@@ -174,143 +164,51 @@ __END_SYS
 
 __BEGIN_SYS
 
-inline Thread::Thread(int (* entry)(), const State & state, const Criterion & criterion, unsigned int stack_size, char * user_stack)
-: _task(Task::self()), _state(state), _waiting(0), _joining(0), _link(this, criterion)
+template<typename ... Tn>
+inline Thread::Thread(int (* entry)(Tn ...), Tn ... an)
+: _task(Task::self()), _state(READY), _waiting(0), _joining(0), _link(this, NORMAL)
 {
     lock();
-
-    _user_stack = user_stack;
-    _stack = new (SYSTEM) char[stack_size];
-    _context = CPU::init_stack(_stack, stack_size, &implicit_exit, entry);
-    _context->usp(user_stack + stack_size);
-
-    common_constructor(entry, stack_size); // implicit unlock
+    _stack = new (SYSTEM) char[STACK_SIZE];
+    _context = CPU::init_stack(0, 0, _stack, STACK_SIZE, &implicit_exit, entry, an ...);
+    constructor(entry, STACK_SIZE); // implicit unlock
 }
 
-template<typename T1>
-inline Thread::Thread(int (* entry)(T1 a1), T1 a1, const State & state, const Criterion & criterion, unsigned int stack_size, char * user_stack)
-: _task(Task::self()), _state(state), _waiting(0), _joining(0), _link(this, criterion)
+template<typename ... Tn>
+inline Thread::Thread(const Task & task, int (* entry)(Tn ...), Tn ... an)
+: _task(&task), _state(READY), _waiting(0), _joining(0), _link(this, NORMAL)
 {
     lock();
-
-    _user_stack = user_stack;
-    _stack = new (SYSTEM) char[stack_size];
-    _context = CPU::init_stack(_stack, stack_size, &implicit_exit, entry, a1);
-    _context->usp(user_stack + stack_size);
-
-    common_constructor(entry, stack_size); // implicit unlock()
+    _stack = new (SYSTEM) char[STACK_SIZE];
+    _context = CPU::init_stack(0, 0, _stack, STACK_SIZE, &implicit_exit, entry, an ...);
+    constructor(entry, STACK_SIZE); // implicit unlock
 }
 
-template<typename T1, typename T2>
-inline Thread::Thread(int (* entry)(T1 a1, T2 a2), T1 a1, T2 a2, const State & state, const Criterion & criterion, unsigned int stack_size, char * user_stack)
-: _task(Task::self()), _state(state), _waiting(0), _joining(0), _link(this, criterion)
+template<typename ... Cn, typename ... Tn>
+inline Thread::Thread(const Configuration & conf, int (* entry)(Tn ...), Tn ... an)
+: _task(Task::self()), _state(conf.state), _waiting(0), _joining(0), _link(this, conf.criterion)
 {
     lock();
-
-    _user_stack = user_stack;
-    _stack = new (SYSTEM) char[stack_size];
-    _context = CPU::init_stack(_stack, stack_size, &implicit_exit, entry, a1, a2);
-    _context->usp(user_stack + stack_size);
-
-    common_constructor(entry, stack_size); // implicit unlock()
+    _stack = new (SYSTEM) char[conf.stack_size];
+    _context = CPU::init_stack(conf.user_stack_pointer, conf.user_implicit_exit, _stack, conf.stack_size, &implicit_exit, entry, an ...);
+    constructor(entry, conf.stack_size); // implicit unlock
 }
 
-template<typename T1, typename T2, typename T3>
-inline Thread::Thread(int (* entry)(T1 a1, T2 a2, T3 a3), T1 a1, T2 a2, T3 a3, const State & state, const Criterion & criterion, unsigned int stack_size, char * user_stack)
-: _task(Task::self()), _state(state), _waiting(0), _joining(0), _link(this, criterion)
+template<typename ... Cn, typename ... Tn>
+inline Thread::Thread(const Configuration & conf, const Task & task, int (* entry)(Tn ...), Tn ... an)
+: _task(&task), _state(conf.state), _waiting(0), _joining(0), _link(this, conf.criterion)
 {
     lock();
+    task.activate();
+    _stack = new (SYSTEM) char[conf.stack_size];
+    _context = CPU::init_stack(conf.user_stack_pointer, conf.user_implicit_exit, _stack, conf.stack_size, &implicit_exit, entry, an ...);
 
-    _user_stack = user_stack;
-    _stack = new (SYSTEM) char[stack_size];
-    _context = CPU::init_stack(_stack, stack_size, &implicit_exit, entry, a1, a2, a3);
-    _context->usp(user_stack + stack_size);
+    if (_scheduler.schedulables() > 0) // If not the first thread
+        Task::self()->activate();
 
-    common_constructor(entry, stack_size); // implicit unlock()
+    constructor(entry, conf.stack_size); // implicit unlock
 }
 
-template<typename T1, typename T2, typename T3, typename T4>
-inline Thread::Thread(int (* entry)(T1 a1, T2 a2, T3 a3, T4 a4), T1 a1, T2 a2, T3 a3, T4 a4, const State & state, const Criterion & criterion, unsigned int stack_size, char * user_stack)
-: _task(Task::self()), _state(state), _waiting(0), _joining(0), _link(this, criterion)
-{
-    lock();
-
-    _user_stack = user_stack;
-    _stack = new (SYSTEM) char[stack_size];
-    _context = CPU::init_stack(_stack, stack_size, &implicit_exit, entry, a1, a2, a3, a4);
-    _context->usp(user_stack + stack_size);
-
-    common_constructor(entry, stack_size); // implicit unlock()
-}
-
-inline Thread::Thread(const Task & task, int (* entry)(), const State & state, const Criterion & criterion, unsigned int stack_size, char * user_stack)
-: _task(&task), _state(state), _waiting(0), _joining(0), _link(this, criterion)
-{
-    lock();
-
-    _user_stack = user_stack;
-    _stack = new (SYSTEM) char[stack_size];
-    _context = CPU::init_stack(_stack, stack_size, &implicit_exit, entry);
-    _context->usp(user_stack + stack_size);
-
-    common_constructor(entry, stack_size); // implicit unlock
-}
-
-template<typename T1>
-inline Thread::Thread(const Task & task, int (* entry)(T1 a1), T1 a1, const State & state, const Criterion & criterion, unsigned int stack_size, char * user_stack)
-: _task(&task), _state(state), _waiting(0), _joining(0), _link(this, criterion)
-{
-    lock();
-
-    _user_stack = user_stack;
-    _stack = new (SYSTEM) char[stack_size];
-    _context = CPU::init_stack(_stack, stack_size, &implicit_exit, entry, a1);
-    _context->usp(user_stack + stack_size);
-
-    common_constructor(entry, stack_size); // implicit unlock()
-}
-
-template<typename T1, typename T2>
-inline Thread::Thread(const Task & task, int (* entry)(T1 a1, T2 a2), T1 a1, T2 a2, const State & state, const Criterion & criterion, unsigned int stack_size, char * user_stack)
-: _task(&task), _state(state), _waiting(0), _joining(0), _link(this, criterion)
-{
-    lock();
-
-    _user_stack = user_stack;
-    _stack = new (SYSTEM) char[stack_size];
-    _context = CPU::init_stack(_stack, stack_size, &implicit_exit, entry, a1, a2);
-    _context->usp(user_stack + stack_size);
-
-    common_constructor(entry, stack_size); // implicit unlock()
-}
-
-template<typename T1, typename T2, typename T3>
-inline Thread::Thread(const Task & task, int (* entry)(T1 a1, T2 a2, T3 a3), T1 a1, T2 a2, T3 a3, const State & state, const Criterion & criterion, unsigned int stack_size, char * user_stack)
-: _task(&task), _state(state), _waiting(0), _joining(0), _link(this, criterion)
-{
-    lock();
-
-    _user_stack = user_stack;
-    _stack = new (SYSTEM) char[stack_size];
-    _context = CPU::init_stack(_stack, stack_size, &implicit_exit, entry, a1, a2, a3);
-    _context->usp(user_stack + stack_size);
-
-    common_constructor(entry, stack_size); // implicit unlock()
-}
-
-template<typename T1, typename T2, typename T3, typename T4>
-inline Thread::Thread(const Task & task, int (* entry)(T1 a1, T2 a2, T3 a3, T4 a4), T1 a1, T2 a2, T3 a3, T4 a4, const State & state, const Criterion & criterion, unsigned int stack_size, char * user_stack)
-: _task(&task), _state(state), _waiting(0), _joining(0), _link(this, criterion)
-{
-    lock();
-
-    _user_stack = user_stack;
-    _stack = new (SYSTEM) char[stack_size];
-    _context = CPU::init_stack(_stack, stack_size, &implicit_exit, entry, a1, a2, a3, a4);
-    _context->usp(user_stack + stack_size);
-
-    common_constructor(entry, stack_size); // implicit unlock()
-}
 
 // An event handler that triggers a thread (see handler.h)
 class Thread_Handler : public Handler

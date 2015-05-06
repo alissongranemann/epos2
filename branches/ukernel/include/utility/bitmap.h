@@ -39,7 +39,7 @@ public:
         for(i = 0; i < upto / BPI; i++)
             if(_map[i] != ~0U)
                 return false;
-        if((upto & mask) && ((_map[i] | ~mask) != ~0U))
+        if((upto & mask) && ((_map[i] | ~((1 << (upto & mask)) - 1)) != ~0U))
             return false;
         return true;
     }
@@ -49,7 +49,7 @@ public:
         for(i = 0; i < upto / BPI; i++)
             if(_map[i])
                 return false;
-        if((upto & mask) && (_map[i] & mask))
+        if((upto & mask) && (_map[i] & ((1 << (upto & mask)) - 1)))
             return false;
         return true;
     }

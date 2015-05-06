@@ -43,8 +43,7 @@ public:
         }
 
         Address(unsigned long a) {
-            if(LENGTH != sizeof(long))
-                return;
+            assert(LENGTH == sizeof(long));
             a = htonl(a);
             memcpy(this, &a, sizeof(long));
         }

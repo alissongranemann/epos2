@@ -4,6 +4,7 @@ include	../makedefs
 
 SYSTEM := $(shell find . -name $(MACH)_\* -and -not -name $(MACH)_boot)
 IMAGE  := $(addsuffix .img,$(APPLICATION))
+FLASH  := $(addsuffix .hex,$(APPLICATION))
 OUTPUT := $(addsuffix .out,$(APPLICATION))
 
 all:		strip $(IMAGE)
@@ -25,6 +26,8 @@ endif
 debug:		$(IMAGE)
 		$(EMULATOR) $(IMAGE) | $(TEE) $(OUTPUT) &
 		$(DEBUGGER) $(APP)/$(APPLICATION)
+
+flash:		$(FLASH)
 
 strip:		$(SYSTEM) $(APPLICATION)
 		@for file in $^; do $(STRIP) "$${file}"; done;

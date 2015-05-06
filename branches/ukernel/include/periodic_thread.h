@@ -54,64 +54,24 @@ public:
 
     enum { INFINITE = RTC::INFINITE };
 
+    struct Configuration: public Thread::Configuration {
+        Configuration(const Microsecond & p, int t = INFINITE, const State & s = READY, const Criterion & c = NORMAL, unsigned int ss = STACK_SIZE, char * us = 0)
+        : Thread::Configuration(s, c, ss, us), period(p), times(t) {}
+
+        Microsecond period;
+        int times;
+    };
+
 public:
-    Periodic_Thread(int (* entry)(), const Microsecond & period, int times = INFINITE,
-                    const State & state = READY, const Criterion & criterion = NORMAL, unsigned int stack_size = STACK_SIZE)
-    : Thread(entry, SUSPENDED, (criterion != NORMAL) ? criterion : Criterion(period), stack_size),
-      _semaphore(0), _handler(&_semaphore, this), _alarm(period, &_handler, times) {
-        if((state == READY) || (state == RUNNING)) {
+    template<typename ... Cn, typename ... Tn>
+    Periodic_Thread(const Configuration & conf, int (* entry)(Tn ...), Tn ... an)
+    : Thread(Configuration(conf.period, conf.times, SUSPENDED, (conf.criterion != NORMAL) ? conf.criterion : Criterion(conf.period), conf.stack_size), entry, an ...),
+      _semaphore(0), _handler(&_semaphore, this), _alarm(conf.period, &_handler, conf.times) {
+        if((conf.state == READY) || (conf.state == RUNNING)) {
             _state = SUSPENDED;
             resume();
         } else
-            _state = state;
-    }
-
-    template<typename T1>
-    Periodic_Thread(int (* entry)(T1 a1), T1 a1, const Microsecond & period, int times = INFINITE,
-                    const State & state = READY, const Criterion & criterion = NORMAL, unsigned int stack_size = STACK_SIZE)
-    : Thread(entry, a1, SUSPENDED, (criterion != NORMAL) ? criterion : Criterion(period), stack_size),
-      _semaphore(0), _handler(&_semaphore, this), _alarm(period, &_handler, times) {
-        if((state == READY) || (state == RUNNING)) {
-            _state = SUSPENDED;
-            resume();
-        } else
-            _state = state;
-    }
-
-    template<typename T1, typename T2>
-    Periodic_Thread(int (* entry)(T1 a1, T2 a2), T1 a1, T2 a2, const Microsecond & period, int times = INFINITE,
-                    const State & state = READY, const Criterion & criterion = NORMAL, unsigned int stack_size = STACK_SIZE)
-    : Thread(entry, a1, a2, SUSPENDED, (criterion != NORMAL) ? criterion : Criterion(period), stack_size),
-      _semaphore(0), _handler(&_semaphore, this), _alarm(period, &_handler, times) {
-        if((state == READY) || (state == RUNNING)) {
-            _state = SUSPENDED;
-            resume();
-        } else
-            _state = state;
-    }
-
-    template<typename T1, typename T2, typename T3>
-    Periodic_Thread(int (* entry)(T1 a1, T2 a2, T3 a3), T1 a1, T2 a2, T3 a3, const Microsecond & period, int times = INFINITE,
-                    const State & state = READY, const Criterion & criterion = NORMAL, unsigned int stack_size = STACK_SIZE)
-    : Thread(entry, a1, a2, a3, SUSPENDED, (criterion != NORMAL) ? criterion : Criterion(period), stack_size),
-      _semaphore(0), _handler(&_semaphore, this), _alarm(period, &_handler, times) {
-        if((state == READY) || (state == RUNNING)) {
-            _state = SUSPENDED;
-            resume();
-        } else
-            _state = state;
-    }
-
-    template<typename T1, typename T2, typename T3, typename T4>
-    Periodic_Thread(int (* entry)(T1 a1, T2 a2, T3 a3, T4 a4), T1 a1, T2 a2, T3 a3, T4 a4, const Microsecond & period, int times = INFINITE,
-                    const State & state = READY, const Criterion & criterion = NORMAL, unsigned int stack_size = STACK_SIZE)
-    : Thread(entry, a1, a2, a3, a4, SUSPENDED, (criterion != NORMAL) ? criterion : Criterion(period), stack_size),
-      _semaphore(0), _handler(&_semaphore, this), _alarm(period, &_handler, times) {
-        if((state == READY) || (state == RUNNING)) {
-            _state = SUSPENDED;
-            resume();
-        } else
-            _state = state;
+            _state = conf.state;
     }
 
     static volatile bool wait_next() {
@@ -144,12 +104,8 @@ public:
                     const Microsecond & deadline, const Microsecond & period = SAME,
                     const Microsecond & capacity = UNKNOWN, const Microsecond & activation = NOW,
                     int times = INFINITE, int cpu = ANY, unsigned int stack_size = STACK_SIZE)
-    : Periodic_Thread(&entry, this, function, activation, times,
-                      activation ? activation : period ? period : deadline,
-                      activation ? 1 : times,
-                      SUSPENDED,
-                      Criterion(deadline, period ? period : deadline, capacity, cpu),
-                      stack_size) {
+    : Periodic_Thread(Configuration(activation ? activation : period ? period : deadline, activation ? 1 : times, SUSPENDED, Criterion(deadline, period ? period : deadline, capacity, cpu), stack_size),
+                      &entry, this, function, activation, times) {
         if(activation && Criterion::dynamic)
             // The priority of dynamic criteria will be adjusted to the correct value by the
             // update() in the operator()() of Handler
@@ -185,6 +141,7 @@ private:
     }
 };
 
+typedef Periodic_Thread::Configuration RTConf;
 __END_SYS
 
 #endif

@@ -1,5 +1,10 @@
 // EPOS Component Framework - Scenario Adapter
 
+// Scenario adapters are the heart of EPOS component framework.
+// They collect component-specific Aspect programs to build a scenario for it to run.
+// Scenario features are enforced by wrapping all and any method invocation (event creation and destruction)
+// within the enter() and leave() methods.
+
 #ifndef __adapter_h
 #define __adapter_h
 
@@ -16,31 +21,21 @@ class Adapter: public Component, public Scenario<Component>
     using Scenario<Component>::static_leave;
 
 public:
-    typedef Component _Component;
+    typedef Component _Component; // used by Message
 
 public:
-    Adapter() { static_leave(); }
-    template<typename T1>
-    Adapter(const T1 & a1): Component(a1) { static_leave(); }
-    template<typename T1, typename T2>
-    Adapter(const T1 & a1, const T2 & a2): Component(a1, a2) { static_leave(); }
-    template<typename T1, typename T2, typename T3>
-    Adapter(const T1 & a1, const T2 & a2, const T3 & a3): Component(a1, a2, a3) { static_leave(); }
-    template<typename T1, typename T2, typename T3, typename T4>
-    Adapter(const T1 & a1, const T2 & a2, const T3 & a3, const T4 & a4): Component(a1, a2, a3, a4) { static_leave(); }
-
+    template<typename ... Tn>
+    Adapter(const Tn & ... an): Component(an ...) { static_leave(); }
     ~Adapter() { static_enter(); }
 
     void * operator new(size_t bytes) {
 	static_enter();
 	return Scenario<Component>::operator new(bytes);
     }
-
     void operator delete(void * adapter) {
 	Scenario<Component>::operator delete(adapter);
 	static_leave();
     }
-
 
     static const Adapter<Component> * self() { static_enter(); const Adapter<Component> * res = reinterpret_cast<const Adapter<Component> *>(Component::self()); return res; }
 
@@ -49,7 +44,6 @@ public:
     void resume() { enter(); Component::resume(); leave(); }
     int join() { enter(); int res = Component::join(); leave(); return res; }
     void pass() { enter(); Component::pass(); leave(); }
-    const volatile unsigned int state() { enter(); const volatile unsigned int s = Component::state(); leave(); return s; }
     static void yield() { static_enter(); Component::yield(); static_leave(); }
     static void exit(int status) { static_enter(); Component::exit(status); static_leave(); }
 
@@ -88,21 +82,26 @@ public:
     int ticks() { enter(); int res = Component::ticks(); leave(); return res; }
     int read() { enter(); int res = Component::read(); leave(); return res; }
 
-     // Communication
-     template<typename T1, typename T2, typename T3>
-     int send(T1 & a1, T2 & a2, T3 & a3) {
-	 enter();
-	 int res = Component::send(a1, a2, a3);
-	 leave();
-	 return res;
-     }
-     template<typename T1, typename T2, typename T3>
-     int receive(T1 & a1, T2 & a2, T3 & a3) {
-	enter();
-	int res = Component::receive(a1, a2, a3);
-	leave();
-	return res;
+    // Communication
+    template<typename ... Tn>
+    int send(Tn ... an) {
+        enter();
+        int res = Component::send(an ...);
+        leave();
+        return res;
     }
+    template<typename ... Tn>
+    int receive(Tn ... an) {
+        enter();
+        int res = Component::receive(an ...);
+        leave();
+        return res;
+    }
+
+    template<typename ... Tn>
+    int read(Tn ... an) { return receive(an ...);}
+    template<typename ... Tn>
+    int write(Tn ... an) { return send(an ...);}
 };
 
 __END_SYS
