@@ -21,7 +21,7 @@ int main()
 
     Function_Handler handler_a(&func_a);
     Alarm alarm_a(2000000, &handler_a, iterations);
- 
+
     Function_Handler handler_b(&func_b);
     Alarm alarm_b(1000000, &handler_b, iterations);
 

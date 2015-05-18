@@ -247,7 +247,8 @@ public:
     };
 
     // CPU Context
-    class Context {
+    class Context
+    {
     public:
         Context(const Log_Addr & usp, const Log_Addr & entry): _esp3(usp), _eflags(FLAG_DEFAULTS), _eip(entry) {}
 
