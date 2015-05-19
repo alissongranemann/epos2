@@ -22,9 +22,7 @@ extern "C" {
     void _panic() { _API::Thread::exit(-1); }
     void _exit(int s) { _API::Thread::exit(s); }
     void _user_implicit_exit() {
-         int s;
-         ASM("mov %%eax, %0" : "=a"(s) : );
-         _API::Thread::exit(s);
+         _API::Thread::exit(_API::CPU::fr());
     }
 }
 
