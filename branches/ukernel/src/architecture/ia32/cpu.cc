@@ -64,10 +64,11 @@ void IA32::switch_context(Context * volatile * o, Context * volatile n)
     // Restore the next thread context ("n") from its stack (and the user-level stack pointer, updating the dummy TSS)
     ASM("    mov    56(%esp), %esp          # new            \n");
     ASM("    pop    %0                                       \n" : "=m"(reinterpret_cast<TSS *>(Memory_Map<PC>::TSS0)->esp) : );
-    ASM("    mov   32(%esp), %eax                                 \n"); // The 32 takes into account that the following popa (8 general-purpose registers) but not the iret.
-    ASM("    mov   %%eax, %0                                      \n" : "=m"(Thread::running()->_context) : );
-    ASM("    popa                                                 \n");
-    ASM("    iret                                                 \n");
+    ASM("    mov   %esp, %eax                                \n"
+        "    add   $32, %eax                                 \n"); // The 32 takes into account that the following popa (8 general-purpose registers) but not the iret.
+    ASM("    mov   %%eax, %0                                 \n" : "=m"(Thread::running()->_context) : );
+    ASM("    popa                                            \n");
+    ASM("    iret                                            \n");
 }
 
 void IA32::syscalled()
