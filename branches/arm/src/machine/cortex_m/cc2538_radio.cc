@@ -188,6 +188,13 @@ int CC2538::send(Buffer * buf)
 
         db<CC2538>(TRC) << "CC2538::send(buf=" << buf << ")" << endl;
 
+        // TODO: Memory in the fifos is padded: you can only write one byte every 4bytes.
+        // For now, we'll just copy using the RFDATA register
+        char * f = reinterpret_cast<char *>(buf->frame());
+        sfr(RFST) = ISFLUSHTX; // Clear TXFIFO
+        for(int i=0; i<f[0]+1; i++) // First field is length of MAC
+        sfr(RFDATA) = f[i];
+
         // Trigger an immediate send poll
         _send_and_wait();
 

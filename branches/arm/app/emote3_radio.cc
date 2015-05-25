@@ -22,12 +22,25 @@ void sender()
     const unsigned int delay_time = 3000000;
     cout << "Hello, I am the sender." << endl;
     cout << "I will send a message every " << delay_time << " microseconds." << endl;
+    bool alloc = true;
     while(1)
     {
         cout << "Sending message: " << data << endl;
-        nic->send(nic->broadcast(), 0x1010, data, sizeof data);
+        cout << (alloc ? "With nic->alloc()" : "With nic->send()") << endl;
+        if(alloc)
+        {
+            auto buf = nic->alloc(nic, nic->broadcast(), 0x1010, 0, 0, sizeof data);
+            memcpy(buf->frame()->data<char>(), data, sizeof data);
+            nic->send(buf);
+            nic->free(buf);
+        }
+        else
+        {
+            nic->send(nic->broadcast(), 0x1010, data, sizeof data);
+        }
         cout << "Sent" << endl;
         data[0] = ((data[0] - '0' + 1) % 10) + '0';
+        alloc = !alloc;
         Alarm::delay(delay_time);
     }
 }
@@ -78,7 +91,7 @@ void receiver()
 int main()
 {
     cout << "Hello main" << endl;
-//     sender();
+     sender();
     receiver();
 
     return 0;
