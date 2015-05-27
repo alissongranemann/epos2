@@ -20,14 +20,11 @@ public:
 
 public:
     Cortex_M_CM1101(UART * u): _uart(u), _firmware_version(0), _co2(0),
-          _temperature(0), _humidity(0), _status(OK) { check_firmware_version(); }
+          _temp(0), _humid(0), _status(OK) { check_firmware_version(); }
 
     ~Cortex_M_CM1101() {
-        if(!_firmware_version) {
-            // FIXME: Replaced kfree for delete, not sure if it's working
-            //kfree(_firmware_version);
+        if(!_firmware_version)
             delete[] _firmware_version;
-        }
     }
 
     char * firmware_version() {
@@ -42,14 +39,14 @@ public:
         return _co2;
     }
 
-    int temperature() {
+    int temp() {
         update_data();
-        return _temperature;
+        return _temp;
     }
 
-    int humidity() {
+    int humid() {
         update_data();
-        return _humidity;
+        return _humid;
     }
 
     char status() { return _status; }
@@ -68,8 +65,6 @@ private:
 
         if(ck == 0x16) { // ACK
             char len = _uart->get();
-            // FIXME: Replaced kmalloc for new, not sure if it's working
-            //_firmware_version = (char *)kmalloc(len-1);
             _firmware_version = new (SYSTEM) char[len-1];
             char cmd = _uart->get();
             char cs = ck + len + cmd;
@@ -88,8 +83,6 @@ private:
         }
 
         // ELSE
-        // FIXME: Replaced kmalloc for new, not sure if it's working
-        //_firmware_version = (char *)kmalloc(5);
         _firmware_version = new (SYSTEM) char[5];
 
         if(ck == 0x16) { // BAD CS
@@ -130,8 +123,6 @@ private:
         // ACK!
         char len = _uart->get();
         char cmd = _uart->get(); // CMD
-        // FIXME: Replaced kmalloc for new, not sure if it's working
-        //char * resp = (char *)kmalloc(len-1);
         char * resp = new char[len-1];
         char cs = ck + len + cmd;
 
@@ -145,20 +136,16 @@ private:
         // FAIL
         if(c != (0x100 - cs)) {
             _status = BAD_CRC;
-            // FIXME: Replaced kfree for delete, not sure if it's working
-            //kfree(resp);
             delete[] resp;
             return;
         }
 
         _co2 = resp[0]*0x100 + resp[1];
-        //_temperature = ((resp[2]*0x100 + resp[3])/10.0 - 32)/1.8;
-        //_humidity = (resp[4]*0x100 + resp[5])/10.0;
-        _humidity = (resp[4]*0x100 + resp[5])/10;
+        //_temp = ((resp[2]*0x100 + resp[3])/10.0 - 32)/1.8;
+        //_humid = (resp[4]*0x100 + resp[5])/10.0;
+        _humid = (resp[4]*0x100 + resp[5])/10;
         _status = OK;
 
-        // FIXME: Replaced kfree for delete, not sure if it's working
-        //kfree(resp);
         delete[] resp;
     }
 
@@ -182,8 +169,8 @@ private:
     UART * _uart;
     char * _firmware_version;
     int _co2;
-    int _temperature;
-    int _humidity;
+    int _temp;
+    int _humid;
     char _status;
 };
 
