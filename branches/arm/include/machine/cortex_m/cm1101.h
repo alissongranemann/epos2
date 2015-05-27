@@ -37,17 +37,17 @@ public:
     // FIXME: Results doesn't match protocol specification (contact supplier)
     unsigned int serial_number();
 
-    float co2() {
+    int co2() {
         update_data();
         return _co2;
     }
 
-    float temperature() {
+    int temperature() {
         update_data();
         return _temperature;
     }
 
-    float humidity() {
+    int humidity() {
         update_data();
         return _humidity;
     }
@@ -142,7 +142,8 @@ private:
 
         char c = _uart->get();
 
-        if(c != (0x100 - cs)) { // FAIL
+        // FAIL
+        if(c != (0x100 - cs)) {
             _status = BAD_CRC;
             // FIXME: Replaced kfree for delete, not sure if it's working
             //kfree(resp);
@@ -151,9 +152,11 @@ private:
         }
 
         _co2 = resp[0]*0x100 + resp[1];
-        _temperature = ((resp[2]*0x100 + resp[3])/10.0 - 32)/1.8;
-        _humidity = (resp[4]*0x100 + resp[5])/10.0;
+        //_temperature = ((resp[2]*0x100 + resp[3])/10.0 - 32)/1.8;
+        //_humidity = (resp[4]*0x100 + resp[5])/10.0;
+        _humidity = (resp[4]*0x100 + resp[5])/10;
         _status = OK;
+
         // FIXME: Replaced kfree for delete, not sure if it's working
         //kfree(resp);
         delete[] resp;
@@ -164,7 +167,7 @@ private:
         unsigned char df_sum = 0;
 
         _uart->put(0x11);
-        _uart->put(df_len+1);
+        _uart->put(df_len + 1);
         _uart->put(cmd);
 
         for(unsigned int i = 0; i < df_len; i++) {
@@ -178,9 +181,9 @@ private:
 private:
     UART * _uart;
     char * _firmware_version;
-    float _co2;
-    float _temperature;
-    float _humidity;
+    int _co2;
+    int _temperature;
+    int _humidity;
     char _status;
 };
 
