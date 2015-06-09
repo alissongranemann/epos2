@@ -11,8 +11,8 @@ void System::init()
     if(Traits<Alarm>::enabled)
         Alarm::init();
 
-    if(Traits<Task>::enabled)
-        Task::init();
+    if(Traits<Thread>::enabled)
+        Thread::init();
 }
 
 __END_SYS

@@ -2,6 +2,7 @@
 
 # Functions
 GETTK		= $(shell sed -n -e '/^.* $(1)[ ]*=.*;.*$$/s/^.* =[ ]*\(.*\)[ ]*;.*$$/\1/p' $(2) 2> /dev/null)
+DBSEC           = $(1) 0x$(shell objdump -h $(1) | grep $(2) | tr -s ' ' | cut -d ' ' -f 5 2> /dev/null)
 TOLOWER         = $(shell echo $(1) | tr A-Z a-z)
 
 # Paths, prefixes and suffixes
@@ -90,7 +91,7 @@ pc_EMULATOR             = qemu-system-i386 -smp $(CPUS) -m $(MEM_SIZE)k -nograph
 cortex_m_CC_FLAGS       := -mcpu=cortex-m3 -mthumb -mno-thumb-interwork -mfpu=fpa #-Wa,-mimplicit-it=arm -marm 
 cortex_m_AS_FLAGS       := -mcpu=cortex-m3 -mthumb -mfpu=fpa
 cortex_m_LD_FLAGS       := 
-cortex_m_EMULATOR       = timeout --preserve-status --foreground 20s qemu-system-arm -cpu cortex-m3 -machine lm3s811evb -m $(MEM_SIZE)k -nographic -no-reboot -kernel
+cortex_m_EMULATOR       = qemu-system-arm -cpu cortex-m3 -machine lm3s811evb -m $(MEM_SIZE)k -nographic -no-reboot -kernel
 
 atmega_CC_FLAGS         := -mmcu=atmega128 -Wno-inline
 atmega_AS_FLAGS         := -mmcu=atmega128
@@ -116,13 +117,13 @@ MACH_EMULATOR           = $($(MACH)_EMULATOR)
 endif
 MACH_DEBUGGER           = $(TERM) gdb -ex "target remote:1234" -ex "set confirm off"
 ifneq ($(wildcard $(IMG)/$(MACH)_setup),) 
-MACH_DEBUGGER           := $(MACH_DEBUGGER) -ex "add-symbol-file $(SRC)/setup/$(MACH)_setup $(SETUP_ADDR)"
+MACH_DEBUGGER           := $(MACH_DEBUGGER) -ex "add-symbol-file $(call DBSEC,$(SRC)/setup/$(MACH)_setup,.text)"
 endif
 ifneq ($(wildcard $(IMG)/$(MACH)_init),) 
-MACH_DEBUGGER           := $(MACH_DEBUGGER) -ex "add-symbol-file $(SRC)/init/$(MACH)_init $(INIT_ADDR)"
+MACH_DEBUGGER           := $(MACH_DEBUGGER) -ex "add-symbol-file $(call DBSEC,$(SRC)/init/$(MACH)_init,.text)"
 endif
 ifneq ($(wildcard $(IMG)/$(MACH)_system),) 
-MACH_DEBUGGER           := $(MACH_DEBUGGER) -ex "add-symbol-file $(SRC)/system/$(MACH)_system $(SYS_CODE_ADDR)"
+MACH_DEBUGGER           := $(MACH_DEBUGGER) -ex "add-symbol-file $(call DBSEC,$(SRC)/system/$(MACH)_system,.text)"
 endif
 
 # Architecture specifics

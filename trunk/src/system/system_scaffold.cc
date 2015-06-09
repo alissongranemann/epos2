@@ -2,9 +2,10 @@
 
 #include <utility/ostream.h>
 #include <utility/heap.h>
-#include <machine.h>
 #include <display.h>
+#include <machine.h>
 #include <system.h>
+#include <segment.h>
 
 __BEGIN_SYS
 

@@ -25,11 +25,12 @@ public:
 
     using MMU::Directory::pd;
 
-    Log_Addr attach(const Segment & seg);
-    Log_Addr attach(const Segment & seg, Log_Addr addr);
-    void detach(const Segment & seg);
+    Log_Addr attach(Segment * seg);
+    Log_Addr attach(Segment * seg, const Log_Addr & addr);
+    void detach(Segment * seg);
+    void detach(Segment * seg, const Log_Addr & addr);
 
-    Phy_Addr physical(Log_Addr address);
+    Phy_Addr physical(const Log_Addr & address);
 };
 
 __END_SYS

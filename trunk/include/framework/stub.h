@@ -24,25 +24,15 @@ template<typename Component>
 class Stub<Component, true>: public Proxy<Component>
 {
 public:
-    // Dereferencing handles for Task(cs, ds)
-    Stub(const Stub<Segment, true> & cs, const Stub<Segment, true> & ds): Proxy<Component>(cs.id().unit(), ds.id().unit()) {}
-
-    // Dereferencing proxy for Thread(task, an ..., usp) and allocating a user-level stack for the thread
-    template<typename ... Tn>
-    Stub(const Stub<Task, true> & t, const Tn & ... an)
-    : Proxy<Component>(t.id().unit(), an ..., new char[Traits<Application>::STACK_SIZE] + Traits<Application>::STACK_SIZE) {}
-
     template<typename ... Tn>
     Stub(const Tn & ... an): Proxy<Component>(an ...) {}
 
+    // Dereferencing stubs for Task(cs, ds, ...)
+    template<typename ... Tn>
+    Stub(const Stub<Segment, true> & cs, const Stub<Segment, true> & ds, const Tn & ... an): Proxy<Component>(cs.id().unit(), ds.id().unit(), an ...) {}
+
     ~Stub() {}
 };
-
-// Dereferencing proxy for Thread(an ..., usp) and allocating a user-level stack for the thread
-template<>
-template<typename ... Tn>
-Stub<Thread, true>::Stub(const Tn & ... an)
-: Proxy<Thread>(an ..., new char[Traits<Application>::STACK_SIZE] + Traits<Application>::STACK_SIZE) {}
 
 __END_SYS
 

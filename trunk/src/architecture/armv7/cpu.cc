@@ -23,7 +23,7 @@ void ARMv7::Context::save() volatile
 
 void ARMv7::Context::load() const volatile
 {
-    System::_heap->free(reinterpret_cast<void *>(Memory_Map<Machine>::SYS_STACK), Traits<System>::STACK_SIZE);
+//    System::_heap->free(reinterpret_cast<void *>(Memory_Map<Machine>::SYS_STACK), Traits<System>::STACK_SIZE);
     ASM("       mov     sp, %0                  \n"
         "       isb                             \n"     // serialize the pipeline so that SP gets updated before the pop
         "       pop     {r2}                    \n"

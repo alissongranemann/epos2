@@ -71,6 +71,7 @@ public:
     Proxy<Segment> * data_segment() { return new (reinterpret_cast<Adapter<Segment> *>(invoke(TASK_DATA_SEGMENT))) Proxied<Segment>; }
     CPU::Log_Addr code() { return invoke(TASK_CODE); }
     CPU::Log_Addr data() { return invoke(TASK_DATA); }
+    Proxy<Thread> * main() { return new (reinterpret_cast<Adapter<Thread> *>(invoke(TASK_MAIN))) Proxied<Thread>; }
 
     // Memory management
     CPU::Phy_Addr pd() { return invoke(ADDRESS_SPACE_PD); }

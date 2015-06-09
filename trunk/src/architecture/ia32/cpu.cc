@@ -35,82 +35,75 @@ void IA32::Context::save() volatile
 
 void IA32::Context::load() const volatile
 {
-    if(Traits<System>::multitask) {
-        // Discard the context pushed into the stack during thread creation, but preserve the entry point (IP)
-        // Adjust the user-level stack pointer in the dummy TSS (that will be used by system calls and interrupts
-        ASM("       mov     4(%esp), %esp         # sp = this           \n");
-        ASM("       pop     %0                                          \n" : "=m"(reinterpret_cast<TSS *>(Memory_Map<PC>::TSS0)->esp) : );
-        ASM("       popa                                                \n"
-            "       popf                                                \n");
-        ASM("       mov     %%esp, %0                                   \n" : "=m"(Thread::running()->_context) : );
-
-        // Reload Segment Registers with user-level selectors
+    // Reload Segment Registers with user-level selectors
+    if(Traits<System>::multitask)
         ASM("       mov     %0, %%ds                                    \n"
             "       mov     %0, %%es                                    \n"
             "       mov     %0, %%fs                                    \n"
             "       mov     %0, %%gs                                    \n"
             : : "r"(SEL_APP_DATA));
 
-        // Restore the thread's entry point left on the stack while initializing its context
-        ASM("       pop     %esi                # si = this->_eip       \n");
+    // Adjust the user-level stack pointer in the dummy TSS (what for?)
+    ASM("       mov     4(%esp), %esp         # sp = this           \n");
+    ASM("       pop     %0                                          \n" : "=m"(reinterpret_cast<TSS *>(Memory_Map<PC>::TSS0)->esp) : );
 
-        // Fake a cross-level stack for a return from kernel to user-level: ss, esp, eflags, cs, eip
-        ASM("       push    %0                                          \n"
-            "       push    %2                                          \n"
-            "       pushf                                               \n"
-            "       push    %1                                          \n"
-            "       push    %%esi                                       \n"
-            "       iret                                                \n"
-            : : "r"(SEL_APP_DATA), "r"(SEL_APP_CODE), "r"(System::info()->lm.app_heap));
-    } else {
-        // Pop the context pushed into the stack during thread creation to initialize the CPU's context, discarding user-level stack pointer
-        // Obs: POPA ignores the ESP saved by PUSHA. ESP is just normally incremented
-        ASM("       mov     4(%esp), %esp       # sp = this             \n"
-            "       pop     %eax                                        \n"
-            "       popa                                                \n"
-            "       popf                                                \n");
-    }
+    // Adjust the system-level stack pointer in the dummy TSS (that will be used by system calls and interrupts) for this Thread
+    if(Traits<System>::multitask)
+        ASM("       mov     %%esp, %%eax                                \n"
+            "       add     $42, %%eax                                  \n"
+            "       movl     %%eax, %0                                  \n" : "=m"(reinterpret_cast<TSS *>(Memory_Map<PC>::TSS0)->esp0) : );
+
+    // Perform a possibly cross-level return (from kernel to user-level)
+    // Stack contents depend on the CPL in CS, either ss, esp, eflags, cs, eip (for cross-level)
+    // or eflags, cs, eip (for same-level)
+    ASM("       popa                                                \n"
+        "       iret                                                \n");
 }
 
 void IA32::switch_context(Context * volatile * o, Context * volatile n)
 {
-    // Save the previously running thread context ("o") into its stack (including the user-level stack pointer stored in the dummy TSS)
-    // and updates the its _context attribute
-    // PUSHA saves an extra "esp" (which is always "this"), but saves several instruction fetches
-    ASM("	pushf                  		                \n"
-        "	pusha				                \n");
-    ASM("       push    %0                                      \n" : : "m"(reinterpret_cast<TSS *>(Memory_Map<PC>::TSS0)->esp));
-    ASM("       mov     44(%esp), %eax          # old           \n"
-        "       mov     %esp, (%eax)                            \n");
+    // Recover the return address from the stack and
+    // save the previously running thread context ("o") into its stack
+    // PUSHA saves an extra SP (which is always "this"), but saves several instruction fetches
+    ASM("       pop     %esi                    # eip               \n"
+        "       pushf                                               \n"
+        "       push    %cs                                         \n"
+        "       push    %esi                    # eip               \n"
+        "       pusha                                               \n");
+    ASM("       push    %0                                          \n" : : "m"(reinterpret_cast<TSS *>(Memory_Map<PC>::TSS0)->esp));
+    ASM("       mov     48(%esp), %eax          # old               \n"
+        "       mov     %esp, (%eax)                                \n");
 
     // Restore the next thread context ("n") from its stack (and the user-level stack pointer, updating the dummy TSS)
-    ASM("	mov     48(%esp), %esp          # new	        \n");
+    ASM("       mov     52(%esp), %esp          # new	        \n");
     ASM("       pop     %0                                      \n" : "=m"(reinterpret_cast<TSS *>(Memory_Map<PC>::TSS0)->esp) : );
-    ASM("	popa				                \n"
-        "	popf			                	\n");
-    ASM("       mov     %%esp, %0                               \n" : "=m"(Thread::running()->_context) : );
+
+    // Adjust the system-level stack pointer in the dummy TSS (that will be used by system calls and interrupts) for this Thread
+    if(Traits<System>::multitask)
+        ASM("       mov     %%esp, %%eax                            \n"
+            "       add     $52, %%eax                              \n"
+            "       movl     %%eax, %0                              \n" : "=m"(reinterpret_cast<TSS *>(Memory_Map<PC>::TSS0)->esp0) : );
+
+    // Change context through the IRET, will pop FLAGS, CS, and IP
+    ASM("       popa                                            \n"
+        "       iret                                            \n");
 }
 
 void IA32::syscalled()
 {
-    // We get here when an APP triggers INT_SYSCALL with the message address in AX
-    // The CPU saves the user-level stack pointer in the dummy TSS and restores the kernel-level system stack pointer also from it
+    // We get here when an APP triggers INT_SYSCALL with the message address in CX
+    // The CPU saves the user-level stack pointer in the stack and restores the system-level stack pointer also from the TSS
+    // Stack contents at this point are always: ss, esp, eflags, cs, eip
+    // CX holds the pointer to the message
 
-    if(Traits<System>::multitask) {
-        // Changes the stack to the running thread's kernel one, preserving the message and the kernel-level system stack pointer for posterior "iret"
-        ASM("       mov     %eax, %ecx                              \n"
-            "       mov     %esp, %edx                              \n");
-        ASM("       mov     %0, %%esp                               \n" : : "m"(Thread::running()->_context));
-        ASM("       push    %edx                                    \n");
-
-        // Do the system call by calling _exec with the message pointed by AX (copied to CX)
-        ASM("       push    %ecx                                    \n"
+    if(Traits<Build>::MODE == Traits<Build>::KERNEL) {
+        // Do the system call by calling _exec with the message pointed by ecx
+        ASM("       push    %ecx                # msg               \n"
             "       call    _exec                                   \n"
-            "       pop     %eax                                    \n"
-            "       pop     %edx                                    \n");
-        ASM("       mov     %%esp, %0                               \n" : "=m"(Thread::running()->_context) : );
-        ASM("       mov     %edx, %esp                              \n"
-            "       iret                                            \n");
+            "       pop     %ecx                # clean up          \n");
+
+        // Return to user-level
+        ASM(    "       iret                                            \n");
     }
 }
 

@@ -57,15 +57,12 @@ private:
     Handle(_Stub * s) { _stub = s; }
 
 public:
-    // Dereferencing handles for Task(cs, ds)
-    Handle(const Handle<Segment> & cs, const Handle<Segment> & ds) { _stub = new _Stub(*cs._stub, *ds._stub); }
-
-    // Dereferencing handle for Thread(task, an ...)
-    template<typename ... Tn>
-    Handle(const Handle<Task> & t, const Tn & ... an) { _stub = new _Stub(*t._stub, an ...); }
-
     template<typename ... Tn>
     Handle(const Tn & ... an) { _stub = new _Stub(an ...); }
+
+    // Dereferencing handles for Task(cs, ds, ...)
+    template<typename ... Tn>
+    Handle(Handle<Segment> * cs, Handle<Segment> * ds, const Tn & ... an) { _stub = new _Stub(*cs->_stub, *ds->_stub, an ...); }
 
     ~Handle() { if(_stub) delete _stub; }
 
@@ -85,12 +82,13 @@ public:
     Handle<Segment> * data_segment() const { return new (_stub->data_segment()) Handled<Segment>; }
     CPU::Log_Addr code() const { return _stub->code(); }
     CPU::Log_Addr data() const { return _stub->data(); }
+    Handle<Thread> * main() const { return new (_stub->main()) Handled<Thread>; }
 
     // Memory Management
     CPU::Phy_Addr pd() { return _stub->pd(); }
-    CPU::Log_Addr attach(const Handle<Segment> & seg) { return _stub->attach(*seg._stub); }
-    CPU::Log_Addr attach(const Handle<Segment> & seg, CPU::Log_Addr addr) { return _stub->attach(*seg._stub, addr); }
-    void detach(const Handle<Segment> & seg) { _stub->detach(*seg._stub); }
+    CPU::Log_Addr attach(Handle<Segment> * seg) { return _stub->attach(*seg->_stub); }
+    CPU::Log_Addr attach(Handle<Segment> * seg, CPU::Log_Addr addr) { return _stub->attach(*seg->_stub, addr); }
+    void detach(Handle<Segment> * seg) { _stub->detach(*seg->_stub); }
 
     unsigned int size() const { return _stub->size(); }
     CPU::Phy_Addr phy_address() const { return _stub->phy_address(); }

@@ -250,7 +250,7 @@ public:
     class Context
     {
     public:
-        Context(const Log_Addr & usp, const Log_Addr & entry): _esp3(usp), _eflags(FLAG_DEFAULTS), _eip(entry) {}
+        Context(const Log_Addr & usp, const Log_Addr & entry): _esp3(usp), _eip(entry), _cs(((Traits<Build>::MODE == Traits<Build>::KERNEL) && usp)? SEL_APP_CODE : SEL_SYS_CODE), _eflags(FLAG_DEFAULTS) {}
 
         void save() volatile;
         void load() const volatile;
@@ -267,13 +267,14 @@ public:
                << ",ebp=" << reinterpret_cast<void *>(c._ebp)
                << ",esp=" << &c
                << ",eip=" << reinterpret_cast<void *>(c._eip)
-               << ",esp3="  << c._esp3
-               << ",cs="  << cs()
-               << ",ds="  << ds()
-               << ",es="  << es()
-               << ",fs="  << fs()
-               << ",gs="  << gs()
-               << ",ss="  << ss()
+               << ",esp3="<< c._esp3
+               << ",cs="  << c._cs
+               << ",ccs=" << cs()
+               << ",cds=" << ds()
+               << ",ces=" << es()
+               << ",cfs=" << fs()
+               << ",cgs=" << gs()
+               << ",css=" << ss()
                << ",cr3=" << reinterpret_cast<void *>(pdp())
                << "}"     << dec;
             return db;
@@ -289,8 +290,9 @@ public:
         Reg32 _edx;
         Reg32 _ecx;
         Reg32 _eax;
-        Reg32 _eflags;
         Reg32 _eip;
+        Reg32 _cs;
+        Reg32 _eflags;
     };
 
     // I/O ports
@@ -318,7 +320,7 @@ public:
 
     static void switch_context(Context * volatile * o, Context * volatile n);
 
-    static int syscall(void * message);
+    static void syscall(void * message);
     static void syscalled();
 
     static Flags flags() { return eflags(); }
@@ -367,16 +369,32 @@ public:
     static Reg32 ntohl(Reg32 v)	{ return htonl(v); }
     static Reg16 ntohs(Reg16 v)	{ return htons(v); }
 
-    // IA32 first decrements the stack pointer and then writes into the stack, that's why we decrement it by an int
     template<typename ... Tn>
-    static Context * init_stack(const Log_Addr & usp, const Log_Addr & stack, unsigned int size, void (* exit)(), int (* entry)(Tn ...), Tn ... an) {
-        Log_Addr sp = stack + size - sizeof(int);
+    static Context * init_stack(const Log_Addr & usp, Log_Addr sp, void (* exit)(), int (* entry)(Tn ...), Tn ... an) {
+        // IA32 first decrements the stack pointer and then writes into the stack
         sp -= SIZEOF<Tn ... >::Result;
         init_stack_helper(sp, an ...);
         sp -= sizeof(int *);
         *static_cast<int *>(sp) = Log_Addr(exit);
+        if(usp) {
+            sp -= sizeof(int *);
+            *static_cast<int *>(sp) = Log_Addr(SEL_APP_DATA);
+            sp -= sizeof(int *);
+            *static_cast<int *>(sp) = usp;
+        }
         sp -= sizeof(Context);
         return new (sp) Context(usp, entry);
+    }
+    template<typename ... Tn>
+    static Log_Addr init_user_stack(Log_Addr sp, void (* exit)(), Tn ... an) {
+        // IA32 first decrements the stack pointer and then writes into the stack
+        sp -= SIZEOF<Tn ... >::Result;
+        init_stack_helper(sp, an ...);
+        if(exit) {
+            sp -= sizeof(int *);
+            *static_cast<int *>(sp) = Log_Addr(exit);
+        }
+        return sp;
     }
 
 public:

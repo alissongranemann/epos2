@@ -95,14 +95,11 @@ int main(int argc, char **argv)
     
     // Check ARGS
     if(argc < 3) {
-        fprintf(stderr, 
-        	"Usage: %s <options> <EPOS root> <boot image> <app1> <app2> ...\n", 
-        	argv[0]);
+        fprintf(stderr, "Usage: %s <options> <EPOS root> <boot image> <app1> <app2> ...\n", argv[0]);
         return 1;
     }
     if(!strcmp(CONFIG.mode, "library") && (argc > 4)) {
-        fprintf(stderr,
-        	"Error: library mode supports a single application!\n");
+        fprintf(stderr, "Error: library mode supports a single application!\n");
         return 1;
     }
     
@@ -147,8 +144,7 @@ int main(int argc, char **argv)
     } else
         if(sizeof(System_Info) > MAX_SI_LEN) {
             printf(" failed!\n");
-            fprintf(stderr, "System_Info structure is too large (%d)!\n",
-        	    sizeof(System_Info));
+            fprintf(stderr, "System_Info structure is too large (%d)!\n", sizeof(System_Info));
             return 1;
         } else	
             image_size += pad(fd_img, MAX_SI_LEN);
@@ -185,12 +181,13 @@ int main(int argc, char **argv)
 
     // Add LOADER (if multiple applications) or the single application otherwise
     si.bm.application_offset = image_size - boot_size;
+//    if((argc == 4) && strcmp(CONFIG.mode, "kernel")) { // Add Single APP
     if(argc == 4) { // Add Single APP
         printf("    Adding application \"%s\":", argv[3]);
         image_size += put_file(fd_img, argv[3]);
         si.bm.extras_offset = -1;
     } else { // Add LOADER
-        sprintf(file, "%s/img/%s_app", argv[1], CONFIG.mach);
+        sprintf(file, "%s/img/%s_loader", argv[1], CONFIG.mach);
         printf("    Adding loader \"%s\":", file);
         image_size += put_file(fd_img, file);
 
@@ -259,7 +256,8 @@ bool parse_config(FILE * cfg_file, Configuration * cfg)
         fprintf(stderr, "Error: no valid MODE in configuration!\n");
         return false;
     }
-    strtolower(cfg->mode, token);						
+    strtolower(cfg->mode, token);
+
     // Arch
     fgets(line, 256, cfg_file);
     token = strtok(line, "=");
@@ -268,6 +266,7 @@ bool parse_config(FILE * cfg_file, Configuration * cfg)
         return false;
     }
     strtolower(cfg->arch, token);
+
     // Machine
     fgets(line, 256, cfg_file);
     token = strtok(line, "=");
@@ -275,7 +274,8 @@ bool parse_config(FILE * cfg_file, Configuration * cfg)
         fprintf(stderr, "Error: no valid MACH in configuration!\n");
         return false;
     }
-    strtolower(cfg->mach, token);	
+    strtolower(cfg->mach, token);
+
     // Model
     fgets(line, 256, cfg_file);
     token = strtok(line, "=");

@@ -5,7 +5,7 @@
 
 #include "id.h"
 
-extern "C" { int _syscall(void *); }
+extern "C" { void _syscall(void *); }
 
 __BEGIN_SYS
 
@@ -42,6 +42,7 @@ public:
         TASK_DATA_SEGMENT,
         TASK_CODE,
         TASK_DATA,
+        TASK_MAIN,
 
         ADDRESS_SPACE_PD = COMPONENT,
         ADDRESS_SPACE_ATTACH1,

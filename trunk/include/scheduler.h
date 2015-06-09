@@ -296,7 +296,7 @@ public:
 
     unsigned int schedulables() { return Base::size(); }
 
-    T * volatile chosen() { 
+    T * volatile chosen() {
     	// If called before insert(), chosen will dereference a null pointer!
     	// For threads, we this won't happen (see Thread::init()).
     	// But if you are unsure about your new use of the scheduler,

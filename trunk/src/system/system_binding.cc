@@ -8,6 +8,7 @@ __USING_SYS;
 extern "C" {
     void _panic() { Machine::panic(); }
     void _exit(int s) { Thread::exit(s); }
+    void __exit() { Thread::exit(CPU::fr()); }  // must be handled by the Page Fault handler for user-level tasks
     void _print(const char * s) { Display::puts(s); }
 
     // LIBC Heritage

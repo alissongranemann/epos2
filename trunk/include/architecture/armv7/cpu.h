@@ -231,12 +231,19 @@ public:
     static Reg16 ntohs(Reg16 v) { return swap16(v); }
 
     template<typename ... Tn>
-    static Context * init_stack(const Log_Addr & usp, const Log_Addr & stack, unsigned int size, void (* exit)(), int (* entry)(Tn ...), Tn ... an) {
-        Log_Addr sp = stack + size;
+    static Context * init_stack(const Log_Addr & usp, Log_Addr sp, void (* exit)(), int (* entry)(Tn ...), Tn ... an) {
         sp -= sizeof(Context);
         Context * ctx = new(sp) Context(entry, exit);
         init_stack_helper(&ctx->_r0, an ...);
         return ctx;
+    }
+
+    template<typename ... Tn>
+    static Log_Addr init_user_stack(Log_Addr sp, void (* exit)(), Tn ... an) {
+        sp -= sizeof(Context);
+        Context * ctx = new(sp) Context(0, exit);
+        init_stack_helper(&ctx->_r0, an ...);
+        return sp;
     }
 
 public:

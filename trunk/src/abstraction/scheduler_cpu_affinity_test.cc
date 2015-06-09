@@ -52,7 +52,7 @@ int philosopher(int n, int l, int c)
     cout << "  done[" << Machine::cpu_id() << "]  ";
     sem_display.v();
 
-    return(iterations);
+    return iterations;
 }
 
 int main()

@@ -18,7 +18,7 @@ public:
 
 public:
     Segment(unsigned int bytes, Flags flags = Flags::APP);
-    Segment(Phy_Addr phy_addr, unsigned int bytes, Flags flags = Flags::APP);
+    Segment(Phy_Addr phy_addr, unsigned int bytes, Flags flags);
     ~Segment();
 
     unsigned int size() const;

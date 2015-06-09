@@ -48,16 +48,17 @@ public:
     static void exit(int status) { static_enter(); Component::exit(status); static_leave(); }
 
     Address_Space * address_space() { enter(); Address_Space * res = Component::address_space(); leave(); return res; }
-    const Segment * code_segment() { enter(); const Segment * res = Component::code_segment(); leave(); return res; }
-    const Segment * data_segment() { enter(); const Segment * res = Component::data_segment(); leave(); return res; }
+    Segment * code_segment() { enter(); Segment * res = Component::code_segment(); leave(); return res; }
+    Segment * data_segment() { enter(); Segment * res = Component::data_segment(); leave(); return res; }
     CPU::Log_Addr code() { enter(); CPU::Log_Addr res = Component::code(); leave(); return res; }
     CPU::Log_Addr data() { enter(); CPU::Log_Addr res = Component::data(); leave(); return res; }
+    Thread * main() { enter(); Thread * res = Component::main(); leave(); return res; }
 
     // Memory management
     CPU::Phy_Addr pd() { enter(); CPU::Phy_Addr res = Component::pd(); leave(); return res; }
-    CPU::Log_Addr attach(const Segment & seg) { enter(); CPU::Log_Addr res = Component::attach(seg); leave(); return res; }
-    CPU::Log_Addr attach(const Segment & seg, CPU::Log_Addr addr) { enter(); CPU::Log_Addr res = Component::attach(seg, addr); leave(); return res; }
-    void detach(const Segment & seg) { enter(); Component::detach(seg); leave(); }
+    CPU::Log_Addr attach(Segment * seg) { enter(); CPU::Log_Addr res = Component::attach(seg); leave(); return res; }
+    CPU::Log_Addr attach(Segment * seg, const CPU::Log_Addr & addr) { enter(); CPU::Log_Addr res = Component::attach(seg, addr); leave(); return res; }
+    void detach(Segment * seg) { enter(); Component::detach(seg); leave(); }
 
     unsigned int size() { enter(); unsigned int res = Component::size(); leave(); return res; }
     CPU::Phy_Addr phy_address() { enter(); CPU::Phy_Addr res = Component::phy_address(); leave(); return res; }

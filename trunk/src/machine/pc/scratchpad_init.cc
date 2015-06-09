@@ -13,7 +13,7 @@ void PC_Scratchpad::init()
     db<Init, Scratchpad>(TRC) << "Scratchpad::init(a=" << ADDRESS << ",s=" << SIZE << ")" << endl;
 
     _segment = new (SYSTEM) Segment(CPU::Phy_Addr(ADDRESS), SIZE, MMU::IA32_Flags::PCD);
-    _heap = new (SYSTEM) Heap(Address_Space(MMU::current()).attach(*_segment), _segment->size());
+    _heap = new (SYSTEM) Heap(Address_Space(MMU::current()).attach(_segment), _segment->size());
 }
 
 __END_SYS

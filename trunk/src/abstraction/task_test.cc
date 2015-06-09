@@ -24,52 +24,27 @@ int main()
 
     m = Thread::self();
 
-    cout << "I'll try to clone myself:" << endl;
-
-    const Task * task0 = Task::self();
+    Task * task0 = Task::self();
     Address_Space * as0 = task0->address_space();
     cout << "My address space's page directory is located at " << as0->pd() << endl;
 
-    const Segment * cs0 = task0->code_segment();
+    Segment * cs0 = task0->code_segment();
     CPU::Log_Addr code0 = task0->code();
     cout << "My code segment is located at "
          << static_cast<void *>(code0)
          << " and it is " << cs0->size() << " bytes long" << endl;
 
-    const Segment * ds0 = task0->data_segment();
+    Segment * ds0 = task0->data_segment();
     CPU::Log_Addr data0 = task0->data();
     cout << "My data segment is located at "
          << static_cast<void *>(data0)
          << " and it is " << ds0->size() << " bytes long" << endl;
 
-    cout << "Creating and attaching segments:" << endl;
-    Segment cs1(cs0->size());
-    CPU::Log_Addr code1 = as0->attach(cs1);
-    cout << "  code => " << code1 << " done!" << endl;
-    Segment ds1(ds0->size());
-    CPU::Log_Addr data1 = as0->attach(ds1);
-    cout << "  data => " << data1 << " done!" << endl;
-
-    cout << "Copying segments:";
-    memcpy(code1, code0, cs1.size());
-    cout << " code => done!" << endl;
-    memcpy(data1, data0, ds1.size());
-    cout << " data => done!" << endl;
-
-    cout << "Detaching segments:";
-    as0->detach(cs1);
-    as0->detach(ds1);
+    cout << "Creating a thread:";
+    a = new Thread(&func_a);
     cout << " done!" << endl;
 
-    cout << "Creating the clone task:";
-    Task * task1 = new Task(cs1, ds1);
-    cout << " done!" << endl;
-
-    cout << "Creating a thread over the cloned task:";
-    a = new Thread(*task1, &func_a);
-    cout << " done!" << endl;
-
-    cout << "Creating a thread over the main task:";
+    cout << "Creating another thread:";
     b = new Thread(&func_b);
     cout << " done!" << endl;
 
@@ -80,20 +55,16 @@ int main()
 
     Alarm::delay(1000000);
 
-    // BUG: the two resume() bellow and the corresponding suspend() in func_{a,b} have been commented out
-    // because the thread, with their own stacks, are interfering with Framework::_cache used by Handle and Proxy
-    // This must be investigated with far more care.
-//    a->resume();
-//    b->resume();
+    a->resume();
+    b->resume();
 
     int status_a = a->join();
     int status_b = b->join();
 
-    cout << "Thread A exited with status " << status_a << " and thread B exited with status " << status_b << endl;
+    cout << "Thread A exited with status " << status_a << " and thread B exited with status " << status_b << "." << endl;
 
     delete a;
     delete b;
-    delete task1;
 
     cout << "I'm also done, bye!" << endl;
 
@@ -110,7 +81,8 @@ int func_a(void)
         Thread::yield();
     }
 
-//    Thread::self()->suspend();
+    Thread::self()->suspend();
+
     return 'A';
 }
 
@@ -125,6 +97,7 @@ int func_b(void)
 
     m->resume();
 
-//    Thread::self()->suspend();
+    Thread::self()->suspend();
+
     return 'B';
 }

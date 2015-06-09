@@ -323,7 +323,7 @@ void PC_Setup::build_lm()
         }
 
         if(si->lm.sys_code != SYS_CODE) {
-            db<Setup>(ERR) << "OS code segment address (" << si->lm.sys_code << ") does not match the machine's memory map (" << SYS_CODE << ")!" << endl;
+            db<Setup>(ERR) << "OS code segment address (" << reinterpret_cast<void *>(si->lm.sys_code) << ") does not match the machine's memory map (" << reinterpret_cast<void *>(SYS_CODE) << ")!" << endl;
             panic();
         }
         if(si->lm.sys_code + si->lm.sys_code_size > si->lm.sys_data) {
@@ -331,7 +331,7 @@ void PC_Setup::build_lm()
             panic();
         }
         if(si->lm.sys_data != SYS_DATA) {
-            db<Setup>(ERR) << "OS data segment address does not match the machine's memory map!" << endl;
+            db<Setup>(ERR) << "OS data segment address (" << reinterpret_cast<void *>(si->lm.sys_data) << ") does not match the machine's memory map (" << reinterpret_cast<void *>(SYS_DATA) << ")!" << endl;
             panic();
         }
         if(si->lm.sys_data + si->lm.sys_data_size > si->lm.sys_stack) {
@@ -376,12 +376,11 @@ void PC_Setup::build_lm()
             si->lm.app_heap = si->lm.app_data + si->lm.app_data_size;
             si->lm.app_data_size += MMU::align_page(Traits<Application>::HEAP_SIZE);
         }
-    }
-
-    // Check for EXTRA data in the boot image		
-    if(si->lm.has_ext) {
-        si->lm.app_extra = Phy_Addr(&bi[si->bm.extras_offset]);
-        si->lm.app_extra_size = si->bm.img_size - si->bm.extras_offset;
+        if(si->lm.has_ext) { // Check for EXTRA data in the boot image
+            si->lm.app_extra = si->lm.app_data + si->lm.app_data_size;
+            si->lm.app_extra_size = MMU::align_page(si->bm.img_size - si->bm.extras_offset);
+            si->lm.app_data_size += si->lm.app_extra_size;
+        }
     }
 }
 
@@ -828,12 +827,10 @@ void PC_Setup::load_parts()
 
     // Load APP
     if(si->lm.has_app) {
-        ELF * app_elf =
-            reinterpret_cast<ELF *>(&bi[si->bm.application_offset]);
+        ELF * app_elf = reinterpret_cast<ELF *>(&bi[si->bm.application_offset]);
         db<Setup>(TRC) << "PC_Setup::load_app()" << endl;
         if(app_elf->load_segment(0) < 0) {
-            db<Setup>(ERR)
-        	<< "Application code segment was corrupted during SETUP!" << endl;
+            db<Setup>(ERR) << "Application code segment was corrupted during SETUP!" << endl;
             panic();
         }
         for(int i = 1; i < app_elf->segments(); i++)
@@ -842,6 +839,10 @@ void PC_Setup::load_parts()
         	panic();
             }
     }
+
+    // Load EXTRA
+    if(si->lm.has_ext)
+        memcpy(Log_Addr(si->lm.app_extra), &bi[si->bm.extras_offset], si->lm.app_extra_size);
 }
 
 //========================================================================

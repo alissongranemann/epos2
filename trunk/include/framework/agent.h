@@ -28,19 +28,17 @@ public:
         Result res = 0;
 
         switch(method()) {
-        case CREATE2: {
+        case CREATE1: {
             int (*entry)();
-            char * usp;
-            in(entry, usp);
-            id(Id(THREAD_ID, reinterpret_cast<Id::Unit_Id>(new Adapter<Thread>(Thread::Configuration(Thread::READY, Thread::NORMAL, Thread::STACK_SIZE, usp), entry))));
+            in(entry);
+            id(Id(THREAD_ID, reinterpret_cast<Id::Unit_Id>(new Adapter<Thread>(Thread::Configuration(Thread::READY, Thread::NORMAL, 0, 0), entry))));
         }
         break;
-        case CREATE3: {
+        case CREATE2: {
             Adapter<Task> * task;
             int (*entry)();
-            char * usp;
-            in(task, entry, usp);
-            id(Id(THREAD_ID, reinterpret_cast<Id::Unit_Id>(new Adapter<Thread>(Thread::Configuration(Thread::READY, Thread::NORMAL, Thread::STACK_SIZE, usp), *task, entry))));
+            in(task, entry);
+            id(Id(THREAD_ID, reinterpret_cast<Id::Unit_Id>(new Adapter<Thread>(Thread::Configuration(Thread::READY, Thread::NORMAL, task, 0), entry))));
         }
         break;
         case DESTROY:
@@ -91,10 +89,11 @@ public:
         Result res = 0;
 
         switch(method()) {
-        case CREATE2: {
+        case CREATE3: {
             Segment * cs, * ds;
-            in(cs, ds);
-            id(Id(TASK_ID, reinterpret_cast<Id::Unit_Id>(new Adapter<Task>(*cs, *ds))));
+            int (*entry)();
+            in(cs, ds, entry);
+            id(Id(TASK_ID, reinterpret_cast<Id::Unit_Id>(new Adapter<Task>(cs, ds, entry))));
         }
         break;
         case DESTROY:
@@ -117,6 +116,9 @@ public:
             break;
         case TASK_DATA:
             res = task->data();
+            break;
+        case TASK_MAIN:
+            res = reinterpret_cast<int>(task->main());
             break;
         default:
             res = UNDEFINED;
@@ -149,20 +151,20 @@ public:
         case ADDRESS_SPACE_ATTACH1: {
             Segment * seg;
             in(seg);
-            res = as->attach(*seg);
+            res = as->attach(seg);
         }
         break;
         case ADDRESS_SPACE_ATTACH2: {
             Segment * seg;
             CPU::Log_Addr addr;
             in(seg, addr);
-            res = as->attach(*seg, addr);
+            res = as->attach(seg, addr);
         }
         break;
         case ADDRESS_SPACE_DETACH: {
             Segment * seg;
             in(seg);
-            as->detach(*seg);
+            as->detach(seg);
         }
         break;
         case ADDRESS_PHYSICAL: {

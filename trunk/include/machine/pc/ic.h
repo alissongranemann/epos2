@@ -510,13 +510,15 @@ private:
         }
     }
 
-    static void entry();
-
+    // Logical handlers
     static void int_not(const Interrupt_Id & i);
-    static void exc_not(const Interrupt_Id & i, Reg32 error, Reg32 eip, Reg32 cs, Reg32 eflags);
-    static void exc_pf (const Interrupt_Id & i, Reg32 error, Reg32 eip, Reg32 cs, Reg32 eflags);
-    static void exc_gpf(const Interrupt_Id & i, Reg32 error, Reg32 eip, Reg32 cs, Reg32 eflags);
-    static void exc_fpu(const Interrupt_Id & i, Reg32 error, Reg32 eip, Reg32 cs, Reg32 eflags);
+
+    // Physical handlers
+    static void entry();
+    static void exc_not(Reg32 eip, Reg32 cs, Reg32 eflags, Reg32 error);
+    static void exc_pf (Reg32 eip, Reg32 cs, Reg32 eflags, Reg32 error);
+    static void exc_gpf(Reg32 eip, Reg32 cs, Reg32 eflags, Reg32 error);
+    static void exc_fpu(Reg32 eip, Reg32 cs, Reg32 eflags, Reg32 error);
 
     static void init();
 
