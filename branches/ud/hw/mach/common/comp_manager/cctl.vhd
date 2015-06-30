@@ -91,7 +91,7 @@ architecture rtl of cctl is
     signal wr_local_dst : std_logic_vector(LOCAL_WIDTH-1 downto 0);
     signal wr_type      : std_logic_vector(7 downto 0);
     signal wr_unit      : std_logic_vector(7 downto 0);
-    signal wr_msg       : std_logic_vector(7 downto 0);
+    signal wr_msg       : std_logic_vector(2 downto 0);
     signal rd_x_src     : std_logic_vector(X_WIDTH-1 downto 0);
     signal rd_y_src     : std_logic_vector(Y_WIDTH-1 downto 0);
     signal rd_local_src : std_logic_vector(LOCAL_WIDTH-1 downto 0);
@@ -100,11 +100,13 @@ architecture rtl of cctl is
     signal rd_local_dst : std_logic_vector(LOCAL_WIDTH-1 downto 0);
     signal rd_type      : std_logic_vector(7 downto 0);
     signal rd_unit      : std_logic_vector(7 downto 0);
-    signal rd_msg       : std_logic_vector(7 downto 0);
+    signal rd_msg       : std_logic_vector(2 downto 0);
 
     -- tx_start_s triggers the transmission of a packet through the NoC when
     -- data is written to slv_reg_wr_data
-    signal tx_start_s : std_logic;
+    signal tx_start_s       : std_logic;
+    signal tx_start_d       : std_logic;
+    signal tx_start_rise_s  : std_logic;
 begin
     -- I/O Connections assignments
 
@@ -198,7 +200,6 @@ begin
                 slv_reg_wr_data <= (others => '0');
                 --slv_reg_rd_addr <= (others => '0');
                 slv_reg_wr_addr <= (others => '0');
-                tx_start_s      <= '0';
             else
                 loc_addr := axi_awaddr(ADDR_LSB + OPT_MEM_ADDR_BITS downto ADDR_LSB);
                 if (slv_reg_wren = '1') then
@@ -209,7 +210,6 @@ begin
                                     -- Respective byte enables are asserted as per write strobes
                                     -- slave registor 0
                                     --slv_reg_rd_data(byte_index*8+7 downto byte_index*8) <= s_axi_wdata(byte_index*8+7 downto byte_index*8);
-                                    tx_start_s                                          <= '0';
                                 end if;
                             end loop;
                         when b"01" =>
@@ -218,7 +218,6 @@ begin
                                     -- Respective byte enables are asserted as per write strobes
                                     -- slave registor 1
                                     slv_reg_wr_data(byte_index*8+7 downto byte_index*8) <= s_axi_wdata(byte_index*8+7 downto byte_index*8);
-                                    tx_start_s                                          <= '1';
                                 end if;
                             end loop;
                         when b"10" =>
@@ -227,7 +226,6 @@ begin
                                     -- Respective byte enables are asserted as per write strobes
                                     -- slave registor 2
                                     --slv_reg_rd_addr(byte_index*8+7 downto byte_index*8) <= s_axi_wdata(byte_index*8+7 downto byte_index*8);
-                                    tx_start_s                                          <= '0';
                                 end if;
                             end loop;
                         when b"11" =>
@@ -236,7 +234,6 @@ begin
                                     -- Respective byte enables are asserted as per write strobes
                                     -- slave registor 3
                                     slv_reg_wr_addr(byte_index*8+7 downto byte_index*8) <= s_axi_wdata(byte_index*8+7 downto byte_index*8);
-                                    tx_start_s                                          <= '0';
                                 end if;
                             end loop;
                         when others =>
@@ -244,7 +241,6 @@ begin
                             slv_reg_wr_data <= slv_reg_wr_data;
                             --slv_reg_rd_addr <= slv_reg_rd_addr;
                             slv_reg_wr_addr <= slv_reg_wr_addr;
-                            tx_start_s      <= tx_start_s;
                     end case;
                 end if;
             end if;
@@ -368,11 +364,24 @@ begin
         end if;
     end process;
 
+    -- Detect rising edge on tx_start_s
+    tx_start_s <= '1' when ((slv_reg_wren = '1') and (axi_awaddr(ADDR_LSB +
+                  OPT_MEM_ADDR_BITS downto ADDR_LSB) = b"01")) else '0';
+
+    process (s_axi_aclk)
+    begin
+        if (rising_edge(s_axi_aclk)) then
+            tx_start_d <= tx_start_s;
+        end if;
+    end process;
+
+    tx_start_rise_s <= (not tx_start_d) and tx_start_s;
+
     u_cctl_tx_fsm : entity work.cctl_tx_fsm
         port map (
             clk     => s_axi_aclk,
             rst_n   => s_axi_aresetn,
-            start   => tx_start_s,
+            start   => tx_start_rise_s,
             hold    => noc_wait,
             wr      => noc_wr
         );
@@ -390,27 +399,31 @@ begin
     wr_x_src        <= std_logic_vector(to_unsigned(X, wr_x_src'length));
     wr_y_src        <= std_logic_vector(to_unsigned(Y, wr_y_src'length));
     wr_local_src    <= std_logic_vector(to_unsigned(LOCAL, wr_local_src'length));
-    wr_x_dst        <= slv_reg_wr_addr(31 downto 27);
-    wr_y_dst        <= slv_reg_wr_addr(26 downto 22);
+    -- Ignoring 4 bits
+    wr_x_dst        <= slv_reg_wr_addr(27 downto 27);
+    -- Ignoring 4 bits
+    wr_y_dst        <= slv_reg_wr_addr(22 downto 22);
     wr_local_dst    <= slv_reg_wr_addr(21 downto 19);
     wr_type         <= slv_reg_wr_addr(18 downto 11);
     wr_unit         <= slv_reg_wr_addr(10 downto 3);
+    -- Ignoring 4 bits
     wr_msg          <= slv_reg_wr_addr(2 downto 0);
     noc_din         <= wr_x_src & wr_y_src & wr_local_src & wr_x_dst & wr_y_dst
-                       & wr_local_dst & wr_type & wr_unit & wr_msg &
+                       & wr_local_dst & wr_type & wr_unit & "00000" & wr_msg &
                        slv_reg_wr_data;
 
     -- Assemble data read from the NoC
-    slv_reg_rd_addr <= rd_x_src & rd_y_src & rd_local_src & rd_type & rd_unit,
-                       rd_msg;
-    rd_x_src        <= noc_dout(NOC_PKT_WIDTH-1);
-    rd_y_src        <= noc_dout(NOC_PKT_WIDTH-2);
-    rd_local_src    <= noc_dout(NOC_PKT_WIDTH-2);
-    rd_x_dst        <= noc_dout( downto );
-    rd_y_dst        <= noc_dout( downto );
-    rd_local_dst    <= noc_dout( downto );
-    rd_type         <= noc_dout( downto );
-    rd_unit         <= noc_dout( downto );
-    rd_msg          <= noc_dout( downto );
-    slv_reg_rd_data <= noc_dout( downto );
+    slv_reg_rd_addr <= "0000" & rd_x_src & "0000" & rd_y_src & rd_local_src &
+                       rd_type & rd_unit & rd_msg;
+    rd_x_src        <= noc_dout(65 downto 65);
+    rd_y_src        <= noc_dout(64 downto 64);
+    rd_local_src    <= noc_dout(63 downto 61);
+    rd_x_dst        <= noc_dout(60 downto 60);
+    rd_y_dst        <= noc_dout(59 downto 59);
+    rd_local_dst    <= noc_dout(58 downto 56);
+    rd_type         <= noc_dout(55 downto 48);
+    rd_unit         <= noc_dout(47 downto 40);
+    -- Ignoring 4 bits
+    rd_msg          <= noc_dout(34 downto 32);
+    slv_reg_rd_data <= noc_dout(31 downto 0);
 end rtl;
