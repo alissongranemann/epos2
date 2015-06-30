@@ -24,7 +24,7 @@ begin
         if (rising_edge (clk)) then
             if (rst_n = '0') then
                 state   <= st_rst;
-                wr_s    <= '0';
+                wr      <= '0';
             else
                 state   <= next_state;
                 wr      <= wr_s;
