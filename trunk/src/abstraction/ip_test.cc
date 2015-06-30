@@ -248,6 +248,8 @@ int tcp_test()
     return stat.tx_bytes + stat.rx_bytes;
 }
 
+#include <network.h>
+
 int main()
 {
     Network::init();

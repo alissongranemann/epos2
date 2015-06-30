@@ -126,7 +126,7 @@ PCNet32::Buffer * PCNet32::alloc(NIC * nic, const Address & dst, const Protocol 
         Buffer * buf = _tx_buffer[_tx_cur];
 
         // Initialize the buffer and assemble the Ethernet Frame Header
-        new (buf) Buffer(nic, _address, dst, prot, (size > max_data) ? MTU : size + always);
+        new (buf) Buffer(nic, (size > max_data) ? MTU : size + always, _address, dst, prot);
 
         db<PCNet32>(INF) << "PCNet32::alloc:desc[" << _tx_cur << "]=" << desc << " => " << *desc << endl;
 
@@ -145,7 +145,7 @@ int PCNet32::send(Buffer * buf)
 
     for(Buffer::Element * el = buf->link(); el; el = el->next()) {
         buf = el->object();
-        Tx_Desc * desc = buf->back<Tx_Desc>();
+        Tx_Desc * desc = reinterpret_cast<Tx_Desc *>(buf->back());
 
         db<PCNet32>(TRC) << "PCNet32::send(buf=" << buf << ")" << endl;
 
@@ -179,7 +179,7 @@ void PCNet32::free(Buffer * buf)
 
     for(Buffer::Element * el = buf->link(); el; el = el->next()) {
         buf = el->object();
-        Rx_Desc * desc = buf->back<Rx_Desc>();
+        Rx_Desc * desc = reinterpret_cast<Rx_Desc *>(buf->back());
 
         _statistics.rx_packets++;
         _statistics.rx_bytes += buf->size();

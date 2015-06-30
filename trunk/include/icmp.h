@@ -11,15 +11,10 @@ class ICMP: private IP::Observer
 {
     friend class Network;
 
-private:
-    // Buffers received from IP
-    typedef NIC::Buffer Buffer;
-
 public:
     static const bool connectionless = true;
 
-    // Network to be used by Communicator
-    typedef IP Network;
+    typedef IP::Buffer Buffer;
 
     // ICMP Packet Types
     typedef unsigned char Type;
@@ -86,10 +81,9 @@ public:
         Local local() const { return 0; }
     };
 
-    typedef Data_Observer<NIC::Buffer, Type> Observer;
-    typedef Data_Observed<NIC::Buffer, Type> Observed;
+    typedef Data_Observer<Buffer, Type> Observer;
+    typedef Data_Observed<Buffer, Type> Observed;
 
-    // ICMP Header
     class Header
     {
     public:
@@ -132,6 +126,8 @@ public:
 
     // ICMP Packet
     static const unsigned int MTU = 56; // to make a traditional 64-byte packet
+    static const unsigned int HEADERS_SIZE = sizeof(IP::Header) + sizeof(Header);
+
     typedef unsigned char Data[MTU];
 
     class Packet: public Header
@@ -180,7 +176,7 @@ public:
     static bool notify(const Type & type, Buffer * buf) { return _observed.notify(type, buf); }
 
 private:
-    void update(IP::Observed * ip, IP::Protocol prot, NIC::Buffer * buf);
+    void update(IP::Observed * ip, IP::Protocol prot, Buffer * buf);
 
     static Observed _observed; // Channel protocols are singletons
 };

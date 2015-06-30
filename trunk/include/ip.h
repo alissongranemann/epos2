@@ -25,7 +25,6 @@ public:
     typedef NIC::Address MAC_Address;
     typedef NIC_Common::Address<4> Address;
 
-
     // RFC 1700 Protocols
     typedef unsigned char Protocol;
     enum {
@@ -36,11 +35,12 @@ public:
         TTP     = 0x54
     };
 
+    // Buffers received by the NIC, eventually linked into a list
+    typedef NIC::Buffer Buffer;
 
     // IP and NIC observer/d
-    typedef Data_Observer<NIC::Buffer, Protocol> Observer;
-    typedef Data_Observed<NIC::Buffer, Protocol> Observed;
-
+    typedef Data_Observer<Buffer, Protocol> Observer;
+    typedef Data_Observed<Buffer, Protocol> Observed;
 
     // IP Header
     class Header
@@ -175,11 +175,7 @@ public:
 
     typedef Packet PDU;
 
-
 private:
-    // Buffers received by the NIC, eventually linked into a list
-    typedef NIC::Buffer Buffer;
-
     // Fragment key = f(from, id) = (from & ~_netmask) << 16 | id (fragmentation can only happen on localnet)
     typedef unsigned long Key;
 

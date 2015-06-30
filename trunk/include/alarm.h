@@ -85,12 +85,9 @@ private:
 
 // The following Scheduling Criteria depend on Alarm, which is not yet available at scheduler.h
 namespace Scheduling_Criteria {
-    inline FCFS::FCFS(int p):
-        Priority((p == IDLE) ? IDLE : Alarm::_elapsed) {}
+    inline FCFS::FCFS(int p): Priority((p == IDLE) ? IDLE : Alarm::_elapsed) {}
 
-
-    inline EDF::EDF(const Microsecond & d, const Microsecond & p, const Microsecond & c, int cpu):
-        RT_Common(Alarm::ticks(d), Alarm::ticks(d), p, c) {}
+    inline EDF::EDF(const Microsecond & d, const Microsecond & p, const Microsecond & c, int): RT_Common(Alarm::ticks(d), Alarm::ticks(d), p, c) {}
 
     inline void EDF::update() {
         if((_priority > PERIODIC) && (_priority < APERIODIC))

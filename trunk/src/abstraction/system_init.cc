@@ -2,7 +2,6 @@
 
 #include <system.h>
 #include <alarm.h>
-#include <task.h>
 
 __BEGIN_SYS
 

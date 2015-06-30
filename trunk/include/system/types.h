@@ -162,9 +162,9 @@ class UDP;
 class TCP;
 class DHCP;
 
-template<typename Channel, typename Network, bool connectionless>
+template<typename Channel, bool connectionless>
 class Link;
-template<typename Channel, typename Network, bool connectionless>
+template<typename Channel, bool connectionless>
 class Port;
 
 // Framework
@@ -183,11 +183,11 @@ template<typename Component> class Remote;
 typedef unsigned int Type_Id;
 enum
 {
-    CPU_ID = 0,
+    CPU_ID = 100,
     TSC_ID,
     MMU_ID,
 
-    MACHINE_ID = 10,
+    MACHINE_ID,
     PCI_ID,
     IC_ID,
     TIMER_ID,
@@ -198,7 +198,7 @@ enum
     DISPLAY_ID,
     NIC_ID,
 
-    THREAD_ID = 20,
+    THREAD_ID = 0,
     TASK_ID,
     ACTIVE_ID,
 
@@ -222,10 +222,11 @@ enum
     LINK_ID,
     PORT_ID,
 
-    UTILITY_ID = 50,
+    UTILITY_ID,
 
     UNKNOWN_TYPE_ID,
-    LAST_TYPE_ID = UNKNOWN_TYPE_ID - 1
+
+    LAST_TYPE_ID = UNKNOWN_TYPE_ID
 };
 
 // Type IDs for system components

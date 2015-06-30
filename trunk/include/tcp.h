@@ -16,26 +16,23 @@ __BEGIN_SYS
 class TCP: private IP::Observer
 {
 private:
-    // List to hold received Buffers
-    typedef NIC::Buffer Buffer;
-
-    // IP Packet
     typedef IP::Packet Packet;
 
 public:
     static const bool connectionless = false;
+
     static const unsigned int RETRIES = Traits<TCP>::RETRIES;
     static const unsigned int TIMEOUT = Traits<TCP>::TIMEOUT * 1000000;
     static const unsigned int WINDOW = Traits<TCP>::WINDOW;
 
-    typedef IP Network;
+    typedef IP::Buffer Buffer;
 
     typedef UDP::Port Port;
 
     typedef UDP::Address Address;
 
-    typedef Data_Observer<NIC::Buffer, unsigned long long> Observer; // Condition = Connection::id()
-    typedef Data_Observed<NIC::Buffer, unsigned long long> Observed;
+    typedef Data_Observer<Buffer, unsigned long long> Observer; // Condition = Connection::id()
+    typedef Data_Observed<Buffer, unsigned long long> Observed;
 
 
     class Header
@@ -93,6 +90,7 @@ public:
 
     static const unsigned int MTU = IP::MTU - sizeof(Header);
     static const unsigned int MSS = IP::MFS - sizeof(Header);
+    static const unsigned int HEADERS_SIZE = sizeof(IP::Header) + sizeof(Header);
 
     typedef unsigned char Data[MTU];
 
@@ -151,7 +149,7 @@ public:
         const Header * header() const { return this; }
 
         int send(const void * data, unsigned int size);
-        int receive(NIC::Buffer * buf, void * data, unsigned int size);
+        int receive(Buffer * buf, void * data, unsigned int size);
 
         const IP::Address & peer() const { return _peer; }
 
@@ -191,7 +189,7 @@ public:
             _handler = _handlers[s];
         }
 
-        void update(TCP::Observed * osb, unsigned long long socket, NIC::Buffer * buf);
+        void update(TCP::Observed * osb, unsigned long long socket, Buffer * buf);
 
         // State Transition Initiators
         void listen();
@@ -290,7 +288,7 @@ public:
     }
 
 private:
-    void update(IP::Observed * obs, IP::Protocol prot, NIC::Buffer * pool);
+    void update(IP::Observed * obs, IP::Protocol prot, Buffer * pool);
 
     unsigned short mss(Buffer * buf) {
        return buf->nic()->mtu() - sizeof(IP::Header) - sizeof(Header);

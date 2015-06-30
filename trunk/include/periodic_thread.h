@@ -100,12 +100,8 @@ public:
     };
 
 public:
-    RT_Thread(void (* function)(),
-                    const Microsecond & deadline, const Microsecond & period = SAME,
-                    const Microsecond & capacity = UNKNOWN, const Microsecond & activation = NOW,
-                    int times = INFINITE, int cpu = ANY, unsigned int stack_size = STACK_SIZE)
-    : Periodic_Thread(Configuration(activation ? activation : period ? period : deadline, activation ? 1 : times, SUSPENDED, Criterion(deadline, period ? period : deadline, capacity, cpu), 0, stack_size),
-                      &entry, this, function, activation, times) {
+    RT_Thread(void (* function)(), const Microsecond & deadline, const Microsecond & period = SAME, const Microsecond & capacity = UNKNOWN, const Microsecond & activation = NOW, int times = INFINITE, int cpu = ANY, unsigned int stack_size = STACK_SIZE)
+    : Periodic_Thread(Configuration(activation ? activation : period ? period : deadline, activation ? 1 : times, SUSPENDED, Criterion(deadline, period ? period : deadline, capacity, cpu), 0, stack_size), &entry, this, function, activation, times) {
         if(activation && Criterion::dynamic)
             // The priority of dynamic criteria will be adjusted to the correct value by the
             // update() in the operator()() of Handler
@@ -142,6 +138,7 @@ private:
 };
 
 typedef Periodic_Thread::Configuration RTConf;
+
 __END_SYS
 
 #endif

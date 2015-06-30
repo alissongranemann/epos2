@@ -91,7 +91,7 @@ pc_EMULATOR             = qemu-system-i386 -smp $(CPUS) -m $(MEM_SIZE)k -nograph
 cortex_m_CC_FLAGS       := -mcpu=cortex-m3 -mthumb -mno-thumb-interwork -mfpu=fpa #-Wa,-mimplicit-it=arm -marm 
 cortex_m_AS_FLAGS       := -mcpu=cortex-m3 -mthumb -mfpu=fpa
 cortex_m_LD_FLAGS       := 
-cortex_m_EMULATOR       = qemu-system-arm -cpu cortex-m3 -machine lm3s811evb -m $(MEM_SIZE)k -nographic -no-reboot -kernel
+cortex_m_EMULATOR       = timeout --preserve-status --foreground 20s qemu-system-arm -cpu cortex-m3 -machine lm3s811evb -m $(MEM_SIZE)k -nographic -no-reboot -kernel
 
 atmega_CC_FLAGS         := -mmcu=atmega128 -Wno-inline
 atmega_AS_FLAGS         := -mmcu=atmega128

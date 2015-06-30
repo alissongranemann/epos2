@@ -13,16 +13,12 @@ class UDP: private IP::Observer
     friend class TCP;
 
 private:
-    // List to hold received Buffers
-    typedef NIC::Buffer Buffer;
-
-    // IP Packet
     typedef IP::Packet Packet;
 
 public:
     static const bool connectionless = true;
 
-    typedef IP Network;
+    typedef IP::Buffer Buffer;
 
     typedef unsigned short Port;
     
@@ -64,9 +60,8 @@ public:
         Port _port;
     };
     
-
-    typedef Data_Observer<NIC::Buffer, Port> Observer;
-    typedef Data_Observed<NIC::Buffer, Port> Observed;
+    typedef Data_Observer<Buffer, Port> Observer;
+    typedef Data_Observed<Buffer, Port> Observed;
 
 
     class Header
@@ -97,6 +92,7 @@ public:
     } __attribute__((packed));
 
     static const unsigned int MTU = IP::MTU - sizeof(Header);
+    static const unsigned int HEADERS_SIZE = sizeof(IP::Header) + sizeof(Header);
 
     typedef unsigned char Data[MTU];
 
@@ -137,14 +133,14 @@ public:
     }
 
     static int send(const Port & from, const Address & to, const void * data, unsigned int size);
-    static int receive(NIC::Buffer * buf, void * data, unsigned int size);
+    static int receive(Buffer * buf, void * data, unsigned int size);
 
     static void attach(Observer * obs, const Port & port) { _observed.attach(obs, port); }
     static void detach(Observer * obs, const Port & port) { _observed.detach(obs, port); }
     static bool notify(const Port & port, Buffer * buf) { return _observed.notify(port, buf); }
 
 private:
-    void update(IP::Observed * obs, IP::Protocol prot, NIC::Buffer * buf);
+    void update(IP::Observed * obs, IP::Protocol prot, Buffer * buf);
 
     static Observed _observed; // Channel protocols are singletons
 };
