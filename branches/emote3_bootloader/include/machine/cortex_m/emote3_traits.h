@@ -55,7 +55,7 @@ template<> struct Traits<Cortex_M_Bootloader>: public Traits<void>
     static const unsigned int USB_ALIVE_WAITING_LIMIT = 500000; // in microseconds
 
     // Set to 0 to try forever
-    static const unsigned int HANDSHAKE_WAITING_LIMIT = 000000; // in microseconds
+    static const unsigned int HANDSHAKE_WAITING_LIMIT = 1000000; // in microseconds
 
     // Word in RAM reserved for the bootloader
     static const unsigned int BOOTLOADER_STATUS_ADDRESS = 0x20000000;

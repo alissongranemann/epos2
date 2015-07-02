@@ -114,18 +114,15 @@ int CC2538::receive(Address * src, Protocol * prot, void * data, unsigned int si
         if(!locked) ++_rx_cur;
     }
 
-    // Wait for a complete frame to be received
-    while(!_rx_done());
-
     Buffer * buf = _rx_buffer[_rx_cur];
 
     // TODO: Memory in the fifos is padded: you can only write one byte every 4bytes.
     // For now, we'll just copy using the RFDATA register
-    char * cbuf = reinterpret_cast<char *>(buf);
-    int end = xreg(RXFIFOCNT);
-    for(int i=0; i<end; i++) // First field is length of MAC
-        cbuf[i] = sfr(RFDATA);
-    sfr(RFST) = ISFLUSHRX; // Clear RXFIFO
+    //char * cbuf = reinterpret_cast<char *>(buf);
+    //int end = xreg(RXFIFOCNT);
+    //for(int i=0; i<end; i++) // First field is length of MAC
+    //    cbuf[i] = sfr(RFDATA);
+    //sfr(RFST) = ISFLUSHRX; // Clear RXFIFO
 
     // Disassemble the frame
     Frame * frame = buf->frame();

@@ -236,22 +236,45 @@ private:
     }
 };
 
-class eMote3_NIC_Bootloader : public eMote3_Bootloader_Common
+class eMote3_NIC_Bootloader : public eMote3_Bootloader_Common, NIC::Observer
 {
 public:
-    eMote3_NIC_Bootloader() : eMote3_Bootloader_Common(), _nic() { }
+    eMote3_NIC_Bootloader() : eMote3_Bootloader_Common(), _nic(), _received_msg(0)
+    { 
+        _nic.attach(this, _traits::NIC_PROTOCOL);
+    }
+    
+    void update(NIC::Observed * o, NIC::Protocol p, NIC::Buffer * b)
+    {
+        if(b->size() == sizeof(Message))
+        {
+            _received_msg = b;
+        }
+        else
+        {
+            _nic.free(b);
+        }
+    }
+
 private:
     bool _get_message(Message * m) 
     { 
-        NIC::Address src;
-        NIC::Protocol prot;
-        return (_nic.receive(&src, &prot, reinterpret_cast<char *>(m), sizeof(Message)) == sizeof(Message)) && (prot == _traits::NIC_PROTOCOL); 
+        if(_received_msg != 0)
+        {
+            memcpy(m, _received_msg->frame()->data<Message>(), sizeof(Message));
+            _nic.free(_received_msg);
+            return true;
+        }
+        else
+            return false;
     }
     void _send_message(const Message & m) 
     {
         _nic.send(_nic.broadcast(), _traits::NIC_PROTOCOL, reinterpret_cast<const char *>(&m), sizeof(Message));
     }
+
     NIC _nic;
+    NIC::Buffer * _received_msg;
 };
 
 typedef SWITCH<Traits<Cortex_M_Bootloader>::ENGINE, 

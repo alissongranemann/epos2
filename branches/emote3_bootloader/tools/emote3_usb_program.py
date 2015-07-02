@@ -152,7 +152,7 @@ while True:
     t2 = time.time()
     if t2-t1 >= 3:
         break
-    time.sleep(0.5)
+    time.sleep(0.1)
 
 sequence_number += 1
 
