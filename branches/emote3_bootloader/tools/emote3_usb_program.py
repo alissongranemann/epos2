@@ -144,13 +144,13 @@ mote = serial.Serial(baudrate = 115200, port=dev, timeout=1)
 mote.close()
 mote.open()
 
-print(dev, "Opened. Sending handshake messages for 1 second")
+print(dev, "Opened. Sending handshake messages for 2 seconds")
 t1 = time.time()
 while True:
     msg = struct.pack('<H', sequence_number) + handshake1_message
     mote.write(msg)
     t2 = time.time()
-    if t2-t1 >= 1:
+    if t2-t1 >= 3:
         break
     time.sleep(0.5)
 
@@ -179,13 +179,20 @@ with open(sys.argv[2], 'r') as hex_file:
     for line in hex_file:
         ret = hex_to_msg(line)
         for msg in ret:
-            #print('\n',msg)
-            mote.write(msg)
-    #        mote.flush()
-    #        time.sleep(1.002)
-            time.sleep(0.002)
-    #        k = mote.read(mote.inWaiting())
-    #        print(k)
+            acked = False
+            while not acked:
+                #print('\n',msg)
+                mote.write(msg)
+                mote.flush()
+                #time.sleep(.2)
+                #time.sleep(0.002)
+                k = mote.read(len(msg))
+                if k == msg:
+                    acked = True
+                else:
+                    print('wrong ACK! expected:', msg, 'got:', k)
+                    print('Resending...')
+    #            print(k)
     print('\nDone!')
 
 sys.exit(0)

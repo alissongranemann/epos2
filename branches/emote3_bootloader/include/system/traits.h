@@ -9,7 +9,7 @@ __BEGIN_SYS
 template<typename T>
 struct Traits
 {
-    static const bool enabled = false;
+    static const bool enabled = true;
     static const bool debugged = false;
     static const bool hysterically_debugged = false;
     typedef TLIST<> ASPECTS;
@@ -34,7 +34,7 @@ template<> struct Traits<Build>
     static const char ID[ID_SIZE];
 
     static const unsigned int CPUS = 1;
-    static const unsigned int NODES = 1; // > 1 => NETWORKING
+    static const unsigned int NODES = 2; // > 1 => NETWORKING
 };
 
 // Utilities

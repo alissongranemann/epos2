@@ -2,6 +2,7 @@
 
 #include <machine/cortex_m/ic.h>
 #include <machine.h>
+#include <machine/cortex_m/bootloader.h>
 
 extern "C" { void _exit(int s); }
 extern "C" { void _int_dispatch() __attribute__ ((alias("_ZN4EPOS1S11Cortex_M_IC8dispatchEv"))); }

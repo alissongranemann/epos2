@@ -508,22 +508,22 @@ typedef eMote3 Cortex_M_Model;
 
 __END_SYS
 
-#endif
-
 #include "emote3_tsc.h"
 #include "emote3_gpio.h"
-#include <usb.h>
+
 #include "emote3_usb.h"
+__BEGIN_SYS
+typedef eMote3_USB Cortex_M_Model_USB;
+class Cortex_M_USB : private USB_Common, public Cortex_M_Model_USB{};
+__END_SYS
+
 #include "pl011.h"
+__BEGIN_SYS
+typedef PL011 Cortex_M_Model_UART;
+__END_SYS
 #include "emote3_rom.h"
 #include "emote3_adc.h"
 #include "emote3_flash.h"
 #include "emote3_pwm.h"
-#include "bootloader.h"
 
-__BEGIN_SYS
-typedef eMote3_Bootloader Cortex_M_Model_Bootloader;
-typedef PL011 Cortex_M_Model_UART;
-typedef eMote3_USB Cortex_M_Model_USB;
-__END_SYS
-
+#endif

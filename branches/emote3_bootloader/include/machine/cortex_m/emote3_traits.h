@@ -38,7 +38,7 @@ template <> struct Traits<Cortex_M>: public Traits<Cortex_M_Common>
     // Default Sizes and Quantities
     static const unsigned int STACK_SIZE = 4 * 1024;
     static const unsigned int HEAP_SIZE = 4 * 1024;
-    static const unsigned int MAX_THREADS = 1;
+    static const unsigned int MAX_THREADS = 2;
 };
 
 template<> struct Traits<Cortex_M_Bootloader>: public Traits<void>
@@ -46,11 +46,16 @@ template<> struct Traits<Cortex_M_Bootloader>: public Traits<void>
     static const bool enabled = true;
 
     enum {nic, usb};
-    static const unsigned int ENGINE = usb;
+    static const unsigned int ENGINE = nic;
 
+    // NIC specifics
+    static const unsigned int NIC_PROTOCOL = 0x1010;
+
+    // USB specifics
     static const unsigned int USB_ALIVE_WAITING_LIMIT = 500000; // in microseconds
+
     // Set to 0 to try forever
-    static const unsigned int HANDSHAKE_WAITING_LIMIT = 1000000; // in microseconds
+    static const unsigned int HANDSHAKE_WAITING_LIMIT = 000000; // in microseconds
 
     // Word in RAM reserved for the bootloader
     static const unsigned int BOOTLOADER_STATUS_ADDRESS = 0x20000000;
@@ -61,7 +66,7 @@ template<> struct Traits<Cortex_M_Bootloader>: public Traits<void>
 
     // Flash memory reserved for the bootloader
     static const unsigned int LOW_ADDR = Traits<Cortex_M>::SYS_CODE;
-    static const unsigned int TOP_ADDR = 0x00201800;
+    static const unsigned int TOP_ADDR = 0x00204000;
 
     // Loaded image bounds
     static const unsigned int IMAGE_LOW = TOP_ADDR;

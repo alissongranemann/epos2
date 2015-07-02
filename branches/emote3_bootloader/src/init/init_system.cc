@@ -37,9 +37,6 @@ public:
         CPU::init();
         db<Init>(INF) << "done!" << endl;
 
-        /* 
-           Heap initialization code is too big. The bootloader DOES NOT support heap!
-
         // Initialize System's heap
         db<Init>(INF) << "Initializing system's heap: " << endl;
         if(Traits<System>::multiheap) {
@@ -48,7 +45,6 @@ public:
         } else
             System::_heap = new (&System::_preheap[0]) Heap(MMU::alloc(MMU::pages(HEAP_SIZE)), HEAP_SIZE);
         db<Init>(INF) << "done!" << endl;
-        */
 
         // Initialize the machine
         db<Init>(INF) << "Initializing the machine: " << endl;

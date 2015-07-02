@@ -1,3 +1,4 @@
+#include <machine/cortex_m/bootloader.h>
 #include <machine.h>
 
 using namespace EPOS;
@@ -41,8 +42,10 @@ void nic_bootloader()
 
 int main()
 {
-    usb_bootloader();
-    nic_bootloader();
+    if(Traits<Cortex_M_Bootloader>::ENGINE == Traits<Cortex_M_Bootloader>::usb)
+        usb_bootloader();
+    else if(Traits<Cortex_M_Bootloader>::ENGINE == Traits<Cortex_M_Bootloader>::nic)
+        nic_bootloader();
 
     _fini(); // Call global destructors
 

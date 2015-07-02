@@ -1,5 +1,7 @@
 // EPOS eMote3 USB Mediator Declarations
 
+#include <usb.h>
+
 #ifndef __emote3_usb_h
 #define __emote3_usb_h
 

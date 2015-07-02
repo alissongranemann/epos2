@@ -1,6 +1,8 @@
 #ifndef __cortex_m_bootloader_h__
 #define __cortex_m_bootloader_h__
 
+#include <machine.h>
+
 __BEGIN_SYS
 
 class Cortex_M_Bootloader
@@ -155,6 +157,7 @@ protected:
 
             if(_message.check(sequence_number))
             {
+                _send_message(_message); // ack
                 if(_message.is_end_msg())
                 {
                     write_buffer();
@@ -225,7 +228,6 @@ private:
     {
         return eMote3_USB::get_data(reinterpret_cast<char *>(m), sizeof(Message)) == sizeof(Message);
     }
-
     void _send_message(const Message & m)
     {
         for(unsigned int i=0; i<sizeof(Message); i++)
@@ -237,24 +239,19 @@ private:
 class eMote3_NIC_Bootloader : public eMote3_Bootloader_Common
 {
 public:
-    eMote3_NIC_Bootloader() : eMote3_Bootloader_Common() { }//, _nic() { }
+    eMote3_NIC_Bootloader() : eMote3_Bootloader_Common(), _nic() { }
 private:
     bool _get_message(Message * m) 
     { 
-        /*
         NIC::Address src;
         NIC::Protocol prot;
-        return _nic.receive(&src, &prot, reinterpret_cast<char *>(m), sizeof(Message)) == sizeof(Message); 
-        */
-        return false;
+        return (_nic.receive(&src, &prot, reinterpret_cast<char *>(m), sizeof(Message)) == sizeof(Message)) && (prot == _traits::NIC_PROTOCOL); 
     }
     void _send_message(const Message & m) 
     {
-        /*
-        _nic.send(_nic.broadcast(), 0, reinterpret_cast<const char *>(&m), sizeof(Message));
-        */        
+        _nic.send(_nic.broadcast(), _traits::NIC_PROTOCOL, reinterpret_cast<const char *>(&m), sizeof(Message));
     }
-    //NIC _nic;
+    NIC _nic;
 };
 
 typedef SWITCH<Traits<Cortex_M_Bootloader>::ENGINE, 
