@@ -184,39 +184,10 @@ with open(sys.argv[2], 'r') as hex_file:
                 #print('\n',msg)
                 mote.write(msg)
                 mote.flush()
-                #time.sleep(.2)
-                #time.sleep(0.002)
                 k = mote.read(len(msg))
                 if k == msg:
                     acked = True
                 else:
                     print('wrong ACK! expected:', msg, 'got:', k)
                     print('Resending...')
-    #            print(k)
     print('\nDone!')
-
-sys.exit(0)
-
-for seq in range(2,256):
-    msg = struct.pack('b',seq) # byte
-    msg += b'w'
-    address = 0x00207654
-    data = 0xdeadbbbb
-    msg += struct.pack('<I',address) # little-endian integer
-    msg += struct.pack('<I',data) # little-endian integer
-    print("Sending write message")
-    print(msg)
-    mote.write(msg)
-
-    time.sleep(2)
-    k = mote.read(mote.inWaiting())
-    print("Response: ", k)
-    time.sleep(2)
-
-    print("Rebooting the mote, closing it and exiting")
-    msg = struct.pack('b',seq+1) # byte
-    mote.write(msg + end_message)
-    k = mote.read(mote.inWaiting())
-    print("Response: ", k)
-    mote.close()
-    break
