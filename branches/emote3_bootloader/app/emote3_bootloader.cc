@@ -9,6 +9,8 @@ void usb_bootloader()
 {
     if(Traits<Cortex_M_Bootloader>::ENGINE == Traits<Cortex_M_Bootloader>::usb)
     {
+        while(!eMote3_USB::initialized());
+
         if(eMote3_Bootloader::vector_table_present())
         {
             eMote3_GPTM timer(1, Traits<Cortex_M_Bootloader>::USB_ALIVE_WAITING_LIMIT);
@@ -25,6 +27,9 @@ void usb_bootloader()
             eMote3_Bootloader bl;
             bl.run();
         } while(!eMote3_Bootloader::vector_table_present());
+
+        eMote3_USB::disable();
+        eMote3_GPTM::delay(1000000);
     }
 }
 

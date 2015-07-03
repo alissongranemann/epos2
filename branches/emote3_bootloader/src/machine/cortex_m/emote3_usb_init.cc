@@ -152,6 +152,13 @@ void eMote3_USB::reset()
     reg(CIE) = INT_RESET;    
 }
 
+void eMote3_USB::disable()
+{
+    flush();
+    reg(CTRL) &= ~USBEN;
+    Cortex_M_Model::disable_USB();
+}
+
 void eMote3_USB::init()
 {
     // Make sure that eMote3::init_clock() has been called and 

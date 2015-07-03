@@ -232,6 +232,7 @@ private:
 public:
     static USB_2_0::STATE state() { return _state; }
 
+    static void disable();
     static void init();
     static bool initialized() { return _state == USB_2_0::STATE::CONFIGURED; }
 
