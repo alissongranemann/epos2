@@ -122,6 +122,7 @@ protected:
     virtual void _send_message(const Message & m) = 0;
 
     Message _message;
+    Message _previous_message;
 
     bool handshake()
     {
@@ -148,7 +149,6 @@ protected:
             } while(!(_message.check(0) && _message.is_handshake1_msg()));
         }
 
-        
         // Reply
         _message.sequence_number++;
         _message.type = Message::HANDSHAKE_2;
@@ -161,31 +161,67 @@ protected:
     void execute()
     {
         unsigned short sequence_number = 2;
+
+        bool msg_ok = false;
+        while(!msg_ok)
+        {
+            while(!_get_message(&_previous_message))
+                ;
+
+            if(_previous_message.check(sequence_number))
+            {
+                msg_ok = true;
+                _send_message(_previous_message); // ack
+                if(_previous_message.is_end_msg())
+                {
+                    write_buffer();
+                    return;
+                }
+                sequence_number++;
+            }
+        }
+
         while(true)
         {
             while(!_get_message(&_message))
                 ;
 
-            if(_message.check(sequence_number))
+            // Previous message's ACK was wrong
+            if(_message.check(sequence_number - 1))
             {
                 _send_message(_message); // ack
                 if(_message.is_end_msg())
                 {
                     write_buffer();
-                    break;
+                    return;
                 }
-                if(_message.is_write_msg())
+                _previous_message = _message;
+            }
+            else if(_message.check(sequence_number))
+            {
+                _send_message(_message); // ack
+
+                // Commit previous message
+                if(_previous_message.is_write_msg())
                 {
-                    auto addr = _message.address;
+                    auto addr = _previous_message.address;
                     if((addr >= _traits::IMAGE_LOW) && (addr < _traits::IMAGE_TOP))
                     {
-                        if(!bufferize(_message))
+                        if(!bufferize(_previous_message))
                         {
                             write_buffer();
-                            bufferize(_message);
+                            bufferize(_previous_message);
                         }
                     }
                 }
+
+                if(_message.is_end_msg())
+                {
+                    write_buffer();
+                    return;
+                }
+
+                _previous_message = _message;
                 sequence_number++;
             }
             //else while(1);
@@ -274,6 +310,7 @@ private:
         {
             memcpy(m, _received_msg->frame()->data<Message>(), sizeof(Message));
             _nic.free(_received_msg);
+            _received_msg = 0;
             return true;
         }
         else
