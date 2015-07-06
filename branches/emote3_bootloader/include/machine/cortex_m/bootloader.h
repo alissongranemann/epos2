@@ -64,13 +64,13 @@ public:
         char type;
         unsigned int address;
         unsigned int data;
-        char checksum;
+        unsigned char checksum;
 
         Message() : sequence_number(0), type(0), address(0), data(0), checksum(0) { }
 
-        char lrc() const 
+        unsigned char lrc() const 
         {
-            char lrc = 0;
+            unsigned char lrc = 0;
             for(unsigned int i=0; i<sizeof(Message) - sizeof(char); i++)
                 lrc += reinterpret_cast<const char *>(this)[i];
             return ((lrc ^ 0xff) + 1) & 0xff;
