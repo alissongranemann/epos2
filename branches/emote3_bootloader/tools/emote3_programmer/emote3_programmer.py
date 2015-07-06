@@ -4,6 +4,12 @@ import time
 import os.path
 import struct
 
+def msg_checksum(msg):
+    lrc = 0
+    for i in msg:
+        lrc += i
+    return struct.pack('B', ((lrc ^ 0xff) + 1) & 0xff)
+
 handshake1_message = b'h\x00\x00\x00\x00\x00\x00\x00\x00'
 handshake2_message = b'H\x00\x00\x00\x00\x00\x00\x00\x00'
 end_message = b'e\x00\x00\x00\x00\x00\x00\x00\x00'    
@@ -13,7 +19,7 @@ sequence_number = 0
 last_address = 0 # This script assumes increasing addresses. It will ignore addresses out of increasing order.
 
 def hex_to_msg(line):
-    def checksum(line):
+    def hex_checksum(line):
         acc = 0
         for i in range(0, len(line)-1, 2):
             acc += int(line[i:i+2], base=16)
@@ -38,10 +44,10 @@ def hex_to_msg(line):
     start_code = line[0]
     if start_code != ':':
         raise Exception("Start code is not ':'", line)
-    c = checksum(line[1 : -2])
+    c = hex_checksum(line[1 : -2])
     c0 = int(line[-2 : ], base=16)
     if c != c0:
-        raise Exception("Wrong checksum", line, hex(c0), hex(c))
+        raise Exception("Wrong hex checksum", line, hex(c0), hex(c))
 
     ret = []
 
@@ -65,6 +71,7 @@ def hex_to_msg(line):
                 msg += struct.pack('<I',address) # unsigned little-endian integer
                 msg += d
                 #msg += struct.pack('<I',int(data[i:i+8], 16)) # unsigned little-endian integer
+                msg += msg_checksum(msg)
                 ret.append(msg)
                 last_address = address
             address += 4
@@ -83,6 +90,7 @@ def hex_to_msg(line):
                 msg += struct.pack('<I',address) # unsigned little-endian integer
                 msg += d
                 #msg += struct.pack('<I',int(data[i:i+8], 16)) # unsigned little-endian integer
+                msg += msg_checksum(msg)
                 ret.append(msg)
                 last_address = address
             address += 4
@@ -99,6 +107,7 @@ def hex_to_msg(line):
                 msg += struct.pack('<I',address) # unsigned little-endian integer
                 msg += d
                 #msg += struct.pack('<I',int(data[i:i+8], 16)) # unsigned little-endian integer
+                msg += msg_checksum(msg)
                 ret.append(msg)
                 last_address = address
             address += 4
@@ -109,6 +118,7 @@ def hex_to_msg(line):
         msg = struct.pack('<H', sequence_number)
         sequence_number += 1
         msg += end_message
+        msg += msg_checksum(msg)
         ret.append(msg)
         return ret
 
@@ -148,6 +158,7 @@ print(dev, "Opened. Sending handshake messages for 2 seconds")
 t1 = time.time()
 while True:
     msg = struct.pack('<H', sequence_number) + handshake1_message
+    msg += msg_checksum(msg)
     mote.write(msg)
     t2 = time.time()
     if t2-t1 >= 3:
@@ -161,9 +172,11 @@ print("This is what the mote said in the meantime:\n")
 handshake = False
 k = mote.read(mote.inWaiting())
 msg = struct.pack('<H', sequence_number) + handshake2_message
+msg += msg_checksum(msg)
+print(msg)
 if msg in k:
     handshake = True
-print(k.decode(), end='')
+print(k)
 print("\n===========================================")
 
 sequence_number += 1

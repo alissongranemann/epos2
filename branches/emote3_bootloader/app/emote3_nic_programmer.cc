@@ -1,10 +1,11 @@
 #include <usb.h>
 #include <nic.h>
+#include <machine/cortex_m/bootloader.h>
 
 using namespace EPOS;
 
 const NIC::Protocol BOOTLOADER_PROTOCOL = Traits<Cortex_M_Bootloader>::NIC_PROTOCOL;
-const unsigned int MESSAGE_SIZE = 11;
+const unsigned int MESSAGE_SIZE = sizeof(Cortex_M_Bootloader::Message);
 
 class Receiver : public IEEE802_15_4::Observer
 {

@@ -46,7 +46,7 @@ template<> struct Traits<Cortex_M_Bootloader>: public Traits<void>
     static const bool enabled = true;
 
     enum {nic, usb};
-    static const unsigned int ENGINE = nic;
+    static const unsigned int ENGINE = usb;
 
     // NIC specifics
     static const unsigned int NIC_PROTOCOL = 0x1010;
@@ -110,7 +110,8 @@ template <> struct Traits<Cortex_M_UART>: public Traits<Cortex_M_Common>
 
 template <> struct Traits<Cortex_M_USB>: public Traits<Cortex_M_Common>
 {
-    static const bool enabled = Traits<Cortex_M_Bootloader>::ENGINE == Traits<Cortex_M_Bootloader>::usb;
+    static const bool enabled = (Traits<Cortex_M_Bootloader>::ENGINE == Traits<Cortex_M_Bootloader>::usb)
+                                || (Traits<Serial_Display>::ENGINE == Traits<Serial_Display>::usb);
 };
 
 template <> struct Traits<Cortex_M_Radio>: public Traits<Cortex_M_Common>

@@ -477,6 +477,12 @@ protected:
         gpioc(DIR) |= pin_bit; // Set pin C2 as output
         gpioc(pin_bit << 2) = 0xff; // Set pin C2 (high)
     }
+    
+    static void disable_USB()
+    {
+        const unsigned int pin_bit = 1 << 2;
+        gpioc(pin_bit << 2) = 0; // Clear pin C2 (low)
+    }
 
     static void config_GPTM(unsigned int which)
     {
