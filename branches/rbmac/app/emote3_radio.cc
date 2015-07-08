@@ -37,7 +37,7 @@ GPIO * led;
 
 class Receiver : public IEEE802_15_4::Observer
 {
-    typedef short data_type;
+    typedef char data_type;
 
 public:
     typedef IEEE802_15_4::Protocol Protocol;
@@ -87,13 +87,7 @@ void receiver()
 
 int main()
 {
-    if(Traits<Serial_Display>::ENGINE == Traits<Serial_Display>::usb)
-    {
-        while(!eMote3_USB::initialized());
-        eMote3_GPTM::delay(1000000);
-    }
-
-    cout << "Hello main" << endl;
+    int n = 0;
     //sender();
     receiver();
 
