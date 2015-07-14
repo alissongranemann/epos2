@@ -26,8 +26,6 @@ void usb_bootloader()
             bl.run();
         } while(!eMote3_Bootloader::vector_table_present());
 
-        eMote3_USB::disable();
-        eMote3_GPTM::delay(1000000);
     }
 }
 
@@ -49,6 +47,12 @@ int main()
         usb_bootloader();
     else if(Traits<Cortex_M_Bootloader>::ENGINE == Traits<Cortex_M_Bootloader>::nic)
         nic_bootloader();
+
+    if(Traits<Cortex_M_USB>::enabled)
+    {
+        eMote3_USB::disable();
+        eMote3_GPTM::delay(1000000);
+    }
 
     _fini(); // Call global destructors
 
