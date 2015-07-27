@@ -59,24 +59,26 @@ def hex_to_msg(line):
 
     if record_type == 0x00: # Data
         #print("Full data: ", data)
-        for i in range(0, byte_count*2 - 7, 8):
-            if address > last_address:
-                msg = struct.pack('<H', sequence_number) # unsigned little-endian short
-                sequence_number += 1
-                msg += b'w' # write message
-                print(" Address: ", hex(address), end='\r')
-                d = struct.pack('>H',int(data[i:i+4], 16))
-                d += struct.pack('>H',int(data[i+4:i+8], 16))
-                #print("Data: ", data[i:i+8])
-                msg += struct.pack('<I',address) # unsigned little-endian integer
-                msg += d
-                #msg += struct.pack('<I',int(data[i:i+8], 16)) # unsigned little-endian integer
-                msg += msg_checksum(msg)
-                ret.append(msg)
-                last_address = address
-            address += 4
-
-        i+=8 # in Python, the variable holds the last valid value of the loop
+        if byte_count*2-7 >= 8:
+            for i in range(0, byte_count*2 - 7, 8):
+                if address > last_address:
+                    msg = struct.pack('<H', sequence_number) # unsigned little-endian short
+                    sequence_number += 1
+                    msg += b'w' # write message
+                    print(" Address: ", hex(address), end='\r')
+                    d = struct.pack('>H',int(data[i:i+4], 16))
+                    d += struct.pack('>H',int(data[i+4:i+8], 16))
+                    #print("Data: ", data[i:i+8])
+                    msg += struct.pack('<I',address) # unsigned little-endian integer
+                    msg += d
+                    #msg += struct.pack('<I',int(data[i:i+8], 16)) # unsigned little-endian integer
+                    msg += msg_checksum(msg)
+                    ret.append(msg)
+                    last_address = address
+                address += 4
+            i+=8 # in Python, the variable holds the last valid value of the loop
+        else:
+            i = 0
 
         if (i < byte_count*2) and (byte_count*2 - i < 4):
             if address > last_address:

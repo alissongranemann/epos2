@@ -6,6 +6,8 @@ using namespace EPOS;
 
 OStream cout;
 
+const char Traits<Build>::ID[Traits<Build>::ID_SIZE] = {'A','0'};
+
 void sender()
 {
     // These are frames built by hand while implementing IEEE802.15.4
@@ -37,7 +39,7 @@ GPIO * led;
 
 class Receiver : public IEEE802_15_4::Observer
 {
-    typedef char data_type;
+    typedef short data_type;
 
 public:
     typedef IEEE802_15_4::Protocol Protocol;
@@ -87,9 +89,9 @@ void receiver()
 
 int main()
 {
-    int n = 0;
-    //sender();
-    receiver();
+    cout << "Hello main" << endl;
+//     sender();
+   receiver();
 
     return 0;
 }

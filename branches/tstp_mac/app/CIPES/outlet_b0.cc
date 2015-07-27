@@ -86,11 +86,11 @@ private:
 };
 
 GPIO * switch_d2, * switch_d3;
-GPIO * led, * coil0, * coil1;
+GPIO * led;
 Power_Meter * pm0, * pm1;
 bool led_state = false;
-bool coil0_state = false;
-bool coil1_state = false;
+bool switch_d2_state = false;
+bool switch_d3_state = false;
 
 typedef unsigned short sensor_data_type;
 sensor_data_type sense_power0()
@@ -147,7 +147,7 @@ public:
             case READ_COILS:
                 starting_address = (((unsigned short)data[0]) << 8) | data[1];
                 //quantity_of_registers = (((unsigned short)data[2]) << 8) | data[3];
-                coil_response = coil0_state  + (coil1_state << 1);
+                coil_response = switch_d2_state  + (switch_d3_state << 1);
                 coil_response >>= starting_address;
                 send(myAddress(), READ_COILS, reinterpret_cast<unsigned char *>(&coil_response), sizeof (unsigned char));
                 break;
@@ -157,16 +157,20 @@ public:
                 output_value = (((unsigned short)data[2]) << 8) | data[3];
                 ack();
                 if(output_address == 0)
-                    coil0_state = output_value;
+                {
+                    switch_d2_state = output_value;
+                    switch_d2->set(switch_d2_state);
+                }
                 else if(output_address == 1)
-                    coil1_state = output_value;
+                {
+                    switch_d3_state = output_value;
+                    switch_d3->set(switch_d3_state);
+                }
                 else if(output_address == 9)
 					eMote3_ROM::reboot();
 
                 led_state = output_value;
 
-                coil0->set(coil0_state);
-                coil1->set(coil1_state);
                 led->set(led_state);
                 break;
 
@@ -206,9 +210,6 @@ int main()
          << "   tension: PA7" << endl
          << "   switches: PD2 and PD3" << endl;
 
-    coil0 = new GPIO('b',0, GPIO::OUTPUT);
-    coil1 = new GPIO('b',1, GPIO::OUTPUT);
-
     pm0 = new Power_Meter(TENSION_PIN, ADC::SINGLE5);
     pm1 = new Power_Meter(TENSION_PIN, ADC::SINGLE6);
     switch_d2 = new GPIO('d',2, GPIO::OUTPUT);
@@ -217,8 +218,6 @@ int main()
     switch_d3->set();
 
     led->set(led_state);
-    coil0->set(coil0_state);
-    coil1->set(coil1_state);
     
     NIC * nic = new NIC();
     nic->address(NIC::Address::RANDOM);

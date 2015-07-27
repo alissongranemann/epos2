@@ -26,10 +26,16 @@ public:
             return;
         }
 
+        auto initialized = false;
         pwrkey.set();
-        while(!status.get());
+        // Leave pwrkey up until status is stable at 1.
+        while (!initialized) {
+            while (!status.get());
+            eMote3_GPTM::delay(1000000);
+            initialized = status.get();
+        }
         pwrkey.clear();
-    }
+   }
 
     void power_off()
     {
@@ -37,82 +43,12 @@ public:
             return;
         }
 
+        // A 1-second pulse is what the manual says is fine for
+        // turning off the device (Hardware Manual, 3.4.2.1)
         pwrkey.set();
-        while(status.get());
+        eMote3_GPTM::delay(1000000);
         pwrkey.clear();
-    }
-
-    enum State {
-        DEFAULT, CR1, LF1, O, K, CR2, LF2
-    };
-
-    State next_state(State state, char c) {
-        switch (state) {
-            case DEFAULT:
-                switch (c) {
-                    case 0xD:
-                        return CR1;
-                    default:
-                        return DEFAULT;
-                }
-                break;
-            case CR1:
-                switch (c) {
-                    case 0xD:
-                        return CR1;
-                    case 0xA:
-                        return LF1;
-                    default:
-                        return DEFAULT;
-                }
-                break;
-            case LF1:
-                switch (c) {
-                    case 0xD:
-                        return CR1;
-                    case 'O':
-                        return O;
-                    default:
-                        return DEFAULT;
-                }
-                break;
-            case O:
-                switch (c) {
-                    case 0xD:
-                        return CR1;
-                    case 'K':
-                        return K;
-                    default:
-                        return DEFAULT;
-                }
-                break;
-            case K:
-                switch (c) {
-                    case 0xD:
-                        return CR2;
-                    default:
-                        return DEFAULT;
-                }
-                break;
-            case CR2:
-                switch (c) {
-                    case 0xD:
-                        return CR1;
-                    case 0xA:
-                        return LF2;
-                    default:
-                        return DEFAULT;
-                }
-                break;
-            case LF2: //shouldn't really happen, but...
-                switch (c) {
-                    case 0xD:
-                        return CR1;
-                    default:
-                        return DEFAULT;
-                }
-                break;
-        }
+        while (status.get());
     }
 
     // Assumes what is being sent is null-terminated.
@@ -122,7 +58,7 @@ public:
             uart.put(*p);
         }
 
-        uart.put('\n');
+        uart.put('\r');
     }
 
     // Doesn't assume what is being sent is null-terminated.
@@ -134,8 +70,6 @@ public:
         for (auto i = 0u; i < size; ++i) {
             uart.put(data[i]);
         }
-
-        uart.put('\n');
     }
 
     bool await_response(const char *expected, unsigned int max_timeout)
@@ -201,17 +135,19 @@ public:
     void on()
     {
         power_on();
-        eMote3_GPTM::delay(10000000);
         set_baudrate();
         turn_off_echo();
     }
 
     void off() { power_off(); }
 
-    bool set_baudrate()
+    void set_baudrate()
     {
-        send_command("AT");
-        return await_response("OK", 300000);
+        auto done = false;
+        while (!done) {
+            send_command("AT");
+            done = await_response("OK", 300000);
+        }
     }
 
     bool turn_off_echo()

@@ -549,7 +549,7 @@ public:
         IEV		= 0x40c,	// Interrupt Event 	        R/W	0x0000.0000
         IM		= 0x410,	// Interrupt Mask 	        R/W	0x0000.0000
         GRIS		= 0x414,	// Raw Interrupt Status 	RO	0x0000.0000
-        //MIS		= 0x418,	// Masked Interrupt Status	RO	0x0000.0000
+        MIS		= 0x418,	// Masked Interrupt Status	RO	0x0000.0000
         ICR		= 0x41c,	// Interrupt Clear 	        W1C	0x0000.0000
         AFSEL		= 0x420,	// Alternate Function Select	R/W	-
         DR2R		= 0x500,	// 2-mA Drive Select	        R/W	0x0000.00ff
@@ -712,7 +712,7 @@ protected:
     {
         config_GPTM(which_timer);
 
-        if((gpio_port >= 'A') && (gpio_port <= 'D')) 
+        if((gpio_port >= 'A') && (gpio_port <= 'D'))
             gpio_port += ('a'-'A');
         assert((gpio_port >= 'a') && (gpio_port <= 'd'));
         assert(gpio_pin <= 7);

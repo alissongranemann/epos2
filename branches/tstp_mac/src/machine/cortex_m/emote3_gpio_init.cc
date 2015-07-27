@@ -6,11 +6,11 @@
 
 __BEGIN_SYS
 
-GPIO * GPIO::requester_pin[4];
+GPIO * GPIO::requester_pin[4][8];
 
 void GPIO::disable_interrupt()
-{ 
-    reg(IM) &= ~_pin_bit; 
+{
+    reg(IM) &= ~_pin_bit;
 }
 
 void GPIO::clear_interrupt()
@@ -20,9 +20,17 @@ void GPIO::clear_interrupt()
 
 void GPIO::gpio_int_handler(const IC::Interrupt_Id & int_number)
 {
+    OStream cout;
     auto irq_number = IC::int2irq(int_number);
-    (*(requester_pin[irq_number]->_user_handler))(requester_pin[irq_number]);
-    requester_pin[irq_number]->clear_interrupt();
+    typedef volatile Reg32& (*Reg_Function)(unsigned int);
+    Reg_Function regs[] = {gpioa, gpiob, gpioc, gpiod};
+    for (auto i = 0u; i < 8; ++i) {
+        if (regs[irq_number](MIS) & (1 << i)) {
+            cout << irq_number << " " << i << "\n";
+            (*(requester_pin[irq_number][i]->_user_handler))(requester_pin[irq_number][i]);
+            requester_pin[irq_number][i]->clear_interrupt();
+        }
+    }
 }
 
 void GPIO::enable_interrupt(Edge e, GPIO_Handler h)
@@ -44,7 +52,7 @@ void GPIO::enable_interrupt(Edge e, GPIO_Handler h)
     }
 
     _user_handler = h;
-    requester_pin[_irq] = this;
+    requester_pin[_irq][_pin_number] = this;
 
     clear_interrupt();
     reg(IM) |= _pin_bit; // Enable interrupts for this pin

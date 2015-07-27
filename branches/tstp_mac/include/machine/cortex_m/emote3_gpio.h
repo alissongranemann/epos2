@@ -27,7 +27,9 @@ public:
 
     typedef void (*GPIO_Handler)(GPIO * pin);
 
-    GPIO(char port_letter, int pin_number, Direction dir) : _pin_bit(1 << pin_number)
+    GPIO(char port_letter, int pin_number, Direction dir) :
+        _pin_bit(1 << pin_number),
+        _pin_number(pin_number)
     {
         switch(port_letter)
         {
@@ -66,7 +68,7 @@ public:
     // TODO: set up one interrupt per pin
 
     // Called automatically by the handler
-    void clear_interrupt(); 
+    void clear_interrupt();
 
     // Disable interrupts for this pin
     void disable_interrupt();
@@ -81,12 +83,13 @@ public:
 private:
     GPIO_Handler _user_handler;
 
-    static GPIO * requester_pin[4];
+    static GPIO * requester_pin[4][8];
     static void gpio_int_handler(const unsigned int & int_number);
 
     volatile Reg32 * _data;
     volatile Reg32 & (*reg)(unsigned int);
     int _pin_bit;
+    unsigned int _pin_number;
     int _irq;
     int _over;
 };

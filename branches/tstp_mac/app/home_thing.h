@@ -59,35 +59,48 @@ private:
     Secure_NIC * _nic;
 };
 
-void busy_wait(int limit = 0x3fffff) { for(volatile int i=0; i<limit; i++); }
-
 template<typename Modbus>
 class Thing
 {
+    static const unsigned int MAX_AUTH_TRIALS = 5;
+
+    void busy_wait(int limit = 0x3fffff) { for(volatile int i=0; i<limit; i++); }
+
+    void blink_led(GPIO & led, unsigned int times = 10, unsigned int delay = 0xffff)
+    {
+        for(unsigned int i=0;i<10;i++)
+        {
+            led.set(true);
+            busy_wait(delay);
+            led.set(false);
+            busy_wait(delay);
+        }
+    }
+
     public:
     Thing(int modbus_id, Secure_NIC * s)
     {
         OStream cout;
         _snic = s;
         GPIO led('c',3, GPIO::OUTPUT);
-
-        for(int i=0;i<10;i++)
-        {
-            led.set(true);
-            busy_wait(0xffff);
-            led.set(false);
-            busy_wait(0xffff);
-        }
+        blink_led(led);
 
         _snic->set_id(Traits<Build>::ID);
 
+        unsigned int auth_trials = -1;
         do
         {
+            auth_trials++;
             cout << "Delaying..." << endl;
-            busy_wait();
+            eMote3_GPTM::delay(1000000 + (Random::random() % 2000000));
             cout << "Up!" << endl;
             if(!_snic->authenticated())
             {
+                if(auth_trials > MAX_AUTH_TRIALS)
+                {
+                    cout << "Could not establish key! Rebooting\n";
+                    eMote3_ROM::reboot();
+                }
                 cout << "Trying to negotiate key\n";
                 // Try to authenticate
                 _snic->send_key_request(_snic->broadcast());
@@ -97,13 +110,7 @@ class Thing
 
         cout << "Key set!" << endl;
 
-        for(int i=0;i<10;i++)
-        {
-            led.set(true);
-            busy_wait(0xffff);
-            led.set(false);
-            busy_wait(0xffff);
-        }
+        blink_led(led);
 
         Receiver * receiver = new Receiver(s);
         Sender * sender = new Sender(s);

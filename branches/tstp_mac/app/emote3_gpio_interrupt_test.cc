@@ -13,6 +13,11 @@ void handler(GPIO * pin)
     led->set(pin->get());
 }
 
+void other(GPIO * pin)
+{
+    cout << "Other handler" << endl;
+}
+
 void test_output()
 {
     cout << "Creating GPIO" << endl;
@@ -45,6 +50,15 @@ void test_input()
     cout << "Enabling interrupt" << endl;
     a.enable_interrupt(GPIO::BOTH_EDGES, &handler);
 
+    cout << "Creating GPIO" << endl;
+    GPIO b('b',5,GPIO::INPUT);
+    cout << "Clearing GPIO" << endl;
+    b.clear();
+
+    cout << "Enabling interrupt" << endl;
+    b.enable_interrupt(GPIO::BOTH_EDGES, &other);
+
+
     while(1);
 }
 
@@ -55,7 +69,7 @@ int main()
     cout << "Clearing LED" << endl;
     led->clear();
 
-    test_output();
-    //test_input();
+    //test_output();
+    test_input();
     return 0;
 }

@@ -80,7 +80,7 @@ private:
 };
 
 const unsigned int PWM_FREQUENCY = 10000; // 10 KHz
-GPIO * led, * coil0, * coil1;
+GPIO * led, * coil0;//, * coil1;
 eMote3_PWM * pwm;
 Power_Meter * pm;
 bool led_state = false;
@@ -192,7 +192,7 @@ public:
                 led_state = output_value;
 
                 coil0->set(coil0_state);
-                coil1->set(coil1_state);
+                //coil1->set(coil1_state);
                 led->set(led_state);
                 break;
 
@@ -209,19 +209,19 @@ int main()
     cout << "ID: " << hex << modbus_id << endl;
     cout << "Pins:" << endl
          << "   led: PC3" << endl
-         << "   coil0: PB0" << endl
-         << "   coil1: PB1" << endl
-         << "   PWM:   PC5" << endl
+         << "   coil0: PD3" << endl
+//         << "   coil1: PB1" << endl
+         << "   PWM:   PD2" << endl
          << "   power meter: PA6 and PA4" << endl;
 
     pm = new Power_Meter(ADC::SINGLE6, ADC::SINGLE4);
     led = new GPIO('c',3, GPIO::OUTPUT);
-    coil0 = new GPIO('b',0, GPIO::OUTPUT);
-    coil1 = new GPIO('b',1, GPIO::OUTPUT);
+    coil0 = new GPIO('d',3, GPIO::OUTPUT);
+ //   coil1 = new GPIO('b',1, GPIO::OUTPUT);
 
     led->set(led_state);
     coil0->set(coil0_state);
-    coil1->set(coil1_state);
+//    coil1->set(coil1_state);
 
     NIC * nic = new NIC();
     nic->address(NIC::Address::RANDOM);
@@ -230,7 +230,7 @@ int main()
 
     Thing<Modbus> sensor(modbus_id, s);
 
-    pwm = new eMote3_PWM(1,PWM_FREQUENCY, 50);
+    pwm = new eMote3_PWM(1,PWM_FREQUENCY, 50, 'd', 2);
 
     while(true);
 

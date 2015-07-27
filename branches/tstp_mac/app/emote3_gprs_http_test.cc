@@ -30,8 +30,6 @@ int main()
     cout << "GPRS is created and turned off\n";
     cout << "status is " << status.get() << "\n";
 
-    Alarm::delay(5000000);
-
     gprs.on();
 
     cout << "GPRS is on\n";
