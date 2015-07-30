@@ -8,6 +8,9 @@ OStream cout;
 
 const char Traits<Build>::ID[Traits<Build>::ID_SIZE] = {'A','0'};
 
+bool led_value;
+GPIO * led;
+
 void sender()
 {
     // These are frames built by hand while implementing IEEE802.15.4
@@ -26,6 +29,8 @@ void sender()
     cout << "I will send a message every " << delay_time << " microseconds." << endl;
     while(1)
     {
+        led_value = !led_value;
+        led->set(led_value);
         cout << "Sending message: " << data << endl;
         nic->send(nic->broadcast(), 0x1010, data, sizeof data);
         cout << "Sent" << endl;
@@ -33,9 +38,6 @@ void sender()
         Alarm::delay(delay_time);
     }
 }
-
-bool led_value;
-GPIO * led;
 
 class Receiver : public IEEE802_15_4::Observer
 {
@@ -77,9 +79,6 @@ private:
 
 void receiver()
 {
-    led = new GPIO('c',3, GPIO::OUTPUT);
-    led_value = true;
-    led->set(led_value);
     cout << "Hello, I am the receiver." << endl; 
     cout << "I will attach myself to the NIC and print every message I get." << endl;
     NIC * nic = new NIC();
@@ -89,8 +88,12 @@ void receiver()
 
 int main()
 {
+    while(!eMote3_USB::initialized());
+    led = new GPIO('c',3, GPIO::OUTPUT);
+    led_value = true;
+    led->set(led_value);
     cout << "Hello main" << endl;
-//     sender();
+     sender();
    receiver();
 
     return 0;

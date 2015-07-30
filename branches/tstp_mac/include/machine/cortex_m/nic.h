@@ -5,13 +5,13 @@
 #ifndef __cortex_m_nic_h
 #define __cortex_m_nic_h
 
-#include <ieee802_15_4.h>
+#include <tstp_mac.h>
 #include <system.h>
 #include "cc2538_radio.h"
 
 __BEGIN_SYS
 
-class Cortex_M_Radio: public IEEE802_15_4
+class Cortex_M_Radio: public TSTP_MAC
 {
     friend class Cortex_M;
 
@@ -20,8 +20,8 @@ private:
     static const unsigned int UNITS = NICS::Length;
 
 public:
-    typedef IEEE802_15_4::Observed Observed;
-    typedef IEEE802_15_4::Observer Observer;
+    typedef TSTP_MAC::Observed Observed;
+    typedef TSTP_MAC::Observer Observer;
 
     template<unsigned int UNIT = 0>
     Cortex_M_Radio(unsigned int u = UNIT) {

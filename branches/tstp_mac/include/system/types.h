@@ -174,6 +174,7 @@ class DHCP;
 class Diffie_Hellman;
 class Secure_NIC;
 class AES;
+class TSTP_MAC;
 
 template<typename Channel, typename Network, bool connectionless>
 class Link;

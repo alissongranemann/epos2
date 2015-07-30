@@ -3,12 +3,12 @@
 #ifndef __cortex_m_radio_h
 #define __cortex_m_radio_h
 
-#include <ieee802_15_4.h>
+#include <tstp_mac.h>
 #include <ic.h>
 
 __BEGIN_SYS
 
-// CC2538 IEEE 802.15.4 RF Transceiver
+// CC2538 TSTP MAC RF Transceiver
 class CC2538RF
 {
 protected:
@@ -19,7 +19,7 @@ protected:
     typedef CPU::Phy_Addr Phy_Addr;
     typedef CPU::IO_Irq IO_Irq;
     typedef MMU::DMA_Buffer DMA_Buffer;
-    typedef IEEE802_15_4::Address MAC_Address;
+    typedef TSTP_MAC::Address MAC_Address;
 
     // Bases
     enum
@@ -321,8 +321,8 @@ public:
     static bool running() { return reg(CTRL) & CTRL_STATE; }
 };
 
-// CC2538 IEEE 802.15.4 Radio Mediator
-class CC2538: public IEEE802_15_4, public IEEE802_15_4::Observed, private CC2538RF
+// CC2538 TSTP MAC Radio Mediator
+class CC2538: public TSTP_MAC, public TSTP_MAC::Observed, private CC2538RF
 {
     template <int unit> friend void call_init();
 

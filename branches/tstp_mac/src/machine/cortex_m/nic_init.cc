@@ -71,13 +71,13 @@ CC2538::CC2538(unsigned int unit, IO_Irq irq)
     //xreg(FRMFILT0) |= PAN_COORDINATOR;
 
     // Enable frame filtering
-    xreg(FRMFILT0) |= FRAME_FILTER_EN;
+    //xreg(FRMFILT0) |= FRAME_FILTER_EN;
 
     // Reset result of source matching (value undefined on reset)
     ffsm(SRCRESINDEX) = 0;
 
     // Enable automatic source address matching
-    xreg(SRCMATCH) |= SRC_MATCH_EN;
+    //xreg(SRCMATCH) |= SRC_MATCH_EN;
 
     // Set FIFOP threshold to maximum
     xreg(FIFOPCTRL) = 0xff;

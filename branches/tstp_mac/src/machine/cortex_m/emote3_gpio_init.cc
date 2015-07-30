@@ -20,13 +20,12 @@ void GPIO::clear_interrupt()
 
 void GPIO::gpio_int_handler(const IC::Interrupt_Id & int_number)
 {
-    OStream cout;
+    return;
     auto irq_number = IC::int2irq(int_number);
     typedef volatile Reg32& (*Reg_Function)(unsigned int);
     Reg_Function regs[] = {gpioa, gpiob, gpioc, gpiod};
     for (auto i = 0u; i < 8; ++i) {
         if (regs[irq_number](MIS) & (1 << i)) {
-            cout << irq_number << " " << i << "\n";
             (*(requester_pin[irq_number][i]->_user_handler))(requester_pin[irq_number][i]);
             requester_pin[irq_number][i]->clear_interrupt();
         }

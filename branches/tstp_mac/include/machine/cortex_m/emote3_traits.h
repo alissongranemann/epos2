@@ -18,27 +18,27 @@ template <> struct Traits<Cortex_M>: public Traits<Cortex_M_Common>
     static const unsigned int CPUS = Traits<Build>::CPUS;
 
     // Physical Memory
-    static const unsigned int MEM_BASE  = 0x20000004;
+    static const unsigned int MEM_BASE  = 0x20004000;
     static const unsigned int MEM_TOP   = 0x20007fff; // (MAX for 32-bit is 0x70000000 / 1792 MB)
 
     // Logical Memory Map
-    static const unsigned int APP_LOW   = 0x20000004;
-    static const unsigned int APP_CODE  = 0x00204000;
-    static const unsigned int APP_DATA  = 0x20000004;
+    static const unsigned int APP_LOW   = 0x20004000;
+    static const unsigned int APP_CODE  = 0x00200000;
+    static const unsigned int APP_DATA  = 0x20004000;
     static const unsigned int APP_HIGH  = 0x20007fff;
 
-    static const unsigned int PHY_MEM   = 0x20000004;
+    static const unsigned int PHY_MEM   = 0x20004000;
     static const unsigned int IO_BASE   = 0x40000000;
     static const unsigned int IO_TOP    = 0x440067ff;
 
-    static const unsigned int SYS       = 0x00204000;
-    static const unsigned int SYS_CODE  = 0x00204000; // Library mode only => APP + SYS
-    static const unsigned int SYS_DATA  = 0x20000004; // Library mode only => APP + SYS
+    static const unsigned int SYS       = 0x00200000;
+    static const unsigned int SYS_CODE  = 0x00200000; // Library mode only => APP + SYS
+    static const unsigned int SYS_DATA  = 0x20004000; // Library mode only => APP + SYS
 
     // Default Sizes and Quantities
     static const unsigned int STACK_SIZE = 4 * 1024;
     static const unsigned int HEAP_SIZE = 4 * 1024;
-    static const unsigned int MAX_THREADS = 2;
+    static const unsigned int MAX_THREADS = 1;
 };
 
 template <> struct Traits<Cortex_M_IC>: public Traits<Cortex_M_Common>

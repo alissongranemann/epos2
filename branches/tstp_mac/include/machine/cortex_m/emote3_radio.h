@@ -3,13 +3,13 @@
 #ifndef __emote3_radio_h
 #define __emote3_radio_h
 
-#include <ieee802_15_4.h>
+#include <tstp_mac.h>
 #include "machine.h"
 
 __BEGIN_SYS
 
-// eMote3 IEEE 802.15.4 Radio
-class eMote3_IEEE802_15_4
+// eMote3 TSTP MAC Radio
+class eMote3_TSTP_MAC
 {
 protected:
 
@@ -20,7 +20,7 @@ protected:
     typedef CPU::Phy_Addr Phy_Addr;
     typedef CPU::IO_Irq IO_Irq;
     typedef MMU::DMA_Buffer DMA_Buffer;
-    typedef IEEE802_15_4::Address MAC_Address;
+    typedef TSTP_MAC::Address MAC_Address;
 
 
     // Bases
@@ -136,7 +136,7 @@ protected:
 };
 
 // eMote3 Radio NIC
-class eMote3_Radio: public IEEE802_15_4, public IEEE802_15_4::Observed, private eMote3_IEEE802_15_4
+class eMote3_Radio: public TSTP_MAC, public TSTP_MAC::Observed, private eMote3_TSTP_MAC
 {
     template <int unit> friend void call_init();
 

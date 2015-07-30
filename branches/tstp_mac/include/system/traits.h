@@ -34,7 +34,7 @@ template<> struct Traits<Build>
     static const char ID[ID_SIZE];
 
     static const unsigned int CPUS = 1;
-    static const unsigned int NODES = 2; // > 1 => NETWORKING
+    static const unsigned int NODES = 1; // > 1 => NETWORKING
 };
 
 
@@ -119,7 +119,7 @@ template<> struct Traits<Init>: public Traits<void>
 template<> struct Traits<Serial_Display>: public Traits<void>
 {
     enum {usb, uart};
-    static const unsigned int ENGINE = usb;
+    static const unsigned int ENGINE = uart;
 
     static const bool enabled = true;
     static const int COLUMNS = 80;
@@ -204,6 +204,26 @@ template<> struct Traits<Alarm>: public Traits<void>
 template<> struct Traits<Synchronizer>: public Traits<void>
 {
     static const bool enabled = Traits<System>::multithread;
+};
+
+template<> struct Traits<TSTP_MAC>: public Traits<void>
+{
+    static const bool geographic = false;    
+    static const bool is_sink = false;    
+
+    static const unsigned int checking_interval = 125000; // us
+
+private:
+    // IEEE 802.15.4 TX Turnaround Time
+    static const unsigned int Tu = 192; // us
+
+    // Time to send a single microframe (sizeof(Microframe) * 2 / 0.0625)
+    static const unsigned int ts = 480; // us
+
+public:
+    static const unsigned int n_microframes = 1 + ((checking_interval - ts) / (Tu + ts));
+    static const unsigned int time_between_microframes = (checking_interval - ts) / (n_microframes - 1) - ts; // us
+    static const unsigned int microframe_listening_time = 2*ts + time_between_microframes; // us
 };
 
 template<> struct Traits<Network>: public Traits<void>

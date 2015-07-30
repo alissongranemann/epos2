@@ -10,6 +10,7 @@ CC2538_TSC::Time_Stamp CC2538_TSC::_offset = 0;
 
 void CC2538_TSC::wake_up_at(const CC2538_TSC::Time_Stamp & t, const CC2538_TSC::Interrupt_Handler & handler)
 {    
+    IC::unpend(SM_TIMER_IRQ);
     IC::disable(SM_TIMER_IRQ);
     IC::int_vector(IC::irq2int(SM_TIMER_IRQ), handler);
 

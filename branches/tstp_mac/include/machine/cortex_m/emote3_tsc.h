@@ -58,6 +58,11 @@ public:
     
     static void wake_up_at(const Time_Stamp & t, const Interrupt_Handler & handler);
 
+//    static void sync()
+//    {
+//        while(!(eMote3::scr(eMote3::CLOCK_STA) & (eMote3::STA_SYNC_32K)));
+//    }
+
     static volatile Time_Stamp time_stamp()
     {
         Time_Stamp ret = 0;

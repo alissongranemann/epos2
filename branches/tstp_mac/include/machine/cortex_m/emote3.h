@@ -609,7 +609,13 @@ public:
     static void radio_disable()
     {
         scr(RCGCRFC) &= ~RCGCRFC_RFC0;
-    }   
+    }
+
+    static const unsigned int POWER_MODE_TIMES_MARGIN = 32; // ~One clock tick
+    static const unsigned int PM1_ENTRY_TIME =  11 + POWER_MODE_TIMES_MARGIN; // us
+    static const unsigned int PM1_EXIT_TIME  =  24 + POWER_MODE_TIMES_MARGIN; // us
+    static const unsigned int PM2_ENTRY_TIME = 147 + POWER_MODE_TIMES_MARGIN; // us
+    static const unsigned int PM2_EXIT_TIME  = 186 + POWER_MODE_TIMES_MARGIN; // us
 
     enum POWER_MODE {
         ACTIVE = 0,
@@ -618,7 +624,7 @@ public:
         POWER_MODE_1,
         POWER_MODE_2,
         POWER_MODE_3,
-    };
+    };    
     enum
     {
         SLEEPDEEP = 1 << 2,
@@ -643,7 +649,7 @@ public:
             scs(SCR) |= SLEEPDEEP;
             scr(PMCTL) = p - POWER_MODE_0;
         }
-        ASM("wfi");
+        //ASM("wfi");
     }
 
     static void wake_up_on(WAKE_UP_EVENT e)
