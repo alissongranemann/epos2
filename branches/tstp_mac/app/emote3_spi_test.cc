@@ -2,6 +2,7 @@
 #include <alarm.h>
 #include <utility/ostream.h>
 #include <spi.h>
+#include <gpio.h>
 #include <cpu.h>
 
 using namespace EPOS;

@@ -1,4 +1,5 @@
 #include <alarm.h>
+#include <gpio.h>
 #include <utility/ostream.h>
 #include <uart.h>
 #include <machine/cortex_m/emote3.h>

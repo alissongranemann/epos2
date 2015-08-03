@@ -4,7 +4,7 @@
 #define __cortex_m_sht11_h
 
 #include <alarm.h>
-#include "emote3_gpio.h"
+#include <gpio.h>
 
 // TODO: This sensor wasn't tested with eMote3
 

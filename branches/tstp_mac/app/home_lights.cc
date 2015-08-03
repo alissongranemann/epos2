@@ -31,7 +31,7 @@ void Receiver::update(Receiver::Observed * o, Secure_NIC::Protocol p, Receiver::
     _nic->free(b);
 }
 
-void Sender::send(char * c, int len)
+void Sender::send(const char * c, int len)
 {
     memcpy(_msg, c, len);
     memset(_msg+len, 0x00, Modbus_ASCII::MSG_LEN-len);

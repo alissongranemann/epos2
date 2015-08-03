@@ -98,6 +98,7 @@ class Cortex_M_Radio;
 class Cortex_M_IEEE802_15_4;
 class Cortex_M_USB;
 class Cortex_M_SPI;
+class Cortex_M_GPIO;
 class CC2538_TSC;
 
 class ATmega;

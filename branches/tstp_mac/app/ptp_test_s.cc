@@ -4,9 +4,9 @@
 #include <ptp.h>
 #include <alarm.h>
 
-const char Traits<Build>::ID[Traits<Build>::ID_SIZE] = {'A','1'};
-
 using namespace EPOS;
+
+const char Traits<Build>::ID[Traits<Build>::ID_SIZE] = {'A','1'};
 
 OStream cout; 
 

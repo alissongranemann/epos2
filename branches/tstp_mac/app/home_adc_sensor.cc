@@ -43,7 +43,7 @@ void Receiver::update(Observed * o, Secure_NIC::Protocol p, Buffer * b)
     _nic->free(b);
 }
 
-void Sender::send(char * c, int len)
+void Sender::send(const char * c, int len)
 {
     memcpy(_msg, c, len);
     memset(_msg+len, 0x00, Modbus_ASCII::MSG_LEN-len);
@@ -67,7 +67,7 @@ public:
 		switch(cmd)
 		{
             case READ_HOLDING_REGISTER:
-                send(myAddress(), READ_HOLDING_REGISTER, 0, reinterpret_cast<unsigned char *>(&sensor_data), sizeof(sensor_data_type));
+                send(myAddress(), READ_HOLDING_REGISTER, reinterpret_cast<unsigned char *>(&sensor_data), sizeof(sensor_data_type));
                 break;
             default:                
                 break;

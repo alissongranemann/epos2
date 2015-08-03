@@ -1,4 +1,5 @@
 #include <uart.h>
+#include <gpio.h>
 #include <nic.h>
 
 using namespace EPOS;

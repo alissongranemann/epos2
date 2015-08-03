@@ -1,5 +1,6 @@
 #include <utility/ostream.h>
 #include <machine.h>
+#include <gpio.h>
 #include <usb.h>
 #include <tsc.h>
 

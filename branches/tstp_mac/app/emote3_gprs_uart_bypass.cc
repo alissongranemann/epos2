@@ -1,6 +1,7 @@
 #include <utility/ostream.h>
 #include <utility/string.h>
 #include <uart.h>
+#include <gpio.h>
 #include <machine.h>
 #include <alarm.h>
 

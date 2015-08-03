@@ -2,6 +2,7 @@
 #define __emote3_gprs_h_
 
 #include <machine/cortex_m/emote3.h>
+#include <gpio.h>
 
 __BEGIN_SYS
 

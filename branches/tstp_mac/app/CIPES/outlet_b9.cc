@@ -5,6 +5,7 @@
 #include <utility/string.h>
 #include <utility/key_database.h>
 #include <nic.h>
+#include <gpio.h>
 #include <aes.h>
 #include <uart.h>
 #include "home_thing.h"

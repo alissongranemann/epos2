@@ -1,6 +1,7 @@
 #include <utility/ostream.h>
 #include <alarm.h>
 #include <uart.h>
+#include <gpio.h>
 #include <machine/cortex_m/emote3_gprs.h>
 
 using namespace EPOS;

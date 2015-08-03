@@ -22,6 +22,7 @@
 #define __USB_H         __HEADER_MACH(usb)
 //#define __SCRATCHPAD_H  __HEADER_MACH(scratchpad)
 #define __SPI_H         __HEADER_MACH(spi)
+#define __GPIO_H        __HEADER_MACH(gpio)
 
 __BEGIN_SYS
 
@@ -40,6 +41,7 @@ typedef Cortex_M_Radio       NIC;
 typedef Cortex_M_Scratchpad  Scratchpad;
 typedef Cortex_M_USB         USB;
 typedef Cortex_M_SPI         SPI;
+typedef Cortex_M_GPIO        GPIO;
 
 __END_SYS
 

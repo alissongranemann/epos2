@@ -5,9 +5,9 @@
 #include <chronometer.h>
 #include <alarm.h>
 
-const char Traits<Build>::ID[Traits<Build>::ID_SIZE] = {'A','0'};
-
 using namespace EPOS;
+
+const char Traits<Build>::ID[Traits<Build>::ID_SIZE] = {'A','0'};
 
 OStream cout; 
 

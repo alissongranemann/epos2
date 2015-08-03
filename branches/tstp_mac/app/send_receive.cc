@@ -1,6 +1,7 @@
 #include <utility/ostream.h>
 #include <utility/random.h>
 #include <nic.h>
+#include <gpio.h>
 #include <alarm.h>
 
 using namespace EPOS;

@@ -1,13 +1,14 @@
-#ifndef __emote3_gpio_h_
-#define __emote3_gpio_h_
+#ifndef __cortex_m_gpio_h_
+#define __cortex_m_gpio_h_
+
+#include <machine.h>
 
 __BEGIN_SYS
 
-class GPIO : private Cortex_M_Model
+class Cortex_M_GPIO : private Cortex_M_Model
 {
-    friend class eMote3;
+//    friend class eMote3;
 public:
-    /* TODO: GPIO interrupts are not working yet */
     enum Level
     {
         HIGH,
@@ -25,9 +26,9 @@ public:
         OUTPUT,
     };
 
-    typedef void (*GPIO_Handler)(GPIO * pin);
+    typedef void (*GPIO_Handler)(Cortex_M_GPIO * pin);
 
-    GPIO(char port_letter, int pin_number, Direction dir) :
+    Cortex_M_GPIO(char port_letter, int pin_number, Direction dir) :
         _pin_bit(1 << pin_number),
         _pin_number(pin_number)
     {
@@ -65,8 +66,6 @@ public:
     void pull_up() { ioc(_over) = PUE; }
     void pull_down() { ioc(_over) = PDE; }
 
-    // TODO: set up one interrupt per pin
-
     // Called automatically by the handler
     void clear_interrupt();
 
@@ -74,16 +73,14 @@ public:
     void disable_interrupt();
 
     // Enable interrupts for this pin
-    // WARNING: you can use only one interrupt per port (A,B,C,D)
     void enable_interrupt(Edge e, GPIO_Handler h);
 
     //void enable_interrupt(Level l, GPIO_Handler * h); // TODO
 
-
 private:
     GPIO_Handler _user_handler;
 
-    static GPIO * requester_pin[4][8];
+    static Cortex_M_GPIO * requester_pin[4][8];
     static void gpio_int_handler(const unsigned int & int_number);
 
     volatile Reg32 * _data;

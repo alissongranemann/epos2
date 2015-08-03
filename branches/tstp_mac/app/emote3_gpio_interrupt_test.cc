@@ -1,4 +1,5 @@
 #include <machine.h>
+#include <gpio.h>
 
 using namespace EPOS;
 

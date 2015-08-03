@@ -843,7 +843,6 @@ __END_SYS
 #include <spi.h>
 #include "emote3_ssi.h"
 #include "emote3_tsc.h"
-#include "emote3_gpio.h"
 #include <usb.h>
 #include "emote3_usb.h"
 #include "pl011.h"

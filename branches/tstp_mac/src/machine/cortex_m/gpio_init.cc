@@ -1,7 +1,4 @@
-#include <system/config.h>
-#include __MODEL_H
-#ifdef __emote3_h
-
+#include <gpio.h>
 #include <ic.h>
 
 __BEGIN_SYS
@@ -20,7 +17,6 @@ void GPIO::clear_interrupt()
 
 void GPIO::gpio_int_handler(const IC::Interrupt_Id & int_number)
 {
-    return;
     auto irq_number = IC::int2irq(int_number);
     typedef volatile Reg32& (*Reg_Function)(unsigned int);
     Reg_Function regs[] = {gpioa, gpiob, gpioc, gpiod};
@@ -59,4 +55,3 @@ void GPIO::enable_interrupt(Edge e, GPIO_Handler h)
 }
 
 __END_SYS
-#endif

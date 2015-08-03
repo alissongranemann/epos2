@@ -1,4 +1,5 @@
 #include <machine.h>
+#include <gpio.h>
 #include <alarm.h>
 #include <utility/ostream.h>
 #include <spi.h>

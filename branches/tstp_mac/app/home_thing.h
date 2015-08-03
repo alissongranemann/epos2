@@ -1,4 +1,5 @@
 #include <secure_nic.h>
+#include <gpio.h>
 
 __USING_SYS
 const unsigned char Diffie_Hellman::default_base_point_x[] = 
