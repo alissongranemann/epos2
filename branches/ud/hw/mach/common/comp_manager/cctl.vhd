@@ -391,7 +391,7 @@ begin
             clk     => s_axi_aclk,
             rst_n   => s_axi_aresetn,
             -- Start should be tied to a FIFO not full signal?
-            start   => '1',
+            start   => noc_nd,
             rd      => noc_rd
         );
 

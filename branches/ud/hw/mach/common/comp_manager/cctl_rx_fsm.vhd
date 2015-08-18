@@ -23,7 +23,7 @@ begin
         if (rising_edge (clk)) then
             if (rst_n = '0') then
                 state   <= st_rst;
-                rd_s    <= '0';
+                rd      <= '0';
             else
                 state   <= next_state;
                 rd      <= rd_s;
