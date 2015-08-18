@@ -2,6 +2,7 @@
 
 #include <cpu.h>
 #include <mmu.h>
+#include <tsc.h>
 #include <system.h>
 #include <system/info.h>
 
@@ -18,8 +19,8 @@ void ARMv7::init()
     else
         db<Init, MMU>(WRN) << "MMU is disabled!" << endl;
 
-//    if(Traits<TSC>::enabled)
-//        TSC::init();
+    if(Traits<TSC>::enabled)
+        TSC::init();
 }
 
 __END_SYS
