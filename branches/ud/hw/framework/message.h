@@ -26,6 +26,9 @@ public:
         COMPONENT = 0x10,
 
         ADDER_ADD = COMPONENT,
+        ADDER_REST_ST,
+        ADDER_SAVE_ST,
+        ADDER_GET_ST_LEN,
 
         GET_INST_ID,
         SET_INST_ID,

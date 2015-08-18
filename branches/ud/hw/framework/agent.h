@@ -42,6 +42,18 @@ public:
             ret(res);
             break;
         }
+        case ADDER_SAVE_ST: {
+            unsigned int res;
+            res = T.save_st();
+            ret(res);
+            break;
+        }
+        case ADDER_GET_ST_LEN: {
+            unsigned int res;
+            res = T.get_st_len();
+            ret(res);
+            break;
+        }
         default:
             break;
         }
