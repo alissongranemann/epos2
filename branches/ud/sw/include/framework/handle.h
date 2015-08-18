@@ -133,6 +133,8 @@ public:
 
     // Adder
     int add(int a, int b) { return _stub->add(a, b); }
+    int save_st() { return _stub->save_st(); }
+    int get_st_len() { return _stub->get_st_len(); }
 
 private:
     _Stub * _stub;

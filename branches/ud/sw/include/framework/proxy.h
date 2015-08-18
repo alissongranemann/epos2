@@ -56,8 +56,10 @@ private:
 
 public:
     template<typename ... Tn>
-    Proxy(const Tn & ... an): Base(Id(Type<Component>::ID, 0)) { invoke(CREATE + sizeof ... (Tn), an ...); }
-    ~Proxy() { invoke(DESTROY); }
+    //Proxy(const Tn & ... an): Base(Id(Type<Component>::ID, 0)) { invoke(CREATE + sizeof ... (Tn), an ...); }
+    Proxy(const Tn & ... an): Base(Id(Type<Component>::ID, 0)) {}
+    //~Proxy() { invoke(DESTROY); }
+    ~Proxy() {}
 
     static Proxy<Component> * self() { return new (reinterpret_cast<void *>(static_invoke(SELF))) Proxied<Component>; }
 
@@ -109,6 +111,8 @@ public:
 
     // Adder
     int add(int a, int b) { return invoke(ADDER_ADD, a, b); }
+    int save_st() { return invoke(ADDER_SAVE_ST); }
+    int get_st_len() { return invoke(ADDER_GET_ST_LEN); }
 
     template<typename ... Tn>
     static int static_invoke(const Method & m, const Tn & ... an) {
