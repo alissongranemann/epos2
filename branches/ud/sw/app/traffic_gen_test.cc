@@ -11,7 +11,7 @@ const unsigned int N = 1000;
 
 OStream cout;
 
-void sav_st(_SYS::Handle<_SYS::Adder> & add)
+void save_st(_SYS::Handle<_SYS::Adder> & add)
 {
     _SYS::TSC_Chronometer chrono;
     unsigned long long dur = 0;
@@ -24,7 +24,7 @@ void sav_st(_SYS::Handle<_SYS::Adder> & add)
         int len = add.get_st_len();
 
         for (int i = 0; i < len; i++)
-            st[i] = add.sav_st();
+            st[i] = add.save_st();
 
         chrono.stop();
         dur += chrono.ticks();
@@ -53,15 +53,15 @@ int main()
 
     g0.put(false);
     g1.put(false);
-    sav_st(add);
+    save_st(add);
 
     g0.put(true);
     g1.put(false);
-    sav_st(add);
+    save_st(add);
 
     g0.put(true);
     g1.put(true);
-    sav_st(add);
+    save_st(add);
 
     return 0;
 }
