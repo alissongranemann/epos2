@@ -16,7 +16,7 @@ public:
 
     template<typename T1, typename ... Tn>
     struct NPKT<T1, Tn ...>
-    { static const unsigned int Result = NPKT1<T1>::Result + SIZEOF<Tn ...>::Result ; };
+    { static const unsigned int Result = NPKT1<T1>::Result + NPKT<Tn ...>::Result ; };
 
     template<typename T>
     static void serialize(Buffer * buf, int index, const T && a) {
