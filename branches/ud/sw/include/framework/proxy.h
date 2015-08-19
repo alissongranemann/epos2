@@ -38,6 +38,7 @@ public:
 };
 
 template<typename Component>
+// FIXME: The type of message will depend on the component's aspects
 //class Proxy: public IF<Traits<Component>::hardware, Message_UD, Message_Kernel>::Result
 class Proxy: Message_UD
 {
@@ -56,10 +57,8 @@ private:
 
 public:
     template<typename ... Tn>
-    //Proxy(const Tn & ... an): Base(Id(Type<Component>::ID, 0)) { invoke(CREATE + sizeof ... (Tn), an ...); }
-    Proxy(const Tn & ... an): Base(Id(Type<Component>::ID, 0)) {}
-    //~Proxy() { invoke(DESTROY); }
-    ~Proxy() {}
+    Proxy(const Tn & ... an): Base(Id(Type<Component>::ID, 0)) { invoke(CREATE + sizeof ... (Tn), an ...); }
+    ~Proxy() { invoke(DESTROY); }
 
     static Proxy<Component> * self() { return new (reinterpret_cast<void *>(static_invoke(SELF))) Proxied<Component>; }
 

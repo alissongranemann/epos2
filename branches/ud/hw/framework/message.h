@@ -18,11 +18,20 @@ private:
     static const unsigned int MAX_PARAMETERS_SIZE = 20;
 
 public:
-    typedef ac_channel<Packet> Channel;
-
     // FIXME: This should be shared between software and hardware Message to
     // avoid inconsistencies
     enum {
+        CREATE,
+        CREATE1,
+        CREATE2,
+        CREATE3,
+        CREATE4,
+        CREATE5,
+        CREATE6,
+        CREATE7,
+        CREATE8,
+        DESTROY,
+        SELF,
         COMPONENT = 0x10,
 
         ADDER_ADD = COMPONENT,
@@ -35,6 +44,11 @@ public:
 
         UNDEFINED = -1
     };
+
+    typedef int Method;
+    typedef Method Result;
+
+    typedef ac_channel<Packet> Channel;
 
 public:
     Message(Channel & rx_ch, Channel & tx_ch): _rx_ch(rx_ch), _tx_ch(tx_ch) {}
