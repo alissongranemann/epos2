@@ -24,7 +24,7 @@ fi
 sed 's:APP:'"$APP"':g' $BASE_INI > $TMP
 
 # Check if $GDB is set
-if [ -e $GDB 1 ]
+if [ "$GDB" = "1" ]
     then sed 's:GDB:'1':g' $TMP > $INI
 else 
     sed 's:GDB:'0':g' $TMP > $INI
