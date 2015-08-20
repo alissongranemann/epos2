@@ -79,7 +79,7 @@ SYS_DATA_ADDR	= $(call GETTK,SYS_DATA,$(MACH_TRAITS))
 APP_CODE_ADDR	= $(call GETTK,APP_CODE,$(MACH_TRAITS))
 APP_DATA_ADDR	= $(call GETTK,APP_DATA,$(MACH_TRAITS))
 BOOT_LENGTH_MIN	= $(call GETTK,BOOT_LENGTH_MIN,$(MACH_TRAITS))
-BOOT_LENGTH_MAX = $(call GETTK,BOOT_LENGTH_MAX,$(MACH_TRAITS))
+BOOT_LENGTH_MAX	= $(call GETTK,BOOT_LENGTH_MAX,$(MACH_TRAITS))
 
 #Machine specifics
 pc_CC_FLAGS		:= -Wa,--32
@@ -102,12 +102,7 @@ zynq_AS_FLAGS		:= -mcpu=cortex-a9 -mfpu=fpa
 zynq_LD_FLAGS		:= 
 # The smp flag must be 2 else, qemu gives an assertion error
 zynq_EMULATOR		:= qemu-system-arm -cpu cortex-a9 -machine arm-generic-fdt -dtb ../tools/zynq/devicetree.dtb -smp 2 -m $(MEM_SIZE)k -nographic -no-reboot -kernel
-
-ifeq ($(GDB),1)
-#zynq_DEPLOYER       := $(TOP)/tools/zynq/jtag_gdb.sh
-else
-zynq_DEPLOYER       := $(TOP)/tools/zynq/jtag.sh
-endif
+zynq_DEPLOYER		:= $(TOP)/tools/zynq/jtag.sh
 
 $(MACH)_CODE_NAME	:= .init
 $(MACH)_DATA_NAME	:= .ctors
@@ -126,7 +121,7 @@ MACH_EMULATOR		= $(subst -m ,-s -S -m ,$($(MACH)_EMULATOR))
 else
 MACH_EMULATOR		= $($(MACH)_EMULATOR)
 endif
-MACH_DEBUGGER		= $(TERM) gdb -ex "target remote:1234" -ex "set confirm off"
+MACH_DEBUGGER		= $(TERM) arm-elf-gdb -ex "target remote:1234" -ex "set confirm off"
 ifneq ($(wildcard $(IMG)/$(MACH)_setup),) 
 MACH_DEBUGGER		:= $(MACH_DEBUGGER) -ex "add-symbol-file $(SRC)/setup/$(MACH)_setup $(SETUP_ADDR)"
 endif
@@ -137,7 +132,7 @@ ifneq ($(wildcard $(IMG)/$(MACH)_system),)
 MACH_DEBUGGER		:= $(MACH_DEBUGGER) -ex "add-symbol-file $(SRC)/system/$(MACH)_system $(SYS_CODE_ADDR)"
 endif
 
-MACH_DEPLOYER       := $($(MACH)_DEPLOYER)
+MACH_DEPLOYER		:= $(TERM) $($(MACH)_DEPLOYER)
 
 # Architecture specifics
 ARCH_LITTLE	:= little
@@ -193,7 +188,7 @@ DEBUGGER	= $(MACH_DEBUGGER)
 
 EMULATOR	= $(MACH_EMULATOR) 
 
-DEPLOYER    = $(MACH_DEPLOYER) 
+DEPLOYER	= $(MACH_DEPLOYER) 
 
 INSTALL		:= install
 

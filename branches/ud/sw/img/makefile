@@ -10,7 +10,10 @@ OUTPUT := $(addsuffix .out,$(APPLICATION))
 all:		strip $(IMAGE)
 
 deploy:		strip $(IMAGE)
-		$(DEPLOYER) $(IMG)/$(IMAGE)
+		$(DEPLOYER) $(IMG)/$(IMAGE) ${GDB} &
+ifeq ($(GDB),1)
+		$(DEBUGGER) $(APP)/$(APPLICATION) &
+endif
 
 run:		strip $(IMAGE)
 ifeq ($(NODES),1)
