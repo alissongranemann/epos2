@@ -16,14 +16,14 @@ void Zynq_IC::dispatch()
     unsigned int icciar = cpu_itf(ICCIAR);
     register Interrupt_Id id = icciar & INT_ID_MASK;
 
+    // For every read of a valid interrupt id from the ICCIAR, the ISR must
+    // perform a matching write to the ICCEOIR
+    cpu_itf(ICCEOIR) = icciar;
+
     if((id != INT_TIMER) || Traits<IC>::hysterically_debugged)
         db<IC>(TRC) << "IC::dispatch(i=" << id << ")" << endl;
 
     _int_vector[id](id);
-
-    // For every read of a valid interrupt id from the ICCIAR, the ISR must
-    // perform a matching write to the ICCEOIR
-    cpu_itf(ICCEOIR) = icciar;
 }
 
 void Zynq_IC::int_not(const Interrupt_Id & i)
