@@ -1,7 +1,7 @@
 // EPOS Zynq Mediator Declarations
 
-#ifndef __zyqn_h
-#define __zyqn_h
+#ifndef __zynq_h
+#define __zynq_h
 
 #include <machine.h>
 #include <cpu.h>
@@ -12,7 +12,19 @@ __BEGIN_SYS
 
 class Zynq: public Machine_Common
 {
+private:
     friend class Init_System;
+
+    typedef CPU_Common::Log_Addr Log_Addr;
+
+    enum {
+        SLCR_BASE = 0xF8000000
+    };
+
+    // SLCR Registers offsets
+    enum {
+        PSS_RST_CTRL = 0x200
+    };
 
 public:
     Zynq() {}
@@ -29,13 +41,14 @@ public:
     static void panic() {}
     static void reboot() {
         db<Machine>(WRN) << "Machine::reboot()" << endl;
-        // qemu is messing with the console when we reset the board
-        // this for() will avoid reseting by now
-        CPU::out32(CM_CTRL, CPU::in32(CM_CTRL) | (1 << 3));
-        for(;;); // TODO: the above must be tested!
+        // FIXME: The line bellow will mess with qemu but seems to be working on
+        // real hardware, possibly a bug in qemu. Note that the asserting reset
+        // will clear the RAM where the application is stored.
+        //slcr(PSS_RST_CTRL) = 1;
+        while(1);
     }
 
-    static void poweroff() { reboot(); }
+    static void poweroff() {}
 
     static void smp_barrier(unsigned int n_cpus = n_cpus()) {
         static volatile unsigned int ready[2];
@@ -57,10 +70,9 @@ public:
     static void smp_init(unsigned int n_cpus) {};
 
 private:
-    static const unsigned long CM_CTRL = 0x1000000C;
-
-private:
     static void init();
+
+    static Log_Addr & slcr(unsigned int o) { return reinterpret_cast<Log_Addr *>(SLCR_BASE)[o / sizeof(Log_Addr)]; }
 
 private:
     static const bool smp = Traits<System>::multicore;
