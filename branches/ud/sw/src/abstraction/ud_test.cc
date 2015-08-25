@@ -1,7 +1,8 @@
-// EPOS Hello World Program
-
 #include <utility/ostream.h>
-#include <adder.h>
+#include <framework/main.h>
+
+// FIXME: This should be transparent!
+#define BIND_UD(X) typedef _SYS::IF<_SYS::Traits<_SYS::X>::hardware, _SYS::Handle<_SYS::X>, _SYS::X>::Result X;
 
 using namespace EPOS;
 
@@ -9,7 +10,7 @@ OStream cout;
 
 int main()
 {
-    typedef _SYS::Handle<_SYS::Adder> Adder;
+    BIND_UD(Adder)
     Adder * add;
 
     add = new Adder;
