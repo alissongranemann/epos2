@@ -12,8 +12,7 @@ struct Traits
     static const bool enabled = true;
     static const bool debugged = true;
     static const bool hysterically_debugged = false;
-    static const bool hardware = false;
-    typedef TLIST<> ASPECTS;
+    typedef TLIST<Software> ASPECTS;
 };
 
 template<> struct Traits<Build>
@@ -218,7 +217,6 @@ template<> struct Traits<DHCP>: public Traits<Network>
 
 template<> struct Traits<Adder>: public Traits<void>
 {
-    static const bool hardware = true;
     typedef TLIST<Hardware> ASPECTS;
 };
 
