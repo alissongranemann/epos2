@@ -33,9 +33,7 @@ CONFIGURATOR=eposcfg
 
 COMP_FLGS="-include $INC/utility/malloc.h"
 COMP_HDRS="$INC"
-if [ "$MODE" = "kernel" ] ; then
 COMP_FLGS="$COMP_FLGS -include $INC/framework/main.h"
-fi
 
 C_COMPILER="$TOOLS_PREFIX""gcc"
 C_COMP_FLGS="$MACH_CC_FLAGS"

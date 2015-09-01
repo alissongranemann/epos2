@@ -45,13 +45,6 @@ namespace EPOS {
 #define __USING_SYS             using namespace EPOS::S;
 #define _SYS                    ::EPOS::S
 
-#ifndef __mode_kernel__
-namespace EPOS {
-    using namespace S;
-    using namespace S::U;
-}
-#endif
-
 #define __HEADER_ARCH(X)        <architecture/ARCH/X.h>
 #define __HEADER_MACH(X)        <machine/MACH/X.h>
 #define __MACH_TRAITS_T(X)      <machine/MACH/X##_traits.h>
