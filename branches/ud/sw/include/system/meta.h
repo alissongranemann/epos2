@@ -68,6 +68,18 @@ template<typename T>
 struct EQUAL<T, T>
 { enum { Result = true }; };
 
+
+// EQUALty of Templates
+template<template<typename T> class T1, template<typename T> class T2>
+struct TEQUAL
+{ enum { Result = false }; };
+
+template<template<typename T> class T>
+struct TEQUAL<T, T>
+{ enum { Result = true }; };
+
+
+// Integer division ceiling
 template<int T1, int T2>
 struct DIV_ROUNDUP
 {
@@ -146,6 +158,10 @@ class TLIST<T1, T2, Tn ...>
 public:
     enum { Length = TLIST<Tn ...>::Length + 1 };
 
+    template<template<typename T> class Type>
+    struct Count
+    { enum { Result = TEQUAL<T1, Type>::Result + TLIST<T2, Tn ...>::template Count<Type>::Result }; };
+
     template<typename T>
     struct Recur: public T1<T>, public TLIST<T2, Tn ...>::template Recur<T>
     {
@@ -160,6 +176,10 @@ class TLIST<T1, Tn ...>
 {
 public:
     enum { Length = TLIST<Tn ...>::Length + 1 };
+
+    template<template<typename T> class Type>
+    struct Count
+    { enum { Result = TEQUAL<T1, Type>::Result + TLIST<Tn ...>::template Count<Type>::Result }; };
 
     template<typename T>
     struct Recur: public T1<T>, public TLIST<Tn ...>::template Recur<T>
@@ -176,6 +196,10 @@ class TLIST<>
 {
 public:
     enum { Length = 0 };
+
+    template<template<typename T> class Type>
+    struct Count
+    { enum { Result = 0 }; };
 
     template<typename T>
     struct Recur
