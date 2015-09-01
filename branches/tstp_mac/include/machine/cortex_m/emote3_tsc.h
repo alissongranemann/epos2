@@ -51,26 +51,28 @@ private:
 
 public:
     using ARMv7_TSC::Hertz;
-    typedef int Time_Stamp;
+    typedef unsigned int Time_Stamp;
 
 public:
     static Hertz frequency() { return CLOCK; }
     
-    static void wake_up_at(const Time_Stamp & t, const Interrupt_Handler & handler);
+    static void wake_up_at(Time_Stamp t, const Interrupt_Handler & handler);
 
+    static Time_Stamp us_to_ts(const Time_Stamp & us)
+    {
+        return (us / 1000) * (frequency() / 1000);
+    }
 //    static void sync()
 //    {
 //        while(!(eMote3::scr(eMote3::CLOCK_STA) & (eMote3::STA_SYNC_32K)));
 //    }
 
-    static volatile Time_Stamp time_stamp()
+    static Time_Stamp time_stamp()
     {
         Time_Stamp ret = 0;
         // Ensuring read order. The time read from ST1-3 is latched at the moment ST0 is read
         ret += reg(SMWDTHROSC_ST0);
-        ret += reg(SMWDTHROSC_ST1) << 8;
-        ret += reg(SMWDTHROSC_ST2) << 16;
-        ret += reg(SMWDTHROSC_ST3) << 24;
+        ret += (reg(SMWDTHROSC_ST1) << 8) + (reg(SMWDTHROSC_ST2) << 16) + (reg(SMWDTHROSC_ST3) << 24);
         
         return ret + _offset;
     }

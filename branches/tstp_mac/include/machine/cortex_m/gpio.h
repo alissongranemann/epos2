@@ -26,6 +26,9 @@ public:
         OUTPUT,
     };
 
+    static Cortex_M_GPIO _radio_sending;
+    static Cortex_M_GPIO _radio_receiving;
+
     typedef void (*GPIO_Handler)(Cortex_M_GPIO * pin);
 
     Cortex_M_GPIO(char port_letter, int pin_number, Direction dir) :

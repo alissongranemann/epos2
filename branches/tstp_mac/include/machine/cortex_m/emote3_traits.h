@@ -36,9 +36,11 @@ template <> struct Traits<Cortex_M>: public Traits<Cortex_M_Common>
     static const unsigned int SYS_DATA  = 0x20004000; // Library mode only => APP + SYS
 
     // Default Sizes and Quantities
-    static const unsigned int STACK_SIZE = 4 * 1024;
-    static const unsigned int HEAP_SIZE = 4 * 1024;
-    static const unsigned int MAX_THREADS = 1;
+    static const unsigned int STACK_SIZE = 3 * 1024;
+    static const unsigned int HEAP_SIZE = 3 * 1024;
+    static const unsigned int MAX_THREADS = 2;
+
+    static const unsigned int SLEEP_LEVEL = 2;
 };
 
 template <> struct Traits<Cortex_M_IC>: public Traits<Cortex_M_Common>
@@ -83,7 +85,7 @@ template <> struct Traits<Cortex_M_Radio>: public Traits<Cortex_M_Common>
 
 template <> struct Traits<CC2538>: public Traits<Cortex_M_Radio>
 {
-    // static const bool debugged = true;
+    static const bool debugged = true;
 
     static const unsigned int UNITS = NICS::Count<CC2538>::Result;
     static const unsigned int SEND_BUFFERS = 1;
@@ -91,7 +93,7 @@ template <> struct Traits<CC2538>: public Traits<Cortex_M_Radio>
 
     // There is no listen command on the radio interface yet,
     // so the only way to receive data is setting this flag
-    static const bool auto_listen = true;
+    static const bool auto_listen = false;
 };
 
 

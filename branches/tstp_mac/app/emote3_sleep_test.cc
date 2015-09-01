@@ -47,19 +47,21 @@ void test_timer()
     TSC::wake_up_at(TSC::time_stamp() + (5*TSC::frequency()), &timer_handler);
 }
 
-TSC::Time_Stamp wakeup;
+volatile TSC::Time_Stamp wakeup;
 
 // For more accurate timing, put this function directly 
-// in IRQ34 in the vector table (src/arch/armv7/armv7_crt0.S)
-extern "C" { void timestamp_handler(); }
-void timestamp_handler()
+// in IRQ32 in the vector table (src/arch/armv7/armv7_crt0.S)
+extern "C" { void timestamp_handler_direct(); }
+void timestamp_handler_direct()
 {
     // This value may be outdated if it is sampled too quickly
     wakeup = TSC::time_stamp();
     return;
 }
-void empty_handler(const unsigned int & id)
-{
+void timestamp_handler(const unsigned int & id)
+{ 
+    // This value may be outdated if it is sampled too quickly
+    wakeup = TSC::time_stamp();
     return;
 }
 
@@ -72,7 +74,7 @@ void test_wake_up_timings()
         cout << "PM1 delay" << endl;
         eMote3_GPTM::delay(500000);
         auto scheduled_wakeup = TSC::time_stamp() + (5*TSC::frequency());
-        TSC::wake_up_at(scheduled_wakeup, &empty_handler);
+        TSC::wake_up_at(scheduled_wakeup, &timestamp_handler);
 
         ASM("wfi");
 
@@ -84,7 +86,7 @@ void test_wake_up_timings()
         cout << "PM2 delay" << endl;
         eMote3_GPTM::delay(500000);
         scheduled_wakeup = TSC::time_stamp() + (5*TSC::frequency());
-        TSC::wake_up_at(scheduled_wakeup, &empty_handler);
+        TSC::wake_up_at(scheduled_wakeup, &timestamp_handler);
 
         ASM("wfi");
 

@@ -8,11 +8,20 @@ __USING_SYS
 
 CC2538_TSC::Time_Stamp CC2538_TSC::_offset = 0;
 
-void CC2538_TSC::wake_up_at(const CC2538_TSC::Time_Stamp & t, const CC2538_TSC::Interrupt_Handler & handler)
+void CC2538_TSC::wake_up_at(CC2538_TSC::Time_Stamp t, const CC2538_TSC::Interrupt_Handler & handler)
 {    
     IC::unpend(SM_TIMER_IRQ);
     IC::disable(SM_TIMER_IRQ);
     IC::int_vector(IC::irq2int(SM_TIMER_IRQ), handler);
+
+    // Won't take effect until wfi is asserted
+    eMote3::wake_up_on(eMote3::WAKE_UP_EVENT::SLEEP_MODE_TIMER);
+    eMote3::power_mode(eMote3::DEFAULT_SLEEP_MODE);
+
+    if(eMote3::DEFAULT_SLEEP_MODE == eMote3::POWER_MODE_1)
+        t -= (eMote3::PM1_EXIT_TIME * frequency()) / 1000000;    
+    else if(eMote3::DEFAULT_SLEEP_MODE == eMote3::POWER_MODE_2)
+        t -= (eMote3::PM2_EXIT_TIME * frequency()) / 1000000;
 
     while(!(reg(SMWDTHROSC_STLOAD) & STLOAD));
 

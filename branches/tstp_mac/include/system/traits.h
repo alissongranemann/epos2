@@ -10,7 +10,7 @@ template<typename T>
 struct Traits
 {
     static const bool enabled = true;
-    static const bool debugged = true;
+    static const bool debugged = false;
     static const bool hysterically_debugged = false;
     typedef TLIST<> ASPECTS;
 };
@@ -34,15 +34,15 @@ template<> struct Traits<Build>
     static const char ID[ID_SIZE];
 
     static const unsigned int CPUS = 1;
-    static const unsigned int NODES = 1; // > 1 => NETWORKING
+    static const unsigned int NODES = 2; // > 1 => NETWORKING
 };
 
 
 // Utilities
 template<> struct Traits<Debug>
 {
-    static const bool error   = true;
-    static const bool warning = true;
+    static const bool error   = false;
+    static const bool warning = false;
     static const bool info    = false;
     static const bool trace   = false;
 };
@@ -208,22 +208,34 @@ template<> struct Traits<Synchronizer>: public Traits<void>
 
 template<> struct Traits<TSTP_MAC>: public Traits<void>
 {
+    static const bool debugged = true;
+
+    static const unsigned int TX_SCHEDULE_SIZE = 16; // messages
+
     static const bool geographic = false;    
     static const bool is_sink = false;    
 
-    static const unsigned int checking_interval = 125000; // us
+    static const unsigned int checking_interval = 2500000; // us
+    static const unsigned int timeout_for_retransmission = 3 * checking_interval; // us
 
-private:
     // IEEE 802.15.4 TX Turnaround Time
     static const unsigned int Tu = 192; // us
+
+    // Tu + 8 / symbol_rate
+    static const unsigned int g = 128; // us
+
+    // Subtract this amount when calculating time until data transmission
+    static const unsigned int data_listen_margin = Tu; // us
 
     // Time to send a single microframe (sizeof(Microframe) * 2 / 0.0625)
     static const unsigned int ts = 480; // us
 
-public:
-    static const unsigned int n_microframes = 1 + ((checking_interval - ts) / (Tu + ts));
+    //static const unsigned int n_microframes = 1 + ((checking_interval - ts) / (Tu + ts));
+    static const unsigned int n_microframes = 5;
     static const unsigned int time_between_microframes = (checking_interval - ts) / (n_microframes - 1) - ts; // us
-    static const unsigned int microframe_listening_time = 2*ts + time_between_microframes; // us
+    static const unsigned int microframe_listening_time = 2*ts + time_between_microframes + 2*Tu; // us
+
+    static const unsigned int sleep_time = checking_interval - microframe_listening_time;
 };
 
 template<> struct Traits<Network>: public Traits<void>

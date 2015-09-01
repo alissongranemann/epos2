@@ -5,6 +5,9 @@ __BEGIN_SYS
 
 GPIO * GPIO::requester_pin[4][8];
 
+GPIO GPIO::_radio_sending('c',4,GPIO::OUTPUT);
+GPIO GPIO::_radio_receiving('c',6,GPIO::OUTPUT);
+
 void GPIO::disable_interrupt()
 {
     reg(IM) &= ~_pin_bit;

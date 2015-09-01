@@ -4,13 +4,73 @@
 #ifndef __no_networking__
 
 #include <system.h>
+#include <ic.h>
+#include <gpio.h>
 #include <machine/cortex_m/machine.h>
 #include "../../../include/machine/cortex_m/cc2538_radio.h"
 
 __BEGIN_SYS
 
-CC2538::CC2538(unsigned int unit, IO_Irq irq)
+MAC_Timer::Interrupt_Handler MAC_Timer::_handler[6] = {0, 0, 0, 0, 0, 0};
+
+void MAC_Timer::init()
 {
+    reg(IRQM) = 0; // Disable interrupts
+    stop();
+    set(0);
+    reg(CTRL) &= ~CTRL_SYNC; // We can't use the sync feature because we want to change
+                             // the count and overflow values when the timer is stopped
+    reg(CTRL) |= CTRL_LATCH_MODE; // count and overflow will be latched at once
+    event(1, EVENT_COMPARE1);
+    IC::int_vector(IC::irq2int(IRQ_NUMBER), &int_handler);
+}
+
+/*
+void MAC_Timer::event(Timestamp ticks, Interrupt_Handler handler)
+{
+    
+    if(handler)
+}
+*/
+
+void MAC_Timer::timer_compare(Timestamp when, Interrupt_Handler handler = 0, bool index)
+{
+    stop();
+    IC::disable(IRQ_NUMBER);
+
+    const Reg32 current_index = reg(MSEL);
+    const Reg32 desired_index = (current_index & (~7)) + (TIMER_COMPARE1 + index);
+    if(current_index != desired_index)
+        reg(MSEL) = desired_index;
+
+    reg(M0) = when;
+    reg(M1) = when >> 8;
+
+    if(handler)
+        reg(IRQM) |= COMPARE1 << index;
+    _handler[index + 1] = handler;
+
+    if(current_index != desired_index)
+        reg(MSEL) = current_index;
+
+    IC::enable(IRQ_NUMBER);
+    start();
+}
+
+
+void MAC_Timer::overflow_compare(unsigned int how_many, Interrupt_Handler handler, bool index)
+{
+    IC::disable(IRQ_NUMBER);
+    reg(IRQM) |= OVF_COMPARE1 << index;
+    _handler[index + 3] = handler;
+    IC::enable(IRQ_NUMBER);
+}
+
+CC2538::CC2538(unsigned int unit, IO_Irq irq) : end_of_listen_handler(&end_of_listen)
+{
+    GPIO::_radio_sending.clear();
+    GPIO::_radio_receiving.clear();
+
     db<CC2538>(TRC) << "CC2538(unit=" << unit << ",irq=" << irq << ")" << endl;
     // TODO: it has been observed that at least the FRMCTRL1 register does not get
     // its value updated on a write if this instruction is executed.
@@ -72,12 +132,16 @@ CC2538::CC2538(unsigned int unit, IO_Irq irq)
 
     // Enable frame filtering
     //xreg(FRMFILT0) |= FRAME_FILTER_EN;
+    // Disable frame filtering
+    xreg(FRMFILT0) &= ~FRAME_FILTER_EN;
 
     // Reset result of source matching (value undefined on reset)
     ffsm(SRCRESINDEX) = 0;
 
     // Enable automatic source address matching
     //xreg(SRCMATCH) |= SRC_MATCH_EN;
+    // Disable automatic source address matching
+    xreg(SRCMATCH) &= ~SRC_MATCH_EN;
 
     // Set FIFOP threshold to maximum
     xreg(FIFOPCTRL) = 0xff;
@@ -87,8 +151,12 @@ CC2538::CC2538(unsigned int unit, IO_Irq irq)
 
 	// Enable auto-CRC
 	xreg(FRMCTRL0) |= AUTO_CRC;
+	// Disable auto-CRC
+//	xreg(FRMCTRL0) &= ~AUTO_CRC;
 
-    set_channel(11);
+    // TODO: changed the channel to avoid interference
+    //set_channel(11);
+    set_channel(16);
 
 	// Disable counting of MAC overflows
 	xreg(CSPT) = 0xff;
@@ -103,6 +171,11 @@ CC2538::CC2538(unsigned int unit, IO_Irq irq)
     // Reset statistics
     reset();
 
+    MAC_Timer::init();
+    MAC_Timer::start();
+
+    schedule_listen(TSC::time_stamp() + (Traits<TSTP_MAC>::sleep_time * (TSC::frequency()/1000)) / 1000);
+
     if(Traits<CC2538>::auto_listen)
     {
  	    xreg(FRMCTRL1) |= SET_RXENMASK_ON_TX; // Enter receive mode after TX
@@ -110,7 +183,7 @@ CC2538::CC2538(unsigned int unit, IO_Irq irq)
         // Enable useful device interrupts
         // WARNING: do not enable INT_TXDONE, because _send_and_wait handles it
         xreg(RFIRQM0) = INT_FIFOP;
-        xreg(RFIRQM1) = 0;
+        //xreg(RFIRQM1) = 0;
 
         // Enable clock to the RF CORE module
         // Cortex_M_Model::radio_enable(); // already done
@@ -125,6 +198,8 @@ CC2538::CC2538(unsigned int unit, IO_Irq irq)
         // Enable clock to the RF CORE module
         // Cortex_M_Model::radio_enable(); // already done
     }
+    xreg(RFIRQM0) = INT_FIFOP | INT_SFD;
+    xreg(RFIRQM1) = INT_CSP_MANINT;
 }
 
 

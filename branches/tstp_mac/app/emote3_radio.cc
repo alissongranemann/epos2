@@ -7,8 +7,6 @@ using namespace EPOS;
 
 OStream cout;
 
-const char Traits<Build>::ID[Traits<Build>::ID_SIZE] = {'A','0'};
-
 bool led_value;
 GPIO * led;
 
@@ -42,7 +40,7 @@ void sender()
 
 class Receiver : public IEEE802_15_4::Observer
 {
-    typedef short data_type;
+    typedef char data_type;
 
 public:
     typedef IEEE802_15_4::Protocol Protocol;
@@ -59,17 +57,18 @@ public:
     {
         if(p == _prot)
         {
-            led_value = !led_value;
+       //     led_value = !led_value;
+            led_value = true;
             led->set(led_value);
-            Frame * f = b->frame();
-            auto d = f->data<data_type>();
-            cout << endl << "=====================" << endl;
-            cout << "Received " << b->size() << " bytes of payload from " << f->src() << " :" << endl;
-            for(int i=0; i<b->size()/sizeof(data_type); i++)
-                cout << d[i] << " ";
-            cout << endl << "=====================" << endl;
+//            Frame * f = b->frame();
+//            auto d = f->data<data_type>();
+//            cout << endl << "=====================" << endl;
+//            cout << "Received " << b->size() << " bytes of payload from " << f->src() << " :" << endl;
+//            for(int i=0; i<b->size()/sizeof(data_type); i++)
+//                cout << d[i] << " ";
+//            cout << endl << "=====================" << endl;
             _nic->free(b);
-//            _nic->stop_listening();
+    //        _nic->off();
         }
     }
 
@@ -80,21 +79,82 @@ private:
 
 void receiver()
 {
-    cout << "Hello, I am the receiver." << endl; 
-    cout << "I will attach myself to the NIC and print every message I get." << endl;
+    //cout << "Hello, I am the receiver." << endl; 
+    //cout << "I will attach myself to the NIC and print every message I get." << endl;
     NIC * nic = new NIC();
     Receiver * r = new Receiver(0x1010, nic);
-    while(1);
+    //nic->listen();
+    led->set(false);
+    led_value = false;
+    bool send = true;
+    while(true)
+    {
+        const char data[] = "0 Hello, World!";
+//        led_value = !led_value;
+//        led->set(led_value);
+//        kout << "Going to sleep" << endl;
+//        cout << "woke up at:\t" << CC2538::woke_up_at << endl;
+        if(send)
+        {
+            nic->send(nic->broadcast(), 0x1010, data, sizeof data);
+        }
+        send=false;
+        if(Traits<Serial_Display>::ENGINE == Traits<Serial_Display>::uart)
+            eMote3_GPTM::delay(2515); 
+        CPU::halt();
+    }
+    //if(Traits<Serial_Display>::ENGINE == Traits<Serial_Display>::uart)
+    //    eMote3_GPTM::delay(1415); 
+    //Thread::self()->suspend();
+    while(1)
+    {
+        //cout << "Delaying" << endl;
+        //cout << "Delayed" << endl;
+        auto scheduled_time = TSC::time_stamp() + (2 * TSC::frequency());
+        cout << "scheduled_time: " << scheduled_time << endl;
+        //cout << "schedule: " << scheduled_time << endl;
+        nic->off();
+        nic->schedule_listen(scheduled_time);
+        //eMote3::save_clock_dividers();        
+
+        cout << "wfi" << endl;
+        // If UART is being used, it can mess up everything when changing power modes.
+        // One must wait for it to finish printing and polling tx_done() doesn't help,
+        // so I worked out by tests the minimum delay necessary (1415) for the UART to finish printing.
+        if(Traits<Serial_Display>::ENGINE == Traits<Serial_Display>::uart)
+            eMote3_GPTM::delay(1415); 
+        CPU::halt();
+        cout << "/wfi" << endl;
+        auto now = TSC::time_stamp();
+        //eMote3_GPTM::delay(1000000);
+        //cout << "/wfi" << endl;
+        //eMote3::restore_clock_dividers();
+        eMote3_GPTM::delay(6600000);
+        //cout << MAC_Timer::read() << endl;
+        cout << "woke up at:\t" << CC2538::woke_up_at << "\nscheduled:\t" << scheduled_time << "\nnow:\t\t" << now << endl;
+    }
 }
 
 int main()
 {
-    while(!eMote3_USB::initialized());
+    if(Traits<Serial_Display>::ENGINE == Traits<Serial_Display>::usb)
+        while(!eMote3_USB::initialized());
+
     led = new GPIO('c',3, GPIO::OUTPUT);
     led_value = true;
     led->set(led_value);
     cout << "Hello main" << endl;
-     sender();
+    cout << "=====================" << endl;
+    cout << "TSTP_MAC parameters: " << endl;
+    cout << "checking_interval: " << Traits<TSTP_MAC>::checking_interval << endl;
+    cout << "Tu: " << Traits<TSTP_MAC>::Tu << endl;
+    cout << "ts: " << Traits<TSTP_MAC>::ts << endl;
+    cout << "n_microframes: " << Traits<TSTP_MAC>::n_microframes << endl;
+    cout << "time_between_microframes: " << Traits<TSTP_MAC>::time_between_microframes << endl;
+    cout << "microframe_listening_time: " << Traits<TSTP_MAC>::microframe_listening_time << endl;
+    cout << "sleep_time: " << Traits<TSTP_MAC>::sleep_time << endl;
+    cout << "=====================" << endl;
+//     sender();
    receiver();
 
     return 0;

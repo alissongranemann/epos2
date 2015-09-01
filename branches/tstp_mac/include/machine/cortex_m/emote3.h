@@ -10,6 +10,7 @@ __BEGIN_SYS
 
 class eMote3
 {
+    friend class CC2538;
 public:
     typedef CPU::Log_Addr Log_Addr;
     typedef CPU::Reg32 Reg32;
@@ -604,14 +605,18 @@ public:
     static void radio_enable()
     {
         scr(RCGCRFC) |= RCGCRFC_RFC0;
+        //scr(SCGCRFC) |= RCGCRFC_RFC0;
+        //scr(DCGCRFC) |= RCGCRFC_RFC0;
     }
     // Disable clock to the RF CORE module
     static void radio_disable()
     {
         scr(RCGCRFC) &= ~RCGCRFC_RFC0;
+        //scr(SCGCRFC) &= ~RCGCRFC_RFC0;
+        //scr(DCGCRFC) &= ~RCGCRFC_RFC0;
     }
 
-    static const unsigned int POWER_MODE_TIMES_MARGIN = 32; // ~One clock tick
+    static const unsigned int POWER_MODE_TIMES_MARGIN = 125;//32; // ~One clock tick
     static const unsigned int PM1_ENTRY_TIME =  11 + POWER_MODE_TIMES_MARGIN; // us
     static const unsigned int PM1_EXIT_TIME  =  24 + POWER_MODE_TIMES_MARGIN; // us
     static const unsigned int PM2_ENTRY_TIME = 147 + POWER_MODE_TIMES_MARGIN; // us
@@ -638,6 +643,16 @@ public:
         GPIO_A = 1 << 0,
     };
 
+    static const POWER_MODE DEFAULT_SLEEP_MODE = static_cast<POWER_MODE>(Traits<Cortex_M>::SLEEP_LEVEL + POWER_MODE_0);
+
+    /*
+    // If this call returns POWER_MODE_0, the device is either in POWER_MODE_0, SLEEP, or ACTIVE
+    static POWER_MODE low_power_mode()
+    {
+        return static_cast<POWER_MODE>(static_cast<POWER_MODE>(scr(PMCTL)) + POWER_MODE_0);
+    }
+    */
+
     static void power_mode(POWER_MODE p)
     {
         if(p <= SLEEP)
@@ -645,7 +660,7 @@ public:
             scs(SCR) &= ~SLEEPDEEP;
         }
         else
-        { 
+        {
             scs(SCR) |= SLEEPDEEP;
             scr(PMCTL) = p - POWER_MODE_0;
         }
@@ -660,6 +675,7 @@ public:
 protected:
     static void init();
     static void init_clock();
+    static void init_clock2();
     static bool _init_clock_done;
 protected:
     eMote3() {}
@@ -670,6 +686,8 @@ protected:
         if(base == reinterpret_cast<Log_Addr *>(UART0_BASE)) {
             //1. Enable the UART module using the SYS_CTRL_RCGCUART register.
             scr(RCGCUART) |= UART0; // Enable clock for UART0 while in Running mode
+            //scr(SCGCUART) |= UART0; // Enable clock for UART0 while in Sleep mode
+            //scr(DCGCUART) |= UART0; // Enable clock for UART0 while in Deep sleep mode
 
             //2. Set the GPIO pin configuration through the Pxx_SEL registers for the desired output
             ioc(PA1_SEL) = UART0_TXD;
@@ -690,6 +708,8 @@ protected:
         else
         {
             scr(RCGCUART) |= UART1;
+            //scr(SCGCUART) |= UART1;
+            //scr(DCGCUART) |= UART1;
             ioc(PD1_SEL) = UART1_TXD;
             ioc(PD1_OVER) = OE;
             ioc(PD0_OVER) = 0;
@@ -712,6 +732,8 @@ protected:
     {
         assert(which_timer < 4);
         scr(RCGCGPT) |= 1 << which_timer;
+        //scr(SCGCGPT) |= 1 << which_timer;
+        //scr(DCGCGPT) |= 1 << which_timer;
     }
 
     static void config_PWM(unsigned int which_timer, char gpio_port, unsigned int gpio_pin)
@@ -755,6 +777,8 @@ protected:
         if(base == reinterpret_cast<Log_Addr *>(SSI0_BASE)) {
             //Enable the SSI module using the SYS_CTRL_RCGCSSI register.
             scr(RCGCSSI) |= 0x1; // Enable clock for SSI0 while in Running mode
+            //scr(SCGCSSI) |= 0x1; // Enable clock for SSI0 while in Sleep mode
+            //scr(DCGCSSI) |= 0x1; // Enable clock for SSI0 while in Deep sleep mode
 
             //Set the GPIO pin configuration through the Pxx_SEL registers for the desired output
             if(mode == MASTER)
@@ -768,6 +792,8 @@ protected:
         } else {
 
             scr(RCGCSSI) |= 0x02; // Enable clock for SSI1 while in Running mode
+            //scr(SCGCSSI) |= 0x02; // Enable clock for SSI1 while in Sleep mode
+            //scr(DCGCSSI) |= 0x02; // Enable clock for SSI1 while in Deep sleep mode
 
             if(mode == MASTER)
                 ioc(PA2_SEL) = SSI1_CLK_OUT;
@@ -802,7 +828,6 @@ protected:
         int tmp1 = (((unsigned int) protocol) & 3) << 6;
         int tmp2 = ((unsigned int) protocol) & 0x30;
         value = (value << 8) | tmp1 | tmp2 | (data_width - 1);
-        kout << "Escrevendo = " << value <<  " em " << (void *) (base + SSI_CR0) << "\n";
         reinterpret_cast<volatile Reg32*>(base)[SSI_CR0 / sizeof(Reg32)] = value;
 
         //To enable IO pads to drive outputs, the corresponding IPxx_OVER bits in IOC_Pxx_OVER register
@@ -817,6 +842,46 @@ protected:
     }
 
 public:
+    static void sync_32k() { while(!(scr(CLOCK_STA) & (STA_SYNC_32K))); }
+    static void sync_32k_not() { while((scr(CLOCK_STA) & (STA_SYNC_32K))); }
+
+    // Working around hardware bug, as reported in CC2538's errata: http://www.ti.com/lit/er/swrz045a/swrz045a.pdf
+    static bool _reset_io_div_to_zero;
+    static bool _reset_sys_div_to_zero;
+    static void save_clock_dividers()
+    {
+        Reg32 io_div = scr(CLOCK_CTRL) & (7 * IO_DIV);
+        Reg32 sys_div = scr(CLOCK_CTRL) & (7 * SYS_DIV);
+        if(io_div == 0)
+        {
+            _reset_io_div_to_zero = true;
+            scr(CLOCK_CTRL) |= IO_DIV;            
+        }
+        else
+            _reset_io_div_to_zero = false;
+        if(sys_div == 0)
+        {
+            _reset_sys_div_to_zero = true;
+            scr(CLOCK_CTRL) |= SYS_DIV;
+        }
+        else
+            _reset_io_div_to_zero = false;
+    }
+    static void restore_clock_dividers() 
+    { 
+        if(_reset_sys_div_to_zero)
+        {
+            _reset_sys_div_to_zero = false;
+            scr(CLOCK_CTRL) &= ~SYS_DIV;
+        }
+        if(_reset_io_div_to_zero)
+        {
+            _reset_io_div_to_zero = false;
+            scr(CLOCK_CTRL) &= ~IO_DIV;
+        }
+    }
+
+
     static volatile Reg32 & ioc(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(IOC_BASE)[o / sizeof(Reg32)]; }
     static volatile Reg32 & scr(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(SCR_BASE)[o / sizeof(Reg32)]; }
     static volatile Reg32 & scs(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(SCS_BASE)[o / sizeof(Reg32)]; }

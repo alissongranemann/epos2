@@ -43,6 +43,27 @@ public:
         return _dev->receive(src, prot, data, size); 
     }
 
+    void schedule_listen(TSC::Time_Stamp time)
+    {
+        _dev->schedule_listen(time);
+    }
+    void listen()
+    {
+        _dev->listen();
+    }
+    bool channel_free()
+    {
+        return _dev->channel_free();
+    }
+    Reg8 rssi()
+    {
+        return _dev->rssi();
+    }
+    void off()
+    {
+        _dev->off();
+    }
+
     const unsigned int mtu() const { return _dev->mtu(); }
     const Address broadcast() const { return _dev->broadcast(); }
     

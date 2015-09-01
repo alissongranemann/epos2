@@ -4,3 +4,4 @@ r
 loadbin APPLICATION_NAME,0
 h
 r
+go
