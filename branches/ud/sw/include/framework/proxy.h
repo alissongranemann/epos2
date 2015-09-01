@@ -38,15 +38,17 @@ public:
 };
 
 template<typename Component>
-// FIXME: The type of message will depend on the component's aspects
-//class Proxy: public IF<Traits<Component>::hardware, Message_UD, Message_Kernel>::Result
-class Proxy: Message_UD
+class Proxy: public IF<Traits<Component>::ASPECTS::template Count<Hardware>::Result, Message_Hardware, Message_Software>::Result
 {
-    //typedef IF<Traits<Component>::hardware, Message_UD, Message_Kernel>::Result Base;
-    typedef Message_UD Base;
-
     template<typename> friend class Proxy;
     template<typename> friend class Proxied;
+
+private:
+    typedef typename IF<Traits<Component>::ASPECTS::template Count<Hardware>::Result, Message_Hardware, Message_Software>::Result Base;
+
+    typedef typename Base::Methods Methods;
+    typedef typename Base::Method Method;
+    typedef typename Base::Result Result;
 
 private:
     enum Private_Proxied{ PROXIED };
@@ -57,67 +59,67 @@ private:
 
 public:
     template<typename ... Tn>
-    Proxy(const Tn & ... an): Base(Id(Type<Component>::ID, 0)) { invoke(CREATE + sizeof ... (Tn), an ...); }
-    ~Proxy() { invoke(DESTROY); }
+    Proxy(const Tn & ... an): Base(Id(Type<Component>::ID, 0)) { invoke(Methods::CREATE + sizeof ... (Tn), an ...); }
+    ~Proxy() { invoke(Methods::DESTROY); }
 
-    static Proxy<Component> * self() { return new (reinterpret_cast<void *>(static_invoke(SELF))) Proxied<Component>; }
+    static Proxy<Component> * self() { return new (reinterpret_cast<void *>(static_invoke(Methods::SELF))) Proxied<Component>; }
 
     // Process management
-    void suspend() { invoke(THREAD_SUSPEND); }
-    void resume() { invoke(THREAD_RESUME); }
-    int join() { return invoke(THREAD_JOIN); }
-    int pass() { return invoke(THREAD_PASS); }
-    static int yield() { return static_invoke(THREAD_YIELD); }
-    static void exit(int r) { static_invoke(THREAD_EXIT, r); }
-    static volatile bool wait_next() { return static_invoke(THREAD_WAIT_NEXT); }
+    void suspend() { invoke(Methods::THREAD_SUSPEND); }
+    void resume() { invoke(Methods::THREAD_RESUME); }
+    int join() { return invoke(Methods::THREAD_JOIN); }
+    int pass() { return invoke(Methods::THREAD_PASS); }
+    static int yield() { return static_invoke(Methods::THREAD_YIELD); }
+    static void exit(int r) { static_invoke(Methods::THREAD_EXIT, r); }
+    static volatile bool wait_next() { return static_invoke(Methods::THREAD_WAIT_NEXT); }
 
-    Proxy<Address_Space> * address_space() { return new (reinterpret_cast<Adapter<Address_Space> *>(invoke(TASK_ADDRESS_SPACE))) Proxied<Address_Space>; }
-    Proxy<Segment> * code_segment() { return new (reinterpret_cast<Adapter<Segment> *>(invoke(TASK_CODE_SEGMENT))) Proxied<Segment>; }
-    Proxy<Segment> * data_segment() { return new (reinterpret_cast<Adapter<Segment> *>(invoke(TASK_DATA_SEGMENT))) Proxied<Segment>; }
-    CPU::Log_Addr code() { return invoke(TASK_CODE); }
-    CPU::Log_Addr data() { return invoke(TASK_DATA); }
+    Proxy<Address_Space> * address_space() { return new (reinterpret_cast<Adapter<Address_Space> *>(invoke(Methods::TASK_ADDRESS_SPACE))) Proxied<Address_Space>; }
+    Proxy<Segment> * code_segment() { return new (reinterpret_cast<Adapter<Segment> *>(invoke(Methods::TASK_CODE_SEGMENT))) Proxied<Segment>; }
+    Proxy<Segment> * data_segment() { return new (reinterpret_cast<Adapter<Segment> *>(invoke(Methods::TASK_DATA_SEGMENT))) Proxied<Segment>; }
+    CPU::Log_Addr code() { return invoke(Methods::TASK_CODE); }
+    CPU::Log_Addr data() { return invoke(Methods::TASK_DATA); }
 
     // Memory management
-    CPU::Phy_Addr pd() { return invoke(ADDRESS_SPACE_PD); }
-    CPU::Log_Addr attach(const Proxy<Segment> & seg) { return invoke(ADDRESS_SPACE_ATTACH1, seg.id().unit()); }
-    CPU::Log_Addr attach(const Proxy<Segment> & seg, CPU::Log_Addr addr) { return invoke(ADDRESS_SPACE_ATTACH2, seg.id().unit(), addr); }
-    void detach(const Proxy<Segment> & seg) { invoke(ADDRESS_SPACE_DETACH, seg.id().unit());}
+    CPU::Phy_Addr pd() { return invoke(Methods::ADDRESS_SPACE_PD); }
+    CPU::Log_Addr attach(const Proxy<Segment> & seg) { return invoke(Methods::ADDRESS_SPACE_ATTACH1, seg.id().unit()); }
+    CPU::Log_Addr attach(const Proxy<Segment> & seg, CPU::Log_Addr addr) { return invoke(Methods::ADDRESS_SPACE_ATTACH2, seg.id().unit(), addr); }
+    void detach(const Proxy<Segment> & seg) { invoke(Methods::ADDRESS_SPACE_DETACH, seg.id().unit());}
 
-    unsigned int size() { return invoke(SEGMENT_SIZE); }
-    CPU::Phy_Addr phy_address() { return invoke(SEGMENT_PHY_ADDRESS); }
-    int resize(int amount) { return invoke(SEGMENT_RESIZE, amount); }
+    unsigned int size() { return invoke(Methods::SEGMENT_SIZE); }
+    CPU::Phy_Addr phy_address() { return invoke(Methods::SEGMENT_PHY_ADDRESS); }
+    int resize(int amount) { return invoke(Methods::SEGMENT_RESIZE, amount); }
 
     // Synchronization
-    void lock() { invoke(SYNCHRONIZER_LOCK); }
-    void unlock() { invoke(SYNCHRONIZER_UNLOCK); }
+    void lock() { invoke(Methods::SYNCHRONIZER_LOCK); }
+    void unlock() { invoke(Methods::SYNCHRONIZER_UNLOCK); }
 
-    void p() { invoke(SYNCHRONIZER_P); }
-    void v() { invoke(SYNCHRONIZER_V); }
+    void p() { invoke(Methods::SYNCHRONIZER_P); }
+    void v() { invoke(Methods::SYNCHRONIZER_V); }
 
-    void wait() { invoke(SYNCHRONIZER_WAIT); }
-    void signal() { invoke(SYNCHRONIZER_SIGNAL); }
-    void broadcast() { invoke(SYNCHRONIZER_BROADCAST); }
+    void wait() { invoke(Methods::SYNCHRONIZER_WAIT); }
+    void signal() { invoke(Methods::SYNCHRONIZER_SIGNAL); }
+    void broadcast() { invoke(Methods::SYNCHRONIZER_BROADCAST); }
 
     // Timing
     template<typename T>
-    static void delay(T t) { static_invoke(ALARM_DELAY, t); }
+    static void delay(T t) { static_invoke(Methods::ALARM_DELAY, t); }
 
     // Communication
     template<typename T1, typename T2, typename T3>
-    int send(T1 a1, T2 a2, T3 a3) { return invoke(SELF, a1, a2, a3); }
+    int send(T1 a1, T2 a2, T3 a3) { return invoke(Methods::SELF, a1, a2, a3); }
     template<typename T1, typename T2, typename T3>
-    int receive(T1 a1, T2 a2, T3 a3) { return invoke(SELF, a1, a2, a3); }
+    int receive(T1 a1, T2 a2, T3 a3) { return invoke(Methods::SELF, a1, a2, a3); }
 
     // Adder
-    int add(int a, int b) { return invoke(ADDER_ADD, a, b); }
-    int save_st() { return invoke(ADDER_SAVE_ST); }
-    int get_st_len() { return invoke(ADDER_GET_ST_LEN); }
+    int add(int a, int b) { return invoke(Methods::ADDER_ADD, a, b); }
+    int save_st() { return invoke(Methods::ADDER_SAVE_ST); }
+    int get_st_len() { return invoke(Methods::ADDER_GET_ST_LEN); }
 
     template<typename ... Tn>
     static int static_invoke(const Method & m, const Tn & ... an) {
         Base msg(Id(Type<Component>::ID, 0)); // avoid calling ~Proxy()
         Result res = msg.act(m, an ...);
-        return (m == SELF) ? msg.id().unit() : res;
+        return (m == Methods::SELF) ? msg.id().unit() : res;
     }
 
 private:

@@ -50,30 +50,32 @@ EXPORT(Function_Handler);
 EXPORT(System);
 EXPORT(Application);
 
-BIND(Thread);
-BIND(Active);
-BIND(Periodic_Thread);
-BIND(RT_Thread);
-BIND(Task);
+EXPORT(Thread);
+EXPORT(Active);
+EXPORT(Periodic_Thread);
+EXPORT(RT_Thread);
+EXPORT(Task);
 
-BIND(Address_Space);
-BIND(Segment);
+EXPORT(Address_Space);
+EXPORT(Segment);
 
-BIND(Mutex);
-BIND(Semaphore);
-BIND(Condition);
+EXPORT(Mutex);
+EXPORT(Semaphore);
+EXPORT(Condition);
 
-BIND(Clock);
-BIND(Chronometer);
-BIND(Alarm);
-BIND(Delay);
+EXPORT(Clock);
+EXPORT(Chronometer);
+EXPORT(Alarm);
+EXPORT(Delay);
 
-BIND(Network);
-BIND(IP);
-BIND(ICMP);
-BIND(UDP);
-BIND(TCP);
-BIND(DHCP);
+EXPORT(Network);
+EXPORT(IP);
+EXPORT(ICMP);
+EXPORT(UDP);
+EXPORT(TCP);
+EXPORT(DHCP);
+
+BIND(Adder);
 
 //TBIND(Link);
 //TBIND(Port);
