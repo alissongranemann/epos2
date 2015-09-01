@@ -3,12 +3,8 @@
 #ifndef __message_h
 #define __message_h
 
-#include <component_manager.h>
-
 #include "id.h"
 #include "serializer.h"
-
-extern "C" { int _syscall(void *); }
 
 __BEGIN_SYS
 
@@ -18,7 +14,7 @@ protected:
     static const unsigned int MAX_PARAMETERS_SIZE = 20;
 
 public:
-    enum {
+    enum Methods {
         CREATE,
         CREATE1,
         CREATE2,
@@ -91,92 +87,6 @@ public:
 protected:
     Id _id;
     Method _method;
-};
-
-class Message_Kernel: public Message_Common
-{
-public:
-    Message_Kernel(const Id & id): Message_Common(id) {}
-
-    template<typename ... Tn>
-    void in(Tn && ... an) {
-        // Force a compilation error in case out is called with too many parameters
-        typename IF<(SIZEOF<Tn ...>::Result <= MAX_PARAMETERS_SIZE), int, void>::Result index = 0;
-        DESERIALIZE(_parms, index, an ...);
-    }
-    template<typename ... Tn>
-    void out(const Tn & ... an) {
-        // Force a compilation error in case out is called with too many parameters
-        typename IF<(SIZEOF<Tn ...>::Result <= MAX_PARAMETERS_SIZE), int, void>::Result index = 0;
-        SERIALIZE(_parms, index, an ...);
-    }
-
-    template<typename ... Tn>
-    int act(const Method & m, const Tn & ... an) {
-        _method = m;
-        out(an ...);
-        _syscall(this);
-        return _method;
-    }
-
-    friend Debug & operator << (Debug & db, const Message_Kernel & m) {
-        db << "{id=" << m._id << ",m=" << hex << m._method
-            << ",p={" << reinterpret_cast<void *>(*static_cast<const int *>(reinterpret_cast<const void *>(&m._parms[0]))) << ","
-            << reinterpret_cast<void *>(*static_cast<const int *>(reinterpret_cast<const void *>(&m._parms[4]))) << ","
-            << reinterpret_cast<void *>(*static_cast<const int *>(reinterpret_cast<const void *>(&m._parms[8]))) << "}}";
-        return db;
-    }
-
-protected:
-    char _parms[MAX_PARAMETERS_SIZE];
-};
-
-class Message_UD: public Message_Common
-{
-private:
-    typedef Serializer::Buffer Buffer;
-
-public:
-    Message_UD(const Id & id): Message_Common(id) {}
-
-    template<typename ... Tn>
-    void in(Tn && ... an) {
-        // Force a compilation error in case out is called with too many parameters
-        typename IF<(SIZEOF<Tn ...>::Result <= MAX_PARAMETERS_SIZE), int, void>::Result index = 0;
-        Serializer::deserialize(_parms, index, an ...);
-    }
-    template<typename ... Tn>
-    void out(const Tn & ... an) {
-        // Force a compilation error in case out is called with too many parameters
-        typename IF<(SIZEOF<Tn ...>::Result <= MAX_PARAMETERS_SIZE), int, void>::Result index = 0;
-        Serializer::serialize(_parms, index, an ...);
-    }
-
-    template<typename ... Tn>
-    int act(const Method & m, const Tn & ... an) {
-        int ret;
-
-        _method = m;
-        out(an ...);
-        // TODO: Find a way to set the instance ID
-        Component_Manager::call(_id.type(), _id.unit(), _method,
-                Serializer::NPKT<Tn ...>::Result, Serializer::NPKT<int>::Result,
-                _parms);
-        in(ret);
-
-        return ret;
-    }
-
-    friend Debug & operator << (Debug & db, const Message_UD & m) {
-        db << "{id=" << m._id << ",m=" << hex << m._method
-            << ",p={" << reinterpret_cast<void *>(*static_cast<const int *>(reinterpret_cast<const void *>(&m._parms[0]))) << ","
-            << reinterpret_cast<void *>(*static_cast<const int *>(reinterpret_cast<const void *>(&m._parms[4]))) << ","
-            << reinterpret_cast<void *>(*static_cast<const int *>(reinterpret_cast<const void *>(&m._parms[8]))) << "}}";
-        return db;
-    }
-
-protected:
-    Buffer _parms[MAX_PARAMETERS_SIZE];
 };
 
 __END_SYS

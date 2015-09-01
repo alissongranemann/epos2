@@ -194,6 +194,7 @@ class Component_Manager;
 class Aspect;
 template<typename Component> class Authenticated;
 template<typename Component> class Shared;
+template<typename Component> class Software;
 template<typename Component> class Hardware;
 template<typename Component> class Remote;
 

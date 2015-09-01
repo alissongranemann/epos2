@@ -8,6 +8,7 @@
 
 #include <aspect/shared.h>
 #include <aspect/authenticated.h>
+#include <aspect/software.h>
 #include <aspect/hardware.h>
 
 __BEGIN_SYS
