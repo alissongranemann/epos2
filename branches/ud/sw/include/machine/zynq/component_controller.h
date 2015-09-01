@@ -70,7 +70,7 @@ public:
         const unsigned int & unit() const { return _unit; }
 
     private:
-        volatile Reg32 & reg(unsigned int o) { return Component_Controller::buf(o | (_id<<2)); }
+        volatile Reg32 & reg(unsigned int o) { return buf(o | (_id<<2)); }
 
     private:
         unsigned int _id;
@@ -139,7 +139,7 @@ private:
     };
 
 private:
-    // Without volatile, buf() doesn't work as a while() argument. Why?
+    // FIXME: Without volatile, buf() doesn't work as a while() argument. Why?
     static volatile Reg32 & ctrl(unsigned int o) { return reinterpret_cast<Reg32 *>(CTRL_BASE)[o / sizeof(Reg32)]; }
     static volatile Reg32 & buf(unsigned int o) { return reinterpret_cast<Reg32 *>(BUF_BASE)[o / sizeof(Reg32)]; }
 };
