@@ -87,8 +87,6 @@ void receiver()
     led->set(false);
     led_value = false;
     bool send = true;
-    if(Traits<Serial_Display>::ENGINE == Traits<Serial_Display>::uart)
-        eMote3_GPTM::delay(2515); 
     while(true)
     {
         const char data[] = "0 Hello, World!";
@@ -101,6 +99,8 @@ void receiver()
             nic->send(nic->broadcast(), 0x1010, data, sizeof data);
         }
         send=false;
+        if(Traits<Serial_Display>::ENGINE == Traits<Serial_Display>::uart)
+            eMote3_GPTM::delay(2515); 
         CPU::halt();
     }
     //if(Traits<Serial_Display>::ENGINE == Traits<Serial_Display>::uart)
@@ -143,17 +143,17 @@ int main()
     led = new GPIO('c',3, GPIO::OUTPUT);
     led_value = true;
     led->set(led_value);
-    cout << "Hello main" << endl;
-    cout << "=====================" << endl;
-    cout << "TSTP_MAC parameters: " << endl;
-    cout << "checking_interval: " << Traits<TSTP_MAC>::checking_interval << endl;
-    cout << "Tu: " << Traits<TSTP_MAC>::Tu << endl;
-    cout << "ts: " << Traits<TSTP_MAC>::ts << endl;
-    cout << "n_microframes: " << Traits<TSTP_MAC>::n_microframes << endl;
-    cout << "time_between_microframes: " << Traits<TSTP_MAC>::time_between_microframes << endl;
-    cout << "microframe_listening_time: " << Traits<TSTP_MAC>::microframe_listening_time << endl;
-    cout << "sleep_time: " << Traits<TSTP_MAC>::sleep_time << endl;
-    cout << "=====================" << endl;
+//    cout << "Hello main" << endl;
+//    cout << "=====================" << endl;
+//    cout << "TSTP_MAC parameters: " << endl;
+//    cout << "checking_interval: " << Traits<TSTP_MAC>::checking_interval << endl;
+//    cout << "Tu: " << Traits<TSTP_MAC>::Tu << endl;
+//    cout << "ts: " << Traits<TSTP_MAC>::ts << endl;
+//    cout << "n_microframes: " << Traits<TSTP_MAC>::n_microframes << endl;
+//    cout << "time_between_microframes: " << Traits<TSTP_MAC>::time_between_microframes << endl;
+//    cout << "microframe_listening_time: " << Traits<TSTP_MAC>::microframe_listening_time << endl;
+//    cout << "sleep_time: " << Traits<TSTP_MAC>::sleep_time << endl;
+//    cout << "=====================" << endl;
 //     sender();
    receiver();
 
