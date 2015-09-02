@@ -87,6 +87,8 @@ void receiver()
     led->set(false);
     led_value = false;
     bool send = true;
+    if(Traits<Serial_Display>::ENGINE == Traits<Serial_Display>::uart)
+        eMote3_GPTM::delay(2515); 
     while(true)
     {
         const char data[] = "0 Hello, World!";
@@ -99,8 +101,6 @@ void receiver()
             nic->send(nic->broadcast(), 0x1010, data, sizeof data);
         }
         send=false;
-        if(Traits<Serial_Display>::ENGINE == Traits<Serial_Display>::uart)
-            eMote3_GPTM::delay(2515); 
         CPU::halt();
     }
     //if(Traits<Serial_Display>::ENGINE == Traits<Serial_Display>::uart)

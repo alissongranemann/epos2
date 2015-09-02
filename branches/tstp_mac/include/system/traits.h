@@ -215,8 +215,8 @@ template<> struct Traits<TSTP_MAC>: public Traits<void>
     static const bool geographic = false;    
     static const bool is_sink = false;    
 
-    static const unsigned int checking_interval = 2500000; // us
-    static const unsigned int timeout_for_retransmission = 3 * checking_interval; // us
+    static const unsigned int checking_interval = 2000000; // us
+    static const unsigned int timeout_for_retransmission = 5 * checking_interval; // us
 
     // IEEE 802.15.4 TX Turnaround Time
     static const unsigned int Tu = 192; // us
@@ -230,7 +230,7 @@ template<> struct Traits<TSTP_MAC>: public Traits<void>
     // Time to send a single microframe (sizeof(Microframe) * 2 / 0.0625)
     static const unsigned int ts = 480; // us
 
-    //static const unsigned int n_microframes = 1 + ((checking_interval - ts) / (Tu + ts));
+    //static const unsigned char n_microframes = static_cast<const unsigned char>(1 + ((checking_interval - ts) / (Tu + ts)));
     static const unsigned int n_microframes = 5;
     static const unsigned int time_between_microframes = (checking_interval - ts) / (n_microframes - 1) - ts; // us
     static const unsigned int microframe_listening_time = 2*ts + time_between_microframes + 2*Tu; // us

@@ -96,17 +96,17 @@ public:
     public:
         Microframe() {}
         Microframe(Reg16 id) : 
-        Phy_Header(sizeof(Microframe) - sizeof(Phy_Header)),
-        _all_listen((!Traits<TSTP_MAC>::geographic) || (Traits<TSTP_MAC>::geographic && Traits<TSTP_MAC>::is_sink)),
-       _id(id),
-        _last_hop_distance(Traits<TSTP_MAC>::geographic ? 0 : 0),
-        _count(Traits<TSTP_MAC>::n_microframes - 1)
-       {};
+            Phy_Header(sizeof(Microframe) - sizeof(Phy_Header)),
+            _all_listen((!Traits<TSTP_MAC>::geographic) || (Traits<TSTP_MAC>::geographic && Traits<TSTP_MAC>::is_sink)),
+            _id(id & (~(1 << 16))),
+            _last_hop_distance(Traits<TSTP_MAC>::geographic ? 0 : 0),
+            _count(Traits<TSTP_MAC>::n_microframes - 1)
+            {};
 
         Microframe& operator--() { _count--; return *this; }            
 
         bool all_listen() { return _all_listen; }
-        Reg8 count() { return _count; }
+        unsigned char count() { return _count; }
         Reg16 id() { return _id; }
         Reg32 last_hop_distance() { return _last_hop_distance; }
 
@@ -140,8 +140,6 @@ public:
     //    return TSC::time_stamp();
     //}
 
-    typedef Simple_Hash<TX_Schedule_Entry, Traits<TSTP_MAC>::TX_SCHEDULE_SIZE, Reg16> Hash;
-
     class TX_Schedule_Entry
     {
     public:
@@ -151,42 +149,32 @@ public:
         Time_Stamp timeout() { return _timeout; }
         void timeout(const Time_Stamp & tmt) { _timeout = tmt; }
 
-        void link(Hash::Element * l) { _link = l; }
         Reg16 id() { return _id; }
 
         Time_Stamp backoff() { return _backoff; }
 
         Buffer * payload() { return _payload; }
 
+        TX_Schedule_Entry() { }
+
         // Constructor for new messages
         TX_Schedule_Entry(Buffer * pld, Address dest, Time_Stamp tmt = 0) 
             : _is_new_message(true),
               _timeout(tmt), 
               _destination(dest), 
-              _id(Random::random()), 
-              _payload(pld),
-              _link(0)              
+              _id(Random::random() & (~(1 << 16))), 
+              _payload(pld)
         { }
 
         // Constructor for retransmissions
-        TX_Schedule_Entry(Microframe * m, TSTP_MAC * mac, Buffer * b)
+        TX_Schedule_Entry(Reg16 id, LH_Distance lh_dist, TSTP_MAC * mac, Buffer * b)
             : _is_new_message(false),
-              _backoff(mac->calculate_backoff(m->last_hop_distance())), 
+              _backoff(mac->calculate_backoff(lh_dist)), 
               _timeout(TSC::time_stamp()), 
               _destination(b->frame()->header()->dst()), 
-              _id(m->id()),
-              _payload(b),
-              _link(0)
+              _id(id & (~(1 << 16))),
+              _payload(b)
         { }
-
-        ~TX_Schedule_Entry()
-        {
-            //TODO
-            //if(_payload)
-            //    NIC::free(_payload);
-            if(_link)
-                delete _link;
-        }
 
     private:
         bool _is_new_message;
@@ -195,53 +183,42 @@ public:
         Address _destination;
         Reg16 _id;
         Buffer * _payload;
-        Hash::Element * _link;
     };
 
-    class TX_Schedule : private Hash
+    class TX_Schedule
     {
-    public:
-        TX_Schedule(TSTP_MAC * t) : Hash(), _tstp_mac(t) {}
-        ~TX_Schedule()
-        {
-            for(auto i = Hash::begin(); i < Hash::end(); i++)
-            {
-                delete (*i).object();
-                delete &(*i);
-            }
-        }
+        unsigned int _n_entries;
+        TX_Schedule_Entry table[Traits<TSTP_MAC>::TX_SCHEDULE_SIZE];
 
-        typedef Hash::Element Element;
+    public:
+        TX_Schedule(TSTP_MAC * t) : _n_entries(0), _tstp_mac(t) {}
+
+        ~TX_Schedule() { }
 
         TX_Schedule_Entry * choose()
         {
             auto now = TSC::time_stamp();
-            Iterator i = Hash::begin();
             TX_Schedule_Entry * ret = 0;
-            for(i++; i != Hash::end(); i++)
+            for(auto i = 0u; i < _n_entries; i++)
             {
-                TX_Schedule_Entry * obj = i->object();
-                db<TSTP_MAC>(TRC) << "obj = " << obj << endl;
-                db<TSTP_MAC>(TRC) << "now  " << now << endl;
-                db<TSTP_MAC>(TRC) << "timeout  " << obj->timeout() << endl;
-                if(obj->timeout() <= now)
+                if(table[i].timeout() <= now)
                 {
                     if(ret)
                     {
                         if(ret->is_retransmission())
                         {
-                            if(obj->is_new_message())
+                            if(table[i].is_new_message())
                                 continue;
-                            else if(obj->timeout() >= ret->timeout())
+                            else if(table[i].timeout() >= ret->timeout())
                                 continue;
                         }
                         else
                         {
-                            if(obj->is_new_message() && (obj->timeout() >= ret->timeout()))
+                            if(table[i].is_new_message() && (table[i].timeout() >= ret->timeout()))
                                 continue;
                         }
                     }
-                    ret = obj;
+                    ret = &table[i];
                 }
             }
             return ret;
@@ -249,26 +226,41 @@ public:
 
         void schedule_new(Buffer * pld, Address dest, Time_Stamp tmt = 0)
         {
-            TX_Schedule_Entry * entry = new TX_Schedule_Entry(pld, dest, tmt);
-            Element * el = new Element(entry, entry->id());
-            Hash::insert(el);
+            if(_n_entries >= Traits<TSTP_MAC>::TX_SCHEDULE_SIZE) 
+            { // TODO: free pld
+                return;
+            }
+
+            new (&(table[_n_entries])) TX_Schedule_Entry(pld, dest, tmt);
+            _n_entries++;
         }
 
-        void schedule_forwarding(Microframe * m, Buffer * b)
+        void schedule_forwarding(Reg16 id, LH_Distance lh_dist, Buffer * b)
         {
-            TX_Schedule_Entry * entry = new TX_Schedule_Entry(m, _tstp_mac, b);
-            Element * el = new Element(entry, entry->id());
-            Hash::insert(el);
+            if(_n_entries >= Traits<TSTP_MAC>::TX_SCHEDULE_SIZE) 
+            { // TODO: free pld
+                return;
+            }
+
+            new (&(table[_n_entries])) TX_Schedule_Entry(id, lh_dist, _tstp_mac, b);
+            _n_entries++;
         }
 
         bool remove(Reg16 id)
         {
-            auto ret = Hash::remove_key(id);
-            if(ret)
+            for(auto i = 0u; i < _n_entries; i++)
             {
-                delete ret->object();
-                delete ret;
-                return true;
+                auto tid = table[i].id();
+                if(tid == id)
+                {
+                    auto tpld = table[i].payload();
+                    if(tpld)
+                        tpld->unlock();
+                    for(auto j = i+1; j < _n_entries; j++)                        
+                        table[j-1] = table[j];
+                    _n_entries--;
+                    return true;
+                }
             }
             return false;
         }
@@ -278,7 +270,8 @@ public:
 
     TX_Schedule _tx_schedule;
     TX_Schedule_Entry * _currently_sending;
-    Microframe _currently_receiving;
+    Reg16 _currently_receiving_id;
+    LH_Distance _currently_receiving_lh_dist;
 
 public:
     enum STATE 
@@ -325,7 +318,8 @@ protected:
                 state(TX_DATA);
             else
             {
-                _tx_schedule.remove(_currently_sending->id());
+                auto id = _currently_sending->id();
+                _tx_schedule.remove(id);
                 _currently_sending = 0;
                 _update_tx_schedule();
             }
@@ -439,14 +433,15 @@ public:
 
     bool process_frame(Buffer * b)
     {
-        _tx_schedule.schedule_forwarding(&_currently_receiving, b);
+        _tx_schedule.schedule_forwarding(_currently_receiving_id, _currently_receiving_lh_dist, b);
         return is_for_me(b);
     }
 
     void process_microframe(Microframe * m)
     {
         db<TSTP_MAC>(TRC) << "=============================Processing Microframe" << endl;
-        auto removed = _tx_schedule.remove(m->id());
+        auto id = m->id();
+        auto removed = _tx_schedule.remove(id);
 
         auto now = TSC::time_stamp();
         const auto ti = Traits<TSTP_MAC>::time_between_microframes;
@@ -464,7 +459,8 @@ public:
             if((state() == RX_MF_RX) && 
                     (m->all_listen() ))//|| ) // TODO: acceptance conditions
             {
-                _currently_receiving = *m;
+                _currently_receiving_id = m->id();
+                _currently_receiving_lh_dist = m->last_hop_distance();
                 db<TSTP_MAC>(TRC) << "I'm interested in this frame!" << endl;
                 state(SLEEP_UNTIL_DATA);
                 schedule_listen(now + TSC::us_to_ts(wake_up_time - Traits<TSTP_MAC>::data_listen_margin));

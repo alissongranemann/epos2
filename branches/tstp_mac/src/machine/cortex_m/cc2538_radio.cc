@@ -372,7 +372,8 @@ int CC2538::_send_frame(Buffer * buf)
 
 int CC2538::send(Buffer * buf)
 {
-    Microframe mf(_currently_sending->id());
+    auto id = _currently_sending->id();
+    Microframe mf(id);
     _send_microframe(mf);
 
     int ret = -1;
