@@ -10,6 +10,57 @@
 
 __BEGIN_SYS
 
+class Zynq_Global_Timer
+{
+private:
+    typedef TSC::Hertz Hertz;
+    typedef TSC::Time_Stamp Time_Stamp;
+    typedef CPU::Log_Addr Log_Addr;
+    typedef CPU::Reg32 Count;
+
+    enum {
+        GLOBAL_TIMER_BASE = 0xF8F00200
+    };
+
+    // Global Timer Registers offsets
+    enum {
+        GTCTRL  = 0x00, // Low Counter
+        GTCTRH  = 0x04, // High Counter
+        GTCLR   = 0x08, // Control
+        GTISR   = 0x0C  // Interrupt Status
+    };
+
+    static Log_Addr & global_timer(unsigned int o) { return reinterpret_cast<Log_Addr *>(GLOBAL_TIMER_BASE)[o / sizeof(Log_Addr)]; }
+
+public:
+    static const Hertz CLOCK = Traits<CPU>::CLOCK/2;
+
+public:
+    void set(Time_Stamp time) {
+        // Disable Global Timer
+        global_timer(GTCLR) = 0x0;
+
+        // Updating Global Timer Counter Register
+        global_timer(GTCTRL) = (Count)time;
+        global_timer(GTCTRH) = (Count)(time>>32);
+
+        // Enable Global Timer
+        global_timer(GTCLR) = 0x1;
+    }
+
+    Time_Stamp get() {
+        volatile Count high, low;
+
+        // Reading Global Timer Counter Register
+        do {
+            high = global_timer(GTCTRH);
+            low = global_timer(GTCTRL);
+        } while(global_timer(GTCTRH) != high);
+
+        return (((Time_Stamp)high) << 32) | (Time_Stamp)low;
+    }
+};
+
 class Zynq_Priv_Timer
 {
 private:
