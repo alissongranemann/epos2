@@ -284,9 +284,9 @@ void TCP::Connection::update(TCP::Observed * obs, unsigned long long socket, NIC
         ",SND.NXT=" << _next << endl;
 
     if(_state == LISTENING) {
+        TCP::_observed.detach(this, id());
         _peer = packet->from();
-        _to = htons(_current->header()->to());
-        TCP::_observed.detach(this, from());
+        _to = htons(_current->header()->from());
         TCP::_observed.attach(this, id());
     }
 
