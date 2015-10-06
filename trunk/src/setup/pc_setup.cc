@@ -69,7 +69,9 @@ private:
     static const unsigned int MEM_BASE = Memory_Map<PC>::MEM_BASE;
     static const unsigned int MEM_TOP = Memory_Map<PC>::MEM_TOP;
     static const unsigned int APIC_PHY = APIC::LOCAL_APIC_PHY_ADDR;
+    static const unsigned int APIC_SIZE = APIC::LOCAL_APIC_SIZE;
     static const unsigned int VGA_PHY = Traits<PC_Display>::FRAME_BUFFER_ADDRESS;
+    static const unsigned int VGA_SIZE = Traits<PC_Display>::FRAME_BUFFER_SIZE;
 
     // Logical memory map
     static const unsigned int IDT = Memory_Map<PC>::IDT;
@@ -430,9 +432,9 @@ void PC_Setup::build_pmm()
     // NP = size of PCI address space in pages
     // NPTE_PT = number of page table entries per page table
     detect_pci(&si->pmm.io_base, &si->pmm.io_top);
-    si->pmm.io_top += sizeof(Page); // Add room for APIC (4 kB)
-    si->pmm.io_top += 16 * sizeof(Page); // Add room for VGA (64 kB)
     unsigned int io_size = MMU::pages(si->pmm.io_top - si->pmm.io_base);
+    io_size += APIC_SIZE / sizeof(Page); // Add room for APIC (4 kB, 1 page)
+    io_size += VGA_SIZE / sizeof(Page); // Add room for VGA (64 kB, 16 pages)
     top_page -= (io_size + MMU::PT_ENTRIES - 1) / MMU::PT_ENTRIES;
     si->pmm.io_pts = top_page * sizeof(Page);
 
@@ -679,21 +681,15 @@ void PC_Setup::setup_sys_pt()
     PT_Entry aux;
 
     // SYSTEM code
-    for(i = 0, aux = si->pmm.sys_code;
-        i < MMU::pages(si->lm.sys_code_size);
-        i++, aux = aux + sizeof(Page))
+    for(i = 0, aux = si->pmm.sys_code; i < MMU::pages(si->lm.sys_code_size); i++, aux = aux + sizeof(Page))
         sys_pt[MMU::page(SYS_CODE) + i] = aux | Flags::SYS;
 
     // SYSTEM data
-    for(i = 0, aux = si->pmm.sys_data;
-        i < MMU::pages(si->lm.sys_data_size);
-        i++, aux = aux + sizeof(Page))
+    for(i = 0, aux = si->pmm.sys_data; i < MMU::pages(si->lm.sys_data_size); i++, aux = aux + sizeof(Page))
         sys_pt[MMU::page(SYS_DATA) + i] = aux | Flags::SYS;
 
     // SYSTEM stack (used only during init and for the ukernel model)
-    for(i = 0, aux = si->pmm.sys_stack;
-        i < MMU::pages(si->lm.sys_stack_size);
-        i++, aux = aux + sizeof(Page))
+    for(i = 0, aux = si->pmm.sys_stack; i < MMU::pages(si->lm.sys_stack_size); i++, aux = aux + sizeof(Page))
         sys_pt[MMU::page(SYS_STACK) + i] = aux | Flags::SYS;
 
     db<Setup>(INF) << "SPT=" << *reinterpret_cast<Page_Table *>(sys_pt) << endl;
@@ -731,26 +727,28 @@ void PC_Setup::setup_sys_pd()
         sys_pd[MMU::directory(PHY_MEM) + i] = (si->pmm.phy_mem_pts + i * sizeof(Page)) | Flags::SYS;
 
     // Attach memory starting at MEM_BASE
-    for(unsigned int i = MMU::directory(MMU::align_directory(si->pmm.mem_base));
-        i < MMU::directory(MMU::align_directory(si->pmm.mem_top));
-        i++)
+    for(unsigned int i = MMU::directory(MMU::align_directory(si->pmm.mem_base)); i < MMU::directory(MMU::align_directory(si->pmm.mem_top)); i++)
         sys_pd[i] = (si->pmm.phy_mem_pts + i * sizeof(Page)) | Flags::APP;
 
     // Calculate the number of page tables needed to map the IO address space
     unsigned int io_size = MMU::pages(si->pmm.io_top - si->pmm.io_base);
+    io_size += APIC_SIZE / sizeof(Page); // Add room for APIC (4 kB, 1 page)
+    io_size += VGA_SIZE / sizeof(Page); // Add room for VGA (64 kB, 16 pages)
     n_pts = (io_size + MMU::PT_ENTRIES - 1) / MMU::PT_ENTRIES;
 
     // Map IO address space into the page tables pointed by io_pts
     pts = reinterpret_cast<PT_Entry *>((void *)si->pmm.io_pts);
-    pts[0] = APIC_PHY | Flags::APIC;
-    for(unsigned int i = 1; i < 17; i++)
+    unsigned int i = 0;
+    for(; i < (APIC_SIZE / sizeof(Page)); i++)
+        pts[i] = (APIC_PHY + i * sizeof(Page)) | Flags::APIC;
+    for(; i < ((APIC_SIZE / sizeof(Page)) + (VGA_SIZE / sizeof(Page))); i++)
         pts[i] = (VGA_PHY + i * sizeof(Page)) | Flags::VGA;
-    for(unsigned int i = 17; i < io_size; i++)
+    for(; i < io_size; i++)
         pts[i] = (si->pmm.io_base + i * sizeof(Page)) | Flags::PCI;
 
-    // Attach PCI devices' memory at Memory_Map<PC>::PCI
+    // Attach devices' memory at Memory_Map<PC>::IO
     for(int i = 0; i < n_pts; i++)
-        sys_pd[MMU::directory(Memory_Map<PC>::PCI) + i] = (si->pmm.io_pts + i * sizeof(Page)) | Flags::PCI;
+        sys_pd[MMU::directory(Memory_Map<PC>::IO) + i] = (si->pmm.io_pts + i * sizeof(Page)) | Flags::PCI;
 
     // Map the system 4M logical address space at the top of the 4Gbytes
     sys_pd[MMU::directory(SYS_CODE)] = si->pmm.sys_pt | Flags::SYS;
@@ -915,6 +913,9 @@ void PC_Setup::detect_memory(unsigned int * base, unsigned int * top)
 }
 
 //========================================================================
+// Detects the size of the PCI physical memory range (apperture) necessary
+// to map all PCI devices.
+// Sets base to the lowest address and top to the highest. Both in bytes.
 void PC_Setup::detect_pci(unsigned int * base, unsigned int * top)
 {
     db<Setup>(TRC) << "PC_Setup::detect_pci()" << endl;
