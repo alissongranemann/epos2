@@ -25,7 +25,6 @@ public:
             Machine::smp_barrier();
             // For IA-32, timer is CPU-local. What about other SMPs?
             Timer::init();
-            Machine::smp_barrier();
             return;
         }
 

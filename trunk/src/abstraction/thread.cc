@@ -381,28 +381,26 @@ void Thread::dispatch(Thread * prev, Thread * next, bool charge)
 
 int Thread::idle()
 {
-    while(true) {
+    while(_thread_count > Machine::n_cpus()) { // someone else besides idles
         if(Traits<Thread>::trace_idle)
             db<Thread>(TRC) << "Thread::idle(CPU=" << Machine::cpu_id() << ",this=" << running() << ")" << endl;
 
-        if(_thread_count <= Machine::n_cpus()) { // Only idle is left
-            CPU::int_disable();
-            if(Machine::cpu_id() == 0) {
-                db<Thread>(WRN) << "The last thread has exited!" << endl;
-                if(reboot) {
-                    db<Thread>(WRN) << "Rebooting the machine ..." << endl;
-                    Machine::reboot();
-                } else
-                    db<Thread>(WRN) << "Halting the machine ..." << endl;
-            }
-            CPU::halt();
-        } else {
-            CPU::int_enable();
-            CPU::halt();
-            if(_scheduler.schedulables() > 0) // A thread might have been woken up by another CPU
-                yield();
-        }
+        CPU::int_enable();
+        CPU::halt();
+        if(_scheduler.schedulables() > 0) // A thread might have been woken up by another CPU
+            yield();
     }
+
+    CPU::int_disable();
+    if(Machine::cpu_id() == 0) {
+        db<Thread>(WRN) << "The last thread has exited!" << endl;
+        if(reboot) {
+            db<Thread>(WRN) << "Rebooting the machine ..." << endl;
+            Machine::reboot();
+        } else
+            db<Thread>(WRN) << "Halting the machine ..." << endl;
+    }
+    CPU::halt();
 
     return 0;
 }

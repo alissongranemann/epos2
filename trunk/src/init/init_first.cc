@@ -55,7 +55,7 @@ public:
             // Idle thread creation must succeed main, thus avoiding implicit rescheduling.
             new (SYSTEM) Thread(Thread::Configuration(Thread::READY, Thread::IDLE), &Thread::idle);
         } else
-            first = new (SYSTEM) Thread(Thread::Configuration(Thread::READY, Thread::IDLE), &Thread::idle);
+            first = new (SYSTEM) Thread(Thread::Configuration(Thread::RUNNING, Thread::IDLE), &Thread::idle);
 
         Machine::smp_barrier();
 
