@@ -179,7 +179,7 @@ private:
 
     void leave() {
         _lock.release();
-        CPU::int_disable();
+        CPU::int_enable();
     }
 
 private:

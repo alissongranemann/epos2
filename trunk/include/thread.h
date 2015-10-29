@@ -24,13 +24,12 @@ class Thread
     friend class Alarm;
     friend class Task;
     friend class IA32;
-    template<typename> friend class Agent;
+    friend class Agent;
 
 protected:
     static const bool smp = Traits<Thread>::smp;
     static const bool preemptive = Traits<Thread>::Criterion::preemptive;
     static const bool multitask = Traits<System>::multitask;
-
     static const bool reboot = Traits<System>::reboot;
 
     static const unsigned int QUANTUM = Traits<Thread>::QUANTUM;
