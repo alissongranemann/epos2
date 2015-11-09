@@ -18,22 +18,22 @@ template <> struct Traits<Cortex_M>: public Traits<Cortex_M_Common>
     static const unsigned int CPUS = Traits<Build>::CPUS;
 
     // Physical Memory
-    static const unsigned int MEM_BASE  = 0x20000004;
-    static const unsigned int MEM_TOP   = 0x20007fff; // (MAX for 32-bit is 0x70000000 / 1792 MB)
+    static const unsigned int MEM_BASE  = 0x20000000;
+    static const unsigned int MEM_TOP   = 0x20007ffb; // (MAX for 32-bit is 0x70000000 / 1792 MB)
 
     // Logical Memory Map
-    static const unsigned int APP_LOW   = 0x20000004;
+    static const unsigned int APP_LOW   = 0x20000000;
     static const unsigned int APP_CODE  = 0x00200000;
-    static const unsigned int APP_DATA  = 0x20000004;
-    static const unsigned int APP_HIGH  = 0x20007fff;
+    static const unsigned int APP_DATA  = 0x20000000;
+    static const unsigned int APP_HIGH  = 0x20007ffb;
 
-    static const unsigned int PHY_MEM   = 0x20000004;
+    static const unsigned int PHY_MEM   = 0x20000000;
     static const unsigned int IO_BASE   = 0x40000000;
     static const unsigned int IO_TOP    = 0x440067ff;
 
     static const unsigned int SYS       = 0x00200000;
     static const unsigned int SYS_CODE  = 0x00200000; // Library mode only => APP + SYS
-    static const unsigned int SYS_DATA  = 0x20000004; // Library mode only => APP + SYS
+    static const unsigned int SYS_DATA  = 0x20000000; // Library mode only => APP + SYS
 
     // Default Sizes and Quantities
     static const unsigned int STACK_SIZE = 4 * 1024;
@@ -46,7 +46,7 @@ template<> struct Traits<Cortex_M_Bootloader>: public Traits<void>
     static const bool enabled = true;
 
     enum {nic, usb};
-    static const unsigned int ENGINE = usb;
+    static const unsigned int ENGINE = nic;
 
     // NIC specifics
     static const unsigned int NIC_PROTOCOL = 0x1010;
@@ -58,7 +58,7 @@ template<> struct Traits<Cortex_M_Bootloader>: public Traits<void>
     static const unsigned int HANDSHAKE_WAITING_LIMIT = 1000000; // in microseconds
 
     // Word in RAM reserved for the bootloader
-    static const unsigned int BOOTLOADER_STATUS_ADDRESS = 0x20000000;
+    static const unsigned int BOOTLOADER_STATUS_ADDRESS = 0x20007ffb;
     enum STATUS 
     {
         FINISHED = 42,

@@ -118,8 +118,8 @@ public:
     }
 
 protected:
-    virtual bool _get_message(Message * m) = 0;
-    virtual void _send_message(const Message & m) = 0;
+    virtual bool get_message(Message * m) = 0;
+    virtual void send_message(const Message & m) = 0;
 
     Message _message;
     Message _previous_message;
@@ -130,7 +130,7 @@ protected:
         {
             do
             {
-                while(!_get_message(&_message));
+                while(!get_message(&_message));
             } while(!(_message.check(0) && _message.is_handshake1_msg()));
         }
         else
@@ -144,7 +144,7 @@ protected:
                 {
                     if(!timer.running())
                         return false;
-                    got_msg = _get_message(&_message);
+                    got_msg = get_message(&_message);
                 } while(!got_msg);
             } while(!(_message.check(0) && _message.is_handshake1_msg()));
         }
@@ -153,7 +153,7 @@ protected:
         _message.sequence_number++;
         _message.type = Message::HANDSHAKE_2;
         _message.checksum = _message.lrc();
-        _send_message(_message);
+        send_message(_message);
 
         return true;
     }
@@ -165,13 +165,13 @@ protected:
         bool msg_ok = false;
         while(!msg_ok)
         {
-            while(!_get_message(&_previous_message))
+            while(!get_message(&_previous_message))
                 ;
 
             if(_previous_message.check(sequence_number))
             {
                 msg_ok = true;
-                _send_message(_previous_message); // ack
+                send_message(_previous_message); // ack
                 if(_previous_message.is_end_msg())
                 {
                     write_buffer();
@@ -183,13 +183,13 @@ protected:
 
         while(true)
         {
-            while(!_get_message(&_message))
+            while(!get_message(&_message))
                 ;
 
             // Previous message's ACK was wrong
             if(_message.check(sequence_number - 1))
             {
-                _send_message(_message); // ack
+                send_message(_message); // ack
                 if(_message.is_end_msg())
                 {
                     write_buffer();
@@ -199,7 +199,7 @@ protected:
             }
             else if(_message.check(sequence_number))
             {
-                _send_message(_message); // ack
+                send_message(_message); // ack
 
                 // Commit previous message
                 if(_previous_message.is_write_msg())
@@ -271,11 +271,11 @@ class eMote3_USB_Bootloader : public eMote3_Bootloader_Common
 public:
     eMote3_USB_Bootloader() : eMote3_Bootloader_Common() { }
 private:
-    bool _get_message(Message * m)
+    bool get_message(Message * m)
     {
         return eMote3_USB::get_data(reinterpret_cast<char *>(m), sizeof(Message)) == sizeof(Message);
     }
-    void _send_message(const Message & m)
+    void send_message(const Message & m)
     {
         for(unsigned int i=0; i<sizeof(Message); i++)
             eMote3_USB::put(reinterpret_cast<const char *>(&m)[i]);
@@ -304,7 +304,7 @@ public:
     }
 
 private:
-    bool _get_message(Message * m) 
+    bool get_message(Message * m)
     { 
         if(_received_msg != 0)
         {
@@ -316,7 +316,7 @@ private:
         else
             return false;
     }
-    void _send_message(const Message & m) 
+    void send_message(const Message & m)
     {
         _nic.send(_nic.broadcast(), _traits::NIC_PROTOCOL, reinterpret_cast<const char *>(&m), sizeof(Message));
     }
