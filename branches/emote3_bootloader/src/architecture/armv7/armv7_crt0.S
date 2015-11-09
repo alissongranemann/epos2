@@ -4,7 +4,7 @@
         // Interrupt Vector Table
         .type   _vector_table, object
 _vector_table:
-        .word   0x20008000              // Stack pointer at reset
+        .word   0x20004000              // Stack pointer at reset
         .word   _start + 1              // Reset  (lsb must be 1 in thumb mode)
         .word   _int_dispatch + 1       // NMI
         .word   _int_dispatch + 1       // Hard fault
