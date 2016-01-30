@@ -15,10 +15,11 @@ __BEGIN_SYS
 
 class TCP: private IP::Observer
 {
-private:
+public:
     // List to hold received Buffers
     typedef NIC::Buffer Buffer;
 
+private:
     // IP Packet
     typedef IP::Packet Packet;
 
@@ -249,6 +250,9 @@ public:
 
         TCP::Observer * _observer;
     };
+
+public:
+    static const unsigned int HEADERS_SIZE = IP::HEADERS_SIZE + sizeof(Header);
 
 public:
     TCP() {

@@ -7,6 +7,10 @@
 #include <utility/list.h>
 #include <utility/spin.h>
 
+extern "C" { void _cpu_int_enable(); };
+extern "C" { void _cpu_int_disable(); };
+
+
 __BEGIN_UTIL
 
 // Heap
@@ -19,17 +23,20 @@ public:
     using Grouping_List<char>::empty;
     using Grouping_List<char>::size;
 
-    Simple_Heap() {
+    Simple_Heap()
+    {
         db<Init, Heaps>(TRC) << "Heap() => " << this << endl;
     }
 
-    Simple_Heap(void * addr, unsigned int bytes) {
+    Simple_Heap(void * addr, unsigned int bytes)
+    {
         db<Init, Heaps>(TRC) << "Heap(addr=" << addr << ",bytes=" << bytes << ") => " << this << endl;
 
         free(addr, bytes);
     }
 
-    void * alloc(unsigned int bytes) {
+    void * alloc(unsigned int bytes)
+    {
         db<Heaps>(TRC) << "Heap::alloc(this=" << this << ",bytes=" << bytes;
 
         if(!bytes)
@@ -62,7 +69,8 @@ public:
         return addr;
     }
 
-    void free(void * ptr, unsigned int bytes) {
+    void free(void * ptr, unsigned int bytes)
+    {
         db<Heaps>(TRC) << "Heap::free(this=" << this << ",ptr=" << ptr << ",bytes=" << bytes << ")" << endl;
 
         if(ptr && (bytes >= sizeof(Element))) {
@@ -72,14 +80,16 @@ public:
         }
     }
 
-    static void typed_free(void * ptr) {
+    static void typed_free(void * ptr)
+    {
         int * addr = reinterpret_cast<int *>(ptr);
         unsigned int bytes = *--addr;
         Simple_Heap * heap = reinterpret_cast<Simple_Heap *>(*--addr);
         heap->free(addr, bytes);
     }
 
-    static void untyped_free(Simple_Heap * heap, void * ptr) {
+    static void untyped_free(Simple_Heap * heap, void * ptr)
+    {
         int * addr = reinterpret_cast<int *>(ptr);
         unsigned int bytes = *--addr;
         heap->free(addr, bytes);
@@ -108,48 +118,55 @@ public:
     Heap_Wrapper() {}
     Heap_Wrapper(void * addr, unsigned int bytes): T(addr, bytes) {}
 
-    bool empty() {
+    bool empty()
+    {
         enter();
         bool tmp = T::empty();
         leave();
         return tmp;
     }
 
-    unsigned int size() {
+    unsigned int size()
+    {
         enter();
         unsigned int tmp = T::size();
         leave();
         return tmp;
     }
 
-    void * alloc(unsigned int bytes) {
-	enter();
-	void * tmp = T::alloc(bytes);
-	leave();
-	return tmp;
+    void * alloc(unsigned int bytes)
+    {
+        enter();
+        void * tmp = T::alloc(bytes);
+        leave();
+        return tmp;
     }
 
-    void free(void * ptr) {
-	enter();
-	T::free(ptr);
-	leave();
+    void free(void * ptr)
+    {
+        enter();
+        T::free(ptr);
+        leave();
     }
 
-    void free(void * ptr, unsigned int bytes) {
-	enter();
-	T::free(ptr, bytes);
-	leave();
+    void free(void * ptr, unsigned int bytes)
+    {
+        enter();
+        T::free(ptr, bytes);
+        leave();
     }
 
 private:
-    void enter() {
+    void enter()
+    {
         _lock.acquire();
-        CPU::int_disable();
+        _cpu_int_disable();
     }
 
-    void leave() {
+    void leave()
+    {
         _lock.release();
-        CPU::int_enable();
+        _cpu_int_enable();
     }
 
 private:

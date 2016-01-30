@@ -4,7 +4,6 @@
 #define __application_h
 
 #include <utility/heap.h>
-#include <segment.h>
 
 extern "C"
 {

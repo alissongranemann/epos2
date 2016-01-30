@@ -10,19 +10,19 @@ void IA32_MMU::init()
     System_Info<PC> * si = System::info();
 
     db<Init, IA32_MMU>(INF) << "IA32_MMU::memory={base=" 
-        		    << (void *) si->pmm.mem_base << ",size="
+        		    << reinterpret_cast<void *>(si->pmm.mem_base) << ",size="
         		    << (si->bm.mem_top - si->bm.mem_base) / 1024
         		    << "KB}" << endl;
     db<Init, IA32_MMU>(INF) << "IA32_MMU::free1={base=" 
-        		    << (void *) si->pmm.free1_base << ",size="
+        		    << reinterpret_cast<void *>(si->pmm.free1_base) << ",size="
         		    << (si->pmm.free1_top - si->pmm.free1_base) / 1024
         		    << "KB}" << endl;
     db<Init, IA32_MMU>(INF) << "IA32_MMU::free2={base=" 
-        		    << (void *) si->pmm.free2_base << ",size="
+        		    << reinterpret_cast<void *>(si->pmm.free2_base) << ",size="
         		    << (si->pmm.free2_top - si->pmm.free2_base) / 1024
         		    << "KB}" << endl;
     db<Init, IA32_MMU>(INF) << "IA32_MMU::free3={base="
-                            << (void *) si->pmm.free3_base << ",size="
+                            << reinterpret_cast<void *>(si->pmm.free3_base) << ",size="
                             << (si->pmm.free3_top - si->pmm.free3_base) / 1024
                             << "KB}" << endl;
     

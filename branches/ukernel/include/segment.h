@@ -18,12 +18,16 @@ public:
 
 public:
     Segment(unsigned int bytes, Flags flags = Flags::APP);
-    Segment(Phy_Addr phy_addr, unsigned int bytes, Flags flags = Flags::APP);
+    Segment(Phy_Addr phy_addr, unsigned int bytes, Flags flags);
     ~Segment();
 
     unsigned int size() const;
     Phy_Addr phy_address() const;
     int resize(int amount);
+
+private:
+    void constructor_1_epilogue();
+    void constructor_2_epilogue();
 };
 
 __END_SYS

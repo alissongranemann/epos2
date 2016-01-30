@@ -12,7 +12,6 @@ struct Traits
     static const bool enabled = true;
     static const bool debugged = true;
     static const bool hysterically_debugged = false;
-    typedef TLIST<> ASPECTS;
 };
 
 template<> struct Traits<Build>
@@ -29,8 +28,8 @@ template<> struct Traits<Build>
     enum {Legacy};
     static const unsigned int MODEL = Legacy;
 
-    static const unsigned int CPUS = 4;
-    static const unsigned int NODES = 1; // > 1 => NETWORKING
+    static const unsigned int CPUS = 8;
+    static const unsigned int NODES = 1; // > 1 => NETWORKING    
 };
 
 
@@ -72,6 +71,14 @@ template<> struct Traits<Init>: public Traits<void>
 {
 };
 
+template<> struct Traits<Framework>: public Traits<void>
+{
+};
+
+template<> struct Traits<Aspect>: public Traits<void>
+{
+    static const bool debugged = hysterically_debugged;
+};
 
 // Mediators
 template<> struct Traits<Serial_Display>: public Traits<void>
@@ -113,7 +120,7 @@ template<> struct Traits<System>: public Traits<void>
     static const bool reboot = true;
 
     static const unsigned int STACK_SIZE = Traits<Machine>::STACK_SIZE;
-    static const unsigned int HEAP_SIZE = (Traits<Application>::MAX_THREADS + 1) * Traits<Application>::STACK_SIZE;
+    static const unsigned int HEAP_SIZE = (Traits<Application>::MAX_THREADS + 4) * Traits<Application>::STACK_SIZE;
 };
 
 template<> struct Traits<Task>: public Traits<void>

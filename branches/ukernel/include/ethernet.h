@@ -69,7 +69,7 @@ public:
         Frame(const Address & src, const Address & dst, const Protocol & prot, const void * data, unsigned int size): Header(src, dst, prot) {
             memcpy(_data, data, size);
         }
-        
+
         Header * header() { return this; }
 
         template<typename T>
@@ -79,7 +79,7 @@ public:
             db << "{" << f.dst() << "," << f.src() << "," << f.prot() << "," << f._data << "}";
             return db;
         }
-        
+
     protected:
         Data _data;
         CRC _crc;
@@ -89,16 +89,16 @@ public:
 
 
     // Buffers used to hold frames across a zero-copy network stack
-    class Buffer: private Frame
+    class Buffer: private Frame /// TODO: refactor this class using the Buffer utility.
     {
     public:
         typedef Simple_List<Buffer> List;
         typedef List::Element Element;
 
     public:
-        Buffer(void * back): _lock(false), _nic(0), _back(back), _size(sizeof(Frame)), _link(this) {}
+        Buffer(void * back): _lock(false), _nic(0), _back(back), _size(sizeof(Frame)), _link(this), _link2(this) {}
         Buffer(NIC * nic, const Address & src, const Address & dst, const Protocol & prot, unsigned int size):
-            Frame(src, dst, prot), _lock(false), _nic(nic), _size(size), _link(this) {}
+            Frame(src, dst, prot), _lock(false), _nic(nic), _size(size), _link(this), _link2(this) {}
 
         Frame * frame() { return this; }
 
@@ -116,6 +116,9 @@ public:
 
         Element * link() { return &_link; }
 
+        Element * link2() { return &_link2; }
+        Element * lext() { return link2(); }
+
         friend Debug & operator<<(Debug & db, const Buffer & b) {
             db << "{nc=" << b._nic << ",lk=" << b._lock << ",sz=" << b._size << ",bl=" << b._back << "}";
             return db;
@@ -127,6 +130,7 @@ public:
         void * _back;
         unsigned int _size;
         Element _link;
+        Element _link2;
     };
 
 
@@ -153,7 +157,7 @@ public:
                << "}";
             return db;
         }
-        
+
         unsigned int rx_overruns;
         unsigned int tx_overruns;
         unsigned int frame_errors;

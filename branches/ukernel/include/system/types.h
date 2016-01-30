@@ -43,6 +43,7 @@ class OStream;
 class Queues;
 class Random;
 class Spin;
+class This_Thread;
 class SREC;
 class Vectors;
 __END_UTIL
@@ -55,21 +56,12 @@ class Boot;
 class Setup;
 class Init;
 class Utility;
-class PC_Boot_Image;
 
 // Architecture Hardware Mediators
 class IA32;
 class IA32_TSC;
 class IA32_MMU;
 class IA32_PMU;
-
-class ARMv7;
-class ARMv7_TSC;
-class ARMv7_MMU;
-
-class AVR8;
-class AVR8_TSC;
-class AVR8_MMU;
 
 // Machine Hardware Mediators
 class PC;
@@ -84,35 +76,12 @@ class PC_Scratchpad;
 class PC_NIC;
 class PC_Ethernet;
 
-class Cortex_M;
-class Cortex_M_IC;
-class Cortex_M_Timer;
-class Cortex_M_RTC;
-class Cortex_M_UART;
-class Cortex_M_EEPROM;
-class Cortex_M_Display;
-class Cortex_M_Scratchpad;
-class Cortex_M_Radio;
-
-class ATmega;
-class ATmega_IC;
-class ATmega_Timer;
-class ATmega_RTC;
-class ATmega_EEPROM;
-class ATmega_Flash;
-class ATmega_Scratchpad;
-class ATmega_UART;
-class ATmega_USART;
-class ATmega_SPI;
-class ATmega_ADC;
-class ATmega_Battery;
-class ATmega_Radio;
-
 class PCNet32;
 class C905;
 class E100;
 class CC2538;
 class AT86RF;
+
 
 class Serial_Display;
 
@@ -125,7 +94,6 @@ class Active;
 class Periodic_Thread;
 class RT_Thread;
 class Task;
-class Application_Loader;
 
 template<typename> class Scheduler;
 namespace Scheduling_Criteria
@@ -136,6 +104,7 @@ namespace Scheduling_Criteria
     class RM;
     class DM;
     class EDF;
+    class GRR;
     class CPU_Affinity;
     class GEDF;
     class PEDF;
@@ -164,15 +133,21 @@ class UDP;
 class TCP;
 class DHCP;
 
-template<typename Channel, typename Network, bool connectionless>
+
+class IPC;
+template<typename Channel, bool connectionless = Channel::connectionless>
 class Link;
-template<typename Channel, typename Network, bool connectionless>
+template<typename Channel, bool connectionless = Channel::connectionless>
 class Port;
 
 // Framework
 class Framework;
 template<typename Component> class Handle;
+template<typename Component, bool remote> class Stub;
+template<typename Component> class Proxy;
 template<typename Component> class Adapter;
+template<typename Component> class Scenario;
+class Agent;
 
 // Aspects
 class Aspect;
@@ -183,13 +158,12 @@ template<typename Component> class Remote;
 // System Components IDs
 // The order in this enumeration defines many things in the system (e.g. init)
 typedef unsigned int Type_Id;
-enum 
+enum
 {
-    CPU_ID = 0,
+    CPU_ID = 100,
     TSC_ID,
     MMU_ID,
 
-    MACHINE_ID = 10,
     PCI_ID,
     IC_ID,
     TIMER_ID,
@@ -198,24 +172,26 @@ enum
     SCRATCHPAD_ID,
     UART_ID,
     DISPLAY_ID,
-    NIC_ID,
 
-    THREAD_ID = 20,
+    THREAD_ID = 0,
     TASK_ID,
     ACTIVE_ID,
-
     ADDRESS_SPACE_ID,
     SEGMENT_ID,
-
     MUTEX_ID,
     SEMAPHORE_ID,
     CONDITION_ID,
-
     CLOCK_ID,
     ALARM_ID,
     CHRONOMETER_ID,
-
+    IPC_COMMUNICATOR_ID,
+    UTILITY_ID,
+    MACHINE_ID,
+    THIS_THREAD_ID,
     IP_ID,
+    NETWORK_ID,
+    NIC_ID,
+
     ICMP_ID,
     UDP_ID,
     TCP_ID,
@@ -224,13 +200,14 @@ enum
     LINK_ID,
     PORT_ID,
 
-    UTILITY_ID = 50,
+    PEDF_ID,
+    PERIODIC_THREAD_ID,
+    THREAD_CONFIGURATION_ID,
+    PERIODIC_THREAD_CONFIGURATION_ID,
 
-    BOOT_IMAGE_ID,
-    ELF_ID,
+    LAST_TYPE_ID = 0xff,
 
-    UNKNOWN_TYPE_ID,
-    LAST_TYPE_ID = UNKNOWN_TYPE_ID - 1
+    UNKNOWN_TYPE_ID = 0xffff
 };
 
 // Type IDs for system components
@@ -239,11 +216,6 @@ template<typename T> struct Type { static const Type_Id ID = UNKNOWN_TYPE_ID; };
 template<> struct Type<IA32> { static const Type_Id ID = CPU_ID; };
 template<> struct Type<IA32_TSC> { static const Type_Id ID = TSC_ID; };
 template<> struct Type<IA32_MMU> { static const Type_Id ID = MMU_ID; };
-
-template<> struct Type<ARMv7> { static const Type_Id ID = CPU_ID; };
-template<> struct Type<ARMv7_TSC> { static const Type_Id ID = TSC_ID; };
-template<> struct Type<ARMv7_MMU> { static const Type_Id ID = MMU_ID; };
-
 
 template<> struct Type<PC> { static const Type_Id ID = MACHINE_ID; };
 template<> struct Type<PC_IC> { static const Type_Id ID = IC_ID; };
@@ -255,18 +227,8 @@ template<> struct Type<PC_Display> { static const Type_Id ID = DISPLAY_ID; };
 template<> struct Type<PC_Scratchpad> { static const Type_Id ID = SCRATCHPAD_ID; };
 template<> struct Type<PC_Ethernet> { static const Type_Id ID = NIC_ID; };
 
-template<> struct Type<Cortex_M> { static const Type_Id ID = MACHINE_ID; };
-template<> struct Type<Cortex_M_IC> { static const Type_Id ID = IC_ID; };
-template<> struct Type<Cortex_M_Timer> { static const Type_Id ID = TIMER_ID; };
-template<> struct Type<Cortex_M_UART> { static const Type_Id ID = UART_ID; };
-template<> struct Type<Cortex_M_RTC> { static const Type_Id ID = RTC_ID; };
-template<> struct Type<Cortex_M_Display> { static const Type_Id ID = DISPLAY_ID; };
-template<> struct Type<Cortex_M_Scratchpad> { static const Type_Id ID = SCRATCHPAD_ID; };
-template<> struct Type<Cortex_M_Radio> { static const Type_Id ID = NIC_ID; };
-
-
 template<> struct Type<Thread> { static const Type_Id ID = THREAD_ID; };
-template<> struct Type<Periodic_Thread> { static const Type_Id ID = THREAD_ID; };
+template<> struct Type<Periodic_Thread> { static const Type_Id ID = PERIODIC_THREAD_ID; };
 template<> struct Type<RT_Thread> { static const Type_Id ID = THREAD_ID; };
 template<> struct Type<Active> { static const Type_Id ID = ACTIVE_ID; };
 template<> struct Type<Task> { static const Type_Id ID = TASK_ID; };
@@ -288,12 +250,15 @@ template<> struct Type<ICMP> { static const Type_Id ID = ICMP_ID; };
 template<> struct Type<UDP> { static const Type_Id ID = UDP_ID; };
 template<> struct Type<TCP> { static const Type_Id ID = TCP_ID; };
 template<> struct Type<DHCP> { static const Type_Id ID = DHCP_ID; };
+template<> struct Type<Network> { static const Type_Id ID = NETWORK_ID; };
 
 template<> struct Type<Utility> { static const Type_Id ID = UTILITY_ID; };
 
-template<> struct Type<PC_Boot_Image> { static const Type_Id ID = BOOT_IMAGE_ID; };
-template<> struct Type<ELF> { static const Type_Id ID = ELF_ID; };
+template<> struct Type<Scheduling_Criteria::PEDF> { static const Type_Id ID = PEDF_ID; };
 
+template<> struct Type<This_Thread> { static const Type_Id ID = THIS_THREAD_ID; };
+
+// Type IDs for system components whose parameters are themselves components are defined where they are declared.
 
 __END_SYS
 

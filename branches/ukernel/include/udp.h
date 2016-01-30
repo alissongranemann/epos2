@@ -5,17 +5,18 @@
 
 #include <ip.h>
 
-__BEGIN_SYS 
+__BEGIN_SYS
 
 class UDP: private IP::Observer
 {
     friend class Network;
     friend class TCP;
 
-private:
+public:
     // List to hold received Buffers
     typedef NIC::Buffer Buffer;
 
+private:
     // IP Packet
     typedef IP::Packet Packet;
 
@@ -25,7 +26,7 @@ public:
     typedef IP Network;
 
     typedef unsigned short Port;
-    
+
     class Address
     {
     public:
@@ -63,7 +64,7 @@ public:
         IP::Address _ip;
         Port _port;
     };
-    
+
 
     typedef Data_Observer<NIC::Buffer, Port> Observer;
     typedef Data_Observed<NIC::Buffer, Port> Observed;

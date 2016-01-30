@@ -4,7 +4,6 @@
 #define __handler_h
 
 #include <system/config.h>
-#include <utility/list.h>
 
 __BEGIN_UTIL
 
@@ -14,28 +13,11 @@ public:
     // A handler function
     typedef void (Function)();
 
-    typedef Simple_List<Handler>::Element Element;
-
 public:
-    Handler():  _link(this)
-    {
-    }
-
+    Handler() {}
     virtual ~Handler() {}
 
     virtual void operator()() = 0;
-
-
-    Element * link() { return &_link; }
-
-protected:
-    Element _link;
-};
-
-class Dual_Handler: public Handler
-{
-public:
-    virtual void dual() = 0;
 };
 
 class Function_Handler: public Handler

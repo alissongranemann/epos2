@@ -2,14 +2,18 @@
 
 #include <architecture/ia32/cpu.h>
 #include <ic.h>
+#include <big_kernel_lock.h>
+
+extern "C" { void _big_kernel_lock_lock(); }
+extern "C" { void _big_kernel_lock_unlock(); }
 
 __BEGIN_SYS
 
-int IA32::syscall(void * msg)
+void IA32::syscall(void * msg)
 {
-    Reg32 ret;
-    ASM("int %1" : "=a"(ret) : "i"(IC::INT_SYSCALL), "a"(msg));
-    return ret;
+    // _big_kernel_lock_lock();
+    ASM("int %0" : : "i"(IC::INT_SYSCALL), "c"(msg));
+    // _big_kernel_lock_unlock();
 }
 
 __END_SYS

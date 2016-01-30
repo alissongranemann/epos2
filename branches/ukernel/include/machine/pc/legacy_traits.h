@@ -16,6 +16,7 @@ template<> struct Traits<PC_Common>: public Traits<void>
 template<> struct Traits<PC>: public Traits<PC_Common>
 {
     static const unsigned int CPUS = Traits<Build>::CPUS;
+    static const unsigned int MAX_CPUS = 8; // Maximum number of TSSs currently supported
 
     // Boot Image
     static const unsigned int BOOT_LENGTH_MIN   = 128;
@@ -40,9 +41,10 @@ template<> struct Traits<PC>: public Traits<PC_Common>
     static const unsigned int IO_BASE   = 0xf0000000; // 4 GB - 256 MB
     static const unsigned int IO_TOP    = 0xff400000; // 4 GB - 12 MB
 
-    static const unsigned int SYS       = IO_TOP;     // 4 GB - 12 MB
-    static const unsigned int SYS_CODE  = 0xff700000;
-    static const unsigned int SYS_DATA  = 0xff740000;
+    static const unsigned int SYS         = IO_TOP;   // 4 GB - 12 MB
+    static const unsigned int SYS_CODE    = 0xff700000;
+    static const unsigned int SYS_SHARED  = 0xff740000;
+    static const unsigned int SYS_DATA    = 0xff741000;
 
     // Default Sizes and Quantities
     static const unsigned int STACK_SIZE = 16 * 1024;
@@ -52,8 +54,9 @@ template<> struct Traits<PC>: public Traits<PC_Common>
 
 template<> struct Traits<PC_PCI>: public Traits<PC_Common>
 {
-    static const int MAX_BUS = 0;
+    static const int MAX_BUS = 16;
     static const int MAX_DEV_FN = 0xff;
+    static const unsigned int MAX_REGION_SIZE = 0x04000000; // 64 MB
 };
 
 template<> struct Traits<PC_IC>: public Traits<PC_Common>
@@ -106,13 +109,15 @@ template<> struct Traits<PC_Display>: public Traits<PC_Common>
     static const int LINES = 25;
     static const int TAB_SIZE = 8;
     static const unsigned int FRAME_BUFFER_ADDRESS = 0xb8000;
+    static const unsigned int FRAME_BUFFER_SIZE = 64 * 1024; // 64 KB
 };
 
 template<> struct Traits<PC_Ethernet>: public Traits<PC_Common>
 {
     static const bool enabled = (Traits<Build>::NODES > 1);
 
-    typedef LIST<PCNet32> NICS;
+    typedef LIST<E100> NICS;
+    // typedef LIST<PCNet32> NICS;
     static const unsigned int UNITS = NICS::Length;
 };
 
@@ -141,13 +146,7 @@ template<> struct Traits<PC_Scratchpad>: public Traits<PC_Common>
 {
     static const bool enabled = false;
     static const unsigned int ADDRESS = Traits<PC_Display>::FRAME_BUFFER_ADDRESS;
-    static const unsigned int SIZE = Traits<PC_Display>::LINES * Traits<PC_Display>::COLUMNS;
-};
-
-template<> struct Traits<PC_Boot_Image>: public Traits<PC_Common>
-{
-    static const bool enabled = true;
-    static const bool debugged = false;
+    static const unsigned int SIZE = Traits<PC_Display>::FRAME_BUFFER_SIZE;
 };
 
 __END_SYS

@@ -34,19 +34,22 @@ public:
     int send(Buffer * buf) { return _dev->send(buf); }
     void free(Buffer * buf) { _dev->free(buf); }
 
-    int send(const Address & dst, const Protocol & prot, const void * data, unsigned int size) {
-        return _dev->send(dst, prot, data, size); 
+private:
+    int _send(const Address & dst, const Protocol & prot, const void * data, unsigned int size) {
+        return _dev->_send(dst, prot, data, size);
     }
-    int receive(Address * src, Protocol * prot, void * data, unsigned int size) {
-        return _dev->receive(src, prot, data, size); 
+    int _receive(Address * src, Protocol * prot, void * data, unsigned int size) {
+        return _dev->_receive(src, prot, data, size);
     }
 
+public:
     const unsigned int mtu() const { return _dev->mtu(); }
     const Address broadcast() const { return _dev->broadcast(); }
     
     const Address & address() { return _dev->address(); }
     void address(const Address & address) { _dev->address(address); }
 
+    Statistics * statistics_prt() { return const_cast<Statistics *>(&(_dev->statistics())); }
     const Statistics & statistics() { return _dev->statistics(); }
 
     void reset() { _dev->reset(); }

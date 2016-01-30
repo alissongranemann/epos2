@@ -54,19 +54,35 @@ public:
 
     enum { INFINITE = RTC::INFINITE };
 
-    struct Configuration: public Thread::Configuration {
-        Configuration(const Microsecond & p, int t = INFINITE, const State & s = READY, const Criterion & c = NORMAL, unsigned int ss = STACK_SIZE, char * us = 0)
-        : Thread::Configuration(s, c, ss, us), period(p), times(t) {}
+    struct Configuration: public Thread::Configuration
+    {
+        Configuration(const Microsecond & p, int n = INFINITE, const State & s = READY, const Criterion & c = NORMAL, Task * t = 0, unsigned int ss = STACK_SIZE)
+        : Thread::Configuration(s, c, t, ss), period(p), times(n) {}
+
+        friend Debug & operator<<(Debug & db, const Configuration & conf)
+        {
+            db << "conf = {" << endl;
+            db << "state = " << conf.state << endl;
+            db << "criterion = " << conf.criterion << endl;
+            db << "task = " << reinterpret_cast<void *>(conf.task) << endl;
+            db << "stack_size = " << conf.stack_size << endl;
+            db << "period = " << conf.period << endl;
+            db << "times = " << conf.times << endl;
+            db << "}" << endl;
+
+            return db;
+        }
 
         Microsecond period;
         int times;
     };
 
 public:
-    template<typename ... Cn, typename ... Tn>
+    template<typename ... Tn>
     Periodic_Thread(const Configuration & conf, int (* entry)(Tn ...), Tn ... an)
-    : Thread(Configuration(conf.period, conf.times, SUSPENDED, (conf.criterion != NORMAL) ? conf.criterion : Criterion(conf.period), conf.stack_size), entry, an ...),
-      _semaphore(0), _handler(&_semaphore, this), _alarm(conf.period, &_handler, conf.times) {
+    : Thread(Thread::Configuration(SUSPENDED, (conf.criterion != NORMAL) ? conf.criterion : Criterion(conf.period), conf.task, conf.stack_size), entry, an ...),
+      _semaphore(0), _handler(&_semaphore, this), _alarm(conf.period, &_handler, conf.times)
+    {
         if((conf.state == READY) || (conf.state == RUNNING)) {
             _state = SUSPENDED;
             resume();
@@ -100,12 +116,8 @@ public:
     };
 
 public:
-    RT_Thread(void (* function)(),
-                    const Microsecond & deadline, const Microsecond & period = SAME,
-                    const Microsecond & capacity = UNKNOWN, const Microsecond & activation = NOW,
-                    int times = INFINITE, int cpu = ANY, unsigned int stack_size = STACK_SIZE)
-    : Periodic_Thread(Configuration(activation ? activation : period ? period : deadline, activation ? 1 : times, SUSPENDED, Criterion(deadline, period ? period : deadline, capacity, cpu), stack_size),
-                      &entry, this, function, activation, times) {
+    RT_Thread(void (* function)(), const Microsecond & deadline, const Microsecond & period = SAME, const Microsecond & capacity = UNKNOWN, const Microsecond & activation = NOW, int times = INFINITE, int cpu = ANY, Task * task = 0, unsigned int stack_size = STACK_SIZE)
+    : Periodic_Thread(Configuration(activation ? activation : period ? period : deadline, activation ? 1 : times, SUSPENDED, Criterion(deadline, period ? period : deadline, capacity, cpu), task, stack_size), &entry, this, function, activation, times) {
         if(activation && Criterion::dynamic)
             // The priority of dynamic criteria will be adjusted to the correct value by the
             // update() in the operator()() of Handler
@@ -126,15 +138,8 @@ private:
 
         // Periodic execution loop
         do {
-//            Alarm::Tick tick;
-//            if(Traits<Periodic_Thread>::simulate_capacity && t->criterion()._capacity)
-//                tick = Alarm::_elapsed + Alarm::ticks(t->criterion()._capacity);
-
             // Release job
             function();
-
-//            if(Traits<Periodic_Thread>::simulate_capacity && t->criterion()._capacity)
-//                while(Alarm::_elapsed < tick);
         } while (wait_next());
 
         return 0;
@@ -142,6 +147,9 @@ private:
 };
 
 typedef Periodic_Thread::Configuration RTConf;
+
+template<> struct Type<Periodic_Thread::Configuration> { static const Type_Id ID = PERIODIC_THREAD_CONFIGURATION_ID; };
+
 __END_SYS
 
 #endif

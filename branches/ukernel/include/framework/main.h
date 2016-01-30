@@ -25,36 +25,63 @@ private:
 
 __END_SYS
 
+
+#include <machine.h>
+#include <rtc.h>
 #include <cpu.h>
 #include <mmu.h>
-#include <task.h>
-#include <thread.h>
 #include <system.h>
+#include <thread.h>
+#include <task.h>
 #include <alarm.h>
+#include <address_space.h>
+#include <segment.h>
+#include <mutex.h>
+#include <semaphore.h>
+#include <condition.h>
+#include <communicator.h>
+#include <periodic_thread.h>
+#include <ip.h>
+#include <tcp.h>
 
 #include "handle.h"
+#include "proxy.h"
 
 #define BIND(X) typedef _SYS::IF<(_SYS::Traits<_SYS::X>::ASPECTS::Length || (_SYS::Traits<_SYS::Build>::MODE == _SYS::Traits<_SYS::Build>::KERNEL)), _SYS::Handle<_SYS::X>, _SYS::X>::Result X;
+
 #define EXPORT(X) typedef _SYS::X X;
+
+#define SELECT(X) _SYS::IF<(_SYS::Traits<_SYS::X>::ASPECTS::Length || (_SYS::Traits<_SYS::Build>::MODE == _SYS::Traits<_SYS::Build>::KERNEL)), _SYS::Handle<_SYS::X>, _SYS::X>::Result
+
+
 
 __BEGIN_API
 
 __USING_UTIL
 
-EXPORT(CPU);
+BIND(Machine);
+
+// BIND(CPU);
+class CPU: public SELECT(CPU)
+{
+private:
+    typedef SELECT(CPU) Base;
+    typedef _SYS::CPU Sys;
+
+public:
+    typedef Sys::Log_Addr Log_Addr;
+
+};
+
+
 EXPORT(Handler);
 EXPORT(Function_Handler);
-EXPORT(Concurrent_Observed);
-EXPORT(Concurrent_Observer);
-EXPORT(User_Timer);
+EXPORT(RTC);
 
 EXPORT(System);
 EXPORT(Application);
 
-BIND(Thread);
 BIND(Active);
-BIND(Periodic_Thread);
-BIND(RT_Thread);
 BIND(Task);
 
 BIND(Address_Space);
@@ -68,38 +95,301 @@ BIND(Clock);
 BIND(Chronometer);
 BIND(Alarm);
 BIND(Delay);
-BIND(Boot_Image);
-// BIND(ELF);
-typedef _SYS::Handle<_SYS::U::ELF> User_Space_ELF;
 
-BIND(Network);
-BIND(IP);
 BIND(ICMP);
 BIND(UDP);
-BIND(TCP);
 BIND(DHCP);
+EXPORT(IPC);
 
-//TBIND(Link);
-//TBIND(Port);
+BIND(This_Thread);
 
-template<typename Channel, typename Network = typename Channel::Network, bool connectionless = Channel::connectionless>
-class Link: public _SYS::Link<Channel, Network, connectionless>
+namespace Scheduling_Criteria
+{
+// BIND(PEDF);
+class PEDF: public SELECT(Scheduling_Criteria::PEDF)
 {
 private:
-    typedef typename _SYS::Link<Channel, Network, connectionless> Base;
+    typedef SELECT(Scheduling_Criteria::PEDF) Base;
+    typedef _SYS::Scheduling_Criteria::PEDF Sys;
 
 public:
-    Link(const typename Base::Local_Address & local, const typename Base::Address & peer = Base::Address::NULL): Base(local, peer) {}
+    typedef RTC::Microsecond Microsecond;
+
+
+public:
+    enum {
+        MAIN   = Sys::MAIN,
+        HIGH   = Sys::HIGH,
+        NORMAL = Sys::NORMAL,
+        LOW    = Sys::LOW,
+        IDLE   = Sys::IDLE
+    };
+
+    enum {
+        PERIODIC    = Sys::PERIODIC,
+        APERIODIC   = Sys::APERIODIC
+    };
+
+    // Constructor helpers
+    enum {
+        SAME        = Sys::SAME,
+        NOW         = Sys::NOW,
+        UNKNOWN     = Sys::UNKNOWN,
+        INFINITE    = Sys::INFINITE
+    };
+
+public:
+    // operator const volatile int() const volatile { return 0; /* TODO */ }
+
+    friend Debug & operator<<(Debug & db, const PEDF & pedf)
+    {
+        print_pedf(&(reinterpret_cast<Base &>(const_cast<PEDF &>(pedf))));
+        return db;
+    }
+
+    static void print_pedf(Base * pedf)
+    {
+        // db<void>(WRN) << "print_pedf, p = " << reinterpret_cast<void *>(pedf->__stub()->id().unit()) << endl;
+
+        _SYS::Message msg(_SYS::Id(_SYS::PEDF_ID, 0), _SYS::Message::PRINT, pedf->__stub()->id().unit());
+        msg.act();
+    }
+
+public:
+    PEDF(int p = APERIODIC) : Base(p)
+    {}
+
+    PEDF(const Microsecond & d, const Microsecond & p, const Microsecond & c, int cpu) : Base(d, p, c, cpu)
+    {}
+};
+}
+
+// BIND(Thread);
+class Thread: public SELECT(Thread)
+{
+private:
+    typedef SELECT(Thread) Base;
+    typedef _SYS::Thread Sys;
+
+protected:
+    static const unsigned int STACK_SIZE = Sys::STACK_SIZE;
+
+public:
+    // Thread State
+    enum State {
+        RUNNING = Sys::RUNNING,
+        READY = Sys::READY,
+        SUSPENDED = Sys::SUSPENDED,
+        WAITING = Sys::WAITING,
+        FINISHING = Sys::FINISHING
+    };
+
+
+    // Thread Scheduling Criterion
+    typedef Sys::Criterion Sys_Criterion;
+
+    typedef _SYS::SWITCH<_SYS::Type<Sys_Criterion>::ID,
+                            _SYS::CASE<_SYS::PEDF_ID, Scheduling_Criteria::PEDF,
+                            _SYS::CASE<_SYS::DEFAULT, void > > // The default case will generate a compilation error
+                        >::Result Criterion;
+
+    enum {
+        HIGH    = Criterion::HIGH,
+        NORMAL  = Criterion::NORMAL,
+        LOW     = Criterion::LOW,
+        MAIN    = Criterion::MAIN,
+        IDLE    = Criterion::IDLE
+    };
+
+
+public:
+    // typedef Sys::Configuration Configuration;
+    struct Configuration: public SELECT(Thread::Configuration)
+    {
+    private:
+        typedef SELECT(Thread::Configuration) Base;
+    public:
+        Configuration(const State & s = READY, const Criterion & c = NORMAL, Task * t = 0, unsigned int ss = STACK_SIZE)
+        : Base((Thread::Sys::State &) s,
+                reinterpret_cast<Sys_Criterion &>(const_cast<_SYS::Type_Id &>(const_cast<Criterion &>(c).__stub()->id().unit())),
+                t ? reinterpret_cast<_SYS::Task *>(reinterpret_cast<_SYS::Proxy<_SYS::Task> *>(t->__stub())->id().unit()) : 0,
+                ss)
+        {
+        }
+    };
+
+public:
+    template<typename ... Tn>
+    Thread(int (* entry)(Tn ...), Tn ... an) : Base(entry, an ...)
+    {
+    }
+
+    template<typename ... Tn>
+    Thread(const Configuration & conf, int (* entry)(Tn ...), Tn ... an) : Base(conf, entry, an ...)
+    {
+    }
+
 };
 
-template<typename Channel, typename Network = typename Channel::Network, bool connectionless = Channel::connectionless>
-class Port: public _SYS::Port<Channel, Network, connectionless>
+// BIND(Periodic_Thread);
+class Periodic_Thread: public SELECT(Periodic_Thread)
 {
 private:
-    typedef typename _SYS::Port<Channel, Network, connectionless> Base;
+    typedef SELECT(Periodic_Thread) Base;
+    typedef _SYS::Periodic_Thread Sys;
+
+protected:
+    static const unsigned int STACK_SIZE = Sys::STACK_SIZE;
 
 public:
-    Port(const typename Base::Local_Address & local): Base(local) {}
+    // Thread State
+    enum State {
+        RUNNING = Sys::RUNNING,
+        READY = Sys::READY,
+        SUSPENDED = Sys::SUSPENDED,
+        WAITING = Sys::WAITING,
+        FINISHING = Sys::FINISHING
+    };
+
+    // Thread Scheduling Criterion
+    typedef Sys::Criterion Sys_Criterion;
+
+    typedef Thread::Criterion Criterion;
+
+    enum {
+        HIGH    = Criterion::HIGH,
+        NORMAL  = Criterion::NORMAL,
+        LOW     = Criterion::LOW,
+        MAIN    = Criterion::MAIN,
+        IDLE    = Criterion::IDLE
+    };
+
+public:
+    typedef Sys::Microsecond Microsecond;
+
+    enum { INFINITE = Sys::INFINITE };
+
+    struct Configuration: public SELECT(Periodic_Thread::Configuration)
+    {
+    private:
+        typedef SELECT(Periodic_Thread::Configuration) Base;
+    public:
+        Configuration(const Microsecond & p, int n = INFINITE, const State & s = READY, const Criterion & c = NORMAL, Task * t = 0, unsigned int ss = STACK_SIZE)
+        : Base(t ? reinterpret_cast<_SYS::Task *>(reinterpret_cast<_SYS::Proxy<_SYS::Task> *>(t->__stub())->id().unit()) : 0,
+                p,
+                n,
+                (_SYS::Thread::State &) s,
+                ss,
+                reinterpret_cast<Sys_Criterion &>(const_cast<_SYS::Type_Id &>(const_cast<Criterion &>(c).__stub()->id().unit()))
+              ) /* For some reason if criterion is not the last,
+                 * everything that goes after criterion won't
+                 * (des)serialize correctly. */
+        {
+            db<void>(TRC) << "Periodic_Thread::Configuration constructor (application side): " << endl;
+            db<void>(TRC) << "period = " << p
+                            << ", times = " << n
+                            << ", state = " << s
+                            << ", criterion = " << c
+                            << ", task (app obj) = " << t
+                            << ", task (sys obj) = " << reinterpret_cast<void *>(t->__stub()->id().unit())
+                            << ", stack_size = " << ss << endl;
+        }
+
+        friend Debug & operator<<(Debug & db, const Configuration & conf)
+        {
+            _SYS::Message msg(_SYS::Id(_SYS::PERIODIC_THREAD_CONFIGURATION_ID, 0), _SYS::Message::PRINT, const_cast<Configuration &>(conf).__stub()->id().unit());
+            msg.act();
+            return db;
+        }
+    };
+
+
+public:
+    template<typename ... Tn>
+    Periodic_Thread(const Configuration & conf, int (* entry)(Tn ...), Tn ... an)
+    : Base(const_cast<Configuration &>(conf).__stub()->id().unit(),
+            entry,
+            an ...)
+    {
+    }
+
+};
+
+// BIND(Network);
+class Network: public SELECT(Network)
+{
+private:
+    typedef SELECT(Network) Base;
+public:
+    static void init() { Base::init_network(); }
+};
+
+// BIND(NIC);
+class NIC: public SELECT(NIC)
+{
+private:
+    typedef SELECT(NIC) Base;
+    typedef _SYS::NIC Sys;
+
+public:
+    typedef Sys::Statistics Statistics;
+
+public:
+    NIC::Statistics & statistics() { return *(reinterpret_cast<NIC::Statistics*>(Base::statistics())); }
+};
+
+// BIND(IP);
+class IP: public SELECT(IP)
+{
+private:
+    typedef SELECT(IP) Base;
+    typedef _SYS::IP Sys;
+public:
+    typedef Sys::Address Address;
+
+public:
+    NIC * nic() { return reinterpret_cast<NIC*>(Base::nic()); }
+
+    static IP * get_by_nic(unsigned int unit) { return reinterpret_cast<IP*>(Base::get_by_nic(unit)); }
+
+public:
+    IP::Address & address() { return *(reinterpret_cast<IP::Address*>(Base::address())); }
+};
+
+// BIND(TCP);
+class TCP: public SELECT(TCP)
+{
+private:
+    typedef SELECT(TCP) Base;
+    typedef _SYS::TCP Sys;
+
+public:
+    typedef Sys::Port Port;
+
+public:
+    static const bool connectionless = Sys::connectionless;
+};
+
+template<typename Channel, bool connectionless = Channel::connectionless>
+class Link: public _SYS::IF<(_SYS::Traits<_SYS::Link<Channel, connectionless> >::ASPECTS::Length || (_SYS::Traits<_SYS::Build>::MODE == _SYS::Traits<_SYS::Build>::KERNEL)), _SYS::Handle<_SYS::Link<Channel, connectionless> >, _SYS::Link<Channel, connectionless> >::Result
+{
+private:
+    typedef typename _SYS::IF<(_SYS::Traits<_SYS::Link<Channel, connectionless> >::ASPECTS::Length || (_SYS::Traits<_SYS::Build>::MODE == _SYS::Traits<_SYS::Build>::KERNEL)), _SYS::Handle<_SYS::Link<Channel, connectionless> >, _SYS::Link<Channel, connectionless> >::Result Base;
+
+public:
+    template<typename ... Tn>
+    Link(const Tn & ... an): Base(an ...) {};
+};
+
+template<typename Channel, bool connectionless = Channel::connectionless>
+class Port: public _SYS::IF<(_SYS::Traits<_SYS::Port<Channel, connectionless> >::ASPECTS::Length || (_SYS::Traits<_SYS::Build>::MODE == _SYS::Traits<_SYS::Build>::KERNEL)), _SYS::Handle<_SYS::Port<Channel, connectionless> >, _SYS::Port<Channel, connectionless> >::Result
+{
+private:
+    typedef typename _SYS::IF<(_SYS::Traits<_SYS::Port<Channel, connectionless> >::ASPECTS::Length || (_SYS::Traits<_SYS::Build>::MODE == _SYS::Traits<_SYS::Build>::KERNEL)), _SYS::Handle<_SYS::Port<Channel, connectionless> >, _SYS::Port<Channel, connectionless> >::Result Base;
+
+public:
+    template<typename ... Tn>
+    Port(const Tn & ... an): Base(an ...) {};
 };
 
 __END_API

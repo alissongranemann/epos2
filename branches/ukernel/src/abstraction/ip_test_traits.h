@@ -12,12 +12,11 @@ struct Traits
     static const bool enabled = true;
     static const bool debugged = true;
     static const bool hysterically_debugged = false;
-    typedef TLIST<> ASPECTS;
 };
 
 template<> struct Traits<Build>
 {
-    enum {LIBRARY, BUILTIN, KERNEL};
+    enum {LIBRARY};
     static const unsigned int MODE = LIBRARY;
 
     enum {IA32};
@@ -76,7 +75,7 @@ template<> struct Traits<Init>: public Traits<void>
 // Mediators
 template<> struct Traits<Serial_Display>: public Traits<void>
 {
-    static const bool enabled = true;
+    static const bool enabled = false;
     static const int COLUMNS = 80;
     static const int LINES = 24;
     static const int TAB_SIZE = 8;
@@ -94,7 +93,7 @@ __BEGIN_SYS
 // Abstractions
 template<> struct Traits<Application>: public Traits<void>
 {
-    static const unsigned int STACK_SIZE = 4 * Traits<Machine>::STACK_SIZE;
+    static const unsigned int STACK_SIZE = Traits<Machine>::STACK_SIZE;
     static const unsigned int HEAP_SIZE = Traits<Machine>::HEAP_SIZE;
     static const unsigned int MAX_THREADS = Traits<Machine>::MAX_THREADS;
 };
@@ -104,7 +103,7 @@ template<> struct Traits<System>: public Traits<void>
     static const unsigned int mode = Traits<Build>::MODE;
     static const bool multithread = (Traits<Application>::MAX_THREADS > 1);
     static const bool multitask = (mode != Traits<Build>::LIBRARY);
-    static const bool multicore = (Traits<Build>::CPUS > 1) && multithread;
+    static const bool multicore = true;
     static const bool multiheap = (mode != Traits<Build>::LIBRARY) || Traits<Scratchpad>::enabled;
 
     enum {FOREVER = 0, SECOND = 1, MINUTE = 60, HOUR = 3600, DAY = 86400, WEEK = 604800, MONTH = 2592000, YEAR = 31536000};
@@ -112,20 +111,15 @@ template<> struct Traits<System>: public Traits<void>
 
     static const bool reboot = true;
 
-    static const unsigned int STACK_SIZE = 4 * Traits<Machine>::STACK_SIZE;
+    static const unsigned int STACK_SIZE = Traits<Machine>::STACK_SIZE;
     static const unsigned int HEAP_SIZE = (Traits<Application>::MAX_THREADS + 1) * Traits<Application>::STACK_SIZE;
-};
-
-template<> struct Traits<Task>: public Traits<void>
-{
-    static const bool enabled = Traits<System>::multitask;
 };
 
 template<> struct Traits<Thread>: public Traits<void>
 {
     static const bool smp = Traits<System>::multicore;
 
-    typedef Scheduling_Criteria::RR Criterion;
+    typedef Scheduling_Criteria::Priority Criterion;
     static const unsigned int QUANTUM = 10000; // us
 
     static const bool trace_idle = hysterically_debugged;
@@ -134,11 +128,6 @@ template<> struct Traits<Thread>: public Traits<void>
 template<> struct Traits<Scheduler<Thread> >: public Traits<void>
 {
     static const bool debugged = Traits<Thread>::trace_idle || hysterically_debugged;
-};
-
-template<> struct Traits<Periodic_Thread>: public Traits<void>
-{
-    static const bool simulate_capacity = false;
 };
 
 template<> struct Traits<Address_Space>: public Traits<void>
@@ -166,7 +155,7 @@ template<> struct Traits<Network>: public Traits<void>
     static const bool enabled = (Traits<Build>::NODES > 1);
 
     static const unsigned int RETRIES = 3;
-    static const unsigned int TIMEOUT = 10; // s
+    static const unsigned int TIMEOUT = 3; // s
 
     // This list is positional, with one network for each NIC in traits<NIC>::NICS
     typedef LIST<IP> NETWORKS;
@@ -192,7 +181,8 @@ template<> struct Traits<IP>: public Traits<Network>
 template<> struct Traits<IP>::Config<0> //: public Traits<IP>::Default_Config
 {
     static const unsigned int  TYPE      = MAC;
-    static const unsigned long ADDRESS   = 0x0a000100;  // 10.0.1.x x=MAC[5]
+    static const unsigned long ADDRESS   = 0xc2a70100;  // 194.167.1.x x=MAC[5]
+    // static const unsigned long ADDRESS   = 0x0a000100;  // 10.0.1.x x=MAC[5]
     static const unsigned long NETMASK   = 0xffffff00;  // 255.255.255.0
     static const unsigned long GATEWAY   = 0;           // 10.0.1.1
 };

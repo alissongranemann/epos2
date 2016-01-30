@@ -10,7 +10,6 @@
 #ifndef __observer_h
 #define	__observer_h
 
-#include <utility/handler.h>
 #include <utility/list.h>
 
 __BEGIN_UTIL
@@ -200,6 +199,7 @@ private:
     typedef typename Simple_Ordered_List<Data_Observer<T1, T2>, T2>::Element Element;
 
 public:
+    typedef T1 Observed_Data;
     typedef T2 Observing_Condition;
 
 public:
@@ -240,6 +240,19 @@ public:
         return notified;
     }
 
+    virtual Observer * observer(T2 c, unsigned int index = 0) {
+        Observer * o = 0;
+        for(Element * e = _observers.head(); e; e = e->next()) {
+            if(e->rank() == c) {
+                if(!index)
+                    o =  e->object();
+                else
+                    index--;
+            }
+        }
+        return o;
+    }
+
 private:
     Simple_Ordered_List<Data_Observer<T1, T2>, T2> _observers;
 };
@@ -250,6 +263,7 @@ class Data_Observer
     friend class Data_Observed<T1, T2>;
 
 public:
+    typedef T1 Observed_Data;
     typedef T2 Observing_Condition;
 
 public:
@@ -266,99 +280,6 @@ public:
 private:
     typename Data_Observed<T1, T2>::Element _link;
 };
-
-
-// Concurrent_Observer x Concurrent_Observed
-class Concurrent_Observer;
-
-class Concurrent_Observed
-{ 
-private:
-    typedef Handler::Element Element;
-
-protected:
-    Concurrent_Observed() 
-    {
-        db<Observed>(TRC) << "Concurrent_Observed() => " << this << endl;
-    }
-
-public: 
-    ~Concurrent_Observed() 
-    {
-        db<Observed>(TRC) << "~Concurrent_Observed(this=" << this << ")" << endl;
-    }
-
-    virtual void attach(Handler * o);
-    virtual void detach(Handler * o);
-    virtual bool notify();
-
-private: 
-    Simple_List<Handler> _observers;
-}; 
-
-class Concurrent_Observer
-{ 
-protected: 
-    Concurrent_Observer(Dual_Handler * handler, Concurrent_Observed * observed): _handler(handler), _observed(observed)
-    {
-        db<Observer>(TRC) << "Concurrent_Observer() => " << this << endl;
-        assert(_handler);
-        assert(_observed);
-    }
-
-public: 
-    ~Concurrent_Observer() {
-        db<Observer>(TRC) << "~Concurrent_Observer(this=" << this << ")" << endl;
-    }
-
-    
-    void update()
-    {
-        _handler->dual();
-        do_update();
-    }
-
-
-protected:
-    virtual void do_update() = 0;
-
-protected:
-    Dual_Handler * _handler;
-    Concurrent_Observed * _observed;
-
-};
-
-inline void Concurrent_Observed::attach(Handler * o)
-{
-    db<Observed>(TRC) << "Concurrent_Observed::attach(obs=" << o << ")" << endl;
-
-    _observers.insert(o->link());
-}
-
-inline void Concurrent_Observed::detach(Handler * o)
-{
-    db<Observed>(TRC) << "Concurrent_Observed::detach(obs=" << o << ")" << endl;
-
-    _observers.remove(o->link()); 
-}
-
-inline bool Concurrent_Observed::notify()
-{
-    bool notified = false;
-
-    db<Observed>(TRC) << "Concurrent_Observed::notify()" << endl;
-
-    for(Element * e = _observers.head(); e; e = e->next()) {
-        db<Observed>(INF) << "Concurrent_Observed::notify(this=" << this << ",obs=" << e->object() << ")" << endl;
-
-        Handler * h = e->object();
-        (*h)();
-        notified = true;
-    }
-
-    return notified;
-}
-
 
 __END_UTIL
  

@@ -21,13 +21,13 @@ class PC: public Machine_Common
 
 private:
     static const bool smp = Traits<System>::multicore;
-    
+
     typedef CPU::Reg32 Reg32;
     typedef CPU::Log_Addr Log_Addr;
 
 public:
     PC() {}
-  
+
     static void delay(const RTC::Microsecond & time) {
         TSC::Time_Stamp end = TSC::time_stamp() + time * (TSC::frequency() / 1000000);
         while(end > TSC::time_stamp());
@@ -43,7 +43,7 @@ public:
     static void smp_init(unsigned int n_cpus) {
         if(smp) {
             _n_cpus = n_cpus;
-            APIC::remap(); 
+            APIC::remap();
         }
     };
 
@@ -57,11 +57,34 @@ public:
             CPU::finc(ready[j]);
 
             if(cpu_id() == 0) {
-        	while(ready[j] < n_cpus); // wait for all CPUs to be ready
-        	i = !i;                   // toggle ready
-        	ready[j] = 0;             // signalizes waiting CPUs
+                while(ready[j] < n_cpus); // wait for all CPUs to be ready
+                i = !i;                   // toggle ready
+                ready[j] = 0;             // signalizes waiting CPUs
             } else
-        	while(ready[j]);          // wait for CPU[0] signal
+                while(ready[j]);          // wait for CPU[0] signal
+        }
+    }
+
+
+    static void check_cpu_ids()
+    {
+        if (cpu_id() == 0) {
+            if (APIC::is_bsp()) {
+                db<PC>(TRC) << "OK, ID 0 is BSP" << endl;
+            }
+            else {
+                db<PC>(ERR) << "Error: ID 0 is not BSP!" << endl;
+                panic();
+            }
+        }
+        else {
+            if (APIC::is_bsp()) {
+                db<PC>(ERR) << "Error: BSP is not ID 0. It is: " << cpu_id() << endl;
+                panic();
+            }
+            else {
+                db<PC>(TRC) << "OK, ID " << cpu_id() << " is AP" << endl;
+            }
         }
     }
 
@@ -82,6 +105,5 @@ __END_SYS
 #include "display.h"
 #include "nic.h"
 #include "scratchpad.h"
-#include "boot_image.h"
 
 #endif

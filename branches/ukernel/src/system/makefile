@@ -25,7 +25,7 @@ $(MACH)_system_library: system_scaffold.o system_binding.o application_scaffold.
 		$(LD) $(LDFLAGS) -i system_scaffold.o system_binding.o -o $(MACH)_system.o
 		$(INSTALL) application_scaffold.o $(MACH)_application.o
 
-$(MACH)_system_builtin: $(OBJS)
+$(MACH)_system_builtin: system_scaffold.o system_binding.o application_scaffold.o
 		$(LD) $(LDFLAGS) -L$(CCLIB) --nmagic \
 		--section-start $(MACH_CODE_NAME)=$(SYS_CODE_ADDR) \
 		--section-start $(MACH_DATA_NAME)=$(SYS_DATA_ADDR) \
@@ -52,7 +52,7 @@ $(MACH)_system_kernel: $(OBJS)
 		--no-whole-archive \
 		-l$(LUTIL) -lgcc 
 		$(LD) $(LDFLAGS) -i application_scaffold.o application_binding.o -o $(MACH)_application.o
-		
+
 clean:
 		$(CLEAN) *.o *_system
 

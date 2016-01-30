@@ -7,7 +7,8 @@
 using namespace EPOS;
 
 const int ITERATIONS = 3;
-const int PDU = 2000;
+const int PDU = 500;
+const char * REMOTE_HOST = "194.167.1.1";
 
 OStream cout;
 
@@ -175,13 +176,16 @@ int tcp_test()
     cout << "  IP: " << ip->address() << endl;
     cout << "  MAC: " << ip->nic()->address() << endl;
 
-    if(ip->address()[3] % 2) { // sender
+    if((ip->address()[3] % 2) == 0) { // sender
         cout << "Sender:" << endl;
 
-        IP::Address peer_ip = ip->address();
-        peer_ip[3]--;
+        // IP::Address peer_ip = ip->address();
+        // peer_ip[3]--;
+        IP::Address peer_ip = IP::Address(REMOTE_HOST);
 
+        db<void>(WRN) << "Will try to connect to: " << peer_ip << endl;
         com = new Link<TCP>(8000, Link<TCP>::Address(peer_ip, TCP::Port(8000))); // connect
+        db<void>(WRN) << "Connection established!" << endl;
 
         for(int i = 0; i < ITERATIONS; i++) {
             data[0] = '\n';
@@ -225,7 +229,9 @@ int tcp_test()
         IP::Address peer_ip = ip->address();
         peer_ip[3]++;
 
+        db<void>(WRN) << "Will listen at: " << ip->address() << ":8000" << endl;
         com = new Link<TCP>(TCP::Port(8000)); // listen
+        db<void>(WRN) << "Some client has connected" << endl;
 
         for(int i = 0; i < ITERATIONS; i++) {
             int received = com->read(&data, sizeof(data));
@@ -248,6 +254,16 @@ int tcp_test()
     return stat.tx_bytes + stat.rx_bytes;
 }
 
+
+void generate_nic_interrupt()
+{
+    // cout << "gnicint" << endl;
+    ASM("int $42");
+}
+
+
+#include <network.h>
+
 int main()
 {
     Network::init();
@@ -258,11 +274,16 @@ int main()
     cout << "  IP::Header => " << sizeof(IP::Header) << endl;
     cout << "  UDP::Header => " << sizeof(UDP::Header) << endl;
 
-    icmp_test();
-    Alarm::delay(2000000);
-    udp_test();
-    Alarm::delay(2000000);
+    Function_Handler handler(&generate_nic_interrupt);
+    Alarm alarm(1000000, &handler, Alarm::INFINITE);
+
+    // icmp_test();
+    // Alarm::delay(2000000);
+    // udp_test();
+    // Alarm::delay(2000000);
     tcp_test();
+
+    while(true);
 
     return 0;
 }

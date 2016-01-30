@@ -24,16 +24,16 @@ class Alarm
 
 private:
     typedef TSC::Hertz Hertz;
-    typedef Timer::Tick Tick;  
+    typedef Timer::Tick Tick;
 
     typedef Relative_Queue<Alarm, Tick> Queue;
 
 public:
     typedef RTC::Microsecond Microsecond;
-    
+
     // Infinite times (for alarms)
     enum { INFINITE = RTC::INFINITE };
-    
+
 public:
     Alarm(const Microsecond & time, Handler * handler, int times = 1);
     ~Alarm();
@@ -61,7 +61,7 @@ private:
 private:
     Tick _ticks;
     Handler * _handler;
-    int _times; 
+    int _times;
     Queue::Element _link;
 
     static Alarm_Timer * _timer;
@@ -85,12 +85,12 @@ private:
 
 // The following Scheduling Criteria depend on Alarm, which is not yet available at scheduler.h
 namespace Scheduling_Criteria {
-    inline FCFS::FCFS(int p):
-        Priority((p == IDLE) ? IDLE : Alarm::_elapsed) {}
+    inline FCFS::FCFS(int p): Priority((p == IDLE) ? IDLE : Alarm::_elapsed) {}
 
-
-    inline EDF::EDF(const Microsecond & d, const Microsecond & p, const Microsecond & c, int cpu):
-        RT_Common(Alarm::ticks(d), Alarm::ticks(d), p, c) {}
+    inline EDF::EDF(const Microsecond & d, const Microsecond & p, const Microsecond & c, int): RT_Common(Alarm::ticks(d), Alarm::ticks(d), p, c)
+    {
+        db<Alarm>(TRC) << "EDF::EDF d = " << d << ", p = " << p << ", c = " << c << ", ticks(d) = " << Alarm::ticks(d) << endl;
+    }
 
     inline void EDF::update() {
         if((_priority > PERIODIC) && (_priority < APERIODIC))

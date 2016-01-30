@@ -190,7 +190,7 @@ private:
     class Fragmented
     {
         friend class IP;
-    
+
     private:
         static const unsigned int MAX_FRAGMENTS = (MTU + MFS - 1) / MFS; // 45 for Ethernet
         typedef Reassembling::Element Element;
@@ -325,6 +325,9 @@ private:
     };
 
 
+public:
+    static const unsigned int HEADERS_SIZE = sizeof(Header);
+
 protected:
     template<unsigned int UNIT = 0>
     IP(unsigned int nic = UNIT);
@@ -342,6 +345,8 @@ public:
     NIC * nic() { return &_nic; }
     ARP<NIC, IP> * arp() { return &_arp; }
     Router * router() { return &_router; }
+
+    Address * address_prt() { return &_address; }
 
     const Address & address() const { return _address; }
     const Address & broadcast() const { return _broadcast; }

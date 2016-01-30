@@ -30,10 +30,11 @@ protected:
     void wakeup() { Thread::wakeup(&_queue); }
     void wakeup_all() { Thread::wakeup_all(&_queue); }
 
-private:
+protected:
     Queue _queue;
 };
 
 __END_SYS
 
 #endif
+

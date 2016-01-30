@@ -118,6 +118,13 @@ public:
         db<ARP>(TRC) << "ARP::ARP(nic=" << nic << ",net=" << net << ") => " << this << endl;
 
         _nic->attach(this, NIC::ARP);
+
+        /// FIXME adding mapping hardcoded
+        Mapping * map = new (SYSTEM) Mapping(PA("194.167.1.1"), 0);
+        map->update(HA("0:144:39:87:31:241")); // "0:90:27:57:1f:f1"
+        lock();
+        _table.insert(map->link());
+        unlock();
     }
 
     ~ARP() {
@@ -169,6 +176,10 @@ public:
         if(el)
             ha = el->object()->ha();
         else {
+            db<ARP>(ERR) << "ARP resolution not implemented" << endl;
+            /// TODO FIX the implementation of ARP resolution.
+#if 0
+            /// NOTE: Semaphore p() cannot be used here since this can execute in the context of a interrupt
             db<ARP>(TRC) << "sending requests" << endl;
 
             Semaphore sem(0);
@@ -197,6 +208,8 @@ public:
             unlock();
 
             db<ARP>(TRC) << "ARP::resolve(pa=" << pa << ") => ";
+
+#endif
         }
 
         // Even being declared volatile, "ha" gets messed up and a PF occurs without the memcpy
@@ -239,8 +252,17 @@ public:
         if((packet->op() == REQUEST) && (packet->tpa() == _net->address())) {
 
             Packet reply(REPLY, _nic->address(), _net->address(), packet->sha(), packet->spa());
-            db<ARP>(TRC) << "ARP::update: replying query for " << packet->tpa() << " with " << reply << endl;
-            _nic->send(packet->sha(), NIC::ARP, &reply, sizeof(Packet));
+            db<ARP>(WRN) << "ARP::update: replying query for " << packet->tpa() << " with " << reply << endl;
+            /// original, using old API:
+            // _nic->send(packet->sha(), NIC::ARP, &reply, sizeof(Packet)); // (const Address & dst, const Protocol & prot, const void * data, unsigned int size)
+            /// new, using new API:
+            typename NIC::Buffer * b = _nic->alloc(_nic, packet->sha(), NIC::ARP, 0, 0, sizeof(Packet)); // NIC * nic, const Address & dst, const Protocol & prot, unsigned int once, unsigned int always, unsigned int payload
+            typename Ethernet::Frame * frame = b->frame();
+            void * destination_data = frame->data<void>();
+            memcpy(destination_data, &reply, sizeof(Packet));
+            _nic->send(b);
+            _nic->free(b);
+            /// ----
 
         } else if((packet->op() == REPLY) && (packet->tha() == _nic->address())) {
 

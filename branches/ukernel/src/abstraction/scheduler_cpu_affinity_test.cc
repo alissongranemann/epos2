@@ -11,7 +11,7 @@ using namespace EPOS;
 
 const int iterations = 10;
 
-Semaphore sem_display;
+Semaphore table;
 
 Thread * phil[5];
 Semaphore * chopstick[5];
@@ -20,50 +20,60 @@ OStream cout;
 
 int philosopher(int n, int l, int c)
 {
-
     int first = (n < 4)? n : 0;
     int second = (n < 4)? n + 1 : 4;
 
     for(int i = iterations; i > 0; i--) {
 
-        sem_display.p();
+        table.p();
         Display::position(l, c);
- 	cout << "thinking[" << Machine::cpu_id() << "]";
-        sem_display.v();
+        cout << "thinking[" << Machine::cpu_id() << "]";
+        table.v();
 
         Delay thinking(100000);
 
-        chopstick[first]->p();   // get first chopstick
-        chopstick[second]->p();   // get second chopstick
+        table.p();
+        Display::position(l, c);
+        cout << "  hungry[" << Machine::cpu_id() << "]";
+        table.v();
 
-        sem_display.p();
+        chopstick[first]->p();   // get first chopstick
+        chopstick[second]->p();  // get second chopstick
+
+        table.p();
         Display::position(l, c);
         cout << " eating[" << Machine::cpu_id() << "] ";
-        sem_display.v();
+        table.v();
 
         Delay eating(500000);
 
+        table.p();
+        Display::position(l, c);
+        cout << "    sate[" << Machine::cpu_id() << "]";
+        table.v();
+
         chopstick[first]->v();   // release first chopstick
-        chopstick[second]->v();   // release second chopstick
+        chopstick[second]->v();  // release second chopstick
     }
 
-    sem_display.p();
+    table.p();
     Display::position(l, c);
     cout << "  done[" << Machine::cpu_id() << "]  ";
-    sem_display.v();
+    table.v();
 
-    return(iterations);
+    return iterations;
 }
 
 int main()
 {
-    sem_display.p();
+    table.p();
     Display::clear();
+    Display::position(0, 0);
     cout << "The Philosopher's Dinner:" << endl;
 
     for(int i = 0; i < 5; i++)
         chopstick[i] = new Semaphore;
-        
+
     phil[0] = new Thread(&philosopher, 0,  5, 30);
     phil[1] = new Thread(&philosopher, 1, 10, 44);
     phil[2] = new Thread(&philosopher, 2, 16, 39);
@@ -71,8 +81,7 @@ int main()
     phil[4] = new Thread(&philosopher, 4, 10, 17);
 
     cout << "Philosophers are alive and hungry!" << endl;
-        
-    cout << "The dinner is served ..." << endl;
+
     Display::position(7, 44);
     cout << '/';
     Display::position(13, 44);
@@ -83,15 +92,17 @@ int main()
     cout << '/';
     Display::position(7, 27);
     cout << '\\';
-    sem_display.v();
+    Display::position(19, 0);
 
+    cout << "The dinner is served ..." << endl;
+    table.v();
 
     for(int i = 0; i < 5; i++) {
         int ret = phil[i]->join();
-        sem_display.p();
+        table.p();
         Display::position(20 + i, 0);
         cout << "Philosopher " << i << " ate " << ret << " times " << endl;
-        sem_display.v();
+        table.v();
     }
 
     for(int i = 0; i < 5; i++)

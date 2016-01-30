@@ -25,6 +25,12 @@ struct IF_INT<false, Then, Else>
 { enum { Result = Else }; };
 
 
+// Static Assertion
+template<bool condition>
+struct ASSERT
+{ static const typename IF<(! condition), void, int>::Result assertion_error = 3; };
+
+
 // SWITCH-CASE of Types
 const int DEFAULT = ~(~0u >> 1); // Initialize with the smallest int
 

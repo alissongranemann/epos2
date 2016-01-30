@@ -1,9 +1,9 @@
 /*=======================================================================*/
 /* MKBI.C                                                                */
 /*                                                                       */
-/* Desc: Tool to generate an EPOS bootable image.			 */
+/* Desc: Tool to generate an EPOS bootable image.            */
 /*                                                                       */
-/* Parm: <boot image> <os image> <app1> <app2> ...	                 */
+/* Parm: <boot image> <os image> <app1> <app2> ...                   */
 /*                                                                       */
 /* Auth: Guto - Changed By Fauze                                         */
 /*=======================================================================*/
@@ -28,19 +28,20 @@ static const char CFG_FILE[] = "etc/eposmkbi.conf";
 // Target Machine Description
 struct Configuration
 {
-    char	  mode[16];
+    char      mode[16];
     char          mach[16];
     char          mmod[16];
-    char 	  arch[16];
+    char      arch[16];
     unsigned int  clock;
     unsigned char word_size;
-    bool 	  endianess; // true => little, false => big
+    bool      endianess; // true => little, false => big
     unsigned int  mem_base;
     unsigned int  mem_top;
     unsigned int  boot_length_min;
     unsigned int  boot_length_max;
     short         node_id;   // node id in SAN (-1 => get from net)
     short         n_nodes;   // nodes in SAN (-1 => dynamic)
+    bool          no_loader;
 };
 
 // System_Info
@@ -72,19 +73,19 @@ int main(int argc, char **argv)
 {
     // Say hello
     printf("\nEPOS bootable image tool\n\n");
-        
+
     // Read configuration
     char file[256];
     sprintf(file, "%s/%s", argv[1], CFG_FILE);
     FILE * cfg_file = fopen(file, "rb");
-    if(!cfg_file) { 
-   	fprintf(stderr, "Error: can't read configuration file \"%s\"!\n", file);
-        return 1;    
-    } 
-    if(!parse_config(cfg_file, &CONFIG)) { 
-   	fprintf(stderr, "Error: invalid configuration file \"%s\"!\n", file);
-        return 1;    
-    } 
+    if(!cfg_file) {
+    fprintf(stderr, "Error: can't read configuration file \"%s\"!\n", file);
+        return 1;
+    }
+    if(!parse_config(cfg_file, &CONFIG)) {
+    fprintf(stderr, "Error: invalid configuration file \"%s\"!\n", file);
+        return 1;
+    }
 
     // Open destination file (rewrite)
     int fd_img = open(argv[2], O_WRONLY | O_CREAT | O_TRUNC, 00644);
@@ -92,20 +93,17 @@ int main(int argc, char **argv)
         fprintf(stderr, "Error: can't create boot image \"%s\"!\n", argv[2]);
         return 1;
     }
-    
+
     // Check ARGS
     if(argc < 3) {
-        fprintf(stderr, 
-        	"Usage: %s <options> <EPOS root> <boot image> <app1> <app2> ...\n", 
-        	argv[0]);
+        fprintf(stderr, "Usage: %s <options> <EPOS root> <boot image> <app1> <app2> ...\n", argv[0]);
         return 1;
     }
     if(!strcmp(CONFIG.mode, "library") && (argc > 4)) {
-        fprintf(stderr,
-        	"Error: library mode supports a single application!\n");
+        fprintf(stderr, "Error: library mode supports a single application!\n");
         return 1;
     }
-    
+
     // Show configuration
     printf("  EPOS mode: %s\n", CONFIG.mode);
     printf("  Machine: %s\n", CONFIG.mach);
@@ -119,9 +117,9 @@ int main(int argc, char **argv)
         printf("  Node id: %d\n", CONFIG.node_id);
 
     // Create the boot image
-    unsigned int image_size = 0; 
-    printf("\n  Creating EPOS bootable image in \"%s\":\n", argv[2]); 
-     
+    unsigned int image_size = 0;
+    printf("\n  Creating EPOS bootable image in \"%s\":\n", argv[2]);
+
     // Add BOOT
     if(CONFIG.boot_length_max > 0) {
         sprintf(file, "%s/img/%s_boot", argv[1], CONFIG.mach);
@@ -136,9 +134,9 @@ int main(int argc, char **argv)
                 image_size += pad(fd_img, 1);
         }
     }
-    unsigned int boot_size = image_size; 
+    unsigned int boot_size = image_size;
 
-    
+
     // Reserve space for System_Info if necessary
     System_Info si;
     bool need_si = true;
@@ -147,15 +145,14 @@ int main(int argc, char **argv)
     } else
         if(sizeof(System_Info) > MAX_SI_LEN) {
             printf(" failed!\n");
-            fprintf(stderr, "System_Info structure is too large (%d)!\n",
-        	    sizeof(System_Info));
+            fprintf(stderr, "System_Info structure is too large (%d)!\n", sizeof(System_Info));
             return 1;
-        } else	
+        } else
             image_size += pad(fd_img, MAX_SI_LEN);
 
     // Node ID
     si.bm.node_id = CONFIG.node_id;
-    
+
     // Add SETUP
     sprintf(file, "%s/img/%s_setup", argv[1], CONFIG.mach);
     if(file_exist(file)) {
@@ -185,18 +182,18 @@ int main(int argc, char **argv)
 
     // Add LOADER (if multiple applications) or the single application otherwise
     si.bm.application_offset = image_size - boot_size;
-    if(argc == 4) { // Add Single APP
+    if((argc == 4) && (strcmp(CONFIG.mode, "kernel") || CONFIG.no_loader)) { // Add Single APP
         printf("    Adding application \"%s\":", argv[3]);
         image_size += put_file(fd_img, argv[3]);
         si.bm.extras_offset = -1;
     } else { // Add LOADER
-        sprintf(file, "%s/img/%s_app", argv[1], CONFIG.mach);
+        sprintf(file, "%s/img/%s_loader", argv[1], CONFIG.mach);
         printf("    Adding loader \"%s\":", file);
         image_size += put_file(fd_img, file);
 
         // Add APPs
         si.bm.extras_offset = image_size - boot_size;
-        struct stat file_stat;    
+        struct stat file_stat;
         for(int i = 3; i < argc; i++) {
             printf("    Adding application \"%s\":", argv[i]);
             stat(argv[i], &file_stat);
@@ -220,7 +217,7 @@ int main(int argc, char **argv)
             return 1;
         }
         switch(CONFIG.word_size) {
-     	case  8: if(!add_boot_map<char>(fd_img, &si)) return 1; break;
+        case  8: if(!add_boot_map<char>(fd_img, &si)) return 1; break;
         case 16: if(!add_boot_map<short>(fd_img, &si)) return 1; break;
         case 32: if(!add_boot_map<long>(fd_img, &si)) return 1; break;
         case 64: if(!add_boot_map<long long>(fd_img, &si)) return 1; break;
@@ -228,26 +225,26 @@ int main(int argc, char **argv)
         }
         printf(" done.\n");
     }
-      
+
     // Adding ARCH specificities
     printf("\n  Adding specific boot features of \"%s\":", CONFIG.mach);
     if(!(add_machine_secrets(fd_img, image_size, CONFIG.mach, CONFIG.mmod))) {
         fprintf(stderr, "Error: specific features error!\n");
         return 1;
-    }    
+    }
     printf(" done.\n");
-    
-    //Finish   
-    close(fd_img);       
+
+    //Finish
+    close(fd_img);
     printf("\n  Image successfully generated (%d bytes)!\n\n", image_size);
-    
+
     return 0;
 }
 
 //=============================================================================
 // PARSE_CONFIG
 //=============================================================================
-bool parse_config(FILE * cfg_file, Configuration * cfg) 
+bool parse_config(FILE * cfg_file, Configuration * cfg)
 {
     char line[256];
     char * token;
@@ -259,7 +256,8 @@ bool parse_config(FILE * cfg_file, Configuration * cfg)
         fprintf(stderr, "Error: no valid MODE in configuration!\n");
         return false;
     }
-    strtolower(cfg->mode, token);						
+    strtolower(cfg->mode, token);
+
     // Arch
     fgets(line, 256, cfg_file);
     token = strtok(line, "=");
@@ -268,6 +266,7 @@ bool parse_config(FILE * cfg_file, Configuration * cfg)
         return false;
     }
     strtolower(cfg->arch, token);
+
     // Machine
     fgets(line, 256, cfg_file);
     token = strtok(line, "=");
@@ -275,7 +274,8 @@ bool parse_config(FILE * cfg_file, Configuration * cfg)
         fprintf(stderr, "Error: no valid MACH in configuration!\n");
         return false;
     }
-    strtolower(cfg->mach, token);	
+    strtolower(cfg->mach, token);
+
     // Model
     fgets(line, 256, cfg_file);
     token = strtok(line, "=");
@@ -283,7 +283,7 @@ bool parse_config(FILE * cfg_file, Configuration * cfg)
         fprintf(stderr, "Error: no valid MMOD in configuration!\n");
         return false;
     }
-    strtolower(cfg->mmod, token);	
+    strtolower(cfg->mmod, token);
 
     // Clock
     fgets(line, 256, cfg_file);
@@ -292,7 +292,7 @@ bool parse_config(FILE * cfg_file, Configuration * cfg)
         fprintf(stderr, "Error: no valid CLOCK in configuration!\n");
         return false;
     }
-    cfg->clock = atoi(token);	
+    cfg->clock = atoi(token);
 
     // Word Size
     fgets(line, 256, cfg_file);
@@ -346,6 +346,19 @@ bool parse_config(FILE * cfg_file, Configuration * cfg)
     else
         cfg->boot_length_max=0;
 
+    // Whether uses an application loader while in KERNEL mode
+    fgets(line, 256, cfg_file);
+    token = strtok(line, "=");
+    if(!strcmp(token, "NO_LOADER") && (token = strtok(NULL, "\n"))) {
+        if(strcmp(token, "true") == 0)
+            cfg->no_loader = true;
+        else
+            cfg->no_loader = false;
+    }
+    else {
+        cfg->no_loader = false;
+    }
+
     // Node Id
     fgets(line, 256, cfg_file);
     token = strtok(line, "=");
@@ -381,7 +394,7 @@ template<typename T> bool add_boot_map(int fd, System_Info * si)
         return false;
     if(!put_number(fd, static_cast<T>(0)))
         return false;
-        
+
     if(!put_number(fd, si->bm.node_id))
         return false;
     if(!put_number(fd, si->bm.n_nodes))
@@ -397,9 +410,9 @@ template<typename T> bool add_boot_map(int fd, System_Info * si)
         return false;
     if(!put_number(fd, static_cast<T>(si->bm.application_offset)))
         return false;
-    if(!put_number(fd, static_cast<T>(si->bm.extras_offset))) 
+    if(!put_number(fd, static_cast<T>(si->bm.extras_offset)))
         return false;
-    
+
     return true;
 }
 
@@ -408,49 +421,49 @@ template<typename T> bool add_boot_map(int fd, System_Info * si)
 //=============================================================================
 bool add_machine_secrets(int fd, unsigned int i_size, char * mach, char *mmod)
 {
-    if (!strcmp(mach, "pc")) { //PC 
+    if (!strcmp(mach, "pc")) { //PC
         const unsigned int   floppy_size   = 1474560;
         const unsigned short count_offset  = 508;
-        const unsigned short master_offset = 510;		
-        const unsigned short boot_id	   = 0xaa55;
-        const unsigned short num_sect	   = ((i_size + 511) / 512);
+        const unsigned short master_offset = 510;
+        const unsigned short boot_id       = 0xaa55;
+        const unsigned short num_sect      = ((i_size + 511) / 512);
 
         // Pad the image to the size of a standard floppy
         if(lseek(fd, 0, SEEK_END) < 0) {
             fprintf(stderr, "Error: can't seek the boot image!\n");
             return false;
-        }				
-        pad(fd, (floppy_size  - i_size));		
-        		
+        }
+        pad(fd, (floppy_size  - i_size));
+
         // Write the number of sectors to be read
         if(lseek(fd, count_offset, SEEK_SET) < 0) {
             fprintf(stderr, "Error: can't seek the boot image!\n");
             return false;
         }
         put_number(fd,num_sect);
-        	
+
         // Write master boot id
         if(lseek(fd, master_offset, SEEK_SET) < 0) {
             fprintf(stderr, "Error: can't seek the boot image!\n");
             return false;
         }
         put_number(fd, boot_id);
-    } else if (!strcmp(mach, "rcx")) { // RCX	
+    } else if (!strcmp(mach, "rcx")) { // RCX
         char key_string[] = "Do you byte, when I knock?";
         const unsigned short key_offset = 128 - (strlen(key_string) + 1);
-        	
+
         // Write key string to unlock epos
         if(lseek(fd,key_offset,SEEK_SET) < 0) {
             fprintf(stderr, "Error: can't seek the boot image!\n");
             return false;
-        }		
-        put_buf(fd, key_string, (strlen(key_string)+1));		
+        }
+        put_buf(fd, key_string, (strlen(key_string)+1));
     }
     else if (!strcmp(mmod, "emote3")) { // EPOSMoteIII
         //Customer Configuration Area (CCA)
         char key_string[] = ":020000040027D3\r\n:0CFFD400FFFFFFEF000000000000200015\r\n:00000001FF\r\n";
         const int key_offset = -strlen(":00000001FF\r\n");
- 
+
         // Write key string to unlock epos
         if(lseek(fd,key_offset,SEEK_END) < 0) {
             fprintf(stderr, "Error: can't seek the boot image!\n");
@@ -509,19 +522,19 @@ int put_file(int fd_out, char * file)
 
     if(read(fd_in, buffer, stat.st_size) < 0) {
         printf(" failed! (read)\n");
-        free(buffer);    
+        free(buffer);
         return 0;
     }
 
     if(write(fd_out, buffer, stat.st_size) < 0) {
         printf(" failed! (write)\n");
-        free(buffer);    
+        free(buffer);
         return 0;
     }
 
-    free(buffer);    
-    close(fd_in);  
-    
+    free(buffer);
+    close(fd_in);
+
     printf(" done.\n");
 
     return stat.st_size;
@@ -548,7 +561,7 @@ int put_buf(int fd, void * buf, int size)
 template<typename T> int put_number(int fd, T num)
 {
     if((CONFIG.endianess != lil_endian()) && (sizeof(T) > 1))
-    	invert(num);
+        invert(num);
     if(write(fd, &num, sizeof(T)) < 0) {
         fprintf(stderr, "Error: can't wirte to file!\n");
         return 0;
@@ -576,7 +589,7 @@ int pad(int fd, int size)
         return 0;
     }
 
-    free(buffer);    
+    free(buffer);
     return size;
 }
 
@@ -587,7 +600,7 @@ void strtolower(char* dst, const char* src) {
     int i = 0;
     strcpy(dst,src);
     while(src[i] != '\0') {
-        dst[i] = tolower(dst[i]);		
+        dst[i] = tolower(dst[i]);
         i++;
     }
 }
@@ -604,7 +617,7 @@ bool lil_endian() {
 // INVERT
 //=============================================================================
 template<typename T> void invert(T & n)
-{ 	
+{
     for(int i = 0, j = sizeof(T) - 1; i < (int)sizeof(T) / 2; i++, j--) {
         char * h = &(((char *)&n)[i]);
         char * l = &(((char *)&n)[j]);
@@ -613,4 +626,3 @@ template<typename T> void invert(T & n)
         *h ^= *l;
     }
 }
-

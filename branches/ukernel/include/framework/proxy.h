@@ -6,6 +6,7 @@
 #define __proxy_h
 
 #include "message.h"
+#include "ipc.h"
 
 __BEGIN_SYS
 
@@ -58,10 +59,13 @@ public:
     static Proxy<Component> * self() { return new (reinterpret_cast<void *>(static_invoke(SELF))) Proxied<Component>; }
 
     // Process management
-    void suspend() { invoke(THREAD_SUSPEND); }
-    void resume() { invoke(THREAD_RESUME); }
+    int state() { return invoke(THREAD_STATE); }
+    int priority() { return invoke(THREAD_PRIORITY); }
+    void priority(int p) { invoke(THREAD_PRIORITY1, p); }
     int join() { return invoke(THREAD_JOIN); }
     int pass() { return invoke(THREAD_PASS); }
+    void suspend() { invoke(THREAD_SUSPEND); }
+    void resume() { invoke(THREAD_RESUME); }
     static int yield() { return static_invoke(THREAD_YIELD); }
     static void exit(int r) { static_invoke(THREAD_EXIT, r); }
     static volatile bool wait_next() { return static_invoke(THREAD_WAIT_NEXT); }
@@ -71,6 +75,8 @@ public:
     Proxy<Segment> * data_segment() { return new (reinterpret_cast<Adapter<Segment> *>(invoke(TASK_DATA_SEGMENT))) Proxied<Segment>; }
     CPU::Log_Addr code() { return invoke(TASK_CODE); }
     CPU::Log_Addr data() { return invoke(TASK_DATA); }
+    Proxy<Thread> * main() { return new (reinterpret_cast<Adapter<Thread> *>(invoke(TASK_MAIN))) Proxied<Thread>; }
+    void main(Proxy<Thread> * thread) { invoke(TASK_SET_MAIN, thread->id().unit()); }
 
     // Memory management
     CPU::Phy_Addr pd() { return invoke(ADDRESS_SPACE_PD); }
@@ -98,32 +104,55 @@ public:
     static void delay(T t) { static_invoke(ALARM_DELAY, t); }
 
     // Communication
-    template<typename T1, typename T2, typename T3>
-    int send(T1 a1, T2 a2, T3 a3) { return invoke(SELF, a1, a2, a3); }
-    template<typename T1, typename T2, typename T3>
-    int receive(T1 a1, T2 a2, T3 a3) { return invoke(SELF, a1, a2, a3); }
-
-    // ELF
-    int segments() { return invoke(ELF_SEGMENTS); }
-    int load_segment(int i, unsigned long dst_addr) { return invoke(ELF_LOAD_SEGMENT, i, dst_addr); }
-    unsigned long segment_address(int i) { return invoke(ELF_SEGMENT_ADDRESS, i); }
-    int segment_size(int i) { return invoke(ELF_SEGMENT_SIZE, i); }
-    unsigned long entry() { return invoke(ELF_ENTRY); }
-
-    // Boot_Image
-    Proxy<ELF> * next_extra_elf() { return new (reinterpret_cast<Adapter<ELF> *>(invoke(BOOT_IMAGE_ELF))) Proxied<ELF>; }
-
-public:
     template<typename ... Tn>
-    static int static_invoke(const Method & m, const Tn & ... an) {
-        Message msg(Id(Type<Component>::ID, 0)); // avoid calling ~Proxy()
-        Result res = msg.act(m, an ...);
-        return (m == SELF) ? msg.id().unit() : res;
+    int send(Tn ... an) { return invoke(COMMUNICATOR_SEND, an ...); }
+    template<typename ... Tn>
+    int receive(Tn ... an) { return invoke(COMMUNICATOR_RECEIVE, an ...); }
+
+    template<typename ... Tn>
+    int read(Tn ... an) { return receive(an ...); }
+    template<typename ... Tn>
+    int write(Tn ... an) { return send(an ...); }
+
+    // Network
+    static void init_network() { static_invoke(NETWORK_INIT); }
+
+    // NIC
+    Proxy<NIC::Statistics> * statistics() { return new (reinterpret_cast<Adapter<NIC::Statistics> *>(invoke(NIC_STATISTICS))) Proxied<NIC::Statistics>; }
+
+    // IP
+    Proxy<NIC> * nic() { return new (reinterpret_cast<Adapter<NIC> *>(invoke(IP_NIC))) Proxied<NIC>; }
+    Proxy<IP::Address> * address() { return new (reinterpret_cast<Adapter<IP::Address> *>(invoke(IP_ADDRESS))) Proxied<IP::Address>; }
+    static Proxy<IP> * get_by_nic(unsigned int unit) { return new (reinterpret_cast<Adapter<IP> *>(static_invoke(IP_GET_BY_NIC, unit))) Proxied<IP>; }
+
+    // Machine
+    static void smp_barrier() { static_invoke(MACHINE_SMP_BARRIER); }
+    static unsigned int cpu_id() { return static_invoke(MACHINE_CPU_ID); }
+
+    // This_Thread
+    static unsigned int this_thread_id() { return static_invoke(THIS_THREAD_ID_ID); }
+
+    // CPU
+    static void int_enable() { static_invoke(CPU_INT_ENABLE); }
+    static void int_disable() { static_invoke(CPU_INT_DISABLE); }
+
+ private:
+    template<typename ... Tn>
+    Result invoke(const Method & m, const Tn & ... an) {
+        method(m);
+        out(an ...);
+        act();
+        return result();
     }
 
-private:
     template<typename ... Tn>
-    int invoke(const Method & m, const Tn & ... an) { return act(m, an ...); }
+    static Result static_invoke(const Method & m, const Tn & ... an) {
+        Message msg(Id(Type<Component>::ID, 0)); // avoid calling ~Proxy()
+        msg.method(m);
+        msg.out(an ...);
+        msg.act();
+        return (m == SELF) ? msg.id().unit() : msg.result();
+    }
 };
 
 __END_SYS

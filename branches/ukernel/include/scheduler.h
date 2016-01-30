@@ -33,12 +33,22 @@ namespace Scheduling_Criteria
         static const bool preemptive = true;
 
     public:
-        Priority(int p = NORMAL): _priority(p) {}
+        Priority(int p = NORMAL): _priority(p)
+        {
+            db<void>(TRC) << "Priority::Priority priority = " << p << endl;
+        }
 
         operator const volatile int() const volatile { return _priority; }
 
         void update() {}
         unsigned int queue() const { return 0; }
+
+        friend Debug & operator<<(Debug & db, const Priority & crit)
+        {
+            db << "priority = " << crit._priority << endl;
+
+            return db;
+        }
 
     protected:
         volatile int _priority;
@@ -93,9 +103,30 @@ namespace Scheduling_Criteria
     public:
         const volatile unsigned int & queue() const volatile { return _queue; }
 
+
+        friend Debug & operator<<(Debug & db, const Variable_Queue & crit)
+        {
+            db << "queue = " << crit._queue << endl;
+            // db << "next_queue = " << crit._next_queue << endl;
+
+            return db;
+        }
+
     protected:
         volatile unsigned int _queue;
         static volatile unsigned int _next_queue;
+    };
+
+    // Global Round-Robin
+    class GRR: public RR
+    {
+    public:
+        static const unsigned int HEADS = Traits<Machine>::CPUS;
+
+    public:
+        GRR(int p = NORMAL): RR(p) {}
+
+        static unsigned int current_head() { return Machine::cpu_id(); }
     };
 
     // CPU Affinity
@@ -141,8 +172,25 @@ namespace Scheduling_Criteria
 
     protected:
         RT_Common(int p): Priority(p), _deadline(0), _period(0), _capacity(0) {} // Aperiodic
+
         RT_Common(int i, const Microsecond & d, const Microsecond & p, const Microsecond & c)
-        : Priority(i), _deadline(d), _period(p), _capacity(c) {}
+        : Priority(i), _deadline(d), _period(p), _capacity(c)
+        {
+            db<void>(TRC) << "RT_Common::RT_Common i = " << i << ", d = " << d << ", p = " << p << ", c = " << c << endl;
+        }
+
+    public:
+        friend Debug & operator<<(Debug & db, const RT_Common & crit)
+        {
+            db << "RT_Common = {" << endl;
+            db << "priority = " << crit._priority << endl;
+            db << "deadline = " << crit._deadline << endl;
+            db << "period = " << crit._period << endl;
+            db << "capacity = " << crit._capacity << endl;
+            db << "}" << endl;
+
+            return db;
+        }
 
     public:
         Microsecond _deadline;
@@ -165,97 +213,118 @@ namespace Scheduling_Criteria
     };
 
      // Deadline Monotonic
-     class DM: public RT_Common
-     {
-     public:
-         static const bool timed = false;
-         static const bool dynamic = false;
-         static const bool preemptive = true;
+    class DM: public RT_Common
+    {
+    public:
+        static const bool timed = false;
+        static const bool dynamic = false;
+        static const bool preemptive = true;
 
-     public:
-         DM(int p = APERIODIC): RT_Common(p) {}
-         DM(const Microsecond & d, const Microsecond & p = SAME, const Microsecond & c = UNKNOWN, int cpu = ANY)
-         : RT_Common(d, d, p, c) {}
-     };
+    public:
+        DM(int p = APERIODIC): RT_Common(p) {}
+        DM(const Microsecond & d, const Microsecond & p = SAME, const Microsecond & c = UNKNOWN, int cpu = ANY)
+        : RT_Common(d, d, p, c) {}
+    };
 
-      // Earliest Deadline First
-      class EDF: public RT_Common
-      {
-      public:
-          static const bool timed = false;
-          static const bool dynamic = true;
-          static const bool preemptive = true;
+    // Earliest Deadline First
+    class EDF: public RT_Common
+    {
+    public:
+        static const bool timed = false;
+        static const bool dynamic = true;
+        static const bool preemptive = true;
 
-      public:
-          EDF(int p = APERIODIC): RT_Common(p) {}
-          EDF(const Microsecond & d, const Microsecond & p = SAME, const Microsecond & c = UNKNOWN, int cpu = ANY); // Defined at Alarm
+    public:
+        EDF(int p = APERIODIC): RT_Common(p) {}
+        EDF(const Microsecond & d, const Microsecond & p = SAME, const Microsecond & c = UNKNOWN, int cpu = ANY); // Defined at Alarm
 
-          void update(); // Defined at Alarm
-      };
-      
-      // Global Earliest Deadline First (multicore)
-      class GEDF: public EDF
-      {
-      public:
-          static const unsigned int HEADS = Traits<Machine>::CPUS;
+        void update(); // Defined at Alarm
+    };
 
-      public:
-          GEDF(int p = APERIODIC): EDF(p) {}
-          GEDF(const Microsecond & d, const Microsecond & p = SAME, const Microsecond & c = UNKNOWN, int cpu = ANY)
-          : EDF(d, p, c, cpu) {}
+    // Global Earliest Deadline First (multicore)
+    class GEDF: public EDF
+    {
+    public:
+        static const unsigned int HEADS = Traits<Machine>::CPUS;
 
-          static unsigned int queue() { return current_head(); }
-          static unsigned int current_head() { return Machine::cpu_id(); }
-      };
+    public:
+        GEDF(int p = APERIODIC): EDF(p) {}
+        GEDF(const Microsecond & d, const Microsecond & p = SAME, const Microsecond & c = UNKNOWN, int cpu = ANY)
+        : EDF(d, p, c, cpu) {}
 
-      // Partitioned Earliest Deadline First (multicore)
-      class PEDF: public EDF, public Variable_Queue
-      {
-          enum { ANY = Variable_Queue::ANY };
+        static unsigned int queue() { return current_head(); }
+        static unsigned int current_head() { return Machine::cpu_id(); }
+    };
 
-      public:
-          static const unsigned int QUEUES = Traits<Machine>::CPUS;
+    // Partitioned Earliest Deadline First (multicore)
+    class PEDF: public EDF, public Variable_Queue
+    {
+        enum { ANY = Variable_Queue::ANY };
 
-      public:
-          PEDF(int p = APERIODIC)
-          : EDF(p), Variable_Queue(((_priority == IDLE) || (_priority == MAIN)) ? Machine::cpu_id() : 0) {}
+    public:
+        static const unsigned int QUEUES = Traits<Machine>::CPUS;
 
-          PEDF(const Microsecond & d, const Microsecond & p = SAME, const Microsecond & c = UNKNOWN, int cpu = ANY)
-          : EDF(d, p, c, cpu), Variable_Queue((cpu != ANY) ? cpu : ++_next_queue %= Machine::n_cpus()) {}
+    public:
+        PEDF(int p = APERIODIC)
+        : EDF(p), Variable_Queue(((_priority == IDLE) || (_priority == MAIN)) ? Machine::cpu_id() : 0) {}
 
-          using Variable_Queue::queue;
+        PEDF(const Microsecond & d, const Microsecond & p = SAME, const Microsecond & c = UNKNOWN, int cpu = ANY)
+        : EDF(d, p, c, cpu), Variable_Queue((cpu != ANY) ? cpu : ++_next_queue %= Machine::n_cpus())
+        {
+            db<void>(TRC) << "PEDF::PEDF d = " << d << ", p = " << p << ", c = " << c << ", cpu = " << cpu << endl;
+        }
 
-          static unsigned int current_queue() { return Machine::cpu_id(); }
-      };
+        using Variable_Queue::queue;
 
-      // Clustered Earliest Deadline First (multicore)
-      class CEDF: public EDF, public Variable_Queue
-      {
-          enum { ANY = Variable_Queue::ANY };
+        static unsigned int current_queue() { return Machine::cpu_id(); }
 
-      public:
-          // QUEUES x HEADS must be equal to Traits<Machine>::CPUS
-          static const unsigned int HEADS = 2;
-          static const unsigned int QUEUES = Traits<Machine>::CPUS / HEADS;
+        friend Debug & operator<<(Debug & db, const PEDF & crit)
+        {
+            db << "PEDF = {" << endl;
+            db << "priority = " << crit._priority << endl;
+            db << "deadline = " << crit._deadline << endl;
+            db << "period = " << crit._period << endl;
+            db << "capacity = " << crit._capacity << endl;
+            db << "queue = " << crit._queue << endl;
+            db << "}" << endl;
 
-      public:
-          CEDF(int p = APERIODIC)
-          : EDF(p), Variable_Queue(((_priority == IDLE) || (_priority == MAIN)) ? current_queue() : 0) {} // Aperiodic
+            return db;
+        }
 
-          CEDF(const Microsecond & d, const Microsecond & p = SAME, const Microsecond & c = UNKNOWN, int cpu = ANY)
-          : EDF(d, p, c, cpu), Variable_Queue((cpu != ANY) ? cpu / HEADS : ++_next_queue %= Machine::n_cpus() / HEADS) {}
+    };
 
-          using Variable_Queue::queue;
+    // Clustered Earliest Deadline First (multicore)
+    class CEDF: public EDF, public Variable_Queue
+    {
+        enum { ANY = Variable_Queue::ANY };
 
-          static unsigned int current_queue() { return Machine::cpu_id() / HEADS; }
-          static unsigned int current_head() { return Machine::cpu_id() % HEADS; }
-      };
+    public:
+        // QUEUES x HEADS must be equal to Traits<Machine>::CPUS
+        static const unsigned int HEADS = 2;
+        static const unsigned int QUEUES = Traits<Machine>::CPUS / HEADS;
+
+    public:
+        CEDF(int p = APERIODIC)
+        : EDF(p), Variable_Queue(((_priority == IDLE) || (_priority == MAIN)) ? current_queue() : 0) {} // Aperiodic
+
+        CEDF(const Microsecond & d, const Microsecond & p = SAME, const Microsecond & c = UNKNOWN, int cpu = ANY)
+        : EDF(d, p, c, cpu), Variable_Queue((cpu != ANY) ? cpu / HEADS : ++_next_queue %= Machine::n_cpus() / HEADS) {}
+
+        using Variable_Queue::queue;
+
+        static unsigned int current_queue() { return Machine::cpu_id() / HEADS; }
+        static unsigned int current_head() { return Machine::cpu_id() % HEADS; }
+    };
 }
 
 
 // Scheduling_Queue
 template<typename T, typename R = typename T::Criterion>
 class Scheduling_Queue: public Scheduling_List<T> {};
+
+template<typename T>
+class Scheduling_Queue<T, Scheduling_Criteria::GRR>:
+public Multihead_Scheduling_List<T> {};
 
 template<typename T>
 class Scheduling_Queue<T, Scheduling_Criteria::CPU_Affinity>:
@@ -296,13 +365,13 @@ public:
 
     unsigned int schedulables() { return Base::size(); }
 
-    T * volatile chosen() { 
-    	// If called before insert(), chosen will dereference a null pointer!
-    	// For threads, we this won't happen (see Thread::init()).
-    	// But if you are unsure about your new use of the scheduler,
-    	// please, pay the price of the extra "if" bellow.
-//    	return const_cast<T * volatile>((Base::chosen()) ? Base::chosen()->object() : 0);
-    	return const_cast<T * volatile>(Base::chosen()->object());
+    T * volatile chosen() {
+        // If called before insert(), chosen will dereference a null pointer!
+        // For threads, we this won't happen (see Thread::init()).
+        // But if you are unsure about your new use of the scheduler,
+        // please, pay the price of the extra "if" bellow.
+        return const_cast<T * volatile>((Base::chosen()) ? Base::chosen()->object() : 0);
+        // return const_cast<T * volatile>(Base::chosen()->object());
     }
 
     void insert(T * obj) {
@@ -332,7 +401,7 @@ public:
     T * choose() {
         db<Scheduler>(TRC) << "Scheduler[chosen=" << chosen() << "]::choose() => ";
 
-        T * obj = Base::choose()->object();
+        T * obj = Base::chosen() ? Base::choose()->object() : 0;
 
         db<Scheduler>(TRC) << obj << endl;
 

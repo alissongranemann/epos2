@@ -23,15 +23,13 @@ public:
 
 
 // An event handler that triggers a condition variable (see handler.h)
-class Condition_Handler: public Dual_Handler
+class Condition_Handler: public Handler
 {
 public:
     Condition_Handler(Condition * h) : _handler(h) {}
     ~Condition_Handler() {}
 
     void operator()() { _handler->signal(); }
-
-    void dual() { _handler->wait(); }
 
 private:
     Condition * _handler;

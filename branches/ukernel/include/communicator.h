@@ -3,29 +3,32 @@
 #ifndef __communicator_h
 #define __communicator_h
 
-#include <network.h>
-#include <udp.h>
-#include <tcp.h>
+#include <channel.h>
 
 __BEGIN_SYS 
 
 // Commonalities for connectionless channels
-template<typename Channel, typename Network, bool connectionless = Channel::connectionless>
-class Communicator_Common: protected Channel::Observer
+template<typename Channel, bool connectionless>
+class Communicator_Common: protected Channel::Observer, private Semaphore_Observer<typename Channel::Buffer, typename Channel::Address::Local>
 {
+private:
+    static const unsigned int HEADERS_SIZE = Channel::HEADERS_SIZE;
+
+    typedef typename Channel::Observer::Observing_Condition Observing_Condition;
+    typedef Semaphore_Observer<typename Channel::Buffer, typename Channel::Address::Local> Observer;
+
 public:
     // List to hold received Buffers
-    typedef NIC::Buffer Buffer;
-    typedef Buffer::List List;
-    typedef List::Element Element;
+    typedef typename Channel::Buffer Buffer;
+    typedef typename Buffer::List List;
+    typedef typename List::Element Element;
 
-    // Channel imports
+    // Addresses
     typedef typename Channel::Address Address;
     typedef typename Channel::Address::Local Local_Address;
-    typedef typename Channel::Observer::Observing_Condition Observing_Condition;
 
 protected:
-    Communicator_Common(const Local_Address & local): _local(local), _ready(0) {
+    Communicator_Common(const Local_Address & local): _local(local) {
         Channel::attach(this, local);
     }
 
@@ -34,6 +37,10 @@ public:
         Channel::detach(this, _local);
     }
 
+    template<typename Message>
+    int send(const Message & message) {
+        return Channel::send(_local, message);
+    }
     int send(const Address & to, const void * data, unsigned int size) {
         return Channel::send(_local, to, data, size);
     }
@@ -41,77 +48,72 @@ public:
         return Channel::send(from, to, data, size);
     }
 
+    template<typename Message>
+    int receive(const Message & message) {
+        Buffer * buf = updated();
+        return Channel::receive(buf, message);
+    }
     int receive(void * data, unsigned int size) {
-        _ready.p();
-        Element * el = _received.remove();
-        Buffer * buf = el->object();
-        delete el;
+        Buffer * buf = updated();
         return Channel::receive(buf, data, size);
     }
     int receive(Address * from, void * data, unsigned int size) {
-        _ready.p();
-        Element * el = _received.remove();
-        Buffer * buf = el->object();
-        delete el;
+        Buffer * buf = updated();
         return Channel::receive(buf, from, data, size);
     }
 
     int receive_all(void * data, unsigned int size) {
         int r = 0;
-        unsigned int headers = sizeof(IP::Header) + sizeof(TCP::Header);
         for(unsigned int received = 0, coppied = 0; received < size; received += coppied) {
-            _ready.p();
-            Element * e = _received.remove();
-            Buffer * head = e->object();
-            delete e;
-            r += Channel::receive(head, data + received, coppied = ((received + (head->size() - headers)) > size ? (size - received) : (head->size() - headers)));
+            Buffer * buf = updated();
+            r += Channel::receive(buf, data + received, coppied = ((received + (buf->size() - HEADERS_SIZE)) > size ? (size - received) : (buf->size() - HEADERS_SIZE)));
         }
-
         return r;
     }
     int receive_all(Address * from, void * data, unsigned int size) {
         int r = 0;
-        unsigned int headers = sizeof(IP::Header) + sizeof(TCP::Header);
         for(unsigned int received = 0, coppied = 0; received < size; received += coppied) {
-            _ready.p();
-            Element * e = _received.remove();
-            Buffer * head = e->object();
-            delete e;
-            r += Channel::receive(head, data + received, coppied = ((received + (head->size() - headers)) > size ? (size - received) : (head->size() - headers)));
+            Buffer * buf = updated();
+            r += Channel::receive(buf, data + received, coppied = ((received + (buf->size() - HEADERS_SIZE)) > size ? (size - received) : (buf->size() - HEADERS_SIZE)));
         }
-
         return r;
     }
 
-private:
-    void update(typename Channel::Observed * obs, Observing_Condition c, Buffer * buf) {
-        _received.insert(new (SYSTEM) Element(buf));
-        _ready.v();
+    template<typename Message>
+    int reply(const Message & message) {
+        return Channel::reply(_local, message);
     }
 
-protected:
+private:
+    void update(typename Channel::Observed * obs, Observing_Condition c, Buffer * buf) { Observer::update(c, buf); }
+    Buffer * updated() { return Observer::updated(); }
+
+private:
     Local_Address _local;
-    Semaphore _ready;
-    List _received;
 };
 
 // Commonalities for connection-oriented channels
-template<typename Channel, typename Network>
-class Communicator_Common<Channel, Network, false>: protected Channel::Observer
+template<typename Channel>
+class Communicator_Common<Channel, false>: protected Channel::Observer, private Semaphore_Observer<typename Channel::Buffer, typename Channel::Address::Local>
 {
+private:
+    static const unsigned int HEADERS_SIZE = Channel::HEADERS_SIZE;
+
+    typedef typename Channel::Observer::Observing_Condition Observing_Condition;
+    typedef Semaphore_Observer<typename Channel::Buffer, typename Channel::Address::Local> Observer;
+
 public:
     // List to hold received Buffers
-    typedef NIC::Buffer Buffer;
-    typedef Buffer::List List;
-    typedef List::Element Element;
+    typedef typename Channel::Buffer Buffer;
+    typedef typename Buffer::List List;
+    typedef typename List::Element Element;
 
-    // Channel imports
+    // Addresses
     typedef typename Channel::Address Address;
     typedef typename Channel::Address::Local Local_Address;
-    typedef typename Channel::Observer::Observing_Condition Observing_Condition;
 
 protected:
-    Communicator_Common(const Local_Address & local, const Address & peer): _local(local), _ready(0) {
+    Communicator_Common(const Local_Address & local, const Address & peer): _local(local) {
         _connection = Channel::attach(this, local, peer);
     }
 
@@ -125,10 +127,7 @@ public:
     }
 
     int receive_some(void * data, unsigned int size) {
-        _ready.p();
-        Element * el = _received.remove();
-        Buffer * buf = el->object();
-        delete el;
+        Buffer * buf = updated();
         return _connection->receive(buf, data, size);
     }
 
@@ -136,10 +135,7 @@ public:
         char * data = reinterpret_cast<char *>(d);
         unsigned int received = 0;
         do {
-            _ready.p();
-            Element * el = _received.remove();
-            Buffer * buf = el->object();
-            delete el;
+            Buffer * buf = updated();
             unsigned int segment_size = _connection->receive(buf, data, size);
             data += segment_size;
             received += segment_size;
@@ -150,39 +146,30 @@ public:
     int receive_all(void * d, unsigned int size) {
         char * data = reinterpret_cast<char *>(d);
         int r = 0;
-        unsigned int headers = sizeof(IP::Header) + sizeof(TCP::Header);
         for(unsigned int received = 0, coppied = 0; received < size; received += coppied) {
-            _ready.p();
-            Element * e = _received.remove();
-            Buffer * head = e->object();
-            delete e;
-            r += _connection->receive(head, data + received, coppied = ((received + (head->size() - headers)) > size ? (size - received) : (head->size() - headers)));
+            Buffer * buf = updated();
+            r += _connection->receive(buf, data + received, coppied = ((received + (buf->size() - HEADERS_SIZE)) > size ? (size - received) : (buf->size() - HEADERS_SIZE)));
         }
-
         return r;
     }
 
 private:
-    void update(typename Channel::Observed * obs, Observing_Condition c, Buffer * buf) {
-        _received.insert(new (SYSTEM) Element(buf));
-        _ready.v();
-    }
+    void update(typename Channel::Observed * obs, Observing_Condition c, Buffer * buf) { Observer::update(c, buf); }
+    Buffer * updated() { return Observer::updated(); }
 
 protected:
     Local_Address _local;
-    Semaphore _ready;
-    List _received;
 
     typename Channel::Connection * _connection;
 };
 
 
-// Link (point-to-point communicator) for connectionless channels
-template<typename Channel, typename Network = typename Channel::Network, bool connectionless = Channel::connectionless>
-class Link: public Communicator_Common<Channel, Network>
+// Link (point-to-point communicator) connectionless channels
+template<typename Channel, bool connectionless>
+class Link: public Communicator_Common<Channel, connectionless>
 {
 private:
-    typedef Communicator_Common<Channel, Network, connectionless> Base;
+    typedef Communicator_Common<Channel, connectionless> Base;
 
 public:
     // Channel imports
@@ -207,11 +194,11 @@ private:
 };
 
 // Link (point-to-point communicator) for connection-oriented channels
-template<typename Channel, typename Network>
-class Link<Channel, Network, false>: public Communicator_Common<Channel, Network>
+template<typename Channel>
+class Link<Channel, false>: public Communicator_Common<Channel, false>
 {
 private:
-    typedef Communicator_Common<Channel, Network, false> Base;
+    typedef Communicator_Common<Channel, false> Base;
 
 public:
     // Channel imports
@@ -237,11 +224,11 @@ private:
 
 
 // Port (1-to-N communicator) for connectionless channels
-template<typename Channel, typename Network = typename Channel::Network, bool connectionless = Channel::connectionless>
-class Port: public Communicator_Common<Channel, Network, connectionless>
+template<typename Channel, bool connectionless>
+class Port: public Communicator_Common<Channel, connectionless>
 {
 private:
-    typedef Communicator_Common<Channel, Network, connectionless> Base;
+    typedef Communicator_Common<Channel, connectionless> Base;
 
 public:
     // Channel imports
@@ -252,16 +239,24 @@ public:
     Port(const Local_Address & local): Base(local) {}
     ~Port() {}
 
+    template<typename Message>
+    int send(const Message & message) { return Base::send(message); }
     int send(const Address & to, const void * data, unsigned int size) { return Base::send(to, data, size); }
+
+    template<typename Message>
+    int receive(const Message & message) { return Base::receive(message); }
     int receive(Address * from, void * data, unsigned int size) { return Base::receive(from, data, size); }
+
+    template<typename Message>
+    int reply(const Message & message) { return Base::reply(message); }
 };
 
 // Port (1-to-N communicator) for connection-oriented channels
-template<typename Channel, typename Network>
-class Port<Channel, Network, false>: public Communicator_Common<Channel, Network>
+template<typename Channel>
+class Port<Channel, false>: public Communicator_Common<Channel, false>
 {
 private:
-    typedef Communicator_Common<Channel, Network, false> Base;
+    typedef Communicator_Common<Channel, false> Base;
 
 public:
     // Channel imports
@@ -272,8 +267,8 @@ public:
     Port(const Local_Address & local): Base(local) {}
     ~Port() {}
 
-    Link<Channel, Network> * listen() { return new Link<Channel, Network>(Channel::listen(this->_local)); }
-    Link<Channel, Network> * connect(const Address & to) { return new Link<Channel, Network>(Channel::connect(this->_local, to)); }
+    Link<Channel> * listen() { return new Link<Channel>(Channel::listen(this->_local)); }
+    Link<Channel> * connect(const Address & to) { return new Link<Channel>(Channel::connect(this->_local, to)); }
 };
 
 __END_SYS

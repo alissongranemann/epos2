@@ -12,7 +12,6 @@ struct Traits
     static const bool enabled = true;
     static const bool debugged = true;
     static const bool hysterically_debugged = false;
-    typedef TLIST<> ASPECTS;
 };
 
 template<> struct Traits<Build>
@@ -29,8 +28,8 @@ template<> struct Traits<Build>
     enum {Legacy};
     static const unsigned int MODEL = Legacy;
 
-    static const unsigned int CPUS = 8;
-    static const unsigned int NODES = 1; // > 1 => NETWORKING    
+    static const unsigned int CPUS = 4;
+    static const unsigned int NODES = 1; // > 1 => NETWORKING
 };
 
 
@@ -72,11 +71,19 @@ template<> struct Traits<Init>: public Traits<void>
 {
 };
 
+template<> struct Traits<Framework>: public Traits<void>
+{
+};
+
+template<> struct Traits<Aspect>: public Traits<void>
+{
+    static const bool debugged = hysterically_debugged;
+};
 
 // Mediators
 template<> struct Traits<Serial_Display>: public Traits<void>
 {
-    static const bool enabled = true;
+    static const bool enabled = false;
     static const int COLUMNS = 80;
     static const int LINES = 24;
     static const int TAB_SIZE = 8;
@@ -104,7 +111,7 @@ template<> struct Traits<System>: public Traits<void>
     static const unsigned int mode = Traits<Build>::MODE;
     static const bool multithread = (Traits<Application>::MAX_THREADS > 1);
     static const bool multitask = (mode != Traits<Build>::LIBRARY);
-    static const bool multicore = (Traits<Build>::CPUS > 1) && multithread;
+    static const bool multicore = true;
     static const bool multiheap = (mode != Traits<Build>::LIBRARY) || Traits<Scratchpad>::enabled;
 
     enum {FOREVER = 0, SECOND = 1, MINUTE = 60, HOUR = 3600, DAY = 86400, WEEK = 604800, MONTH = 2592000, YEAR = 31536000};
@@ -113,7 +120,7 @@ template<> struct Traits<System>: public Traits<void>
     static const bool reboot = true;
 
     static const unsigned int STACK_SIZE = Traits<Machine>::STACK_SIZE;
-    static const unsigned int HEAP_SIZE = (Traits<Application>::MAX_THREADS + 1) * Traits<Application>::STACK_SIZE;
+    static const unsigned int HEAP_SIZE = (Traits<Application>::MAX_THREADS + 4) * Traits<Application>::STACK_SIZE;
 };
 
 template<> struct Traits<Task>: public Traits<void>

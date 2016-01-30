@@ -166,10 +166,10 @@ public:
         NIC_Base(unsigned int unit = 0) {}
 
         virtual ~NIC_Base() {}
-    
+
         virtual int send(const Address & dst, const Protocol & prot, const void * data, unsigned int size) = 0;
         virtual int receive(Address * src, Protocol * prot, void * data, unsigned int size) = 0;
-    
+
         virtual Buffer * alloc(NIC * nic, const Address & dst, const Protocol & prot, unsigned int once, unsigned int always, unsigned int payload) = 0;
         virtual int send(Buffer * buf) = 0;
         virtual void free(Buffer * buf) = 0;
@@ -199,18 +199,29 @@ public:
 
         virtual ~NIC_Wrapper() {}
 
-        virtual int send(const Address & dst, const Protocol & prot, const void * data, unsigned int size) {
-            return NIC::send(dst, prot, data, size); 
+private:
+        /* Old communication API:
+         * Based on send/receive, buffer provided by user, with copy.
+         * Used for testing NIC */
+        virtual int _send(const Address & dst, const Protocol & prot, const void * data, unsigned int size) {
+            return NIC::_send(dst, prot, data, size);
         }
-        virtual int receive(Address * src, Protocol * prot, void * data, unsigned int size) {
-            return NIC::receive(src, prot, data, size); 
+        virtual int _receive(Address * src, Protocol * prot, void * data, unsigned int size) {
+            return NIC::_receive(src, prot, data, size);
         }
 
+public:
+        /* New communication API:
+         * Uses NIC buffers, Zero-Copy.
+         * Used with upper protocols (e.g. TCP/IP).
+         * In the new API, handle_int() plays the role of receiver using the Publisher/Subscriber design pattern
+         * */
         virtual Buffer * alloc(NIC * nic, const Address & dst, const Protocol & prot, unsigned int once, unsigned int always, unsigned int payload) {
             return NIC::alloc(nic, once, always, payload);
         }
         virtual int send(Buffer * buf) { return NIC::send(buf); }
         virtual void free(Buffer * buf) { NIC::free(buf); }
+
 
         virtual const unsigned int mtu() const { return NIC::mtu(); }
         virtual const Address broadcast() const { return NIC::broadcast(); }

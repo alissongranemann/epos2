@@ -11,6 +11,13 @@ Segment::Segment(unsigned int bytes, Flags flags): Chunk(bytes, flags)
                      << ",flags=" << flags
                      << ") [Chunk::_pt=" << Chunk::pt() << "] => "
                      << this << endl;
+
+    constructor_1_epilogue();
+}
+
+
+void Segment::constructor_1_epilogue()
+{
 }
 
 
@@ -23,6 +30,13 @@ Segment::Segment(Phy_Addr phy_addr, unsigned int bytes, Flags flags): Chunk(phy_
                      << ",flags=" << flags
                      << ") [Chunk::_pt=" << Chunk::pt() << "] => "
                      << this << endl;
+
+    constructor_2_epilogue();
+}
+
+
+void Segment::constructor_2_epilogue()
+{
 }
 
 

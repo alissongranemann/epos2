@@ -20,13 +20,13 @@ template<> struct Traits<Build>
     enum {LIBRARY, BUILTIN, KERNEL};
     static const unsigned int MODE = LIBRARY;
 
-    enum {IA32, ARMv7};
+    enum {IA32};
     static const unsigned int ARCHITECTURE = IA32;
 
-    enum {PC, Cortex_M, Cortex_A};
+    enum {PC};
     static const unsigned int MACHINE = PC;
 
-    enum {Legacy, eMote3, LM3S811};
+    enum {Legacy};
     static const unsigned int MODEL = Legacy;
 
     static const unsigned int CPUS = 1;
@@ -72,11 +72,19 @@ template<> struct Traits<Init>: public Traits<void>
 {
 };
 
+template<> struct Traits<Framework>: public Traits<void>
+{
+};
+
+template<> struct Traits<Aspect>: public Traits<void>
+{
+    static const bool debugged = hysterically_debugged;
+};
 
 // Mediators
 template<> struct Traits<Serial_Display>: public Traits<void>
 {
-    static const bool enabled = true;
+    static const bool enabled = false;
     static const int COLUMNS = 80;
     static const int LINES = 24;
     static const int TAB_SIZE = 8;
@@ -125,7 +133,7 @@ template<> struct Traits<Thread>: public Traits<void>
 {
     static const bool smp = Traits<System>::multicore;
 
-    typedef Scheduling_Criteria::RR Criterion;
+    typedef Scheduling_Criteria::Priority Criterion;
     static const unsigned int QUANTUM = 10000; // us
 
     static const bool trace_idle = hysterically_debugged;

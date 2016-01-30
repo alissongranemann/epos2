@@ -12,7 +12,7 @@ struct Traits
     static const bool enabled = true;
     static const bool debugged = true;
     static const bool hysterically_debugged = false;
-    typedef TLIST<Shared, Authenticated> ASPECTS;
+    typedef TLIST<> ASPECTS;
 };
 
 template<> struct Traits<Build>
@@ -74,7 +74,6 @@ template<> struct Traits<Init>: public Traits<void>
 
 template<> struct Traits<Framework>: public Traits<void>
 {
-    static const bool debugged = false;
 };
 
 template<> struct Traits<Aspect>: public Traits<void>
@@ -85,7 +84,7 @@ template<> struct Traits<Aspect>: public Traits<void>
 // Mediators
 template<> struct Traits<Serial_Display>: public Traits<void>
 {
-    static const bool enabled = true;
+    static const bool enabled = false;
     static const int COLUMNS = 80;
     static const int LINES = 24;
     static const int TAB_SIZE = 8;
@@ -134,7 +133,7 @@ template<> struct Traits<Thread>: public Traits<void>
 {
     static const bool smp = Traits<System>::multicore;
 
-    typedef Scheduling_Criteria::FCFS Criterion;
+    typedef Scheduling_Criteria::Priority Criterion;
     static const unsigned int QUANTUM = 10000; // us
 
     static const bool trace_idle = hysterically_debugged;

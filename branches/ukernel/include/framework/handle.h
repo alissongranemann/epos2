@@ -57,25 +57,24 @@ private:
     Handle(_Stub * s) { _stub = s; }
 
 public:
-    // Dereferencing handles for Task(cs, ds)
-    Handle(const Handle<Segment> & cs, const Handle<Segment> & ds) { _stub = new _Stub(*cs._stub, *ds._stub); }
-
-    // Dereferencing handle for Thread(task, an ...)
-    template<typename ... Tn>
-    Handle(const Handle<Task> & t, const Tn & ... an) { _stub = new _Stub(*t._stub, an ...); }
-
     template<typename ... Tn>
     Handle(const Tn & ... an) { _stub = new _Stub(an ...); }
+
+    // Dereferencing handles for Task(cs, ds, ...)
+    template<typename ... Tn>
+    Handle(Handle<Segment> * cs, Handle<Segment> * ds, const Tn & ... an) { _stub = new _Stub(*cs->_stub, *ds->_stub, an ...); }
 
     ~Handle() { if(_stub) delete _stub; }
 
     static Handle<Component> * self() { return new (_Stub::self()) Handled<Component>; }
 
     // Process management
-    void suspend() { _stub->suspend(); }
-    void resume() { _stub->resume(); }
+    int priority() { return _stub->priority(); }
+    void priority(int p) { _stub->priority(p); }
     int join() { return _stub->join(); }
     int pass() { return _stub->pass(); }
+    void suspend() { _stub->suspend(); }
+    void resume() { _stub->resume(); }
     static void yield() { _Stub::yield(); }
     static void exit(int r = 0) { _Stub::exit(r); }
     static volatile bool wait_next() { return _Stub::wait_next(); }
@@ -85,12 +84,14 @@ public:
     Handle<Segment> * data_segment() const { return new (_stub->data_segment()) Handled<Segment>; }
     CPU::Log_Addr code() const { return _stub->code(); }
     CPU::Log_Addr data() const { return _stub->data(); }
+    Handle<Thread> * main() const { return new (_stub->main()) Handled<Thread>; }
+    void main(Handle<Thread> * thread) { _stub->main(thread->_stub); }
 
     // Memory Management
     CPU::Phy_Addr pd() { return _stub->pd(); }
-    CPU::Log_Addr attach(const Handle<Segment> & seg) { return _stub->attach(*seg._stub); }
-    CPU::Log_Addr attach(const Handle<Segment> & seg, CPU::Log_Addr addr) { return _stub->attach(*seg._stub, addr); }
-    void detach(const Handle<Segment> & seg) { _stub->detach(*seg._stub); }
+    CPU::Log_Addr attach(Handle<Segment> * seg) { return _stub->attach(*seg->_stub); }
+    CPU::Log_Addr attach(Handle<Segment> * seg, CPU::Log_Addr addr) { return _stub->attach(*seg->_stub, addr); }
+    void detach(Handle<Segment> * seg) { _stub->detach(*seg->_stub); }
 
     unsigned int size() const { return _stub->size(); }
     CPU::Phy_Addr phy_address() const { return _stub->phy_address(); }
@@ -109,7 +110,7 @@ public:
 
     // Timing
     template<typename T>
-    static void delay(T a) { _Stub::delay(a); }
+    static void delay(T t) { _Stub::delay(t); }
 
     void reset() { _stub->reset(); }
     void start() { _stub->start(); }
@@ -131,15 +132,31 @@ public:
     template<typename ... Tn>
     int write(Tn ... an) { return _stub->write(an ...);}
 
-    // ELF
-    int segments() { return _stub->segments(); }
-    int load_segment(int i, unsigned long dst_addr) { return _stub->load_segment(i, dst_addr); }
-    unsigned long segment_address(int i) { return _stub->segment_address(i); }
-    int segment_size(int i) { return _stub->segment_size(i); }
-    unsigned long entry() { return _stub->entry(); }
+    // Network
+    static void init_network() { _Stub::init_network(); }
 
-    // Boot_Image
-    Handle<ELF> * next_extra_elf() { return new (_stub->next_extra_elf()) Handled<ELF>; }
+    // NIC
+    Handle<NIC::Statistics> * statistics() { return new (_stub->statistics()) Handled<NIC::Statistics>; }
+
+    // IP
+    Handle<NIC> * nic() { return new (_stub->nic()) Handled<NIC>; }
+    Handle<IP::Address> * address() { return (new (_stub->address()) Handled<IP::Address>); }
+    static Handle<IP> * get_by_nic(unsigned int unit) { return new (_Stub::get_by_nic(unit)) Handled<IP>; }
+
+    // Machine
+    static void smp_barrier() { _Stub::smp_barrier(); }
+    static unsigned int cpu_id() { return _Stub::cpu_id(); }
+
+    // This_Thread
+    static unsigned int this_thread_id() { return _Stub::this_thread_id(); }
+
+    // CPU
+    static void int_enable() { _Stub::int_enable(); }
+    static void int_disable() { _Stub::int_disable(); }
+
+
+public:
+    _Stub * __stub() { return _stub; } // To be used by Subclasses of Handle<> only
 
 private:
     _Stub * _stub;

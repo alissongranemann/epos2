@@ -329,28 +329,28 @@ void PCNet32::handle_int()
                     IC::enable(IC::irq2int(_irq));
                 }
             }
- 	}
+        }
 
         if(csr0 & CSR0_ERR) { // Error
             db<PCNet32>(WRN) << "PCNet32::int:error =>";
 
             if(csr0 & CSR0_MERR) { // Memory
-        	db<PCNet32>(WRN) << " memory";
+                db<PCNet32>(WRN) << " memory";
             }
 
             if(csr0 & CSR0_MISS) { // Missed Frame
-        	db<PCNet32>(WRN) << " missed frame";
-        	_statistics.rx_overruns++;
+                db<PCNet32>(WRN) << " missed frame";
+                _statistics.rx_overruns++;
             }
 
             if(csr0 & CSR0_CERR) { // Collision
-        	db<PCNet32>(WRN) << " collision";
-        	_statistics.collisions++;
+                db<PCNet32>(WRN) << " collision";
+                _statistics.collisions++;
             }
 
             if(csr0 & CSR0_BABL) { // Bable transmitter time-out
-        	db<PCNet32>(WRN) << " overrun";
-        	_statistics.tx_overruns++;
+                db<PCNet32>(WRN) << " overrun";
+                _statistics.tx_overruns++;
             }
 
             db<PCNet32>(WRN) << endl;

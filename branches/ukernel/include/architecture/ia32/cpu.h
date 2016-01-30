@@ -43,13 +43,13 @@ public:
         FLAG_DEFAULTS   = FLAG_IF,
         // Mask to clear flags (by ANDing)
         FLAG_CLEAR      = ~(FLAG_TF | FLAG_IOPL1 | FLAG_IOPL2 | FLAG_NT |
-                            FLAG_RF | FLAG_VM | FLAG_AC)
+                    FLAG_RF | FLAG_VM | FLAG_AC)
     };
 
     // CPU Exceptions
     typedef Reg32 Exceptions;
     enum  {
-        EXC_BASE    = 0x00,
+        EXC_BASE        = 0x00,
         EXC_DIV0    = 0x00,
         EXC_DEBUG   = 0x01,
         EXC_NMI     = 0x02,
@@ -86,9 +86,9 @@ public:
         CR0_CD      = 0x40000000,
         CR0_PG      = 0x80000000,
         // Mask to clear flags (by ANDing)
-        CR0_CLEAR   = (CR0_PE | CR0_EM | CR0_WP),
+        CR0_CLEAR       = (CR0_PE | CR0_EM | CR0_WP),
         // Mask to set flags (by ORing)
-        CR0_SET     = (CR0_PE | CR0_PG)
+        CR0_SET         = (CR0_PE | CR0_PG)
     };
 
     // Segment Flags
@@ -106,14 +106,14 @@ public:
         SEG_TRAP    = 0x0f,
         SEG_32      = 0x40,
         SEG_4K      = 0x80,
-        SEG_FLT_CODE    = (SEG_PRE  | SEG_NOSYS	| SEG_CODE | SEG_RW   | SEG_ACC  ),
-        SEG_FLT_DATA    = (SEG_PRE  | SEG_NOSYS	| SEG_RW   | SEG_ACC  ),
-        SEG_SYS_CODE    = (SEG_PRE  | SEG_NOSYS	| SEG_CODE | SEG_RW   | SEG_ACC  ),
-        SEG_SYS_DATA    = (SEG_PRE  | SEG_NOSYS	| SEG_RW   | SEG_ACC  ),
+        SEG_FLT_CODE    = (SEG_PRE  | SEG_NOSYS | SEG_CODE | SEG_RW   | SEG_ACC  ),
+        SEG_FLT_DATA    = (SEG_PRE  | SEG_NOSYS | SEG_RW   | SEG_ACC  ),
+        SEG_SYS_CODE    = (SEG_PRE  | SEG_NOSYS | SEG_CODE | SEG_RW   | SEG_ACC  ),
+        SEG_SYS_DATA    = (SEG_PRE  | SEG_NOSYS | SEG_RW   | SEG_ACC  ),
         SEG_APP_CODE    = (SEG_PRE  | SEG_NOSYS | SEG_DPL2 | SEG_DPL1 | SEG_CODE | SEG_RW   | SEG_ACC),   // P, DPL=3, S, C, W, A
         SEG_APP_DATA    = (SEG_PRE  | SEG_NOSYS | SEG_DPL2 | SEG_DPL1 | SEG_RW   | SEG_ACC  ),   // P, DPL=3, S,    W, A
         SEG_IDT_ENTRY   = (SEG_PRE  | SEG_INT   | SEG_DPL2 | SEG_DPL1 ),
-        SEG_TSS0        = (SEG_PRE  | SEG_TSS   | SEG_DPL2 | SEG_DPL1 )
+        SEG_TSS_ALL     = (SEG_PRE  | SEG_TSS   | SEG_DPL2 | SEG_DPL1 )
     };
 
     // DPL/RPL for application (user) and system (supervisor) modes
@@ -127,12 +127,13 @@ public:
         GDT_NULL      = 0,
         GDT_FLT_CODE  = 1,
         GDT_FLT_DATA  = 2,
-        GDT_SYS_CODE  =	GDT_FLT_CODE,
-        GDT_SYS_DATA  =	GDT_FLT_DATA,
+        GDT_SYS_CODE  = GDT_FLT_CODE,
+        GDT_SYS_DATA  = GDT_FLT_DATA,
         GDT_APP_CODE  = 3,
         GDT_APP_DATA  = 4,
         GDT_TSS0      = 5,
-        GDT_LAST      = GDT_TSS0
+        GDT_TSS7      = 12,
+        GDT_LAST      = GDT_TSS7
     };
 
     // GDT Selectors
@@ -143,7 +144,8 @@ public:
         SEL_SYS_DATA  = (GDT_SYS_DATA << 3)  | PL_SYS,
         SEL_APP_CODE  = (GDT_APP_CODE << 3)  | PL_APP,
         SEL_APP_DATA  = (GDT_APP_DATA << 3)  | PL_APP,
-        SEL_TSS0      = (GDT_TSS0     << 3)  | PL_SYS
+        SEL_TSS0      = (GDT_TSS0     << 3)  | PL_SYS,
+        SEL_TSS7      = (GDT_TSS7     << 3)  | PL_SYS
     };
 
     // GDT Entry
@@ -247,14 +249,10 @@ public:
     };
 
     // CPU Context
-    class Context {
+    class Context
+    {
     public:
-        Context(const Log_Addr & usp, const Log_Addr & entry):
-            _esp3(usp),
-            _eip(entry),
-            _cs((Traits<System>::multitask && usp)? SEL_APP_CODE : SEL_SYS_CODE),
-            _eflags(FLAG_DEFAULTS)
-        {}
+        Context(const Log_Addr & usp, const Log_Addr & entry): _esp3(usp), _eip(entry), _cs(((Traits<Build>::MODE == Traits<Build>::KERNEL) && usp)? SEL_APP_CODE : SEL_SYS_CODE), _eflags(FLAG_DEFAULTS) {}
 
         void save() volatile;
         void load() const volatile;
@@ -271,13 +269,14 @@ public:
                << ",ebp=" << reinterpret_cast<void *>(c._ebp)
                << ",esp=" << &c
                << ",eip=" << reinterpret_cast<void *>(c._eip)
-               << ",esp3="  << c._esp3
-               << ",cs="  << cs()
-               << ",ds="  << ds()
-               << ",es="  << es()
-               << ",fs="  << fs()
-               << ",gs="  << gs()
-               << ",ss="  << ss()
+               << ",esp3="<< c._esp3
+               << ",cs="  << c._cs
+               << ",ccs=" << cs()
+               << ",cds=" << ds()
+               << ",ces=" << es()
+               << ",cfs=" << fs()
+               << ",cgs=" << gs()
+               << ",css=" << ss()
                << ",cr3=" << reinterpret_cast<void *>(pdp())
                << "}"     << dec;
             return db;
@@ -323,7 +322,7 @@ public:
 
     static void switch_context(Context * volatile * o, Context * volatile n);
 
-    static int syscall(void * message);
+    static void syscall(void * message);
     static void syscalled();
 
     static Flags flags() { return eflags(); }
@@ -367,32 +366,37 @@ public:
         return compare;
    }
 
-    static Reg32 htonl(Reg32 v)	{ ASM("bswap %0" : "=r" (v) : "0" (v), "r" (v)); return v; }
-    static Reg16 htons(Reg16 v)	{ return swap16(v); }
-    static Reg32 ntohl(Reg32 v)	{ return htonl(v); }
-    static Reg16 ntohs(Reg16 v)	{ return htons(v); }
+    static Reg32 htonl(Reg32 v) { ASM("bswap %0" : "=r" (v) : "0" (v), "r" (v)); return v; }
+    static Reg16 htons(Reg16 v) { return swap16(v); }
+    static Reg32 ntohl(Reg32 v) { return htonl(v); }
+    static Reg16 ntohs(Reg16 v) { return htons(v); }
 
-    /* BUG: CPU::init_stack don't work for parameters of distinct types (e.g. int, char, int). */
-    // IA32 first decrements the stack pointer and then writes into the stack, that's why we decrement it by an int
     template<typename ... Tn>
-    static Context * init_stack(const Log_Addr & usp, void (* user_exit)(), const Log_Addr & stack, unsigned int size, void (* exit)(), int (* entry)(Tn ...), Tn ... an) {
-        Log_Addr sp = stack + size - sizeof(int);
+    static Context * init_stack(const Log_Addr & usp, Log_Addr sp, void (* exit)(), int (* entry)(Tn ...), Tn ... an) {
+        // IA32 first decrements the stack pointer and then writes into the stack
         sp -= SIZEOF<Tn ... >::Result;
         init_stack_helper(sp, an ...);
         sp -= sizeof(int *);
         *static_cast<int *>(sp) = Log_Addr(exit);
-
-        if (Traits<System>::multitask && usp) {
-            sp -= sizeof(int *); // making room for SS
+        if(usp) {
+            sp -= sizeof(int *);
             *static_cast<int *>(sp) = Log_Addr(SEL_APP_DATA);
-            sp -= sizeof(int *); // making room for ESP
-            *static_cast<int *>(sp) = Log_Addr(usp);
-
-            *static_cast<int *>(usp) = Log_Addr(user_exit);
+            sp -= sizeof(int *);
+            *static_cast<int *>(sp) = usp;
         }
-
         sp -= sizeof(Context);
         return new (sp) Context(usp, entry);
+    }
+    template<typename ... Tn>
+    static Log_Addr init_user_stack(Log_Addr sp, void (* exit)(), Tn ... an) {
+        // IA32 first decrements the stack pointer and then writes into the stack
+        sp -= SIZEOF<Tn ... >::Result;
+        init_stack_helper(sp, an ...);
+        if(exit) {
+            sp -= sizeof(int *);
+            *static_cast<int *>(sp) = Log_Addr(exit);
+        }
+        return sp;
     }
 
 public:
@@ -409,23 +413,23 @@ public:
         Reg32 value; ASM("movl %%esp,%0" : "=r"(value) :); return value;
     }
     static void esp(const Reg32 value) {
-        ASM("movl %0, %%esp" : : "r"(value));
+    ASM("movl %0, %%esp" : : "r"(value));
     }
 
     static Reg32 eax() {
         Reg32 value; ASM("movl %%eax,%0" : "=r"(value) :); return value;
     }
     static void eax(const Reg32 value) {
-        ASM("movl %0, %%eax" : : "r"(value));
+    ASM("movl %0, %%eax" : : "r"(value));
     }
 
     static Log_Addr eip() {
         Log_Addr value;
-        ASM("       push    %%eax                           \n"
-             "      call    1f                              \n"
+        ASM("       push    %%eax                   \n"
+             "      call    1f                  \n"
              "1:    popl    %%eax       # ret. addr.        \n"
-             "      movl    %%eax,%0                        \n"
-             "      popl    %%eax                           \n"
+             "      movl    %%eax,%0                \n"
+             "      popl    %%eax                   \n"
              : "=o"(value) : );
         return value;
     }
@@ -437,7 +441,7 @@ public:
         ASM("movl %0, %%cr0" : : "r"(value));
     }
 
-    static Reg32 cr2() {
+    static Reg32 cr2()  {
         Reg32 value; ASM("movl %%cr2, %0" : "=r"(value) :); return value;
     }
 
@@ -566,10 +570,10 @@ public:
     static void out8(const IO_Port & port, const Reg8 & value) {
         ASM("outb %1,%0" : : "d"(port), "a"(value));
     }
-    static void out16(const IO_Port & port, const Reg16 & value) {
+    static void out16(const IO_Port & port, const Reg16 & value)    {
         ASM("outw %1,%0" : : "d"(port), "a"(value));
     }
-    static void out32(const IO_Port & port, const Reg32 & value) {
+    static void out32(const IO_Port & port, const Reg32 & value)    {
         ASM("outl %1,%0" : : "d"(port), "a"(value));
     }
 
@@ -583,6 +587,23 @@ public:
         address.selector = selector;
 
         ASM("ljmp *%0" : "=o" (address));
+    }
+
+    static Reg16 tss_selector(unsigned int cpu_id)
+    {
+        assert(cpu_id >= 0 && cpu_id < Traits<PC>::MAX_CPUS);
+
+        unsigned int GDT_TSS_i = gdt_tss_index(cpu_id);
+        unsigned int SEL_TSS_i = (GDT_TSS_i << 3)  | PL_SYS;
+
+        return SEL_TSS_i;
+    }
+
+    static unsigned int gdt_tss_index(unsigned int cpu_id)
+    {
+        assert(cpu_id >= 0 && cpu_id < Traits<PC>::MAX_CPUS);
+
+        return GDT_TSS0 + cpu_id;
     }
 
 private:
