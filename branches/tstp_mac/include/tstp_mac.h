@@ -13,6 +13,23 @@ __BEGIN_SYS
 class TSTP_MAC : public NIC_Common
 {
 public:
+    struct Statistics : public NIC_Common::Statistics {
+        Statistics(): NIC_Common::Statistics(), 
+            dropped_rx_packets(0), dropped_rx_bytes(0), dropped_tx_packets(0),
+            dropped_tx_bytes(0), rx_payload_frames(0), tx_payload_frames(0), dropped_payload_frames(0), waited_to_rx_payload(0) { }
+
+        unsigned int dropped_rx_packets;
+        unsigned int dropped_rx_bytes;
+        unsigned int dropped_tx_packets;
+        unsigned int dropped_tx_bytes;
+        unsigned int rx_payload_frames;
+        unsigned int tx_payload_frames;
+        unsigned int dropped_payload_frames;
+        unsigned int waited_to_rx_payload;
+    };
+
+    static const Statistics & statistics() { return _statistics; }
+
     static void init();
 
     typedef CPU::Reg8 Reg8;
@@ -38,6 +55,7 @@ public:
     {
     public:
         int x, y, z;
+
         Address(int xi = 0, int yi = 0, int zi = 0) :x(xi), y(yi), z(zi) { }
 
         friend Debug & operator<<(Debug & db, const Address & a) {
@@ -45,7 +63,7 @@ public:
             return db;
         }
 
-        operator int() const { return x; }
+        operator int() const { return x ^ y ^ z; }
 
         bool operator==(const Address & rhs) {
             return x == rhs.x and y == rhs.y and z == rhs.z;
@@ -330,8 +348,9 @@ private:
                 }
                 ok = _table[min_i].trials() < Traits<TSTP_MAC>::MAX_SEND_TRIALS;
                 if(not ok) {
+                    db<TSTP_MAC>(TRC) << "TSTP_MAC::TX_Schedule::TX_Schedule_Entry::Removing index " << min_i << " : " << &_table[min_i] << endl;
                     remove_by_index(min_i);
-                    min_i = 0u;  
+                    min_i = 0u;
                 }
             } while(not ok);
 
@@ -367,7 +386,6 @@ private:
         }
 
         void update_timeout(TX_Schedule_Entry * e, Time timeout) {
-            ++(*e);
             e->transmit_at(timeout);
         }
 
@@ -416,6 +434,7 @@ private:
     static Time backoff();
 
     static Buffer * _tx_pending_mf_buffer;
+    static Microframe * _tx_pending_mf;
     static TX_Schedule _tx_schedule;
     static TX_Schedule::TX_Schedule_Entry * _tx_pending_data;
     static NIC _radio;
@@ -423,6 +442,7 @@ private:
     static Message_ID _receiving_data_id;
     static Address _address;
     static Address _sink_address;
+    static Statistics _statistics;
 };
 
 __END_SYS

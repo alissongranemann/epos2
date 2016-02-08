@@ -208,6 +208,8 @@ protected:
 // CC2538 TSTP Radio Mediator
 class CC2538: public TSTP_MAC, private CC2538RF
 {
+    friend class TSTP_MAC;
+
     template <int unit> friend void call_init();
 
 private:
@@ -241,6 +243,7 @@ public:
     void set_channel(unsigned int channel);
 
     void off();
+    void reset();
     void receive(const Frame_Handler & handler);
 
     ~CC2538();
@@ -255,6 +258,8 @@ public:
     const Address & address() { return _address; }
     void address(const Address & address);
 
+    const Statistics & statistics() { return _statistics; }
+
     static CC2538 * get(unsigned int unit = 0) { return get_by_unit(unit); }
     void set_tx(); //TODO:REMOVE
     void clear_tx(); //TODO:REMOVE
@@ -263,6 +268,8 @@ public:
 
 private:
     Frame_Handler * fifop_handler;
+
+    Statistics _statistics;
 
     void handle_int();
     bool copy_from_rxfifo(Buffer * buf);

@@ -43,8 +43,8 @@ template<> struct Traits<Debug>
 {
     static const bool error   = true;
     static const bool warning = true;
-    static const bool info    = true;
-    static const bool trace   = true;
+    static const bool info    = false;
+    static const bool trace   = false;
 };
 
 template<> struct Traits<Lists>: public Traits<void>
@@ -123,7 +123,7 @@ template<> struct Traits<Init>: public Traits<void>
 template<> struct Traits<Serial_Display>: public Traits<void>
 {
     enum {usb, uart};
-    static const unsigned int ENGINE = uart;
+    static const unsigned int ENGINE = usb;
 
     static const bool enabled = true;
     static const int COLUMNS = 80;

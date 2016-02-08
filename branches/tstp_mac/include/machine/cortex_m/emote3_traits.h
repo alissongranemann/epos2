@@ -44,6 +44,7 @@ template <> struct Traits<Cortex_M>: public Traits<Cortex_M_Common>
 template <> struct Traits<Cortex_M_IC>: public Traits<Cortex_M_Common>
 {
     static const bool hysterically_debugged = false;
+    static const bool debugged = false;
 
     enum ACTION { NOTHING, REBOOT, HALT };
     static const ACTION ACTION_ON_HARD_FAULT = HALT;
@@ -87,7 +88,7 @@ template <> struct Traits<TSTP_MAC>: public Traits<Cortex_M_Common>
     // All times in microseconds
 
     // == Configurable parameters == 
-    static const unsigned int MAX_SEND_TRIALS = 3;
+    static const unsigned int MAX_SEND_TRIALS = 1;
     static const unsigned int PERIOD = 150000;
     static const unsigned int ADDRESS_X = 0;
     static const unsigned int ADDRESS_Y = 0;
@@ -99,10 +100,11 @@ template <> struct Traits<TSTP_MAC>: public Traits<Cortex_M_Common>
     // == Network / machine characteristics ==
     static const unsigned int Tu = 192; // IEEE 802.15.4 TX Turnaround Time
     static const unsigned int G = 320; // Tu + 8 / symbol_rate
-    static const unsigned int Ts = 480; // Time to send a single microframe (including PHY headers)
+    //static const unsigned int Ts = 480; // Time to send a single microframe (including PHY headers)
+    static const unsigned int Ts = 707 - Tu; // Time to send a single microframe (including PHY headers)
     static const unsigned int MICROFRAME_TIME = Ts;
     static const unsigned int MIN_Ti = 2*Tu; // Minimum time between consecutive microframes
-    static const unsigned int RADIO_RADIUS = 10; //TODO
+    static const unsigned int RADIO_RADIUS = 10 * 100; //TODO
 
     // == Calculated parameters ==
     static const unsigned int N_MICROFRAMES = ((PERIOD / (MIN_Ti + Ts)) > 256) ? 256 : (PERIOD / (MIN_Ti + Ts));
@@ -127,7 +129,7 @@ template <> struct Traits<CC2538>: public Traits<Cortex_M_Radio>
     static const unsigned int UNITS = NICS::Count<CC2538>::Result;
     static const unsigned int SEND_BUFFERS = 8;
     static const unsigned int RECEIVE_BUFFERS = 4;
-    static const unsigned int DEFAULT_CHANNEL = 14; // From 11 to 26
+    static const unsigned int DEFAULT_CHANNEL = 13; // From 11 to 26
 
     static const bool auto_listen = false;
 

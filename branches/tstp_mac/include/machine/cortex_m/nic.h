@@ -44,6 +44,9 @@ public:
     void free(Buffer * buf) { _dev->free(buf); }
 
     const Address & address() { return _dev->address(); }
+
+    const Statistics & statistics() { return _dev->statistics(); }
+
     void address(const Address & address) { _dev->address(address); }
     bool channel_busy() { return _dev->channel_busy(); }
 
