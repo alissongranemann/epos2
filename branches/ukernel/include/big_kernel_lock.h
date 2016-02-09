@@ -3,45 +3,33 @@
 
 
 #include <system/config.h>
+#include <utility/spin.h>
 
 __BEGIN_SYS
 
+/* Inside-kernel Big Kernel Lock (BKL) */
 class Big_Kernel_Lock
 {
 
     static const bool smp = Traits<Thread>::smp;
 
 public:
-    Big_Kernel_Lock() {}
-
-public:
     static void lock()
     {
-        if(smp) {
-            int me = *_running_thread;
-
-            while (CPU::cas(_owner, 0, me) != me);
-
-            _level++;
-        }
+        CPU::int_disable();
+        if(smp)
+            _lock.acquire();
     }
-
 
     static void unlock()
     {
-        if(smp) {
-            if(--_level <= 0) {
-                _owner = 0;
-            }
-        }
+        if(smp)
+            _lock.release();
+        CPU::int_enable();
     }
 
 private:
-    static volatile unsigned int _level;
-    static volatile int _owner;
-
-private:
-    static int * _running_thread;
+    static Spin _lock;
 };
 
 

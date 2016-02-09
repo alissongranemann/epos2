@@ -49,24 +49,34 @@ extern "C" {
         return _API::This_Thread::this_thread_id();
     }
 
-    void _big_kernel_lock_lock()
-    {
-        _SYS::Big_Kernel_Lock::lock();
-    }
-
-
-    void _big_kernel_lock_unlock()
-    {
-        _SYS::Big_Kernel_Lock::unlock();
-    }
-
 }
 
 __USING_SYS;
-extern "C" {
-    void _syscall(void * m) { CPU::syscall(m); }
-    void _print(const char * s) {
+extern "C" 
+{
+    void _syscall(void * m)
+    { 
+        CPU::syscall(m);
+    }
+
+    void _print(const char * s)
+    {
         Message msg(Id(UTILITY_ID, 0), Message::PRINT, reinterpret_cast<unsigned int>(s));
         msg.act();
     }
+
+    void * _create_segment_in_place(void * place, unsigned int size, unsigned int mmu_flags)
+    {
+        Message msg(Id(SEGMENT_ID, 0), Message::CREATE_SEGMENT_IN_PLACE, place, size, mmu_flags);
+        msg.act();
+        return reinterpret_cast<void *>(msg.id().unit());
+    }
+
+    void * _create_heap_in_place(void * place, void * heap_segment)
+    {
+        Message msg(Id(SEGMENT_ID, 0), Message::CREATE_HEAP_IN_PLACE, place, heap_segment);
+        msg.act();
+        return reinterpret_cast<void *>(msg.id().unit());
+    }
+
 }

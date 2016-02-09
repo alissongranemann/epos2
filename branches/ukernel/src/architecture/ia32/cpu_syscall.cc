@@ -11,9 +11,7 @@ __BEGIN_SYS
 
 void IA32::syscall(void * msg)
 {
-    // _big_kernel_lock_lock();
     ASM("int %0" : : "i"(IC::INT_SYSCALL), "c"(msg));
-    // _big_kernel_lock_unlock();
 }
 
 __END_SYS

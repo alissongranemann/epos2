@@ -23,20 +23,20 @@ public:
     // Register Addresses (relative to base I/O port)
     typedef Reg8 Address;
     enum {
-        THR = 0, // Transmit Holding	W,   DLAB = 0
-        RBR = 0, // Receive Buffer 	R,   DLAB = 0
-        IER = 1, // Interrupt Enable	R/W, DLAB = 0 [0=DR,1=THRE,2=LI,3=MO]
-        FCR = 2, // FIFO Control	W   [0=EN,1=RC,2=XC,3=RDY,67=TRG]
-        IIR = 2, // Interrupt Id	R   [0=PEN,12=ID,3=FIFOTO,67=1]
-        LCR = 3, // Line Control	R/W [01=DL,2=SB,345=P,6=BRK,7=DLAB]
-        MCR = 4, // Modem Control	R/W [0=DTR,1=RTS,2=OUT1,3=OUT2,4=LB]
-        LSR = 5, // Line Status		R/W [0=DR,1=OE,2=PE,3=FE,4=BI,5=THRE,
-                 //			     6=TEMT,7=FIFOE]
-        MSR = 6, // Modem Status	R/W [0=CTS,1=DSR,2=RI,3=DCD,4=LBCTS,
-                 // 			     5=LBDSR,6=LBRI,7=LBDCD]
-        SCR = 7, // Scratch 		R/W
-        DLL = 0, // Divisor Latch LSB	R/W, DLAB = 1
-        DLH = 1  // Divisor Latch MSB	R/W, DLAB = 1
+        THR = 0, // Transmit Holding    W,   DLAB = 0
+        RBR = 0, // Receive Buffer  R,   DLAB = 0
+        IER = 1, // Interrupt Enable    R/W, DLAB = 0 [0=DR,1=THRE,2=LI,3=MO]
+        FCR = 2, // FIFO Control    W   [0=EN,1=RC,2=XC,3=RDY,67=TRG]
+        IIR = 2, // Interrupt Id    R   [0=PEN,12=ID,3=FIFOTO,67=1]
+        LCR = 3, // Line Control    R/W [01=DL,2=SB,345=P,6=BRK,7=DLAB]
+        MCR = 4, // Modem Control   R/W [0=DTR,1=RTS,2=OUT1,3=OUT2,4=LB]
+        LSR = 5, // Line Status     R/W [0=DR,1=OE,2=PE,3=FE,4=BI,5=THRE,
+                 //              6=TEMT,7=FIFOE]
+        MSR = 6, // Modem Status    R/W [0=CTS,1=DSR,2=RI,3=DCD,4=LBCTS,
+                 //                  5=LBDSR,6=LBRI,7=LBDCD]
+        SCR = 7, // Scratch         R/W
+        DLL = 0, // Divisor Latch LSB   R/W, DLAB = 1
+        DLH = 1  // Divisor Latch MSB   R/W, DLAB = 1
     };
 
 public:
@@ -56,9 +56,9 @@ public:
         reg(DLH, div >> 8);
         dlab(false);
 
-        // Set data word length (5, 6, 7 or 8)	
+        // Set data word length (5, 6, 7 or 8)
         Reg8 lcr = dbits - 5;
-            
+
         // Set parity (0 [no], 1 [odd], 2 [even])
         if(par) {
             lcr |= 1 << 3;
@@ -72,14 +72,14 @@ public:
 
         // Enables Tx and Rx FIFOs, clear them, set trigger to 14 bytes
         reg(FCR, 0xc7);
-            
+
         // Set DTR, RTS and OUT2 of MCR
         reg(MCR, reg(MCR) | 0x0b);
     }
-        
+
     void config(unsigned int * brate, unsigned int * dbits, unsigned int * par, unsigned int * sbits) {
         // Get clock divisor
-        dlab(true); 
+        dlab(true);
         *brate = CLOCK * ((reg(DLH) << 8) | reg(DLL));
         dlab(false);
 
@@ -105,7 +105,7 @@ public:
         reg(IER, reg(IER) & ~(receive | (send << 1) | (line << 2) | (modem << 3)));
     }
 
-    void reset() { 
+    void reset() {
         // Reconfiguring the UART implicitly resets it
         unsigned int b, db, p, sb;
         config(&b, &db, &p, &sb);

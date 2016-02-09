@@ -16,6 +16,7 @@ class Task
     friend class Init_First;
     friend class System;
     friend class Thread;
+    friend class Agent;
 
 private:
     static const bool multitask = Traits<System>::multitask;

@@ -8,12 +8,10 @@ __BEGIN_SYS
 
 // Application class attributes
 char Application::_preheap[];
+Segment * Application::_heap_segment;
 Heap * Application::_heap;
 
 // Big_Kernel_Lock class attributes
-volatile unsigned int Big_Kernel_Lock::_level = 0;
-volatile int Big_Kernel_Lock::_owner = 0;
-int * Big_Kernel_Lock::_running_thread = reinterpret_cast<int *>(Memory_Map<PC>::SYS_SHARED);
 
 __END_SYS
 
@@ -29,3 +27,16 @@ __END_API
 __BEGIN_UTIL
 EPOS::S::U::OStream::Endl endl;
 __END_UTIL
+
+
+#include <aux_debug.h>
+
+void inspect_elf(void * elf) {}
+void inspect_as(void * as) {}
+void inspect_cs(void * cs) {}
+void inspect_code(void * code) {}
+void inspect_ds(void * ds) {}
+void inspect_data(void * data) {}
+void inspect_entry(int (* entry)()) {}
+void inspect_task(void * task) {}
+void inspect_comm(void * comm) {}

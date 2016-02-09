@@ -168,8 +168,7 @@ void Agent::handle_periodic_thread()
         db<Framework>(WRN) << "Agent::handle_periodic_thread, CREATE2" << endl;
         Periodic_Thread::Configuration * conf;
         int (* entry)();
-        in(conf);
-        in(entry);
+        in(conf, entry);
 
         db<Framework>(TRC) << "conf (obj) = " << conf << endl;
         db<Framework>(TRC) << "conf = " << *conf << endl;
@@ -343,6 +342,32 @@ void Agent::handle_segment()
         int amount;
         in(amount);
         res = seg->resize(amount);
+    } break;
+    case CREATE_SEGMENT_IN_PLACE: {
+        db<void>(TRC) << "CREATE_SEGMENT_IN_PLACE" << endl;
+        void * place;
+        unsigned int size;
+        unsigned int mmu_flags;
+        in(place, size, mmu_flags);
+        db<void>(TRC) << "place: " << reinterpret_cast<void *>(place) << ", size: " << size << ", mmu_flags: " << reinterpret_cast<void *>(mmu_flags) << endl;
+        new (place) Segment(size, mmu_flags);
+        id(Id(SEGMENT_ID, reinterpret_cast<Id::Unit_Id>(place)));
+
+    } break;
+    case CREATE_HEAP_IN_PLACE: {
+        db<void>(TRC) << "CREATE_HEAP_IN_PLACE" << endl;
+        void * place;
+        Segment * heap_segment;
+        in(place, heap_segment);
+        db<void>(TRC) << "place: " << reinterpret_cast<void *>(place) << ", heap_segment: " << reinterpret_cast<void *>(heap_segment) << endl;
+        db<void>(TRC) << "current task is: " << Task::current() << endl;
+        db<void>(TRC) << "address space is: " << Task::current()->address_space() << endl;
+        db<void>(TRC) << "page directory is: " << Task::current()->address_space()->pd() << endl;
+        db<void>(TRC) << "segment size: " << heap_segment->size() << endl;
+        CPU::Log_Addr addr = Task::current()->address_space()->attach(heap_segment);
+        db<void>(TRC) << "segment attached to: " << addr << endl;
+        new (place) Heap(addr, heap_segment->size());
+        id(Id(SEGMENT_ID, reinterpret_cast<Id::Unit_Id>(place)));
     } break;
     default: {
         db<Framework>(WRN) << "Undefined method for Segment agent. Method = " << method() << endl;

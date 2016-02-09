@@ -37,9 +37,6 @@ extern "C"
         return This_Thread::id();
     }
 
-    void _big_kernel_lock_lock() {}
-    void _big_kernel_lock_unlock() {}
-
     void _exit(int s)
     {
         Thread::exit(s);

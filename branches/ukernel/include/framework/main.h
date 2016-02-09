@@ -82,7 +82,34 @@ EXPORT(System);
 EXPORT(Application);
 
 BIND(Active);
-BIND(Task);
+class Task;
+// BIND(Task);
+class Task: public SELECT(Task)
+{
+private:
+    typedef SELECT(Task) Base;
+
+public:
+    template<typename ... Tn>
+    Task(void * cs, void * ds, int (* entry)(Tn ...), Tn ... an)
+    :Base(reinterpret_cast<SELECT(Segment) *>(cs)->__stub()->id().unit(),
+            reinterpret_cast<SELECT(Segment) *>(ds)->__stub()->id().unit(),
+            entry,
+            an ...
+    )
+    {
+    }
+
+    template<typename ... Tn>
+    Task(void * thread, void * cs, void * ds, int (* entry)(Tn ...))
+    :Base(thread ? reinterpret_cast<SELECT(Thread) *>(thread)->__stub()->id().unit() : 0,
+            reinterpret_cast<SELECT(Segment) *>(cs)->__stub()->id().unit(),
+            reinterpret_cast<SELECT(Segment) *>(ds)->__stub()->id().unit(),
+            entry
+    )
+    {
+    }
+};
 
 BIND(Address_Space);
 BIND(Segment);

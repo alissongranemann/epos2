@@ -4,6 +4,7 @@
 #define __application_h
 
 #include <utility/heap.h>
+#include <segment.h>
 
 extern "C"
 {
@@ -23,7 +24,8 @@ private:
     static void init();
 
 private:
-    static char _preheap[sizeof(Heap)];
+    static char _preheap[(Traits<System>::multiheap ? sizeof(Segment) : 0) + sizeof(Heap)];
+    static Segment * _heap_segment;
     static Heap * _heap;
 };
 

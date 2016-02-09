@@ -4,6 +4,8 @@
 #include <system.h>
 #include <thread.h>
 #include <alarm.h> // for FCFS
+#include <color.h>
+#include <big_kernel_lock.h>
 
 // This_Thread class attributes
 __BEGIN_UTIL
@@ -20,7 +22,7 @@ Spin Thread::_lock;
 int * Thread::_running_thread = reinterpret_cast<int *>(Memory_Map<PC>::SYS_SHARED);
 
 // Methods
-void Thread::constructor_prolog(unsigned int stack_size)
+void Thread::constructor_prologue(unsigned int stack_size)
 {
     lock();
 
@@ -31,9 +33,10 @@ void Thread::constructor_prolog(unsigned int stack_size)
 }
 
 
-void Thread::constructor_epilog(const Log_Addr & entry, unsigned int stack_size)
+void Thread::constructor_epilogue(const Log_Addr & entry, unsigned int stack_size)
 {
-    db<Thread>(TRC) << "Thread(task=" << _task
+    db<Thread>(TRC) << Color::RED() << "Thread" << Color::END_COLOR()
+                    << "(task=" << _task
                     << ",entry=" << entry
                     << ",state=" << _state
                     << ",priority=" << _link.rank()
@@ -369,6 +372,8 @@ void Thread::dispatch(Thread * prev, Thread * next, bool charge)
 
         if(smp)
             _lock.release();
+
+        Big_Kernel_Lock::unlock();
 
         if(multitask && (next->_task != prev->_task)) {
             Task::current(next->_task);

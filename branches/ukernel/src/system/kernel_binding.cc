@@ -3,8 +3,12 @@
 #include <framework/main.h>
 #include <framework/agent.h>
 #include <framework/message.h>
+#include <color.h>
+#include <big_kernel_lock.h>
 
 __BEGIN_SYS
+
+Spin Big_Kernel_Lock::_lock;
 
 IPC::Observed IPC::_observed;
 
@@ -47,9 +51,9 @@ extern "C"
     {
         if (Traits<Thread>::smp) {
             if ((reinterpret_cast<Agent *>(m)->id().type() != MACHINE_ID) || (reinterpret_cast<Agent *>(m)->method() != Message::MACHINE_SMP_BARRIER)) {
-                // db<void>(WRN) << "BKL: will try to lock!" << endl;
-                Thread::lock();
-                // db<void>(WRN) << "BKL: locked!" << endl;
+                db<void>(TRC) << Color::YELLOW() << "BKL: (1)" << Color::END_COLOR() << " thread = " << reinterpret_cast<void *>(This_Thread::id()) << endl; // will try to lock
+                Big_Kernel_Lock::lock();
+                db<void>(TRC) << Color::GREEN() << "BKL: (2)" << Color::END_COLOR() << " thread = " << reinterpret_cast<void *>(This_Thread::id()) << endl; // locked!
             }
         } // "inside kernel" Big Kernel Lock
 
@@ -57,8 +61,8 @@ extern "C"
 
         if (Traits<Thread>::smp) {
             if ((reinterpret_cast<Agent *>(m)->id().type() != MACHINE_ID) || (reinterpret_cast<Agent *>(m)->method() != Message::MACHINE_SMP_BARRIER)) {
-                // db<void>(WRN) << "BKL: will unlock, now!" << endl;
-                Thread::unlock();
+                db<void>(TRC) << Color::BLUE() << "BKL: (3)" << Color::END_COLOR() << " thread = " << reinterpret_cast<void *>(This_Thread::id()) << endl; // will unlock, now!
+                Big_Kernel_Lock::unlock();
             }
         } // "inside kernel" Big Kernel Lock
         /* NOTE:

@@ -109,7 +109,7 @@ int guest_os_2_task()
  * */
 Task * create_domain_u(int (* guest_os_task) (), int pcpu, bool hrt)
 {
-    db<void>(WRN) << "create_domain" << endl;
+    db<void>(WRN) << "create_domain_u, guest_os_task = " << reinterpret_cast<void*>(guest_os_task) << ", pcpu = " << pcpu << ", hrt = " << hrt << endl;
 
     Task * domain_0 = Task::self();
     db<void>(WRN) << "domain_0" << endl;
@@ -205,6 +205,8 @@ Task * create_domain_u(int (* guest_os_task) (), int pcpu, bool hrt)
     }
 
     db<void>(WRN) << "will return created domain" << endl;
+
+    ASM("end_of_create_domain_u:");
 
     return domain_u;
 }
