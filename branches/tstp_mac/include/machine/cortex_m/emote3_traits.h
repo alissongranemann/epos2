@@ -80,7 +80,7 @@ template <> struct Traits<Cortex_M_USB>: public Traits<Cortex_M_Common>
 
 template <> struct Traits<TSTP_MAC>: public Traits<Cortex_M_Common>
 {
-//    static const bool debugged = true;
+    //static const bool debugged = true;
 
     static const unsigned int TX_SCHEDULE_SIZE = 4;
     typedef eMote3_User_Timer_2 Timer;
@@ -88,14 +88,15 @@ template <> struct Traits<TSTP_MAC>: public Traits<Cortex_M_Common>
     // All times in microseconds
 
     // == Configurable parameters == 
-    static const unsigned int MAX_SEND_TRIALS = 1;
+    static const unsigned int MAX_SEND_TRIALS = 2;
     static const unsigned int PERIOD = 150000;
     static const unsigned int ADDRESS_X = 0;
     static const unsigned int ADDRESS_Y = 0;
     static const unsigned int ADDRESS_Z = 0;
-    static const unsigned int DATA_ACK_TIMEOUT = 5 * PERIOD;
+    static const unsigned int DATA_ACK_TIMEOUT = 3 * PERIOD;
     static const unsigned int DATA_SKIP_TIME = 5000;
     static const unsigned int RX_DATA_TIMEOUT = DATA_SKIP_TIME;
+    static const int ADDRESS_MATCH_RADIUS = 100;
 
     // == Network / machine characteristics ==
     static const unsigned int Tu = 192; // IEEE 802.15.4 TX Turnaround Time
@@ -114,6 +115,9 @@ template <> struct Traits<TSTP_MAC>: public Traits<Cortex_M_Common>
     static const unsigned int RX_MF_TIMEOUT = 2*Ts + 2*TIME_BETWEEN_MICROFRAMES;
     static const unsigned int SLEEP_PERIOD = PERIOD - RX_MF_TIMEOUT;
     static const unsigned int DUTY_CYCLE = (RX_MF_TIMEOUT * 100000) / PERIOD; //ppm
+
+
+    static const unsigned int CCA_TIME = 2 * (MICROFRAME_TIME + TIME_BETWEEN_MICROFRAMES);
 };
 
 template <> struct Traits<Cortex_M_Radio>: public Traits<Cortex_M_Common>

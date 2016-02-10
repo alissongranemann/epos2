@@ -1,8 +1,9 @@
 #include <timer.h>
 #include <utility/ostream.h>
 #include <utility/math.h>
-#include <nic.h>
+#include <tstp.h>
 #include <gpio.h>
+#include <units.h>
 
 using namespace EPOS;
 
@@ -46,12 +47,12 @@ void print_statistics()
 
     ++times_called;
 
-    auto this_line = 49u;
+    auto this_line = 50u;
     _assert(s.tx_packets, (times_called) * (Traits<TSTP_MAC>::N_MICROFRAMES + 1), ++this_line);
-    _assert(s.rx_packets, (s.tx_packets / (Traits<TSTP_MAC>::N_MICROFRAMES + 1)) * 2, ++this_line);
-    _assert(ts.rx_payload_frames, ts.tx_payload_frames, ++this_line);
+    _assert(s.rx_packets, (s.tx_packets / (Traits<TSTP_MAC>::N_MICROFRAMES + 1)), ++this_line);
+    _assert(ts.rx_payload_frames, 0, ++this_line);
     _assert(ts.dropped_payload_frames, 0, ++this_line);
-    _assert(ts.waited_to_rx_payload, ts.rx_payload_frames, ++this_line);
+    _assert(ts.waited_to_rx_payload, 0, ++this_line);
 }
 
 int main()
@@ -91,22 +92,24 @@ int main()
 
     int n_interests = 0;
     while(1) {
-        cout << "Building Interest" << endl;
-        int x_coord = Random::random();
-        int y_coord = Random::random();
-        x_coord %= (Traits<TSTP_MAC>::RADIO_RADIUS / 4);
-        x_coord += Traits<TSTP_MAC>::RADIO_RADIUS / 4;
-        y_coord %= (Traits<TSTP_MAC>::RADIO_RADIUS / 4);
-        y_coord += Traits<TSTP_MAC>::RADIO_RADIUS / 4;
-        TSTP_MAC::Interest i(TSTP_MAC::Address(x_coord, y_coord, 0), 1000000, 5000000, 1000000, 1, 100, 0);
+        int x_coord; 
+        int y_coord; 
+        x_coord = (Traits<TSTP_MAC>::RADIO_RADIUS / 4) + Traits<TSTP_MAC>::ADDRESS_MATCH_RADIUS;
+        y_coord = (Traits<TSTP_MAC>::RADIO_RADIUS / 4) + 1;
+        TSTP::Data d;
 
         cout << "Sending Interest " << ++n_interests << endl;
-        TSTP_MAC::send(&i);
-        eMote3_GPTM::delay(Traits<TSTP_MAC>::PERIOD * 5);// + (Random::random() % 1000000));
+
+        TSTP::Interest i(&d, TSTP::Region(x_coord, y_coord, 0, 10), /*TSTP_MAC::time_now() +*/ 1000000, 60 * 1000000, 1000000, 1, 1, TSTP_Common::RESPONSE_MODE::SINGLE);
+
+        cout << i << endl;
+
+        eMote3_GPTM::delay(1000000);// + (Random::random() % 1000000));
         print_statistics();
     }
 
     cout << "Done!" << endl;
+    while(1);
 
     return 0;
 }

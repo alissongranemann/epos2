@@ -26,18 +26,28 @@ CC2538::~CC2538()
     db<CC2538>(TRC) << "~Radio(unit=" << _unit << ")" << endl;
 }
 
-bool CC2538::channel_busy()
+bool CC2538::channel_busy(unsigned int time)
 {
     xreg(FRMCTRL0) |= (3 * RX_MODE); // Disable symbol search
     sfr(RFST) = ISRXON; // CCA requires the receiver to be enabled
+
+    auto t0 = MAC_Timer::read();
     while(not (xreg(RSSISTAT) & RSSI_VALID));
-    bool ret = !(xreg(FSMSTAT1) & XREG_FSMSTAT1::CCA);
+
+    unsigned int diff;
+    do {
+        if(not (xreg(FSMSTAT1) & XREG_FSMSTAT1::CCA)) {
+            off(); // Disable receiver
+            xreg(FRMCTRL0) &= ~(3 * RX_MODE); // Enable symbol search
+            db<CC2538>(WRN) << "CC2538 : Channel is busy!" << endl;
+            return true;
+        }
+        diff = MAC_Timer::ts_to_us(MAC_Timer::read() - t0);
+    } while (diff < time);
+
     off(); // Disable receiver
     xreg(FRMCTRL0) &= ~(3 * RX_MODE); // Enable symbol search
-    if(ret) {
-        db<CC2538>(WRN) << "CC2538 : Channel is busy!" << endl;
-    }
-    return ret;
+    return false;
 }
 
 void CC2538::off() 
@@ -387,7 +397,8 @@ void CC2538::handle_int()
                 } else {
                     // We have a buffer, so we fetch a packet from the fifo
                     if (copy_from_rxfifo(buf)) {
-                        buf->size(buf->frame()->header()->frame_length());// - (sizeof(Phy_Header))); // Phy_Header is included in Header, but is already discounted in frame_length
+                        // For the upper layers, size will represent the size of frame->data<T>()
+                        buf->size(buf->frame()->header()->frame_length() - sizeof(CRC));
 
                         auto * frame = buf->frame();
 

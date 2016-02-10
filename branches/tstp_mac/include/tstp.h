@@ -4,38 +4,35 @@
 #define __tstp_h
 
 #include <ieee1451_0.h>
+#include <tstp_mac.h>
 #include <nic.h>
 #include <rtc.h>
 #include <utility/hash.h>
+#include <utility/ostream.h>
 
 __BEGIN_SYS
 
-class TSTP 
+class TSTP : public TSTP_Common
 {
     friend class Interest;
     friend class Sensor;
 
 public:
-    typedef IEEE1451_0::Unit Unit;
-    typedef RTC::Microsecond Microsecond;
-    typedef unsigned int Data;
+    typedef Data (* Sensor_Handler)();
 
-    typedef Data (* Sensor_Handler)();    
-
-    class Interest
+    class Interest : public TSTP_Common::Interest
     {
         friend class TSTP;
 
     public:
-        Interest(Unit unit, Data * data, Data precision, Microsecond period) 
-            : _period(period), _unit(unit), _precision(precision),  _data(data)
+        Interest(Data * data, const Region & region, const Time & t0, const Time & dt, const Time & period, const Unit & unit, const Data & precision, const RESPONSE_MODE & response_mode) 
+            : TSTP_Common::Interest(region, t0, dt, period, unit, precision, response_mode), _data(data)
         {
-            TSTP::instance->add(*this);
-            TSTP::instance->publish(*this);
+            //TSTP::instance->add(*this);
+            TSTP_MAC::send(this);
         }
-        ~Interest()
-        {
-            TSTP::instance->remove(*this);
+        ~Interest() {
+            //TSTP::instance->remove(*this);
         }
 
         Unit unit() const { return _unit; }
@@ -43,16 +40,17 @@ public:
         Data precision() const { return _precision; }
 
         friend Debug & operator<<(Debug & db, const Interest & i) {
-            db << "{_period=" << i._period << ",_unit=" << i._unit << ",_precision=" << i._precision << ",_data=" << i._data << ",*_data=" << *(i._data) << "}";
+            db << "{" << static_cast<const TSTP_Common::Interest &>(i) << ",_data=" << i._data << ",*_data=" << *(i._data) << "}";
             return db;
+        }
+        friend OStream & operator<<(OStream & s, const Interest & i) {
+            s << "{" << static_cast<TSTP_Common::Interest>(i) << ",_data=" << i._data << ",*_data=" << *(i._data) << "}";
+            return s;
         }
 
     private:
-        Microsecond _period;
-        Unit _unit;
-        Data _precision;
         Data * _data;
-    };
+    }__attribute__((packed));
 
     class Sensor
     {

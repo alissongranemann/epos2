@@ -2,31 +2,22 @@
 #define __tstp_mac_h
 
 #include <nic.h>
+#include <units.h>
 
 #include <utility/list.h>
 #include <utility/math.h>
 #include <cpu.h>
+#include <ieee802_15_4.h>
 #include <timer.h>
 
 __BEGIN_SYS
 
-class TSTP_MAC : public NIC_Common
+class TSTP_MAC : public NIC_Common, public TSTP_Common
 {
 public:
-    struct Statistics : public NIC_Common::Statistics {
-        Statistics(): NIC_Common::Statistics(), 
-            dropped_rx_packets(0), dropped_rx_bytes(0), dropped_tx_packets(0),
-            dropped_tx_bytes(0), rx_payload_frames(0), tx_payload_frames(0), dropped_payload_frames(0), waited_to_rx_payload(0) { }
-
-        unsigned int dropped_rx_packets;
-        unsigned int dropped_rx_bytes;
-        unsigned int dropped_tx_packets;
-        unsigned int dropped_tx_bytes;
-        unsigned int rx_payload_frames;
-        unsigned int tx_payload_frames;
-        unsigned int dropped_payload_frames;
-        unsigned int waited_to_rx_payload;
-    };
+    typedef TSTP_Common::Address Address;
+    typedef TSTP_Common::Statistics Statistics;
+    typedef TSTP_Common::Interest Interest;
 
     static const Statistics & statistics() { return _statistics; }
 
@@ -34,74 +25,20 @@ public:
 
     typedef CPU::Reg8 Reg8;
 
-    typedef short Message_ID;
-    typedef int Microsecond;    
-    typedef Microsecond Time;
-    typedef int Distance;
-    typedef int Unit;
-
-    enum Message_Type {
-        INTEREST = 0,
-        DATA = 1,
-        REPORT = 2,
-        // 3 is unused
-        BOOTSTRAP_0 = 4,
-        BOOTSTRAP_1 = 5,
-        BOOTSTRAP_2 = 6,
-        BOOTSTRAP_3 = 7,
-    };
-
-    class Address 
-    {
-    public:
-        int x, y, z;
-
-        Address(int xi = 0, int yi = 0, int zi = 0) :x(xi), y(yi), z(zi) { }
-
-        friend Debug & operator<<(Debug & db, const Address & a) {
-            db << "{" << a.x << "," << a.y << "," << a.z << "}";
-            return db;
-        }
-
-        operator int() const { return x ^ y ^ z; }
-
-        bool operator==(const Address & rhs) {
-            return x == rhs.x and y == rhs.y and z == rhs.z;
-        }
-
-        Distance operator-(const Address & rhs) const {
-            int xx = rhs.x - x;
-            int yy = rhs.y - y;
-            int zz = rhs.z - z;
-            //return Math::sqrt(xx*xx + yy*yy + zz*zz);
-            return Math::abs(xx + yy + zz);
-        }
-    }__attribute__((packed, may_alias));
-
     static void address(const Address & a) { _address = a; }
     static Address address() { return _address; }
+    static Address sink_address() { return _sink_address; }
 
-    // The IEEE 802.15.4 PHR
-    class Phy_Header
-    {
-    public:
-        Phy_Header() { }
-        Phy_Header(Reg8 len) : _frame_length((len & (~0x7f)) ? 0x7f : len) { }
+    typedef IEEE802_15_4::Phy_Header Phy_Header;
 
-        Reg8 frame_length() const { return _frame_length; }
-        void frame_length(Reg8 len) { _frame_length = ((len & (~0x7f)) ? 0x7f : len); }
-
-    protected:
-        Reg8 _frame_length;
-    } __attribute__((packed, may_alias));
+    static Time time_now();
 
     // TSTP MAC Microframe
-    class Microframe : private Phy_Header
+    class Microframe
     {
     public:
-        Microframe(bool all_listen, unsigned int count, Distance distance, Message_ID id) 
-            : Phy_Header(sizeof(Microframe)),
-            _all_listen(all_listen), _count(count), _last_hop_distance(distance), _id(id)            {}
+        Microframe(bool all_listen, Distance distance, Message_ID id, unsigned int count = Traits<TSTP_MAC>::N_MICROFRAMES - 1)
+            : _all_listen(all_listen), _count(count), _last_hop_distance(distance), _id(id) {}
 
         unsigned int id() { return _id; }
         unsigned int count() { return _count; }
@@ -111,7 +48,7 @@ public:
         void operator--() { _count--; }
 
         friend Debug & operator<<(Debug & db, const Microframe & m) {
-            db << "{all=" << m._all_listen << " ,c=" << m._count << " ,lhd=" << m._last_hop_distance  << " ,id=" << m._id  << " ,crc" << m._CRC << "}";
+            db << "{all=" << m._all_listen << " ,c=" << m._count << " ,lhd=" << m._last_hop_distance  << " ,id=" << m._id  << "}";
             return db;
         }
 
@@ -121,24 +58,22 @@ public:
         unsigned _count : 8;
         unsigned _last_hop_distance : 32;
         unsigned _id : 15;
-        unsigned _CRC : 16;
     } __attribute__((packed, may_alias));
 
-    class Payload_Header : public Phy_Header
+    class Header
     {
     public:
-        Payload_Header() {}
-        Payload_Header(Reg8 size) : Phy_Header(size) { }
-        Payload_Header(Message_Type t, Reg8 size) : Phy_Header(size+sizeof(Payload_Header)), _message_type(t), _origin_address(TSTP_MAC::address())  {};
+        Header() {}
+        Header(Message_Type t) : _message_type(t), _origin_address(TSTP_MAC::address())  {};
 
-        Message_Type message_type() { return static_cast<Message_Type>(_message_type); }
-        Address last_hop_address() { return _last_hop_address; }
+        Message_Type message_type() const { return static_cast<Message_Type>(_message_type); }
+        Address last_hop_address() const { return _last_hop_address; }
         void last_hop_address(const Address & addr) { _last_hop_address = addr; }
-        Time last_hop_time() { return _last_hop_time; }
+        Time last_hop_time() const { return _last_hop_time; }
         void last_hop_time(const Time & t) { _last_hop_time = t; }
-        Address origin_address() { return _origin_address; }
+        Address origin_address() const { return _origin_address; }
 
-    protected:
+    private:
         unsigned _message_type : 3;
         unsigned _time_request : 1;
         unsigned _spatial_scale : 2;
@@ -150,77 +85,61 @@ public:
         Time _origin_time;
     } __attribute__((packed, may_alias));
 
-    static const unsigned int MTU = 127;
     typedef NIC_Common::CRC16 CRC;
+    static const unsigned int MTU = 127 - sizeof(CRC);
 
     typedef unsigned char Data[MTU];
 
-    class Interest : private Payload_Header
+    class Interest_Message : private Header, public Interest
     {
     public:
-        Interest(Address region, Time t0, Time dt, Time period, Unit unit, unsigned int precision, bool response_mode) : 
-            Payload_Header(INTEREST, sizeof(Interest)),
-            _region(region), _t0(t0), _dt(dt),
-            _period(period), _unit(unit), _precision(precision), 
-            _response_mode(response_mode) { }
+        Interest_Message(const Interest & body) : 
+            Header(INTEREST),
+            Interest(body) { }
 
-        Address destination() const { return _region; }
-        Address region() const { return destination(); }
-        Time t0() const { return _t0; }
-        Time period() const { return _period; }
+        Interest_Message(const Region & region, const Time & t0, const Time & dt, const Time & period, const Unit & unit, const unsigned int & precision, const RESPONSE_MODE & response_mode) : 
+            Header(INTEREST),
+            Interest(region, t0, dt, period, unit, precision, response_mode) { }
 
-        Payload_Header * header() { return this; }
+        Header * header() { return this; }
 
-        friend Debug & operator<<(Debug & db, const Interest & i) {
-            db << "{region=" << i._region << ",t0=" << i._t0 << ",dt=" << i._dt << ",p=" << i._period << ",u=" << i._unit << ",pr=" << i._precision << ",rm=" << i._response_mode << "}";
-            return db;
+        Interest * interest() { 
+            auto raw = reinterpret_cast<char *>(this);
+            return reinterpret_cast<Interest*>(&(raw[sizeof(Header)]));
         }
 
-    private:
-    public: //TODO: REMOVE
-        Address _region;
-        Time _t0;
-        Time _dt;
-        Time _period;
-        Unit _unit;
-        unsigned _precision : 7;
-        unsigned _response_mode : 1;
     } __attribute__((packed, may_alias));
 
-    class Payload : private Payload_Header
-    {
-    public:
-        Payload_Header * header() { return this; }
-
-        Address destination() 
-        {
-            if(_message_type == INTEREST) {
-                return reinterpret_cast<Interest*>(this)->destination();
-            }
-            else {
-                return _sink_address;
-            }
-        }
-    };
-
-    // The TSTP Frame
+    // The IEEE802_15_4 Frame which encapsulates TSTP data
     class Frame: private Phy_Header
     {
     public:
         Frame() {}
-        Frame(Reg8 size) : Phy_Header(size) { } //+sizeof(CRC)) { }
-        Frame(const void * data, Reg8 size) : Phy_Header(size) { //+sizeof(CRC)) {
-            memcpy(_data, data, size);
+        Frame(Reg8 data_size) : Phy_Header(data_size + sizeof(CRC)) { }
+        Frame(const void * data, Reg8 data_size) : Phy_Header(data_size + sizeof(CRC)) {
+            memcpy(_data, data, data_size);
         }
 
         Phy_Header * header() { return this; }
-
-        Microframe * microframe() { return reinterpret_cast<Microframe *>(this); }
-
-        Payload * payload() { return reinterpret_cast<Payload *>(this); }
+        const Phy_Header * header() const { return this; }
 
         template<typename T>
         T * data() { return reinterpret_cast<T *>(&_data); }
+
+        template<typename T>
+        const T * data() const { return reinterpret_cast<const T *>(&_data); }
+
+        const CRC & crc () const {
+            auto raw = data<char>();
+            auto crc_offset = header()->frame_length() - sizeof(CRC);
+            return *(reinterpret_cast<const CRC *>(&raw[crc_offset]));
+        }
+
+        void crc(const CRC & c) {
+            auto raw = data<char>();
+            auto crc_offset = header()->frame_length() - sizeof(CRC);
+            reinterpret_cast<CRC &>(raw[crc_offset]) = c;
+        }
 
         friend Debug & operator<<(Debug & db, const Frame & f) {
             db << "{" << f._data << "}";
@@ -229,20 +148,11 @@ public:
 
     protected:
         Data _data;
-        //CRC _crc;
+        CRC _crc;
     } __attribute__((packed, may_alias));
 
-    static Message_ID id(const Interest * i)
-    {
-        auto raw = reinterpret_cast<const char *>(i);
-        unsigned int id = 0u;
-        for(auto j = 0u; j < sizeof(Interest); j++)
-            id ^= raw[j];
-        id += (time_now() - i->t0()) / i->period();
-        return id;
-    }
 
-    static void send(const Interest * interest);
+    static bool send(const Interest * interest);
 
     typedef Frame PDU;
 
@@ -272,6 +182,7 @@ public:
         template<typename T>
         T * back() const { return reinterpret_cast<T *>(_back); }
 
+        // For the upper layers, size will represent the size of frame->data<T>()
         unsigned int size() const { return _size; }
         void size(unsigned int s) { _size = s; }
 
@@ -291,28 +202,54 @@ public:
     };
 
 private:
+    static Message_ID message_hash(const char * raw, unsigned int size) {
+        Message_ID id = 0;
+        unsigned int i;
+        for(i = 0; (i+sizeof(Message_ID)) <= size; i += sizeof(Message_ID)) {
+            id ^= *(reinterpret_cast<const Message_ID *>(&(raw[i])));
+        }
+        Message_ID rest = 0;
+        for(; i < size; i++) {
+            rest <<= sizeof(char) * 8;
+            rest += raw[i];
+        }
+        id ^= rest;
+        id &= ~(0x8000);
+        return id ^ rest;
+    }
+
+public:
+    template<typename T>
+    static Message_ID id(T * t) {
+        return message_hash(reinterpret_cast<const char *>(t), sizeof(T));
+    }
+    // Specialization below:
+    // template<>
+    // Message_ID id(Interest_Message * i);
+
+private:
     class TX_Schedule 
     {
     public:
-        TX_Schedule() : _n_entries(0) { }
+        TX_Schedule() : _n_entries(0) {}
 
         class TX_Schedule_Entry 
         {
         public:
             TX_Schedule_Entry() {}
 
-            TX_Schedule_Entry(bool is_new, Message_ID id, Time transmit_at, Time backoff, Address destination, Buffer * payload) : 
+            TX_Schedule_Entry(bool is_new, Message_ID id, Time transmit_at, Time backoff, Address destination, Buffer * buffer) : 
                 _new(is_new), _id(id), _transmit_at(transmit_at), 
                 _backoff(backoff), _dst(destination), _trials(0), 
-                _payload(payload) 
+                _buffer(buffer) 
             { }
 
             Message_ID id() { return _id; }
             Time transmit_at() { return _transmit_at; }
             void transmit_at(Time t) { _transmit_at = t; }
-            Buffer * payload() { return _payload; }
+            Buffer * buffer() { return _buffer; }
             Time backoff() { return _backoff; }
-            Address destination() { return _dst; }
+            const Address & destination() { return _dst; }
 
             void free(); 
 
@@ -326,39 +263,35 @@ private:
             Time _backoff;
             Address _dst;
             unsigned int _trials;
-            Buffer * _payload;
+            Buffer * _buffer;
         };
 
-        TX_Schedule_Entry * next_message()
-        {
-            auto min_i = 0u;
-            bool ok;
-            do {
-                if(_n_entries == 0) {
-                    return 0;
-                }
+        TX_Schedule_Entry * tx_pending(const Time & time) {
+            unsigned int min_i = -1u;
+            auto min = time;
 
-                auto min = _table[0].transmit_at();
-
-                for(auto i = 1u; i < _n_entries; i++) {
-                    if(_table[i].transmit_at() <= min) {
-                        min = _table[i].transmit_at();
-                        min_i = i;
+            for(auto i = 0u; i < _n_entries; i++) {
+                if(_table[i].transmit_at() <= time) {
+                    if(_table[i].trials() >= Traits<TSTP_MAC>::MAX_SEND_TRIALS) {
+                        remove_by_index(i);
+                        i--;
+                    } else {
+                        if(_table[i].transmit_at() < min) {
+                            min = _table[i].transmit_at();
+                            min_i = i;
+                        }
                     }
                 }
-                ok = _table[min_i].trials() < Traits<TSTP_MAC>::MAX_SEND_TRIALS;
-                if(not ok) {
-                    db<TSTP_MAC>(TRC) << "TSTP_MAC::TX_Schedule::TX_Schedule_Entry::Removing index " << min_i << " : " << &_table[min_i] << endl;
-                    remove_by_index(min_i);
-                    min_i = 0u;
-                }
-            } while(not ok);
-
-            return &_table[min_i];
+            }
+            if(min_i == -1u) {
+                return 0;
+            } else {
+                ++_table[min_i];
+                return &_table[min_i];
+            }
         }
 
-        bool remove(Message_ID id)
-        {
+        bool remove(Message_ID id) {
             for(auto i = 0u; i < _n_entries; i++) {
                 if(_table[i].id() == id) {
                     _table[i].free();
@@ -372,12 +305,11 @@ private:
             return false;
         }
 
-        bool insert(bool is_new, Message_ID id, Time transmit_at, Time backoff, Address destination, Buffer * payload)
-        {
-            db<TSTP_MAC>(TRC) << "TSTP_MAC::TX_Schedule::insert(new=" << is_new << ",id=" << id << ",at=" << transmit_at << ",bkf=" << backoff << ",dst=" << destination << ",pld=" << payload << endl;
+        bool insert(bool is_new, Message_ID id, Time transmit_at, Time backoff, Address destination, Buffer * buffer) {
+            db<TSTP_MAC>(TRC) << "TSTP_MAC::TX_Schedule::insert(new=" << is_new << ",id=" << id << ",at=" << transmit_at << ",bkf=" << backoff << ",dst=" << destination << ",buf=" << buffer << endl;
 
             if(_n_entries < Traits<TSTP_MAC>::TX_SCHEDULE_SIZE - 1) {
-                new (&_table[_n_entries]) TX_Schedule_Entry(is_new, id, transmit_at, backoff, destination, payload);
+                new (&_table[_n_entries]) TX_Schedule_Entry(is_new, id, transmit_at, backoff, destination, buffer);
                 db<TSTP_MAC>(TRC) << " => " << hex << &_table[_n_entries] << endl;
                 _n_entries++;
                 return true;
@@ -390,8 +322,7 @@ private:
         }
 
     private:
-        void remove_by_index(unsigned int idx) 
-        {
+        void remove_by_index(unsigned int idx) {
             for(auto i = idx; i < _n_entries; i++) {
                 _table[i].free();
                 if(i < _n_entries - 1) {
@@ -409,8 +340,6 @@ private:
     typedef void (Timer_Handler)(const unsigned int & int_id);
 
     static void check_tx_schedule(const unsigned int & int_id = 0);
-    static TX_Schedule::TX_Schedule_Entry * tx_pending();
-    static Time time_now();
     static void timeout(Time time, const Timer_Handler & handler);
     static void clear_timeout();
     static void cca(const unsigned int & int_id = 0);
@@ -420,17 +349,17 @@ private:
     static void tx_data(const unsigned int & int_id = 0);
     static void rx_data(const unsigned int & int_id = 0);
     static void process_mf(Buffer * b);
-    static void process_data(Buffer * b);
+    static void process_data(Interest_Message * interest);
+    static void parse_data(Buffer * b);
     static Microframe * to_microframe(Buffer * b);
-    static Payload * to_payload(Buffer * b);
     static bool relevant(Microframe * mf);
-    static bool should_forward(Payload * p);
+    static bool should_forward(Interest_Message * i);
+    static Interest_Message * to_interest(Frame * f);
 
-    static bool all_listen(TX_Schedule::TX_Schedule_Entry * e);
-    static bool is_destination(TX_Schedule::TX_Schedule_Entry * e);
-    static Distance distance_to(TX_Schedule::TX_Schedule_Entry * e); 
+    static bool all_listen(Frame * f);
+    static bool is_ack(TX_Schedule::TX_Schedule_Entry * e);
     static Time time_until_data(Microframe * mf);
-    static Time backoff(Payload * p);
+    static Time backoff(const Address & destination, const Distance & last_hop_distance);
     static Time backoff();
 
     static Buffer * _tx_pending_mf_buffer;
@@ -444,6 +373,16 @@ private:
     static Address _sink_address;
     static Statistics _statistics;
 };
+
+template<>
+inline TSTP_MAC::Message_ID TSTP_MAC::id(Interest_Message * i) {
+    if(i->response_mode() == RESPONSE_MODE::SINGLE) {
+        auto ret = id(i->interest());
+        return ret + ((time_now() - i->t0()) / i->period());
+    } else {
+        return message_hash(reinterpret_cast<const char *>(i), sizeof(Interest_Message));
+    }
+}
 
 __END_SYS
 

@@ -249,7 +249,7 @@ public:
     ~CC2538();
 
     int send(Buffer * buf);
-    bool channel_busy();
+    bool channel_busy(unsigned int time = Traits<TSTP_MAC>::CCA_TIME);
 
     Buffer * alloc(NIC * nic, unsigned int payload);
 

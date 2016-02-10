@@ -43,7 +43,7 @@ void print_statistics()
     ++times_called;
 
     auto this_line = 45u;
-    _assert(s.tx_packets, (s.rx_packets / 2) * (Traits<TSTP_MAC>::N_MICROFRAMES + 1), ++this_line);
+    _assert(s.tx_packets, (ts.rx_payload_frames) * (Traits<TSTP_MAC>::N_MICROFRAMES + 1), ++this_line);
     _assert(ts.dropped_payload_frames, 0, ++this_line);
 }
 
