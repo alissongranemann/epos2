@@ -741,10 +741,10 @@ void PC_Setup::setup_sys_pd()
     unsigned int i = 0;
     for(; i < (APIC_SIZE / sizeof(Page)); i++)
         pts[i] = (APIC_PHY + i * sizeof(Page)) | Flags::APIC;
-    for(; i < ((APIC_SIZE / sizeof(Page)) + (VGA_SIZE / sizeof(Page))); i++)
-        pts[i] = (VGA_PHY + i * sizeof(Page)) | Flags::VGA;
-    for(; i < io_size; i++)
-        pts[i] = (si->pmm.io_base + i * sizeof(Page)) | Flags::PCI;
+    for(unsigned int j = 0; i < ((APIC_SIZE / sizeof(Page)) + (VGA_SIZE / sizeof(Page))); i++, j++)
+        pts[i] = (VGA_PHY + j * sizeof(Page)) | Flags::VGA;
+    for(unsigned int j = 0; i < io_size; i++, j++)
+        pts[i] = (si->pmm.io_base + j * sizeof(Page)) | Flags::PCI;
 
     // Attach devices' memory at Memory_Map<PC>::IO
     for(int i = 0; i < n_pts; i++)
