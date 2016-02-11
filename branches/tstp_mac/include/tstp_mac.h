@@ -14,10 +14,13 @@ __BEGIN_SYS
 
 class TSTP_MAC : public NIC_Common, public TSTP_Common
 {
+    friend class TSTP;
+
 public:
     typedef TSTP_Common::Address Address;
     typedef TSTP_Common::Statistics Statistics;
     typedef TSTP_Common::Interest Interest;
+    typedef TSTP_Common::Header Header;
 
     static const Statistics & statistics() { return _statistics; }
 
@@ -60,31 +63,6 @@ public:
         unsigned _id : 15;
     } __attribute__((packed, may_alias));
 
-    class Header
-    {
-    public:
-        Header() {}
-        Header(Message_Type t) : _message_type(t), _origin_address(TSTP_MAC::address())  {};
-
-        Message_Type message_type() const { return static_cast<Message_Type>(_message_type); }
-        Address last_hop_address() const { return _last_hop_address; }
-        void last_hop_address(const Address & addr) { _last_hop_address = addr; }
-        Time last_hop_time() const { return _last_hop_time; }
-        void last_hop_time(const Time & t) { _last_hop_time = t; }
-        Address origin_address() const { return _origin_address; }
-
-    private:
-        unsigned _message_type : 3;
-        unsigned _time_request : 1;
-        unsigned _spatial_scale : 2;
-        unsigned _temporal_scale : 2;
-        unsigned _location_confidence : 8;
-        Address _last_hop_address;
-        Time _last_hop_time;
-        Address _origin_address;
-        Time _origin_time;
-    } __attribute__((packed, may_alias));
-
     typedef NIC_Common::CRC16 CRC;
     static const unsigned int MTU = 127 - sizeof(CRC);
 
@@ -94,11 +72,11 @@ public:
     {
     public:
         Interest_Message(const Interest & body) : 
-            Header(INTEREST),
+            Header(INTEREST, TSTP_MAC::address()),
             Interest(body) { }
 
         Interest_Message(const Region & region, const Time & t0, const Time & dt, const Time & period, const Unit & unit, const unsigned int & precision, const RESPONSE_MODE & response_mode) : 
-            Header(INTEREST),
+            Header(INTEREST, TSTP_MAC::address()),
             Interest(region, t0, dt, period, unit, precision, response_mode) { }
 
         Header * header() { return this; }
@@ -372,6 +350,8 @@ private:
     static Address _address;
     static Address _sink_address;
     static Statistics _statistics;
+
+    static TSTP * _tstp;
 };
 
 template<>

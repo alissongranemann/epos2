@@ -578,17 +578,13 @@ public:
 
     static bool running() { return reg(CTRL) & CTRL_STATE; }
 
-    static void disable() 
-    { 
+    static void disable()
+    {
         reg(IRQM) = 0; // Disable interrupts
-        stop(); 
+        stop();
     }
 
-    static void enable() 
-    { 
-        reg(IRQM) = 0; // Disable interrupts
-        start(); 
-    }
+    static void enable() { start(); }
 };
 __END_SYS
 

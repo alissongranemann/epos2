@@ -14,10 +14,13 @@ __BEGIN_SYS
 
 class TSTP : public TSTP_Common
 {
+    friend class TSTP_MAC;
     friend class Interest;
     friend class Sensor;
 
 public:
+    typedef TSTP_MAC MAC;
+
     typedef Data (* Sensor_Handler)();
 
     class Interest : public TSTP_Common::Interest
@@ -29,7 +32,7 @@ public:
             : TSTP_Common::Interest(region, t0, dt, period, unit, precision, response_mode), _data(data)
         {
             //TSTP::instance->add(*this);
-            TSTP_MAC::send(this);
+            MAC::send(this);
         }
         ~Interest() {
             //TSTP::instance->remove(*this);
@@ -52,18 +55,19 @@ public:
         Data * _data;
     }__attribute__((packed));
 
+    /*
     class Sensor
     {
     public:
         Sensor(Unit unit, Sensor_Handler sense, Data precision, Microsecond period) 
         : _period(period), _unit(unit), _precision(precision),  _sense(sense)
         {
-            TSTP::instance->add(*this);
-            TSTP::instance->publish(*this);
+            //TSTP::instance->add(*this);
+            //TSTP::instance->publish(*this);
         }
         ~Sensor()
         {
-            TSTP::instance->remove(*this);
+            //TSTP::instance->remove(*this);
         }
 
         Unit unit() const { return _unit; }
@@ -82,7 +86,9 @@ public:
         Data _precision;
         Sensor_Handler _sense;
     };
+    */
 
+    /*
     struct Header
     {
         enum TYPE 
@@ -143,40 +149,55 @@ public:
         Unit unit;
         Data precision;
     } __attribute__((packed));
+    */
 
     static void init();
 
 private:
+    void process(const Time & when, const RSSI & rssi, Header * h) {
+        db<TSTP>(TRC) << "TSTP: Interest Received : t=" << when << ",rssi=" << rssi << ",h=" << *h << endl;
+        //PTP::process(when, h);
+        //HECOPS::process(rssi, h);
+    }
+
+    template<typename T>
+    void process(const Time & when, const RSSI & rssi, Header * h, T * payload) {
+        db<TSTP>(TRC) << "TSTP::process(t=" << when << ",rssi=" << rssi << ",h=" << *h << ",i=" << *payload << ")" << endl;
+        process(when, rssi, h);
+        process(payload);
+    }
+
+    void process(TSTP_Common::Interest * i);
 
     TSTP();
 
     static TSTP * instance;
 
-    typedef Hash<Interest, Traits<TSTP>::MAX_INTERESTS> Interests;
-    typedef Hash<Sensor, Traits<TSTP>::MAX_SENSORS> Sensors;
+    //typedef Hash<Interest, Traits<TSTP>::MAX_INTERESTS> Interests;
+    //typedef Hash<Sensor, Traits<TSTP>::MAX_SENSORS> Sensors;
 
-    Interests interests;
-    Sensors sensors;
+    //Interests interests;
+    //Sensors sensors;
 
-    void publish(const Sensor & s);
-    void publish(const Interest & i);
-    void subscribe(Sensor * s, Microsecond period);
-    static void send_data(Sensor * s);
+    //void publish(const Sensor & s);
+    //void publish(const Interest & i);
+    //void subscribe(Sensor * s, TSTP_Common::Interest * i);
+    //static void send_data(Sensor * s);
 
-    void add(const Sensor & s) { sensors.insert(new Sensors::Element(&s, s.unit())); }
-    void add(const Interest & in) { interests.insert(new Interests::Element(&in, in.unit())); }
-    void remove(const Sensor & s) 
-    { 
-        auto el = sensors.remove(&s); 
-        if(el)
-            delete el;
-    }
-    void remove(const Interest & in)
-    { 
-        auto el = interests.remove(&in); 
-        if(el)
-            delete el;
-    }
+    //void add(const Sensor & s) { sensors.insert(new Sensors::Element(&s, s.unit())); }
+    //void add(const Interest & in) { interests.insert(new Interests::Element(&in, in.unit())); }
+    //void remove(const Sensor & s) 
+    //{ 
+    //    auto el = sensors.remove(&s); 
+    //    if(el)
+    //        delete el;
+    //}
+    //void remove(const Interest & in)
+    //{ 
+    //    auto el = interests.remove(&in); 
+    //    if(el)
+    //        delete el;
+    //}
 
     NIC _nic;
 };

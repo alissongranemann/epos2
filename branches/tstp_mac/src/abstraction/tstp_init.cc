@@ -15,6 +15,7 @@ void TSTP::init()
 
 TSTP::TSTP()
 {
+    TSTP_MAC::_tstp = this;
     //_nic.attach(this, Traits<TSTP>::PROTOCOL_ID); 
 }
 

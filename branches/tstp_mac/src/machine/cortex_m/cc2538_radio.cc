@@ -21,10 +21,7 @@ void CC2538::set_rx() { _rx_pin->set(); } //TODO:REMOVE
 void CC2538::clear_rx() { _rx_pin->clear(); } //TODO:REMOVE
 
 // Methods
-CC2538::~CC2538()
-{
-    db<CC2538>(TRC) << "~Radio(unit=" << _unit << ")" << endl;
-}
+CC2538::~CC2538() { db<CC2538>(TRC) << "~Radio(unit=" << _unit << ")" << endl; }
 
 bool CC2538::channel_busy(unsigned int time)
 {

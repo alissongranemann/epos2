@@ -1,10 +1,11 @@
-#include <nic.h>
+#include <tstp.h>
 #include <timer.h>
 #include <tsc.h>
 
 __USING_SYS
 
 TSTP_MAC::Message_ID TSTP_MAC::_receiving_data_id;
+TSTP * TSTP_MAC::_tstp;
 TSTP_MAC::Statistics TSTP_MAC::_statistics;
 TSTP_MAC::TX_Schedule TSTP_MAC::_tx_schedule;
 TSTP_MAC::TX_Schedule::TX_Schedule_Entry * TSTP_MAC::_tx_pending_data;
@@ -292,7 +293,15 @@ void TSTP_MAC::process_data(Interest_Message * interest)
             _tx_schedule.insert(false, _receiving_data_id, time_now(), backoff(interest->region().center, interest->header()->last_hop_address() - interest->region().center), interest->region().center, tx_buf);
         }
     }
-    _statistics.rx_payload_frames++;
+
+    // TODO: time and RSSI
+    auto time = time_now();
+    auto rssi = 0;
+    if(interest->region().contains(_address)) {
+        _tstp->process(time, rssi, interest->header(), interest->interest());
+    } else {
+        _tstp->process(time, rssi, interest->header());
+    }
 }
 
 TSTP_MAC::Interest_Message * TSTP_MAC::to_interest(Frame * f)
@@ -310,8 +319,9 @@ TSTP_MAC::Interest_Message * TSTP_MAC::to_interest(Frame * f)
 
 void TSTP_MAC::parse_data(Buffer * b)
 {
+    db<TSTP_MAC>(TRC) << "TSTP_MAC::parse_data(" << b << ")" << endl;
+
     _statistics.waited_to_rx_payload++;
-    db<TSTP_MAC>(TRC) << "TSTP_MAC::process_data(" << b << ")" << endl;
 
     bool success = false;
 
@@ -326,13 +336,13 @@ void TSTP_MAC::parse_data(Buffer * b)
             break;
     }
 
+    _radio.free(b); // TODO
+
     if(success) {
-        //_tstp->data_received(b); //TODO
-        _radio.free(b); // TODO
+        _statistics.rx_payload_frames++;
         check_tx_schedule();
     } else {
         _statistics.dropped_payload_frames++;
-        _radio.free(b); // TODO
     }
 }
 

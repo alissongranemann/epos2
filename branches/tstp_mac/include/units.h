@@ -73,6 +73,7 @@ class TSTP_Common : public Units
 public:
     typedef short Message_ID;
     typedef unsigned int Data;
+    typedef int RSSI;
 
     struct Address : public Units::Coordinate {
         Address(int xi = 0, int yi = 0, int zi = 0) : Coordinate(xi, yi, zi) { }
@@ -124,6 +125,40 @@ public:
         unsigned int dropped_payload_frames;
         unsigned int waited_to_rx_payload;
     };
+
+    class Header
+    {
+    public:
+        Header() {}
+        Header(const Message_Type & t, const Address & origin) : _message_type(t), _origin_address(origin)  {};
+
+        Message_Type message_type() const { return static_cast<Message_Type>(_message_type); }
+        Address last_hop_address() const { return _last_hop_address; }
+        void last_hop_address(const Address & addr) { _last_hop_address = addr; }
+        Time last_hop_time() const { return _last_hop_time; }
+        void last_hop_time(const Time & t) { _last_hop_time = t; }
+        Address origin_address() const { return _origin_address; }
+
+        friend Debug & operator<<(Debug & db, const Header & h) {
+            db << "{type=" << h._message_type << ",tr=" << h._time_request << ",sscale=" << h._spatial_scale << ",tscale=" << h._temporal_scale << ",lconf=" << h._location_confidence << ",lhaddr=" << h._last_hop_address << ",lht=" << h._last_hop_time << ",oaddr=" << h._origin_address << ",ot=" << h._origin_time << "}" << endl;
+            return db;
+        }
+        friend OStream & operator<<(OStream & os, const Header & h) {
+            os << "{type=" << h._message_type << ",tr=" << h._time_request << ",sscale=" << h._spatial_scale << ",tscale=" << h._temporal_scale << ",lconf=" << h._location_confidence << ",lhaddr=" << h._last_hop_address << ",lht=" << h._last_hop_time << ",oaddr=" << h._origin_address << ",ot=" << h._origin_time << "}" << endl;
+            return os;
+        }
+
+    private:
+        unsigned _message_type : 3;
+        unsigned _time_request : 1;
+        unsigned _spatial_scale : 2;
+        unsigned _temporal_scale : 2;
+        unsigned _location_confidence : 8;
+        Address _last_hop_address;
+        Time _last_hop_time;
+        Address _origin_address;
+        Time _origin_time;
+    } __attribute__((packed, may_alias));
 
     class Interest {
     public:
