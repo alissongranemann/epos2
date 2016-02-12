@@ -229,11 +229,10 @@ template<> struct Traits<Modbus_ASCII>: public Traits<void>
 
 template<> struct Traits<TSTP>: public Traits<void>
 {
-    static const bool enabled = false;//(Traits<Build>::NODES > 1);
+    static const bool enabled = (Traits<Build>::NODES > 1);
 
-    static const unsigned int PROTOCOL_ID = 84;
     static const unsigned int MAX_INTERESTS = 8;
-    static const unsigned int MAX_SENSORS = 8;
+    static const unsigned int MAX_SENSORS = 4;
 };
 
 template<> struct Traits<IP>: public Traits<Network>

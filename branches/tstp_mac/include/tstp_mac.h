@@ -21,6 +21,7 @@ public:
     typedef TSTP_Common::Statistics Statistics;
     typedef TSTP_Common::Interest Interest;
     typedef TSTP_Common::Header Header;
+    struct MAC { CPU::Reg32 m0, m1, m2, m3; }__attribute__((packed)); //TODO
 
     static const Statistics & statistics() { return _statistics; }
 
@@ -66,7 +67,7 @@ public:
     typedef NIC_Common::CRC16 CRC;
     static const unsigned int MTU = 127 - sizeof(CRC);
 
-    typedef unsigned char Data[MTU];
+    typedef unsigned char Payload[MTU];
 
     class Interest_Message : private Header, public Interest
     {
@@ -75,7 +76,7 @@ public:
             Header(INTEREST, TSTP_MAC::address()),
             Interest(body) { }
 
-        Interest_Message(const Region & region, const Time & t0, const Time & dt, const Time & period, const Unit & unit, const unsigned int & precision, const RESPONSE_MODE & response_mode) : 
+        Interest_Message(const Region & region, const Time & t0, const Time & dt, const Time & period, const Unit & unit, const unsigned int & precision, const RESPONSE_MODE & response_mode) :
             Header(INTEREST, TSTP_MAC::address()),
             Interest(region, t0, dt, period, unit, precision, response_mode) { }
 
@@ -86,6 +87,25 @@ public:
             return reinterpret_cast<Interest*>(&(raw[sizeof(Header)]));
         }
 
+    } __attribute__((packed, may_alias));
+
+    class Data_Message : private Header, private TSTP_Common::Labeled_Data
+    {
+    public:
+        Data_Message(const Unit & unit, const Data & data) : 
+            Header(DATA, _sink_address), Labeled_Data(unit, data) { }
+
+        Header * header() { return this; }
+        Data data() { return Labeled_Data::data; }
+        Unit unit() { return Labeled_Data::unit; }
+
+        Labeled_Data * labeled_data() { 
+            auto raw = reinterpret_cast<char *>(this);
+            return reinterpret_cast<Labeled_Data*>(&(raw[sizeof(Header)]));
+        }
+
+    private:
+        MAC _mac;
     } __attribute__((packed, may_alias));
 
     // The IEEE802_15_4 Frame which encapsulates TSTP data
@@ -125,12 +145,13 @@ public:
         }
 
     protected:
-        Data _data;
+        Payload _data;
         CRC _crc;
     } __attribute__((packed, may_alias));
 
 
     static bool send(const Interest * interest);
+    static bool send(const Unit & unit, const Data & data);
 
     typedef Frame PDU;
 
@@ -228,6 +249,7 @@ private:
             Buffer * buffer() { return _buffer; }
             Time backoff() { return _backoff; }
             const Address & destination() { return _dst; }
+            bool is_new() { return _new; }
 
             void free(); 
 
@@ -328,11 +350,14 @@ private:
     static void rx_data(const unsigned int & int_id = 0);
     static void process_mf(Buffer * b);
     static void process_data(Interest_Message * interest);
+    static void process_data(Data_Message * data);
     static void parse_data(Buffer * b);
     static Microframe * to_microframe(Buffer * b);
     static bool relevant(Microframe * mf);
     static bool should_forward(Interest_Message * i);
+    static bool should_forward(Data_Message * d);
     static Interest_Message * to_interest(Frame * f);
+    static bool is_sink() { return _address == _sink_address; } // TODO
 
     static bool all_listen(Frame * f);
     static bool is_ack(TX_Schedule::TX_Schedule_Entry * e);
@@ -350,6 +375,7 @@ private:
     static Address _address;
     static Address _sink_address;
     static Statistics _statistics;
+
 
     static TSTP * _tstp;
 };

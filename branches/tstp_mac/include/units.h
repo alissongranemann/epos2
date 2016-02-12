@@ -4,10 +4,11 @@
 #include <utility/debug.h>
 #include <utility/ostream.h>
 #include <utility/math.h>
+#include <ieee1451_0.h>
 
 __BEGIN_SYS
 
-class Units
+class Units : public IEEE1451_0
 {
 public:
     typedef int Microsecond;    
@@ -30,11 +31,8 @@ public:
             return os;
         }
 
-        //operator int() const { return x ^ y ^ z; }
-
-        bool operator==(const Coordinate & rhs) {
-            return x == rhs.x and y == rhs.y and z == rhs.z;
-        }
+        bool operator==(const Coordinate & rhs) const { return x == rhs.x and y == rhs.y and z == rhs.z; }
+        bool operator!=(const Coordinate & rhs) const { return not (rhs == *this); }
 
         Distance operator-(const Coordinate & rhs) const {
             int xx = rhs.x - x;
@@ -72,8 +70,26 @@ class TSTP_Common : public Units
 {
 public:
     typedef short Message_ID;
-    typedef unsigned int Data;
     typedef int RSSI;
+    typedef IEEE1451_0::Unit Unit;
+    typedef int Data;
+
+    struct Labeled_Data {
+        Labeled_Data() {}
+        Labeled_Data(const Unit & u, const Data & d) : unit(u), data(d) { };
+
+        friend Debug & operator<<(Debug & db, const Labeled_Data & ld) {
+            db << "{" << ld.unit << "," << ld.data << "}";
+            return db;
+        }
+        friend OStream & operator<<(OStream & os, const Labeled_Data & ld) {
+            os << "{" << ld.unit << "," << ld.data << "}";
+            return os;
+        }
+
+        Unit unit;
+        Data data;        
+    }__attribute__((packed));
 
     struct Address : public Units::Coordinate {
         Address(int xi = 0, int yi = 0, int zi = 0) : Coordinate(xi, yi, zi) { }
@@ -93,7 +109,6 @@ public:
     }__attribute__((packed));
 
     typedef Units::Sphere<Address, Units::Centimeter> Region;
-    typedef int Unit; // TODO
 
     enum Message_Type {
         INTEREST = 0,
@@ -169,7 +184,10 @@ public:
 
         Region region() const { return _region; }
         Time t0() const { return _t0; }
+        Time dt() const { return _dt; }
         Time period() const { return _period; }
+        Data precision() const { return _precision; }
+        Unit unit() const { return _unit; }
         RESPONSE_MODE response_mode() const { return static_cast<RESPONSE_MODE>(_response_mode); }
 
         friend Debug & operator<<(Debug & db, const Interest & interest) {

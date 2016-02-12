@@ -21,6 +21,8 @@ class TSTP : public TSTP_Common
 public:
     typedef TSTP_MAC MAC;
 
+    static Time time_now() { return TSTP_MAC::time_now(); }
+
     typedef Data (* Sensor_Handler)();
 
     class Interest : public TSTP_Common::Interest
@@ -31,16 +33,12 @@ public:
         Interest(Data * data, const Region & region, const Time & t0, const Time & dt, const Time & period, const Unit & unit, const Data & precision, const RESPONSE_MODE & response_mode) 
             : TSTP_Common::Interest(region, t0, dt, period, unit, precision, response_mode), _data(data)
         {
-            //TSTP::instance->add(*this);
+            TSTP::instance->add(*this);
             MAC::send(this);
         }
         ~Interest() {
-            //TSTP::instance->remove(*this);
+            TSTP::instance->remove(*this);
         }
-
-        Unit unit() const { return _unit; }
-        Microsecond period() const { return _period; }
-        Data precision() const { return _precision; }
 
         friend Debug & operator<<(Debug & db, const Interest & i) {
             db << "{" << static_cast<const TSTP_Common::Interest &>(i) << ",_data=" << i._data << ",*_data=" << *(i._data) << "}";
@@ -55,19 +53,18 @@ public:
         Data * _data;
     }__attribute__((packed));
 
-    /*
     class Sensor
     {
     public:
         Sensor(Unit unit, Sensor_Handler sense, Data precision, Microsecond period) 
         : _period(period), _unit(unit), _precision(precision),  _sense(sense)
         {
-            //TSTP::instance->add(*this);
+            TSTP::instance->add(*this);
             //TSTP::instance->publish(*this);
         }
         ~Sensor()
         {
-            //TSTP::instance->remove(*this);
+            TSTP::instance->remove(*this);
         }
 
         Unit unit() const { return _unit; }
@@ -79,6 +76,10 @@ public:
             db << "{_period=" << s._period << ",_unit=" << s._unit << ",_precision=" << s._precision << ",_sense=" << &s._sense << "}";
             return db;
         }
+        friend OStream & operator<<(OStream & os, const Sensor & s) {
+            os << "{_period=" << s._period << ",_unit=" << s._unit << ",_precision=" << s._precision << ",_sense=" << &s._sense << "}";
+            return os;
+        }
 
     private:
         Microsecond _period;
@@ -86,70 +87,6 @@ public:
         Data _precision;
         Sensor_Handler _sense;
     };
-    */
-
-    /*
-    struct Header
-    {
-        enum TYPE 
-        {
-            INTEREST = 0,
-            DATA = 1,
-            REPORT = 2,
-            // 3 is unused
-            BOOTSTRAP_0 = 4,
-            BOOTSTRAP_1 = 5,
-            BOOTSTRAP_2 = 6,
-            BOOTSTRAP_3 = 7,
-        };
-
-        Header(TYPE t) : message_type(t) {};
-        
-        template<typename T>
-        T* morph() { if(message_type == T::TYPE) return reinterpret_cast<T*>(this); return 0; }
-
-        unsigned message_type : 3;
-        unsigned time_request : 1;
-        unsigned spatial_scale : 2;
-        unsigned temporal_scale : 2;
-        unsigned location_confidence : 8;
-    } __attribute__((packed));
-
-    struct Interest_Msg : public Header
-    {
-        static const Header::TYPE TYPE = Header::TYPE::INTEREST;
-
-        Interest_Msg(const Interest & i) : Header(TYPE), period(i.period()), unit(i.unit()), precision(i.precision()) 
-        { }
-
-        Microsecond period;
-        Unit unit;
-        Data precision;
-    } __attribute__((packed));
-
-    struct Data_Msg : public Header
-    {
-        static const Header::TYPE TYPE = Header::TYPE::DATA;
-
-        Data_Msg(const Sensor & s) : Header(TYPE), unit(s.unit()), data(s.data()) 
-        { }
-
-        Unit unit;
-        Data data;
-    } __attribute__((packed));
-
-    struct Report_Msg : public Header
-    {
-        static const Header::TYPE TYPE = Header::TYPE::REPORT;
-
-        Report_Msg(const Sensor & s) : Header(TYPE), period(s.period()), unit(s.unit()), precision(s.precision()) 
-        { }
-
-        Microsecond period;
-        Unit unit;
-        Data precision;
-    } __attribute__((packed));
-    */
 
     static void init();
 
@@ -168,36 +105,37 @@ private:
     }
 
     void process(TSTP_Common::Interest * i);
+    void process(TSTP_Common::Labeled_Data * d);
 
     TSTP();
 
     static TSTP * instance;
 
-    //typedef Hash<Interest, Traits<TSTP>::MAX_INTERESTS> Interests;
-    //typedef Hash<Sensor, Traits<TSTP>::MAX_SENSORS> Sensors;
+    typedef Hash<Interest, Traits<TSTP>::MAX_INTERESTS> Interests;
+    typedef Hash<Sensor, Traits<TSTP>::MAX_SENSORS> Sensors;
 
-    //Interests interests;
-    //Sensors sensors;
+    Interests interests;
+    Sensors sensors;
 
     //void publish(const Sensor & s);
     //void publish(const Interest & i);
-    //void subscribe(Sensor * s, TSTP_Common::Interest * i);
-    //static void send_data(Sensor * s);
+    void subscribe(Sensor * s, TSTP_Common::Interest * i);
+    static void send_data(Sensor * s);
 
-    //void add(const Sensor & s) { sensors.insert(new Sensors::Element(&s, s.unit())); }
-    //void add(const Interest & in) { interests.insert(new Interests::Element(&in, in.unit())); }
-    //void remove(const Sensor & s) 
-    //{ 
-    //    auto el = sensors.remove(&s); 
-    //    if(el)
-    //        delete el;
-    //}
-    //void remove(const Interest & in)
-    //{ 
-    //    auto el = interests.remove(&in); 
-    //    if(el)
-    //        delete el;
-    //}
+    void add(const Sensor & s) { sensors.insert(new Sensors::Element(&s, s.unit())); }
+    void add(const Interest & in) { interests.insert(new Interests::Element(&in, in.unit())); }
+    void remove(const Sensor & s) 
+    { 
+        auto el = sensors.remove(&s); 
+        if(el)
+            delete el;
+    }
+    void remove(const Interest & in)
+    { 
+        auto el = interests.remove(&in); 
+        if(el)
+            delete el;
+    }
 
     NIC _nic;
 };

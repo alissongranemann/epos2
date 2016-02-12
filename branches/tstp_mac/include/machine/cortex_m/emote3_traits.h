@@ -80,7 +80,7 @@ template <> struct Traits<Cortex_M_USB>: public Traits<Cortex_M_Common>
 
 template <> struct Traits<TSTP_MAC>: public Traits<Cortex_M_Common>
 {
-    //static const bool debugged = true;
+//    static const bool debugged = true;
 
     static const unsigned int TX_SCHEDULE_SIZE = 4;
     typedef eMote3_User_Timer_2 Timer;

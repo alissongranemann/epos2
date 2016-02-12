@@ -6,13 +6,39 @@ __BEGIN_SYS
 
 void TSTP::process(TSTP_Common::Interest * i)
 {
-//    for(auto el = sensors.search_key(i->unit()); el; el = el->next()) {
-//        auto sensor = el->object();
-//        db<TSTP>(TRC) << "Found sensor " << (*sensor) << endl;
-//        if((sensor->period() <= i->period) and (sensor->precision() <= i->precision)) {
-//            subscribe(sensor, i);
-//        }
-//    }
+    db<TSTP>(TRC) << "TSTP::process: Interest " << *i << endl;
+    for(auto el = sensors.search_key(i->unit()); el; el = el->next()) {
+        auto sensor = el->object();
+        db<TSTP>(TRC) << "Found sensor " << (*sensor) << endl;
+        if((sensor->period() <= i->period()) and (sensor->precision() <= i->precision())) {
+            subscribe(sensor, i);
+        }
+    }
+}
+
+void TSTP::process(TSTP_Common::Labeled_Data * d)
+{
+    db<TSTP>(TRC) << "TSTP::process: Data " << *d << endl;
+    for(auto el = interests.search_key(d->unit); el; el = el->next()) {
+        db<TSTP>(TRC) << "Found interest " << endl;
+        auto interest = el->object();
+        auto variable = interest->_data;
+        db<TSTP>(TRC) << "interest: " << *interest << " variable: " << variable << " received data: " << d->data << endl;
+        *variable = d->data;
+    }
+}
+
+void TSTP::subscribe(Sensor * s, TSTP_Common::Interest * i)
+{
+    db<TSTP>(TRC) << "TSTP::subscribe(" << *s << "," << *i << ")" << endl;
+    new Alarm(i->period(), new Functor_Handler<Sensor>(&send_data, s), i->dt() / i->period());
+}
+
+void TSTP::send_data(Sensor * s)
+{
+    db<TSTP>(TRC) << "TSTP::send_data(" << (*s) << ")" << endl;
+
+    MAC::send(s->unit(), s->data());
 }
 
 //void TSTP::publish(const Sensor & s)
@@ -47,30 +73,6 @@ void TSTP::process(TSTP_Common::Interest * i)
 //
 //    //_nic.send(buffer);
 //}
-//
-//void TSTP::send_data(Sensor * s)
-//{
-//    //db<TSTP>(TRC) << "TSTP::send_data(" << (*s) << ")" << endl;
-//
-//    //NIC * nic = &(instance->_nic);
-//    //auto buffer = nic->alloc(nic, nic->broadcast(), Traits<TSTP>::PROTOCOL_ID, 0, 0, sizeof(Data_Msg));
-//    //if(!buffer) {
-//    //    db<TSTP>(WRN) << "TSTP::send_data(" << (*s) << ") : Didn't get buffer from NIC, aborting!" << endl;
-//    //    return;
-//    //}
-//
-//    //auto payload = buffer->frame()->data<Data_Msg>();
-//    //new (payload) Data_Msg(*s);
-//
-//    //nic->send(buffer);
-//}
-
-//void TSTP::subscribe(Sensor * s, TSTP_Common::Interest * i)
-//{
-//    db<TSTP>(TRC) << "TSTP::subscribe(" << *s << "," << *i << ")" << endl;
-//    //new Alarm(period, new Functor_Handler<Sensor>(&send_data, s), Alarm::INFINITE);
-//}
-
 ////void TSTP::update(NIC::Observed * o, NIC::Protocol p, NIC::Buffer *b)
 ////{
 ////    //db<TSTP>(TRC) << "TSTP::update(" << o << "," << p << "," << b << ")" << endl;

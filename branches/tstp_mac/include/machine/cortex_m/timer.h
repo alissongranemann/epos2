@@ -39,7 +39,6 @@ public:
         scs(STCURRENT) = 0;
         scs(STRELOAD) = CLOCK / f;
         scs(STCTRL) = CLKSRC | INTEN;
-
     }
 };
 
@@ -513,39 +512,41 @@ protected:
     static volatile Reg32 & reg (unsigned int offset) { return *(reinterpret_cast<volatile Reg32*>(MAC_TIMER_BASE + offset)); }
 
 public:
-    MAC_Timer() { 
-        config(); 
-    }
+    MAC_Timer() { config(); }
 
     struct Timestamp
     {
         Timestamp() : overflow_count(0), timer_count(0) {}
-        Timestamp(unsigned int val) : overflow_count(val >> 16), timer_count(val) {}
+        Timestamp(Reg32 val) : overflow_count(val >> 16), timer_count(val) {}
         Timestamp(Reg32 of, Reg16 ti) : overflow_count(of), timer_count(ti) {}
 
         Reg32 overflow_count;
         Reg16 timer_count;
 
         operator Reg32() { return (overflow_count << 16) + timer_count; }
-    } __attribute__((packed));
+    };
 
     static Timestamp read()
     {
         Reg32 index = reg(MSEL);
         reg(MSEL) = (OVERFLOW_COUNTER * MSEL_MTMOVFSEL) | (TIMER_COUNTER * MSEL_MTMSEL);
 
-        Reg16 timer_count = reg(M0); // M0 must be read first
-        timer_count += reg(M1) << 8;
+        Timestamp ret;
 
-        Reg32 overflow_count = (reg(MOVF2) << 16) + (reg(MOVF1) << 8) + reg(MOVF0);
+        ret.timer_count = reg(M0); // M0 must be read first
+        ret.timer_count += reg(M1) << 8;
+
+        ret.overflow_count = (reg(MOVF2) << 16) + (reg(MOVF1) << 8) + reg(MOVF0);
 
         reg(MSEL) = index;
 
-        return Timestamp(overflow_count, timer_count);
+        return ret;
     }
 
     static Timestamp us_to_ts(const Microsecond & us) { return us * (frequency() / 1000000); }
     static Microsecond ts_to_us(const Reg32 & ts) { return ts / (frequency() / 1000000); }
+
+    static void set(const Microsecond & us) { set(us_to_ts(us)); }
 
     static void set(const Timestamp & t)
     {

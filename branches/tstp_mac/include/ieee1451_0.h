@@ -64,7 +64,7 @@ public:
             return db;
         }
 
-    private:
+    protected:
         unsigned enu : 4;
         unsigned rad : 4;
         union {
@@ -80,6 +80,19 @@ public:
                 unsigned cd : 4;
             };
         };
+    }__attribute__((packed));
+
+    class Kelvin : public Unit { 
+        public: 
+            Kelvin() : Unit(Unit::KELVIN) { } 
+            friend Debug & operator<<(Debug & db, const Kelvin & k) {
+                db << "Kelvin";
+                return db;
+            }    
+            friend OStream & operator<<(OStream & os, const Kelvin & k) {
+                os << "Kelvin";
+                return os;
+            }    
     }__attribute__((packed));
 };
 

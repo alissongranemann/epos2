@@ -1,4 +1,4 @@
-#include <alarm.h>
+#include <timer.h>
 #include <tstp.h>
 
 using namespace EPOS;
@@ -7,16 +7,25 @@ OStream cout;
 
 int main()
 {
+    TSTP_MAC::address(TSTP_MAC::Address(0,0,0));
+
     cout << "TSTP Gateway test" << endl;
 
-    TSTP::Data presence;
-    TSTP::Unit presence_u(TSTP::Unit::PRESENCE);
-    TSTP::Region region(100, 100, 0, 10);
-    TSTP::Interest in(&presence, region, TSTP::time_now() + 3000000, 60000000, 1000000, presence_u, 1, TSTP::RESPONSE_MODE::SINGLE);
-
     while(true) {
-        Alarm::delay(1000000);
-        cout << presence << endl;
+        eMote3_GPTM::delay(1000000);
+
+        TSTP::Data temperature;
+        TSTP::Kelvin kelvin;
+        TSTP::Region region(0, 0, 0, 10000);
+        int n = 6;
+        TSTP::Interest in(&temperature, region, TSTP::time_now() + 3000000, n * 1000000, 1000000, kelvin, 1, TSTP::RESPONSE_MODE::SINGLE);
+
+        eMote3_GPTM::delay(1010000);
+
+        while(n--) {
+            eMote3_GPTM::delay(1010000);
+            cout << temperature << endl;
+        }
     }
 
     return 0;
