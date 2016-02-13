@@ -17,6 +17,7 @@ __BEGIN_SYS
 OStream kerr;
 __END_SYS
 
+/* Domain(s) U binding */
 
 // Bindings
 extern "C" {
@@ -49,20 +50,27 @@ extern "C" {
         return _API::This_Thread::this_thread_id();
     }
 
+    void _task_setup()
+    {
+        _API::Task::setup();
+    }
+
 }
 
 __USING_SYS;
-extern "C" 
+extern "C"
 {
     void _syscall(void * m)
-    { 
+    {
         CPU::syscall(m);
     }
 
     void _print(const char * s)
     {
-        Message msg(Id(UTILITY_ID, 0), Message::PRINT, reinterpret_cast<unsigned int>(s));
-        msg.act();
+        _API::Port<_API::IPC> comm = new _API::Port<_API::IPC>(9000); // where 9000 >= LAST_TYPE_ID
+
+        Message msg(Id(11, 0), Message::PRINT, reinterpret_cast<unsigned int>(s));
+        comm.send(&msg);
     }
 
     void * _create_segment_in_place(void * place, unsigned int size, unsigned int mmu_flags)
@@ -80,3 +88,5 @@ extern "C"
     }
 
 }
+
+/* ---- */

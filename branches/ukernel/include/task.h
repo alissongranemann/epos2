@@ -85,6 +85,7 @@ public:
     void main(Thread * thread) { _main = thread; }
 
     static Task * volatile self() { return current(); }
+    static void setup();
 
 private:
     void activate() const { _as->activate(); }

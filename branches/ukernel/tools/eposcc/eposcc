@@ -78,6 +78,12 @@ LINK_OBJI_KERNEL="$LIB/$ARCH""_crt0.o $LIB/$ARCH""_crtbegin.o $LIB/$MACH""_init_
 LINK_OBJN_KERNEL="$LIB/$ARCH""_crtend.o"
 LINK_LIBS_KERNEL="util_$ARCH arch_$ARCH gcc"
 
+LINKER_HYPERVISOR=$LINKER
+LINK_FLGS_HYPERVISOR="-L$LIB -L`$C_COMPILER $C_COMP_FLGS -print-file-name=` -static --nmagic --section-start $MACH_CODE_NAME=$APP_CODE --section-start $MACH_DATA_NAME=$APP_DATA"
+LINK_OBJI_HYPERVISOR="$LIB/$ARCH""_crt0.o $LIB/$ARCH""_crtbegin.o $LIB/$MACH""_init_application.o  $SRC/system/application_scaffold.o"
+LINK_OBJN_HYPERVISOR="$LIB/$ARCH""_crtend.o"
+LINK_LIBS_HYPERVISOR="util_$ARCH arch_$ARCH gcc"
+
 #=========================================================================
 # VARIABLES
 #=========================================================================
@@ -92,6 +98,7 @@ os_is_library=0
 os_is_builtin=0
 os_is_kernel=0
 os_is_linux=0
+os_is_hypervisor=0
 language=C
 getting_output_file=0
 has_dash_c=0
@@ -176,6 +183,14 @@ for arg in "$@" ; do
 	    os_is_kernel=1
 	fi
 	;;
+    --hypervisor)
+	if [ $os_is_library = 1 -o $os_is_builtin = 1 -o $os_is_linux = 1 -o $os_is_kernel = 1 ] ; then
+	    echo "--builtin, --kernel, --library, --linux, and --hypervisor cannot be used together!"
+	    exit -1
+	else
+	    os_is_hypervisor=1
+	fi
+	;;
     --trace)
 	need_trace=1
 	;;
@@ -195,6 +210,7 @@ for arg in "$@" ; do
 	echo "  --library EPOS is a library to be linked with the application"
 	echo "  --builtin EPOS is built-in the application"
 	echo "  --kernel  EPOS is a microkernel"
+	echo "  --hypervisor EPOS is a hypervisor"
 	echo "  --linux   EPOS is guest at Linux"
 	echo "  --trace   instruct EPOS to generate traces"
 	echo "  --show    show commands without issuing them"
@@ -314,8 +330,15 @@ if [ $os_is_kernel = 1 ] ; then
 	LINK_OBJI=$LINK_OBJI_BUILTIN
 	LINK_OBJN=$LINK_OBJN_BUILTIN
 	LINK_LIBS=$LINK_LIBS_BUILTIN
+    elif [ $os_is_hypervisor = 1 ] ; then
+        LINKER=$LINKER_HYPERVISOR
+	LINK_FLGS=$LINK_FLGS_HYPERVISOR
+	LINK_OBJI=$LINK_OBJI_HYPERVISOR
+	LINK_OBJN=$LINK_OBJN_HYPERVISOR
+	LINK_LIBS=$LINK_LIBS_HYPERVISOR
 fi
-	
+
+
 linker=$LINKER
 link_flgs="$link_flgs $LINK_FLGS"
 link_objs="$LINK_OBJI $link_objs $LINK_OBJN"

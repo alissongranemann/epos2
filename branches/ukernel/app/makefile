@@ -5,7 +5,7 @@ include ../makedefs
 install: $(MACH)_install_$(MODE)
 
 $(MACH)_loader:	$(MACH)_loader.o
-		$(ALD) $(ALDFLAGS) -o $@ $<
+		$(ALD0) $(ALDFLAGS) -o $@ $<
 
 $(MACH)_loader.o: $(MACH)_loader.cc
 		$(ACC) $(ACCFLAGS) -o $@ $<

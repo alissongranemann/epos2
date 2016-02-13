@@ -12,6 +12,7 @@ extern "C" { unsigned int _cpu_id(); }
 extern "C" { void _smp_barrier(); }
 extern "C" { void * _create_segment_in_place(void * place, unsigned int size, unsigned int mmu_flags); }
 extern "C" { void * _create_heap_in_place(void * place, void * heap_segment); }
+extern "C" { void _task_setup(); }
 
 
 __BEGIN_SYS
@@ -41,6 +42,8 @@ public:
         *
         * In any case, the smp_barrier seems unnecessary.
         * Therefore, commenting it. */
+
+        _task_setup();
 
         // Initialize Application's heap
         db<Init>(INF) << "Initializing application's heap: " << endl;

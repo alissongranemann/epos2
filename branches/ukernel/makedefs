@@ -152,6 +152,7 @@ TLDFLAGS	:= -m32
 ACC		= $(BIN)/eposcc $(MACH_CC_FLAGS) -c -ansi -O2
 ACXX		= $(BIN)/eposcc $(MACH_CC_FLAGS) -c -ansi -O2
 AF77		= $(BIN)/eposcc $(MACH_CC_FLAGS) -c -ansi -O2
+ALD0		= $(BIN)/eposcc --echo --hypervisor $(MACH_LD_FLAGS)
 ALD		= $(BIN)/eposcc --$(MODE) $(MACH_LD_FLAGS)
 ALDFLAGS	:= --gc-sections 
 

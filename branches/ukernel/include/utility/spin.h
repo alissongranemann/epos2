@@ -41,8 +41,10 @@ public:
 
     void release()
     {
-        if(--_level <= 0)
+        if(--_level <= 0) {
             _owner = 0;
+            _level = 0; /* ignores "extra" releases */
+        }
 
         db<Spin>(TRC) << "Spin::release[SPIN=" << this
                   << "]() => {owner=" << _owner
@@ -50,7 +52,7 @@ public:
     }
 
 private:
-    volatile unsigned int _level;
+    volatile int _level;
     volatile int _owner;
 };
 

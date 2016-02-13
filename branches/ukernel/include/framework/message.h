@@ -48,6 +48,7 @@ public:
         TASK_DATA,
         TASK_MAIN,
         TASK_SET_MAIN,
+        TASK_SETUP,
 
         ADDRESS_SPACE_PD = COMPONENT,
         ADDRESS_SPACE_ATTACH1,

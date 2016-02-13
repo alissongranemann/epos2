@@ -35,4 +35,9 @@ void Task::constructor_4_prologue(Segment * cs, Segment * ds)
 {
 }
 
+void Task::setup()
+{
+    PC_Display::remap(Memory_Map<PC>::VGA);
+}
+
 __END_SYS

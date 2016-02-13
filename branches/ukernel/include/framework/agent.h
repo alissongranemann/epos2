@@ -46,10 +46,13 @@ public:
             }
         }
         else { // out-of-kernel (i.e. Dom0 or server) services
+                db<void>(WRN) << "out-of-kernel (i.e. Dom0 or server) services" << endl;
+
                 Message msg(*this); // copy message from user space to kernel
                 msg.id(Id(IPC_COMMUNICATOR_ID, id().unit()));
                 if (IPC::send(id().unit(), &msg)) { // 0 => no one listening
                     Port<IPC> * comm = reinterpret_cast<Port<IPC> *>(IPC::observer(id().type())); // recall the Port<IPC> that got us here
+                    db<void>(WRN) << "will wait for reply" << endl;
                     comm->receive(this); // copy from kernel to user
                 } else
                     result(UNDEFINED);
@@ -237,6 +240,9 @@ void Agent::handle_task()
         Thread * thread;
         in(thread);
         task->main(thread);
+    } break;
+    case TASK_SETUP: {
+        Adapter<Task>::setup();
     } break;
     default: {
         db<Framework>(WRN) << "Undefined method for Task agent. Method = " << method() << endl;

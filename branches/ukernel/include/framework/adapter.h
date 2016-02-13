@@ -54,6 +54,7 @@ public:
     CPU::Log_Addr data() { enter(); CPU::Log_Addr res = Component::data(); leave(); return res; }
     Thread * main() { enter(); Thread * res = Component::main(); leave(); return res; }
     void main(Thread * thread) { enter(); Component::main(thread); leave(); }
+    static void setup() { static_enter(); Component::setup(); static_leave(); }
 
     // Memory management
     CPU::Phy_Addr pd() { enter(); CPU::Phy_Addr res = Component::pd(); leave(); return res; }
