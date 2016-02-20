@@ -16,9 +16,179 @@ using namespace EPOS;
 typedef RTC::Microsecond Microsecond;
 typedef Scheduling_Criteria::PEDF PEDF;
 
+
 int dom0();
+Task * create_domain(unsigned int domain_number, ELF * elf);
+Thread * create_vcpu(Task * domain_u, int (* guest_os_task) (), int pcpu, bool hrt);
+ELF * get_next_elf(char * elf_prt);
+
+
+static const unsigned int NUM_OF_DOMAINS = _SYS::Traits<Application>::NUM_OF_DOMAINS;
+static bool is_domain_hrt[NUM_OF_DOMAINS];
+Task * domains[NUM_OF_DOMAINS];
 
 OStream cout;
+
+
+int main(int argc, char * argv[])
+{
+    Network::init();
+    is_domain_hrt[1] = _SYS::Traits<Application>::IS_DOM_1_HRT;
+    is_domain_hrt[2] = _SYS::Traits<Application>::IS_DOM_2_HRT;
+
+    cout << "EPOS Application Loader" << endl;
+
+    if(!argc) {
+        cout << "No extra ELF programs found in boot image. Exiting!" << endl;
+        return -1;
+    }
+    cout << "Found ELF image of " << argc << " bytes at " << reinterpret_cast<void *>(argv) << endl;
+    // db<void>(WRN) << "argv" << (reinterpret_cast<char *>(argv)) << endl;
+
+    cout << "Creating Dom0 services: ";
+    Thread * d0 = new Thread(&dom0);
+    // d0 inspected at Thread::epilogue
+    d0->priority(_SYS::Thread::MAIN);
+    cout << "done!" << endl;
+
+    for (unsigned int i = 1; i < NUM_OF_DOMAINS; i++)
+    {
+        cout << "Trying to load Domain " << i << endl;
+
+        ELF * elf = get_next_elf(reinterpret_cast<char *>(argv));
+
+        if(! elf) {
+            cout << "Domain " << i << " could not be loaded (invalid ELF). Exiting!" << endl;
+            return -1;
+        }
+
+        domains[i] = create_domain(i, elf);
+
+        if(! domains[i]) {
+            cout << "Domain " << i << " could not be loaded. Exiting!" << endl;
+            return -1;
+        }
+
+        cout << "Domain " << i << " loaded! Waiting for it to finish ... " << endl;
+        domains[i]->main()->join();
+    }
+
+    cout << "All spawned processes have finished!" << endl;
+
+    cout << "Shutting down Dom0 services:";
+    delete d0;
+    cout << " done!" << endl;
+
+    cout << "Shutting down the machine!" << endl;
+
+    cout << "This is the end, my only friend, the end!" << endl;
+    cout << "Bye!" << endl;
+    return 0;
+}
+
+int dom0()
+{
+    Port<IPC> comm(11);
+    inspect_comm(reinterpret_cast<void *>(comm.__stub()->id().unit()));
+    cout << "comm system object = " << reinterpret_cast<void *>(comm.__stub()->id().unit()) << endl;
+
+    cout << "starting domain 0 task..." << endl;
+
+    while (true) {
+        S::Message message;
+
+        unsigned int size = comm.receive(&message);
+        char parms[S::Message::MAX_PARAMETERS_SIZE];
+        message.in(parms);
+        cout << "Dom0::received:msg=" << parms << endl;
+        comm.send(&message);
+    }
+}
+
+Task * create_domain(unsigned int domain_number, ELF * elf)
+{
+    inspect_elf(elf);
+
+    if(!elf->valid()) {
+        cout << "Application is corrupted. Exiting!" << endl;
+        return 0;
+    }
+
+    Address_Space * as = Task::self()->address_space();
+    inspect_as(reinterpret_cast<void *>(as->__stub()->id().unit()));
+    cout << "Got Task Master address space. System object is = " << reinterpret_cast<void *>(as->__stub()->id().unit()) << endl;
+
+    cout << "Creating code segment: ";
+    Segment * cs = new Segment(elf->segment_size(0));
+    inspect_cs(reinterpret_cast<void *>(cs->__stub()->id().unit()));
+    cout << "Created code segment (system object) = " << reinterpret_cast<void *>(cs->__stub()->id().unit()) << endl;
+    cout << "Code segment size: " << cs->size() << endl;
+
+    CPU::Log_Addr code = as->attach(cs);
+    inspect_code(&code);
+    cout << "code at: " << code << endl;
+
+    if(elf->load_segment(0, code) < 0) {
+        cout << "failed! Application code segment is corrupted! Exiting!" << endl;
+        return 0;
+    }
+    inspect_elf(elf);
+    cout << "Code segment loaded from ELF" << endl;
+
+    cout << "Creating data segment: ";
+    Segment * ds = new Segment(elf->segment_size(1));
+    inspect_ds(reinterpret_cast<void *>(ds->__stub()->id().unit()));
+    cout << "Created data segment (system object) = " << reinterpret_cast<void *>(ds->__stub()->id().unit()) << endl;
+    cout << "Data segment size: " << ds->size() << endl;
+
+    CPU::Log_Addr data = as->attach(ds);
+    inspect_data(&data);
+    cout << "data at: " << data << endl;
+
+    if(elf->load_segment(1, data) < 0) {
+        cout << "failed! Application data segment is corrupted! Exiting!" << endl;
+        return 0;
+    }
+    inspect_elf(elf);
+    cout << "Data segment loaded from ELF" << endl;
+
+    /* I wanted to change the Task constructor that contais the Thread
+     * configuration as parameter to create also RT_Threads
+     * (or Periodic_Threads).
+     * However, including periodic_thread.h in task.h caused circular
+     * references.
+     * Decided to create the periodic thread outside.
+     * So, created a new contructor of Task that has a pointer to Thread as
+     * parameter.
+     * However, a task (domain_u in this case) must be created before the
+     * Thread since Thread constructor will use it.
+     * So, passing zero and initiating the main thread of the domain_u
+     * after creating the thread (see bellow).
+    */
+    cout << "Creating the new domain: ";
+    int (* entry)() = CPU::Log_Addr(elf->entry());
+    inspect_entry(entry);
+
+    Task * task = new Task(0, cs, ds, entry);
+    inspect_task(reinterpret_cast<void *>(task->__stub()->id().unit()));
+    cout << "done!" << endl;
+    cout << "Domain system object = " << reinterpret_cast<void *>(task->__stub()->id().unit()) << endl;
+
+    cout << "Creating the new VCPU: ";
+    Thread * vcpu = create_vcpu(task, entry, 1, is_domain_hrt[domain_number]);
+    // vcpu is inspected at Thread::epilogue
+    cout << "done!" << endl;
+
+    cout << "Setting domain's VCPU: ";
+    task->main(vcpu);
+    cout << "done!" << endl;
+
+    as->detach(cs);
+    as->detach(ds);
+
+    return task;
+
+}
 
 Thread * create_vcpu(Task * domain_u, int (* guest_os_task) (), int pcpu, bool hrt)
 {
@@ -64,139 +234,34 @@ Thread * create_vcpu(Task * domain_u, int (* guest_os_task) (), int pcpu, bool h
     return vcpu;
 }
 
-
-int main(int argc, char * argv[])
+ELF * get_next_elf(char * elf_ptr)
 {
-    Network::init();
+    static bool started;
+    static char * next_elf;
 
-    cout << "EPOS Application Loader" << endl;
+    db<void>(WRN) << "next_elf at the beginning: " << reinterpret_cast<void *>(next_elf) << endl;
 
-    if(!argc) {
-        cout << "No extra ELF programs found in boot image. Exiting!" << endl;
-        return -1;
-    }
-    cout << "Found ELF image of " << argc << " bytes at " << reinterpret_cast<void *>(argv) << endl;
-    // db<void>(WRN) << "argv" << (reinterpret_cast<char *>(argv)) << endl;
+    if (! started) {
+        db<void>(WRN) << "get_next_elf called for the first time" << endl;
 
-    cout << "Creating Dom0 services: ";
-    Thread * d0 = new Thread(&dom0);
-    // d0 inspected at Thread::epilogue
-    d0->priority(_SYS::Thread::MAIN);
-    cout << "done!" << endl;
-
-    ELF * elf = reinterpret_cast<ELF *>(reinterpret_cast<char *>(argv) + 4);
-    inspect_elf(elf);
-
-    if(!elf->valid()) {
-        cout << "Application is corrupted. Exiting!" << endl;
-        return -1;
+        next_elf = elf_ptr;
+        started = true;
     }
 
-    Address_Space * as = Task::self()->address_space();
-    inspect_as(reinterpret_cast<void *>(as->__stub()->id().unit()));
-    cout << "Got Task Master address space. System object is = " << reinterpret_cast<void *>(as->__stub()->id().unit()) << endl;
+    unsigned int elf_size = *(reinterpret_cast<unsigned int *>(next_elf));
+    db<void>(WRN) << "ELF size: " << elf_size << endl;
 
-    cout << "Creating code segment: ";
-    Segment * cs = new Segment(elf->segment_size(0));
-    inspect_cs(reinterpret_cast<void *>(cs->__stub()->id().unit()));
-    cout << "Created code segment (system object) = " << reinterpret_cast<void *>(cs->__stub()->id().unit()) << endl;
-    cout << "Code segment size: " << cs->size() << endl;
+    ELF * elf = reinterpret_cast<ELF *>(reinterpret_cast<char *>(next_elf) + 4);
+    db<void>(WRN) << "ELF address: " << reinterpret_cast<void *>(elf) << endl;
 
-    CPU::Log_Addr code = as->attach(cs);
-    inspect_code(&code);
-    cout << "code at: " << code << endl;
+    next_elf = reinterpret_cast<char *>(elf) + elf_size;
 
-    if(elf->load_segment(0, code) < 0) {
-        cout << "failed! Application code segment is corrupted! Exiting!" << endl;
-        return -1;
-    }
-    inspect_elf(elf);
-    cout << "Code segment loaded from ELF" << endl;
+    db<void>(WRN) << "next_elf at the end: " << reinterpret_cast<void *>(next_elf) << endl;
 
-    cout << "Creating data segment: ";
-    Segment * ds = new Segment(elf->segment_size(1));
-    inspect_ds(reinterpret_cast<void *>(ds->__stub()->id().unit()));
-    cout << "Created data segment (system object) = " << reinterpret_cast<void *>(ds->__stub()->id().unit()) << endl;
-    cout << "Data segment size: " << ds->size() << endl;
-
-    CPU::Log_Addr data = as->attach(ds);
-    inspect_data(&data);
-    cout << "data at: " << data << endl;
-
-    if(elf->load_segment(1, data) < 0) {
-        cout << "failed! Application data segment is corrupted! Exiting!" << endl;
-        return -1;
-    }
-    inspect_elf(elf);
-    cout << "Data segment loaded from ELF" << endl;
-
-    /* I wanted to change the Task constructor that contais the Thread
-     * configuration as parameter to create also RT_Threads
-     * (or Periodic_Threads).
-     * However, including periodic_thread.h in task.h caused circular
-     * references.
-     * Decided to create the periodic thread outside.
-     * So, created a new contructor of Task that has a pointer to Thread as
-     * parameter.
-     * However, a task (domain_u in this case) must be created before the
-     * Thread since Thread constructor will use it.
-     * So, passing zero and initiating the main thread of the domain_u
-     * after creating the thread (see bellow).
-    */
-    cout << "Creating the new domain: ";
-    int (* entry)() = CPU::Log_Addr(elf->entry());
-    inspect_entry(entry);
-
-    Task * task = new Task(0, cs, ds, entry);
-    inspect_task(reinterpret_cast<void *>(task->__stub()->id().unit()));
-    cout << "done!" << endl;
-    cout << "Domain system object = " << reinterpret_cast<void *>(task->__stub()->id().unit()) << endl;
-
-    cout << "Creating the new VCPU: ";
-    Thread * vcpu = create_vcpu(task, entry, 1, true);
-    // vcpu is inspected at Thread::epilogue
-    cout << "done!" << endl;
-
-    cout << "Setting domain's VCPU: ";
-    task->main(vcpu);
-    cout << "done!" << endl;
-
-    as->detach(cs);
-    as->detach(ds);
-
-    cout << "Domains loaded! Waiting for them to finish ... " << endl;
-    task->main()->join();
-    cout << "All spawned processes have finished!" << endl;
-
-    cout << "Shutting down Dom0 services:";
-    delete d0;
-    cout << " done!" << endl;
-
-    cout << "Shutting down the machine!" << endl;
-
-    cout << "This is the end, my only friend, the end!" << endl;
-    cout << "Bye!" << endl;
-    return 0;
+    return elf;
 }
 
-int dom0()
-{
-    Port<IPC> comm(11);
-    inspect_comm(reinterpret_cast<void *>(comm.__stub()->id().unit()));
-    cout << "comm system object = " << reinterpret_cast<void *>(comm.__stub()->id().unit()) << endl;
 
-    cout << "starting domain 0 task..." << endl;
-
-    while (true) {
-        S::Message message;
-
-        unsigned int size = comm.receive(&message);
-        char parms[S::Message::MAX_PARAMETERS_SIZE];
-        message.in(parms);
-        cout << "Dom0::received:msg=" << parms << endl;
-        comm.send(&message);
-    }
-}
 
 /* Domain 0 Bindings */
 

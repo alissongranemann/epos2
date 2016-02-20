@@ -252,7 +252,10 @@ public:
     }
 
     template<typename ... Tn>
-    Thread(const Configuration & conf, int (* entry)(Tn ...), Tn ... an) : Base(conf, entry, an ...)
+    Thread(const Configuration & conf, int (* entry)(Tn ...), Tn ... an)
+    : Base(const_cast<Configuration &>(conf).__stub()->id().unit()
+            , entry
+            , an ...)
     {
     }
 

@@ -68,7 +68,7 @@ public:
     void resume() { invoke(THREAD_RESUME); }
     static int yield() { return static_invoke(THREAD_YIELD); }
     static void exit(int r) { static_invoke(THREAD_EXIT, r); }
-    static volatile bool wait_next() { return static_invoke(THREAD_WAIT_NEXT); }
+    static volatile bool wait_next() { return static_invoke(PERIODIC_THREAD_WAIT_NEXT); }
 
     Proxy<Address_Space> * address_space() { return new (reinterpret_cast<Adapter<Address_Space> *>(invoke(TASK_ADDRESS_SPACE))) Proxied<Address_Space>; }
     Proxy<Segment> * code_segment() { return new (reinterpret_cast<Adapter<Segment> *>(invoke(TASK_CODE_SEGMENT))) Proxied<Segment>; }

@@ -199,6 +199,8 @@ int main(int argc, char **argv)
             stat(argv[i], &file_stat);
             image_size += put_number(fd_img, file_stat.st_size);
             image_size += put_file(fd_img, argv[i]);
+
+            printf("        Added application \"%s\": (size: %d)\n", argv[i], file_stat.st_size);
         }
         // Signalize last application by setting its size to 0
         image_size += put_number(fd_img, 0);

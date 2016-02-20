@@ -29,8 +29,8 @@ debug:		$(IMAGE)
 
 flash:		$(FLASH)
 
-strip:		$(SYSTEM) $(APPLICATION)
+strip:		$(SYSTEM) $(APPLICATION) domain_2
 		@for file in $^; do $(STRIP) "$${file}"; done;
-		
+
 clean:
 		$(CLEAN) $(SYSTEM) $(APPLICATION)

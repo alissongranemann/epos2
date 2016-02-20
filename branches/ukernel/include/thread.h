@@ -72,6 +72,18 @@ public:
         Configuration(const State & s = READY, const Criterion & c = NORMAL, Task * t = 0, unsigned int ss = STACK_SIZE)
         : state(s), criterion(c), task(t), stack_size(ss) {}
 
+        friend Debug & operator<<(Debug & db, const Configuration & conf)
+        {
+            db << "conf = {" << endl;
+            db << "\tstate = " << conf.state << endl;
+            db << "\tcriterion = " << conf.criterion << endl;
+            db << "\ttask = " << reinterpret_cast<void *>(conf.task) << endl;
+            db << "\tstack_size = " << conf.stack_size << endl;
+            db << "}" << endl;
+
+            return db;
+        }
+
         State state;
         Criterion criterion;
         Task * task;

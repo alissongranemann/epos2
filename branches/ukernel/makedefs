@@ -51,6 +51,7 @@ MMOD            = $(call TOLOWER,$(call GETTK,MODEL,$(TRAITS)))
 CPUS		= $(call GETTK,CPUS,$(TRAITS))
 NODES		= $(call GETTK,NODES,$(TRAITS))
 NO_LOADER	= $(call GETTK,NO_LOADER,$(TRAITS))
+NO_DOMAIN_2 = $(call GETTK,NO_DOMAIN_2,$(TRAITS))
 LIBARCH		= $(LIB)/lib$(LARCHNAME)_$(ARCH).a
 LIBMACH		= $(LIB)/lib$(LMACHNAME)_$(ARCH).a
 LIBSYS		= $(LIB)/lib$(LSYSNAME)_$(ARCH).a
@@ -61,6 +62,11 @@ LMACH		= $(LMACHNAME)_$(ARCH)
 LSYS		= $(LSYSNAME)_$(ARCH)
 LINIT		= $(LINITNAME)_$(ARCH)
 LUTIL		= $(LUTILNAME)_$(ARCH)
+
+ifeq ($(NO_DOMAIN_2),false)
+DOMAIN_2	:= domain_2
+endif
+
 
 # Compiler prefixes
 ia32_COMP_PREFIX	:= /usr/local/ia32/gcc-4.4.4/bin/ia32-
@@ -230,7 +236,7 @@ lib%.o: lib%.cc
 		$(ALD) $(ALDFLAGS) $< -o $@
 
 %.img: %
-		$(MKBI) $@ $<
+		$(MKBI) $@ $< $(DOMAIN_2)
 
 %.out: %.img
 		$(EMULATOR) $< | $(TEE) $@

@@ -113,6 +113,16 @@ void Agent::handle_thread()
         in(entry);
         id(Id(THREAD_ID, reinterpret_cast<Id::Unit_Id>(new Adapter<Thread>(Thread::Configuration(Thread::READY, Thread::NORMAL, 0, 0), entry))));
     } break;
+    case CREATE2: {
+        db<Framework>(WRN) << "Thread Agent, CREATE2" << endl;
+        Thread::Configuration * conf;
+        int (*entry)();
+        in(conf, entry);
+        db<Framework>(TRC) << "entry: " << reinterpret_cast<void *>(entry)
+                            << ", conf: " << *conf
+                            << ", conf obj: " << reinterpret_cast<void *>(conf) << endl;
+        id(Id(THREAD_ID, reinterpret_cast<Id::Unit_Id>(new Adapter<Thread>(*conf, entry))));
+    } break;
     case DESTROY: {
         delete thread;
     } break;
@@ -141,9 +151,6 @@ void Agent::handle_thread()
     } break;
     case THREAD_YIELD: {
         Thread::yield();
-    } break;
-    case THREAD_WAIT_NEXT: {
-        //            Periodic_Thread::wait_next();
     } break;
     case THREAD_EXIT: {
         int r;
@@ -180,6 +187,10 @@ void Agent::handle_periodic_thread()
 
         db<Framework>(TRC) << "created = " << reinterpret_cast<void *>(id().unit()) << endl;
 
+    } break;
+    case PERIODIC_THREAD_WAIT_NEXT: {
+        bool times = Adapter<Periodic_Thread>::wait_next();
+        res = times;
     } break;
     default: {
         db<Framework>(WRN) << "Undefined method for Periodic_Thread agent. Method = " << method() << endl;
@@ -664,6 +675,11 @@ void Agent::handle_pedf()
     Result res = 0;
 
     switch(method()) {
+    case CREATE1: {
+        db<Framework>(WRN) << "PEDF Agent, CREATE1" << endl;
+        id(Id(PEDF_ID, reinterpret_cast<Id::Unit_Id>(new Adapter<Scheduling_Criteria::PEDF>()))); // Scheduling_Criteria::PEDF::APERIODIC
+        db<Framework>(WRN) << "PEDF created: " << reinterpret_cast<void *>(id().unit()) << endl;
+    } break;
     case CREATE4: {
         db<Framework>(WRN) << "PEDF Agent, CREATE4" << endl;
         RTC::Microsecond deadline;
@@ -696,8 +712,36 @@ void Agent::handle_pedf()
 
 void Agent::handle_thread_configuration()
 {
+    Adapter<Thread::Configuration> * conf = reinterpret_cast<Adapter<Thread::Configuration> *>(id().unit());
+
     Result res = 0;
     switch(method()) {
+    case CREATE4: {
+        Periodic_Thread::State state;
+        Periodic_Thread::Criterion * criterion;
+        Task * task;
+        // unsigned int stack_size;
+        in(state, criterion, task /*, stack_size */);
+        db<Framework>(WRN) << "Thread::Configuration Agent, CREATE4" << endl;
+        db<Framework>(TRC) << ", state = " << state
+                            << ", criterion = " << *criterion
+                            << ", task = " << reinterpret_cast<void *>(task)
+                            // << ", stack_size = " << stack_size
+                            << endl;
+
+        db<Framework>(TRC) << "Criterion object = " << reinterpret_cast<void *>(criterion) << endl;
+
+        id(Id(THREAD_CONFIGURATION_ID, reinterpret_cast<Id::Unit_Id>(new Adapter<Thread::Configuration>(state
+            , *criterion
+            , task))));
+
+        db<Framework>(TRC) << "Conf created: " << reinterpret_cast<void *>(id().unit()) << endl;
+
+    } break;
+    case DESTROY: {
+        db<Framework>(WRN) << "Thread::Configuration Agent, DESTROY" << endl;
+        delete conf;
+    } break;
     default: {
         db<Framework>(WRN) << "Undefined method for Thread::Configuration agent. Method = " << method() << endl;
         res = UNDEFINED;

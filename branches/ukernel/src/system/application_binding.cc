@@ -67,10 +67,17 @@ extern "C"
 
     void _print(const char * s)
     {
+        /// Print using kernel
+        Message msg(Id(UTILITY_ID, 0), Message::PRINT, reinterpret_cast<unsigned int>(s));
+        msg.act();
+
+        /// Print using IPC
+        /*
         _API::Port<_API::IPC> comm = new _API::Port<_API::IPC>(9000); // where 9000 >= LAST_TYPE_ID
 
         Message msg(Id(11, 0), Message::PRINT, reinterpret_cast<unsigned int>(s));
         comm.send(&msg);
+        */
     }
 
     void * _create_segment_in_place(void * place, unsigned int size, unsigned int mmu_flags)
