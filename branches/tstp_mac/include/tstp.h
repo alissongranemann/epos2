@@ -24,14 +24,15 @@ public:
     static Time time_now() { return TSTP_MAC::time_now(); }
 
     typedef Data (* Sensor_Handler)();
+    typedef void (* Interest_Handler)(const Data &);
 
     class Interest : public TSTP_Common::Interest
     {
         friend class TSTP;
 
     public:
-        Interest(Data * data, const Region & region, const Time & t0, const Time & dt, const Time & period, const Unit & unit, const Data & precision, const RESPONSE_MODE & response_mode) 
-            : TSTP_Common::Interest(region, t0, dt, period, unit, precision, response_mode), _data(data)
+        Interest(Interest_Handler handler, const Region & region, const Time & t0, const Time & dt, const Time & period, const Unit & unit, const Data & precision, const RESPONSE_MODE & response_mode) 
+            : TSTP_Common::Interest(region, t0, dt, period, unit, precision, response_mode), _handler(handler), _last_reading(0)
         {
             TSTP::instance->add(*this);
             MAC::send(this);
@@ -40,17 +41,22 @@ public:
             TSTP::instance->remove(*this);
         }
 
+        void handle(const Data & d) const { _handler(d); }
+        Time last_reading() const { return _last_reading; }
+        void last_reading(const Time & time) { _last_reading = time; }
+
         friend Debug & operator<<(Debug & db, const Interest & i) {
-            db << "{" << static_cast<const TSTP_Common::Interest &>(i) << ",_data=" << i._data << ",*_data=" << *(i._data) << "}";
+            db << "{" << static_cast<const TSTP_Common::Interest &>(i) << ",_handler=" << hex << reinterpret_cast<unsigned int *>(i._handler) << "}";
             return db;
         }
         friend OStream & operator<<(OStream & s, const Interest & i) {
-            s << "{" << static_cast<TSTP_Common::Interest>(i) << ",_data=" << i._data << ",*_data=" << *(i._data) << "}";
+            s << "{" << static_cast<const TSTP_Common::Interest &>(i) << ",_handler=" << hex << reinterpret_cast<unsigned int *>(i._handler) << "}";
             return s;
         }
 
     private:
-        Data * _data;
+        Interest_Handler _handler;
+        Time _last_reading;
     }__attribute__((packed));
 
     class Sensor
@@ -101,11 +107,11 @@ private:
     void process(const Time & when, const RSSI & rssi, Header * h, T * payload) {
         db<TSTP>(TRC) << "TSTP::process(t=" << when << ",rssi=" << rssi << ",h=" << *h << ",i=" << *payload << ")" << endl;
         process(when, rssi, h);
-        process(payload);
+        process(payload, h);
     }
 
-    void process(TSTP_Common::Interest * i);
-    void process(TSTP_Common::Labeled_Data * d);
+    void process(TSTP_Common::Interest * i, Header * h);
+    void process(TSTP_Common::Labeled_Data * d, Header * h);
 
     TSTP();
 

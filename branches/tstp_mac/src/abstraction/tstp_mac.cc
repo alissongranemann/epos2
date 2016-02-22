@@ -1,4 +1,5 @@
 #include <tstp.h>
+#include <gpio.h>
 #include <timer.h>
 #include <tsc.h>
 
@@ -22,19 +23,19 @@ bool TSTP_MAC::send(const Interest * interest)
     auto buffer = _radio.alloc(&_radio, sizeof(Interest_Message));
     if(buffer) {
         auto msg = new (buffer->frame()->data<Interest_Message>()) Interest_Message(*interest);
-        _tx_schedule.insert(true, id(msg), time_now(), backoff(), interest->region().center, buffer);
+        _tx_schedule.insert(true, id(msg), time_now(), backoff(), interest->t0(), interest->region().center, buffer);
         return true;
     }
     return false;
 }
 
-bool TSTP_MAC::send(const Unit & unit, const Data & data)
+bool TSTP_MAC::send(const Unit & unit, const Data & data, const Time & deadline)
 {
     db<TSTP_MAC>(TRC) << "TSTP_MAC::send(" << data << ")" << endl;
     auto buffer = _radio.alloc(&_radio, sizeof(Data_Message));
     if(buffer) {
         auto msg = new (buffer->frame()->data<Data_Message>()) Data_Message(unit, data);
-        _tx_schedule.insert(true, id(msg), time_now(), backoff(), _sink_address, buffer);
+        _tx_schedule.insert(true, id(msg), time_now(), backoff(), deadline, _sink_address, buffer);
         return true;
     }
     return false;
@@ -49,7 +50,7 @@ void TSTP_MAC::TX_Schedule::TX_Schedule_Entry::free()
 }
 
 void TSTP_MAC::init() 
-{ 
+{
     new (&_radio) NIC();
     MAC_Timer::config();
     MAC_Timer::enable();
@@ -64,11 +65,11 @@ void TSTP_MAC::check_tx_schedule(const unsigned int & int_id)
     _timer.clear_interrupt();
     //db<TSTP_MAC>(TRC) << "TSTP_MAC::check_tx_schedule(" << int_id << ")" << endl;
     if((_tx_pending_data = _tx_schedule.tx_pending(time_now()))) {
-        db<TSTP_MAC>(TRC) << "TSTP_MAC::backing off " << _tx_pending_data->backoff() << endl;
         timeout(_tx_pending_data->backoff(), cca);
+        db<TSTP_MAC>(TRC) << "TSTP_MAC::backing off " << _tx_pending_data->backoff() << endl;
     } else {
-        //db<TSTP_MAC>(TRC) << "TSTP_MAC::sleeping S" << endl;
         timeout(Traits<TSTP_MAC>::SLEEP_PERIOD, rx_mf);
+        db<TSTP_MAC>(TRC) << "TSTP_MAC::sleeping S" << endl;
     }
 }
 
@@ -184,10 +185,23 @@ void TSTP_MAC::tx_data(const unsigned int & int_id)
     auto buffer = _tx_pending_data->buffer();
     auto header = buffer->frame()->data<Header>();
     header->last_hop_address(_address);
-    header->last_hop_time(time_now());
-    if(_radio.send(buffer) > 0) {
-        _statistics.tx_payload_frames++;
+
+    if(_tx_pending_data->is_new()) {
+        header->last_hop_time(time_now());
+        header->origin_time(header->last_hop_time());
+    } else {
+        header->last_hop_time(time_now());
     }
+
+    auto bytes = _radio.send(buffer);
+
+    if(bytes > 0) {
+        _statistics.tx_payload_frames++;
+    } else {
+        _statistics.dropped_tx_packets++;
+        _statistics.dropped_tx_bytes -= bytes;
+    }
+
     _tx_schedule.update_timeout(_tx_pending_data, time_now() + Traits<TSTP_MAC>::DATA_ACK_TIMEOUT);
     check_tx_schedule();
 }
@@ -274,14 +288,23 @@ void TSTP_MAC::process_mf(Buffer * b)
     if(auto mf = to_microframe(b)) {
         clear_timeout();
         _radio.off();
-        auto removed = _tx_schedule.remove(mf->id());
         auto time = time_until_data(mf);
-        if(not removed and relevant(mf)) {
-            _receiving_data_id = mf->id();
-            timeout(time, rx_data);
-            db<TSTP_MAC>(TRC) << "Time until data: " << time << endl;
+        if(_tx_pending_data) {
+            if(_tx_pending_data->id() == mf->id()) {
+                timeout(time + Traits<TSTP_MAC>::SLEEP_PERIOD, check_tx_schedule);
+            } else {
+                timeout(time + Traits<TSTP_MAC>::DATA_SKIP_TIME, check_tx_schedule);
+            }
+            _tx_schedule.remove(mf->id());
         } else {
-            timeout(time + Traits<TSTP_MAC>::DATA_SKIP_TIME, check_tx_schedule);
+            auto removed = _tx_schedule.remove(mf->id());
+            if(not removed and relevant(mf)) {
+                _receiving_data_id = mf->id();
+                timeout(time, rx_data);
+                db<TSTP_MAC>(TRC) << "Time until data: " << time << endl;
+            } else {
+                timeout(time + Traits<TSTP_MAC>::SLEEP_PERIOD, check_tx_schedule);
+            }
         }
         db<TSTP_MAC>(TRC) << "{all=" << mf->_all_listen << " ,c=" << mf->_count << " ,lhd=" << mf->_last_hop_distance  << " ,id=" << mf->_id  << "}" << endl;
     }
@@ -330,7 +353,8 @@ void TSTP_MAC::process_data(Data_Message * data)
         auto tx_buf = _radio.alloc(&_radio, sizeof(Data_Message));
         if(tx_buf) {
             new (tx_buf->frame()->data<Data_Message>()) Data_Message(*data);
-            _tx_schedule.insert(false, _receiving_data_id, time_now(), backoff(_sink_address, data->header()->last_hop_address() - _sink_address), _sink_address, tx_buf);
+            auto bkf = backoff(_sink_address, data->header()->last_hop_address() - _sink_address);
+            _tx_schedule.insert(false, _receiving_data_id, time_now(), bkf, time_now() + Traits<TSTP_MAC>::RETRANSMISSION_DEADLINE, _sink_address, tx_buf);
         }
     }
 
@@ -348,13 +372,16 @@ void TSTP_MAC::process_data(Interest_Message * interest)
 {
     _radio.off();
     clear_timeout();
+
+    MAC_Timer::set(interest->header()->last_hop_time() + Traits<TSTP_MAC>::TX_UNTIL_PROCESS_DATA_DELAY);
+
     db<TSTP_MAC>(TRC) << "TSTP_MAC::process_data(interest=" << interest << ")" << endl;
     if(should_forward(interest)) {
         // Copy RX Buffer to TX Buffer
         auto tx_buf = _radio.alloc(&_radio, sizeof(Interest_Message));
         if(tx_buf) {
             new (tx_buf->frame()->data<Interest_Message>()) Interest_Message(*interest);
-            _tx_schedule.insert(false, _receiving_data_id, time_now(), backoff(interest->region().center, interest->header()->last_hop_address() - interest->region().center), interest->region().center, tx_buf);
+            _tx_schedule.insert(false, _receiving_data_id, time_now(), backoff(interest->region().center, interest->header()->last_hop_address() - interest->region().center), interest->t0(), interest->region().center, tx_buf);
         }
     }
 
@@ -423,6 +450,7 @@ void TSTP_MAC::parse_data(Buffer * b)
 void TSTP_MAC::rx_data(const unsigned int & int_id)
 {
     _timer.clear_interrupt();
+
     //db<TSTP_MAC>(TRC) << "TSTP_MAC::rx_data(" << int_id << ")" << endl;
     timeout(Traits<TSTP_MAC>::RX_DATA_TIMEOUT, check_tx_schedule);
     _radio.receive(parse_data);

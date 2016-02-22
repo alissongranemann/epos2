@@ -69,13 +69,14 @@ public:
 class TSTP_Common : public Units
 {
 public:
-    typedef short Message_ID;
+    typedef unsigned short Message_ID;
     typedef int RSSI;
     typedef IEEE1451_0::Unit Unit;
     typedef int Data;
 
     struct Labeled_Data {
         Labeled_Data() {}
+        Labeled_Data(const Unit & u) : unit(u) { };
         Labeled_Data(const Unit & u, const Data & d) : unit(u), data(d) { };
 
         friend Debug & operator<<(Debug & db, const Labeled_Data & ld) {
@@ -131,6 +132,15 @@ public:
             dropped_rx_packets(0), dropped_rx_bytes(0), dropped_tx_packets(0),
             dropped_tx_bytes(0), rx_payload_frames(0), tx_payload_frames(0), dropped_payload_frames(0), waited_to_rx_payload(0) { }
 
+        friend Debug & operator<<(Debug & db, const Statistics & s) {
+            db << "dropped_rx_packets:"<<s.dropped_rx_packets<<",dropped_rx_bytes:"<<s.dropped_rx_bytes<<",dropped_tx_packets:"<<s.dropped_tx_packets<<",dropped_tx_bytes:"<<s.dropped_tx_bytes<<",rx_payload_frames:"<<s.rx_payload_frames<<",tx_payload_frames:"<<s.tx_payload_frames<<",dropped_payload_frames:"<<s.dropped_payload_frames<<",waited_to_rx_payload:"<<s.waited_to_rx_payload;
+            return db;
+        }
+        friend OStream & operator<<(OStream & os, const Statistics & s) {
+            os << "dropped_rx_packets:"<<s.dropped_rx_packets<<",dropped_rx_bytes:"<<s.dropped_rx_bytes<<",dropped_tx_packets:"<<s.dropped_tx_packets<<",dropped_tx_bytes:"<<s.dropped_tx_bytes<<",rx_payload_frames:"<<s.rx_payload_frames<<",tx_payload_frames:"<<s.tx_payload_frames<<",dropped_payload_frames:"<<s.dropped_payload_frames<<",waited_to_rx_payload:"<<s.waited_to_rx_payload;
+            return os;
+        }
+
         unsigned int dropped_rx_packets;
         unsigned int dropped_rx_bytes;
         unsigned int dropped_tx_packets;
@@ -153,6 +163,8 @@ public:
         Time last_hop_time() const { return _last_hop_time; }
         void last_hop_time(const Time & t) { _last_hop_time = t; }
         Address origin_address() const { return _origin_address; }
+        Time origin_time() const { return _origin_time; }
+        void origin_time(const Time & t) { _origin_time = t; }
 
         friend Debug & operator<<(Debug & db, const Header & h) {
             db << "{type=" << h._message_type << ",tr=" << h._time_request << ",sscale=" << h._spatial_scale << ",tscale=" << h._temporal_scale << ",lconf=" << h._location_confidence << ",lhaddr=" << h._last_hop_address << ",lht=" << h._last_hop_time << ",oaddr=" << h._origin_address << ",ot=" << h._origin_time << "}" << endl;

@@ -93,7 +93,7 @@ public:
     {
     public:
         Data_Message(const Unit & unit, const Data & data) : 
-            Header(DATA, _sink_address), Labeled_Data(unit, data) { }
+            Header(DATA, _address), Labeled_Data(unit, data) { }
 
         Header * header() { return this; }
         Data data() { return Labeled_Data::data; }
@@ -151,7 +151,7 @@ public:
 
 
     static bool send(const Interest * interest);
-    static bool send(const Unit & unit, const Data & data);
+    static bool send(const Unit & unit, const Data & data, const Time & deadline);
 
     typedef Frame PDU;
 
@@ -237,9 +237,9 @@ private:
         public:
             TX_Schedule_Entry() {}
 
-            TX_Schedule_Entry(bool is_new, Message_ID id, Time transmit_at, Time backoff, Address destination, Buffer * buffer) : 
+            TX_Schedule_Entry(bool is_new, Message_ID id, Time transmit_at, Time backoff, Time deadline, Address destination, Buffer * buffer) : 
                 _new(is_new), _id(id), _transmit_at(transmit_at), 
-                _backoff(backoff), _dst(destination), _trials(0), 
+                _backoff(backoff), _dst(destination), _deadline(deadline), 
                 _buffer(buffer) 
             { }
 
@@ -250,19 +250,17 @@ private:
             Time backoff() { return _backoff; }
             const Address & destination() { return _dst; }
             bool is_new() { return _new; }
+            Time deadline() { return _deadline; }
+            void deadline(Time t) { _deadline = t; }
 
             void free(); 
-
-            void operator++() { _trials++; }
-            unsigned int trials() { return _trials; }
-
         private:
             bool _new;
             Message_ID _id;
             Time _transmit_at;
             Time _backoff;
             Address _dst;
-            unsigned int _trials;
+            Time _deadline;
             Buffer * _buffer;
         };
 
@@ -272,7 +270,8 @@ private:
 
             for(auto i = 0u; i < _n_entries; i++) {
                 if(_table[i].transmit_at() <= time) {
-                    if(_table[i].trials() >= Traits<TSTP_MAC>::MAX_SEND_TRIALS) {
+                    //if(_table[i].trials() >= Traits<TSTP_MAC>::MAX_SEND_TRIALS) {
+                    if(_table[i].deadline() < time) {
                         remove_by_index(i);
                         i--;
                     } else {
@@ -286,7 +285,6 @@ private:
             if(min_i == -1u) {
                 return 0;
             } else {
-                ++_table[min_i];
                 return &_table[min_i];
             }
         }
@@ -305,11 +303,11 @@ private:
             return false;
         }
 
-        bool insert(bool is_new, Message_ID id, Time transmit_at, Time backoff, Address destination, Buffer * buffer) {
-            db<TSTP_MAC>(TRC) << "TSTP_MAC::TX_Schedule::insert(new=" << is_new << ",id=" << id << ",at=" << transmit_at << ",bkf=" << backoff << ",dst=" << destination << ",buf=" << buffer << endl;
+        bool insert(bool is_new, Message_ID id, Time transmit_at, Time backoff, Time deadline, Address destination, Buffer * buffer) {
+            db<TSTP_MAC>(TRC) << "TSTP_MAC::TX_Schedule::insert(new=" << is_new << ",id=" << id << ",at=" << transmit_at << ",bkf=" << backoff << ",dln=" << deadline << ",dst=" << destination << ",buf=" << buffer << endl;
 
             if(_n_entries < Traits<TSTP_MAC>::TX_SCHEDULE_SIZE - 1) {
-                new (&_table[_n_entries]) TX_Schedule_Entry(is_new, id, transmit_at, backoff, destination, buffer);
+                new (&_table[_n_entries]) TX_Schedule_Entry(is_new, id, transmit_at, backoff, deadline, destination, buffer);
                 db<TSTP_MAC>(TRC) << " => " << hex << &_table[_n_entries] << endl;
                 _n_entries++;
                 return true;

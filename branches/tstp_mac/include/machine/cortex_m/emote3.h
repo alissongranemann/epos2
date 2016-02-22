@@ -798,24 +798,19 @@ protected:
             scr(SCGCUART) |= UART0; // Enable clock for UART0 while in Sleep mode
 
             //2. Set the GPIO pin configuration through the Pxx_SEL registers for the desired output
-            ioc(PB3_SEL) = UART0_TXD;
-            //ioc(PA1_SEL) = UART0_TXD;
+            ioc(PA1_SEL) = UART0_TXD;
 
             //3. To enable IO pads to drive outputs, the corresponding IPxx_OVER bits in IOC_Pxx_OVER register
             //   has to be configured to 0x8 (OE - Output Enable).
-            ioc(PB3_OVER) = OE;
-            ioc(PB4_OVER) = 0;
-            //ioc(PA1_OVER) = OE;
-            //ioc(PA0_OVER) = 0;
+            ioc(PA1_OVER) = OE;
+            ioc(PA0_OVER) = 0;
 
             //4. Connect the appropriate input signals to the UART module
             // The value is calculated as: (port << 3) + pin
-            ioc(UARTRXD_UART0) = (1 << 3) + 4;
-            //ioc(UARTRXD_UART0) = (0 << 3) + 0;
+            ioc(UARTRXD_UART0) = (0 << 3) + 0;
 
             //5. Set GPIO pins A1 and A0 to peripheral mode
-            //gpiod(AFSEL) |= (PIN0) + (PIN1);
-            gpiob(AFSEL) |= (PIN3) + (PIN4);
+            gpioa(AFSEL) |= (PIN0) + (PIN1);
         }
         // TODO: UART1 configuration
         else
@@ -824,11 +819,11 @@ protected:
             scr(RCGCUART) |= UART1;
             scr(SCGCUART) |= UART1;
 
-            /*ioc(PB3_SEL) = UART1_TXD;
+            ioc(PB3_SEL) = UART1_TXD;
             ioc(PB3_OVER) = OE;
             ioc(PB4_OVER) = 0;
             ioc(UARTRXD_UART1) = (1 << 3) + 4; //B4
-            gpiob(AFSEL) |= (PIN3) + (PIN4);*/
+            gpiob(AFSEL) |= (PIN3) + (PIN4);
 
            ioc(PD1_SEL) = UART1_TXD;
            ioc(PD1_OVER) = OE;

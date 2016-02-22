@@ -54,7 +54,6 @@ CC2538::CC2538(unsigned int unit, IO_Irq irq, DMA_Buffer * dma_buf):
 
     for (auto i = 0u; i < TX_BUFS; ++i) {
         _tx_buffer[i] = new (SYSTEM) Buffer(0);
-        kout << "TX_BUFFER[" << i << "] : " << _tx_buffer[i] << endl;
     }
 
     auto log = _dma_buf->log_address();

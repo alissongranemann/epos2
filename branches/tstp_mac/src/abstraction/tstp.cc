@@ -1,10 +1,11 @@
 #include <utility/malloc.h>
 #include <tstp.h>
+#include <gpio.h>
 #include <alarm.h>
 
 __BEGIN_SYS
 
-void TSTP::process(TSTP_Common::Interest * i)
+void TSTP::process(TSTP_Common::Interest * i, Header * h)
 {
     db<TSTP>(TRC) << "TSTP::process: Interest " << *i << endl;
     for(auto el = sensors.search_key(i->unit()); el; el = el->next()) {
@@ -16,15 +17,25 @@ void TSTP::process(TSTP_Common::Interest * i)
     }
 }
 
-void TSTP::process(TSTP_Common::Labeled_Data * d)
+void TSTP::process(TSTP_Common::Labeled_Data * d, Header * h)
 {
-    db<TSTP>(TRC) << "TSTP::process: Data " << *d << endl;
+    db<TSTP>(TRC) << "TSTP::process: Data " << *d << " Header " << *h << endl;
     for(auto el = interests.search_key(d->unit); el; el = el->next()) {
-        db<TSTP>(TRC) << "Found interest " << endl;
         auto interest = el->object();
-        auto variable = interest->_data;
-        db<TSTP>(TRC) << "interest: " << *interest << " variable: " << variable << " received data: " << d->data << endl;
-        *variable = d->data;
+        if((interest->last_reading() < h->origin_time()) and (interest->region().contains(h->origin_address()))) {
+            interest->handle(d->data);
+            interest->last_reading(h->origin_time());
+            db<TSTP>(TRC) << "Found interest " << endl;
+            db<TSTP>(TRC) << "interest: " << *interest << ", received data: " << d->data << endl;
+            auto oa = h->origin_address();
+            auto lha = h->last_hop_address();
+            if(oa != lha) {
+                kout << "origin = " << oa << " , last_hop = " << lha << endl;
+            }
+            //kout << h->last_hop_time() << endl;            
+            //kout << h->origin_address() << endl;
+            //kout << h->last_hop_address() << endl;
+        }
     }
 }
 
@@ -37,8 +48,8 @@ void TSTP::subscribe(Sensor * s, TSTP_Common::Interest * i)
 void TSTP::send_data(Sensor * s)
 {
     db<TSTP>(TRC) << "TSTP::send_data(" << (*s) << ")" << endl;
-
-    MAC::send(s->unit(), s->data());
+                                    // TODO: deadline should be interest's period
+    MAC::send(s->unit(), s->data(), time_now() + s->period());
 }
 
 //void TSTP::publish(const Sensor & s)

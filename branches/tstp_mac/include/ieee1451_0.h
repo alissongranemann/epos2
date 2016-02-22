@@ -17,6 +17,7 @@ public:
     class Unit
     {
     public:
+        // SI base units
         enum RADIAN_T { RADIAN };
         enum STERADIAN_T { STERADIAN };
         enum METER_T { METER };
@@ -27,11 +28,17 @@ public:
         enum MOLE_T { MOLE };
         enum CANDELA_T { CANDELA };
 
+        // SI derived units
+        enum WATT_T { WATT };
+
         enum ENU_T { 
             PRESENCE = 1,
         };
 
         Unit() : enu(0), rad(0), raw(0) { };
+        Unit(ENU_T x) : enu(x), rad(0), raw(0) { };
+
+        // SI base units
         Unit(RADIAN_T x) : enu(0), rad(0), raw(0) { radian(); };
         Unit(STERADIAN_T x) : enu(0), rad(0), raw(0) { steradian(); };
         Unit(METER_T x) : enu(0), rad(0), raw(0) { meter(); };
@@ -41,8 +48,11 @@ public:
         Unit(KELVIN_T x) : enu(0), rad(0), raw(0) { kelvin(); };
         Unit(MOLE_T x) : enu(0), rad(0), raw(0) { mole(); };
         Unit(CANDELA_T x) : enu(0), rad(0), raw(0) { candela(); };
-        Unit(ENU_T x) : enu(x), rad(0), raw(0) { };
 
+        // SI derived units
+        Unit(WATT_T x) : enu(0), rad(0), raw(0) { kilogram(); meter(2); second(-3);  };
+
+        // SI base units
         void radian(float exponent = 1) { rad = exponent * 2 + 8; }
         void steradian(float exponent = 1) { sr = exponent * 2 + 8; }
         void meter(float exponent = 1) { m = exponent * 2 + 8; }
@@ -82,18 +92,8 @@ public:
         };
     }__attribute__((packed));
 
-    class Kelvin : public Unit { 
-        public: 
-            Kelvin() : Unit(Unit::KELVIN) { } 
-            friend Debug & operator<<(Debug & db, const Kelvin & k) {
-                db << "Kelvin";
-                return db;
-            }    
-            friend OStream & operator<<(OStream & os, const Kelvin & k) {
-                os << "Kelvin";
-                return os;
-            }    
-    }__attribute__((packed));
+    class Kelvin : public Unit { public: Kelvin() : Unit(Unit::KELVIN) { } }__attribute__((packed));
+    class Watt : public Unit { public: Watt() : Unit(Unit::WATT) { } }__attribute__((packed));
 };
 
 __END_SYS
