@@ -98,7 +98,7 @@ template <> struct Traits<TSTP_MAC>: public Traits<Cortex_M_Common>
 
     // == Network / machine characteristics ==
     static const unsigned int Tu = 192; // IEEE 802.15.4 TX Turnaround Time
-    static const unsigned int G = 320; // Tu + 8 / symbol_rate
+    //static const unsigned int G = 320; // Tu + 8 / symbol_rate
     //static const unsigned int Ts = 480; // Time to send a single microframe (including PHY headers)
     static const unsigned int Ts = 707 - Tu; // Time to send a single microframe (including PHY headers)
     static const unsigned int MICROFRAME_TIME = Ts;
@@ -118,6 +118,7 @@ template <> struct Traits<TSTP_MAC>: public Traits<Cortex_M_Common>
 
     static const unsigned int RX_DATA_TIMEOUT = DATA_SKIP_TIME;
     static const unsigned int CCA_TIME = 2 * (MICROFRAME_TIME + TIME_BETWEEN_MICROFRAMES);
+    static const unsigned int G = CCA_TIME; // Tu + 8 / symbol_rate
 };
 
 template <> struct Traits<Cortex_M_Radio>: public Traits<Cortex_M_Common>

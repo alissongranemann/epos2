@@ -3,6 +3,7 @@
 #ifndef __tstp_h
 #define __tstp_h
 
+#include <alarm.h>
 #include <ieee1451_0.h>
 #include <tstp_mac.h>
 #include <nic.h>
@@ -97,6 +98,23 @@ public:
     static void init();
 
 private:
+    struct Scheduled_Message {
+        Scheduled_Message(const Sensor * s, const Time & t, const Time & p, const Time & d, const Time & u) : first_time(true), sensor(s), t0(t), period(p), deadline(d), until(u), handler(&TSTP::send_data, this) {
+            alarm = new Alarm(t0 - time_now(), &handler, 1); 
+        }
+
+        ~Scheduled_Message() { delete alarm; }
+
+        bool first_time;
+        const Sensor * sensor;
+        Time t0;
+        Time period;
+        Time deadline;
+        Time until;
+        Functor_Handler<Scheduled_Message> handler;
+        Alarm * alarm;
+    };
+
     void process(const Time & when, const RSSI & rssi, Header * h) {
         db<TSTP>(TRC) << "TSTP: Interest Received : t=" << when << ",rssi=" << rssi << ",h=" << *h << endl;
         //PTP::process(when, h);
@@ -126,7 +144,7 @@ private:
     //void publish(const Sensor & s);
     //void publish(const Interest & i);
     void subscribe(Sensor * s, TSTP_Common::Interest * i);
-    static void send_data(Sensor * s);
+    static void send_data(Scheduled_Message * s);
 
     void add(const Sensor & s) { sensors.insert(new Sensors::Element(&s, s.unit())); }
     void add(const Interest & in) { interests.insert(new Interests::Element(&in, in.unit())); }

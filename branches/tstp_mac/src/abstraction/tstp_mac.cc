@@ -29,13 +29,13 @@ bool TSTP_MAC::send(const Interest * interest)
     return false;
 }
 
-bool TSTP_MAC::send(const Unit & unit, const Data & data, const Time & deadline)
+bool TSTP_MAC::send(const Unit & unit, const Data & data, const Time & deadline, const Time & when)
 {
     db<TSTP_MAC>(TRC) << "TSTP_MAC::send(" << data << ")" << endl;
     auto buffer = _radio.alloc(&_radio, sizeof(Data_Message));
     if(buffer) {
         auto msg = new (buffer->frame()->data<Data_Message>()) Data_Message(unit, data);
-        _tx_schedule.insert(true, id(msg), time_now(), backoff(), deadline, _sink_address, buffer);
+        _tx_schedule.insert(true, id(msg), when, backoff(), deadline, _sink_address, buffer);
         return true;
     }
     return false;

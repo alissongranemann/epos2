@@ -151,7 +151,7 @@ public:
 
 
     static bool send(const Interest * interest);
-    static bool send(const Unit & unit, const Data & data, const Time & deadline);
+    static bool send(const Unit & unit, const Data & data, const Time & deadline, const Time & when = time_now());
 
     typedef Frame PDU;
 
@@ -265,18 +265,21 @@ private:
         };
 
         TX_Schedule_Entry * tx_pending(const Time & time) {
+            if(_n_entries == 0) {
+                return 0;
+            }
+
             unsigned int min_i = -1u;
-            auto min = time;
+            auto min = _table[0].deadline() + 1;
 
             for(auto i = 0u; i < _n_entries; i++) {
                 if(_table[i].transmit_at() <= time) {
-                    //if(_table[i].trials() >= Traits<TSTP_MAC>::MAX_SEND_TRIALS) {
                     if(_table[i].deadline() < time) {
                         remove_by_index(i);
                         i--;
                     } else {
-                        if(_table[i].transmit_at() < min) {
-                            min = _table[i].transmit_at();
+                        if(_table[i].deadline() < min) { // Earliest Deadline First
+                            min = _table[i].deadline();
                             min_i = i;
                         }
                     }

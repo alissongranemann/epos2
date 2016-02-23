@@ -42,14 +42,24 @@ void TSTP::process(TSTP_Common::Labeled_Data * d, Header * h)
 void TSTP::subscribe(Sensor * s, TSTP_Common::Interest * i)
 {
     db<TSTP>(TRC) << "TSTP::subscribe(" << *s << "," << *i << ")" << endl;
-    new Alarm(i->period(), new Functor_Handler<Sensor>(&send_data, s), i->dt() / i->period());
+
+    new Scheduled_Message(s, i->t0(), i->period(), i->period(), i->t0() + i->dt());
 }
 
-void TSTP::send_data(Sensor * s)
+void TSTP::send_data(Scheduled_Message * s)
 {
-    db<TSTP>(TRC) << "TSTP::send_data(" << (*s) << ")" << endl;
-                                    // TODO: deadline should be interest's period
-    MAC::send(s->unit(), s->data(), time_now() + s->period());
+    //db<TSTP>(TRC) << "TSTP::send_data(" << (s) << ")" << endl;
+
+    if(s->until < time_now()) {
+        delete s;
+    } else {
+        MAC::send(s->sensor->unit(), s->sensor->data(), time_now() + s->deadline);
+        if(s->first_time) {
+            s->first_time = false;
+            delete s->alarm;
+            s->alarm = new Alarm(s->period, &(s->handler), (s->until - time_now()) / s->period + 1);
+        }
+    }
 }
 
 //void TSTP::publish(const Sensor & s)
