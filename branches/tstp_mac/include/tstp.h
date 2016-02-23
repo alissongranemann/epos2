@@ -25,7 +25,7 @@ public:
     static Time time_now() { return TSTP_MAC::time_now(); }
 
     typedef Data (* Sensor_Handler)();
-    typedef void (* Interest_Handler)(const Data &);
+    typedef void (* Interest_Handler)(const Data &, const Header * h);
 
     class Interest : public TSTP_Common::Interest
     {
@@ -42,7 +42,7 @@ public:
             TSTP::instance->remove(*this);
         }
 
-        void handle(const Data & d) const { _handler(d); }
+        void handle(const Data & d, const Header * h) const { _handler(d, h); }
         Time last_reading() const { return _last_reading; }
         void last_reading(const Time & time) { _last_reading = time; }
 

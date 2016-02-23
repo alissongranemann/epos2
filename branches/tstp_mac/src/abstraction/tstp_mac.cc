@@ -422,7 +422,7 @@ void TSTP_MAC::parse_data(Buffer * b)
 
     switch (b->frame()->data<Header>()->message_type()) {
         case INTEREST:
-            if(b->size() == sizeof(Interest_Message)) {
+            if((not is_sink()) and (b->size() == sizeof(Interest_Message))) {
                 process_data(b->frame()->data<Interest_Message>());
                 success = true;
             }
@@ -437,7 +437,7 @@ void TSTP_MAC::parse_data(Buffer * b)
             break;
     }
 
-    _radio.free(b); // TODO
+    _radio.free(b);
 
     if(success) {
         _statistics.rx_payload_frames++;

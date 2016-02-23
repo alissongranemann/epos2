@@ -23,15 +23,15 @@ void TSTP::process(TSTP_Common::Labeled_Data * d, Header * h)
     for(auto el = interests.search_key(d->unit); el; el = el->next()) {
         auto interest = el->object();
         if((interest->last_reading() < h->origin_time()) and (interest->region().contains(h->origin_address()))) {
-            interest->handle(d->data);
+            interest->handle(d->data, h);
             interest->last_reading(h->origin_time());
             db<TSTP>(TRC) << "Found interest " << endl;
             db<TSTP>(TRC) << "interest: " << *interest << ", received data: " << d->data << endl;
-            auto oa = h->origin_address();
-            auto lha = h->last_hop_address();
-            if(oa != lha) {
-                kout << "origin = " << oa << " , last_hop = " << lha << endl;
-            }
+            //auto oa = h->origin_address();
+            //auto lha = h->last_hop_address();
+            //if(oa != lha) {
+            //    kout << "origin = " << oa << " , last_hop = " << lha << endl;
+            //}
             //kout << h->last_hop_time() << endl;            
             //kout << h->origin_address() << endl;
             //kout << h->last_hop_address() << endl;

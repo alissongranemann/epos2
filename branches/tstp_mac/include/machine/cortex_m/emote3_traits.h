@@ -104,7 +104,7 @@ template <> struct Traits<TSTP_MAC>: public Traits<Cortex_M_Common>
     static const unsigned int MICROFRAME_TIME = Ts;
     static const unsigned int MIN_Ti = 2*Tu; // Minimum time between consecutive microframes
     static const unsigned int RADIO_RADIUS = 10 * 100; //TODO
-    static const unsigned int TX_UNTIL_PROCESS_DATA_DELAY = 6; //TODO
+    static const unsigned int TX_UNTIL_PROCESS_DATA_DELAY = 5100; //TODO
     static const unsigned int DATA_SKIP_TIME = 5000;//Tu + 2032;
 
     // == Calculated parameters ==
