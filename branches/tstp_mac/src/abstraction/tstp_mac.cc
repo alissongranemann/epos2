@@ -23,6 +23,7 @@ bool TSTP_MAC::send(const Interest * interest)
     auto buffer = _radio.alloc(&_radio, sizeof(Interest_Message));
     if(buffer) {
         auto msg = new (buffer->frame()->data<Interest_Message>()) Interest_Message(*interest);
+        msg->header()->origin_time(time_now());
         _tx_schedule.insert(true, id(msg), time_now(), backoff(), interest->t0(), interest->region().center, buffer);
         return true;
     }
@@ -35,6 +36,7 @@ bool TSTP_MAC::send(const Unit & unit, const Data & data, const Time & deadline,
     auto buffer = _radio.alloc(&_radio, sizeof(Data_Message));
     if(buffer) {
         auto msg = new (buffer->frame()->data<Data_Message>()) Data_Message(unit, data);
+        msg->header()->origin_time(time_now());
         _tx_schedule.insert(true, id(msg), when, backoff(), deadline, _sink_address, buffer);
         return true;
     }
@@ -49,7 +51,7 @@ void TSTP_MAC::TX_Schedule::TX_Schedule_Entry::free()
     }
 }
 
-void TSTP_MAC::init() 
+void TSTP_MAC::init()
 {
     new (&_radio) NIC();
     MAC_Timer::config();
@@ -63,6 +65,7 @@ void TSTP_MAC::check_tx_schedule(const unsigned int & int_id)
 {
     _radio.off();
     _timer.clear_interrupt();
+    _tstp->check_tx_schedule();
     //db<TSTP_MAC>(TRC) << "TSTP_MAC::check_tx_schedule(" << int_id << ")" << endl;
     if((_tx_pending_data = _tx_schedule.tx_pending(time_now()))) {
         timeout(_tx_pending_data->backoff(), cca);
@@ -184,14 +187,9 @@ void TSTP_MAC::tx_data(const unsigned int & int_id)
     //db<TSTP_MAC>(TRC) << "TSTP_MAC::tx_data(" << _tx_pending_data->buffer() << ")" << endl;
     auto buffer = _tx_pending_data->buffer();
     auto header = buffer->frame()->data<Header>();
+    
     header->last_hop_address(_address);
-
-    if(_tx_pending_data->is_new()) {
-        header->last_hop_time(time_now());
-        header->origin_time(header->last_hop_time());
-    } else {
-        header->last_hop_time(time_now());
-    }
+    header->last_hop_time(time_now());
 
     auto bytes = _radio.send(buffer);
 
@@ -283,21 +281,16 @@ TSTP_MAC::Time TSTP_MAC::backoff()
 
 void TSTP_MAC::process_mf(Buffer * b)
 {
-    //db<TSTP_MAC>(TRC) << "TSTP_MAC::process_mf(" << b << ")" << endl;
-    //kout << "TSTP_MAC::process_mf(" << b << ")" << endl;
+    db<TSTP_MAC>(TRC) << "TSTP_MAC::process_mf(" << b << ")" << endl;
+
     if(auto mf = to_microframe(b)) {
         clear_timeout();
         _radio.off();
         auto time = time_until_data(mf);
-        if(_tx_pending_data) {
-            if(_tx_pending_data->id() == mf->id()) {
-                timeout(time + Traits<TSTP_MAC>::SLEEP_PERIOD, check_tx_schedule);
-            } else {
-                timeout(time + Traits<TSTP_MAC>::DATA_SKIP_TIME, check_tx_schedule);
-            }
-            _tx_schedule.remove(mf->id());
+        if(_tx_pending_data and _tx_pending_data->id() == mf->id() and is_ack(_tx_pending_data)) {
+            timeout(time + Traits<TSTP_MAC>::DATA_SKIP_TIME, check_tx_schedule);
         } else {
-            auto removed = _tx_schedule.remove(mf->id());
+            auto removed = _tx_schedule.remove_not_ack(mf->id());
             if(not removed and relevant(mf)) {
                 _receiving_data_id = mf->id();
                 timeout(time, rx_data);
@@ -306,8 +299,45 @@ void TSTP_MAC::process_mf(Buffer * b)
                 timeout(time + Traits<TSTP_MAC>::SLEEP_PERIOD, check_tx_schedule);
             }
         }
+
         db<TSTP_MAC>(TRC) << "{all=" << mf->_all_listen << " ,c=" << mf->_count << " ,lhd=" << mf->_last_hop_distance  << " ,id=" << mf->_id  << "}" << endl;
     }
+
+
+    //if(auto mf = to_microframe(b)) {
+    //    clear_timeout();
+    //    _radio.off();
+    //    auto time = time_until_data(mf);
+    //    if(_tx_pending_data) {
+    //        if(is_ack(_tx_pending_data)) {
+    //            auto removed = _tx_schedule.remove(mf->id());
+    //            if(not removed and relevant(mf)) {
+    //                _receiving_data_id = mf->id();
+    //                timeout(time, rx_data);
+    //                db<TSTP_MAC>(TRC) << "Time until data: " << time << endl;
+    //            } else {
+    //                timeout(time + Traits<TSTP_MAC>::SLEEP_PERIOD, check_tx_schedule);
+    //            }
+    //        }
+    //        if(_tx_pending_data->id() == mf->id()) {
+    //            timeout(time + Traits<TSTP_MAC>::SLEEP_PERIOD, check_tx_schedule);
+    //        } else {
+    //            timeout(time + Traits<TSTP_MAC>::DATA_SKIP_TIME, check_tx_schedule);
+    //        }
+    //        _tx_schedule.remove(mf->id());
+    //    } else {
+    //        auto removed = _tx_schedule.remove(mf->id());
+    //        if(not removed and relevant(mf)) {
+    //            _receiving_data_id = mf->id();
+    //            timeout(time, rx_data);
+    //            db<TSTP_MAC>(TRC) << "Time until data: " << time << endl;
+    //        } else {
+    //            timeout(time + Traits<TSTP_MAC>::SLEEP_PERIOD, check_tx_schedule);
+    //        }
+    //    }
+    //    db<TSTP_MAC>(TRC) << "{all=" << mf->_all_listen << " ,c=" << mf->_count << " ,lhd=" << mf->_last_hop_distance  << " ,id=" << mf->_id  << "}" << endl;
+    //}
+
     _radio.free(b);
 }
 
@@ -373,7 +403,8 @@ void TSTP_MAC::process_data(Interest_Message * interest)
     _radio.off();
     clear_timeout();
 
-    MAC_Timer::set(interest->header()->last_hop_time() + Traits<TSTP_MAC>::TX_UNTIL_PROCESS_DATA_DELAY);
+    //if(interest->header()->last_hop_address() == _sink_address)
+        MAC_Timer::set(interest->header()->last_hop_time() + Traits<TSTP_MAC>::TX_UNTIL_PROCESS_DATA_DELAY);
 
     db<TSTP_MAC>(TRC) << "TSTP_MAC::process_data(interest=" << interest << ")" << endl;
     if(should_forward(interest)) {
@@ -389,7 +420,7 @@ void TSTP_MAC::process_data(Interest_Message * interest)
     auto time = time_now();
     auto rssi = 0;
     if(interest->region().contains(_address)) {
-        _tstp->process(time, rssi, interest->header(), interest->interest());
+        _tstp->process(time, rssi, interest->header(), interest->interest(), _receiving_data_id);
     } else {
         _tstp->process(time, rssi, interest->header());
     }

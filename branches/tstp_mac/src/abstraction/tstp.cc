@@ -1,18 +1,16 @@
 #include <utility/malloc.h>
 #include <tstp.h>
-#include <gpio.h>
-#include <alarm.h>
 
 __BEGIN_SYS
 
-void TSTP::process(TSTP_Common::Interest * i, Header * h)
+void TSTP::process(TSTP_Common::Interest * i, Header * h, Message_ID interest_id)
 {
     db<TSTP>(TRC) << "TSTP::process: Interest " << *i << endl;
     for(auto el = sensors.search_key(i->unit()); el; el = el->next()) {
         auto sensor = el->object();
         db<TSTP>(TRC) << "Found sensor " << (*sensor) << endl;
         if((sensor->period() <= i->period()) and (sensor->precision() <= i->precision())) {
-            subscribe(sensor, i);
+            subscribe(sensor, i, interest_id);
         }
     }
 }
@@ -27,37 +25,28 @@ void TSTP::process(TSTP_Common::Labeled_Data * d, Header * h)
             interest->last_reading(h->origin_time());
             db<TSTP>(TRC) << "Found interest " << endl;
             db<TSTP>(TRC) << "interest: " << *interest << ", received data: " << d->data << endl;
-            //auto oa = h->origin_address();
-            //auto lha = h->last_hop_address();
-            //if(oa != lha) {
-            //    kout << "origin = " << oa << " , last_hop = " << lha << endl;
-            //}
-            //kout << h->last_hop_time() << endl;            
-            //kout << h->origin_address() << endl;
-            //kout << h->last_hop_address() << endl;
         }
     }
 }
 
-void TSTP::subscribe(Sensor * s, TSTP_Common::Interest * i)
+void TSTP::subscribe(Sensor * s, TSTP_Common::Interest * in, Message_ID interest_id)
 {
-    db<TSTP>(TRC) << "TSTP::subscribe(" << *s << "," << *i << ")" << endl;
+    db<TSTP>(TRC) << "TSTP::subscribe(" << *s << "," << *in << ")" << endl;
 
-    new Scheduled_Message(s, i->t0(), i->period(), i->period(), i->t0() + i->dt());
-}
+    for(unsigned int i=0; i < Traits<TSTP>::MAX_SCHEDULED_MESSAGES; i++) {
+        Scheduled_Message * msg = &message_schedule[i];
+        if(not msg->free) {
+            if((msg->sensor == s) and (msg->interest_id == interest_id))
+                // This sensor is already subscribed to this interest
+                return;
+        }
+    }
 
-void TSTP::send_data(Scheduled_Message * s)
-{
-    //db<TSTP>(TRC) << "TSTP::send_data(" << (s) << ")" << endl;
-
-    if(s->until < time_now()) {
-        delete s;
-    } else {
-        MAC::send(s->sensor->unit(), s->sensor->data(), time_now() + s->deadline);
-        if(s->first_time) {
-            s->first_time = false;
-            delete s->alarm;
-            s->alarm = new Alarm(s->period, &(s->handler), (s->until - time_now()) / s->period + 1);
+    for(unsigned int i=0; i < Traits<TSTP>::MAX_SCHEDULED_MESSAGES; i++) {
+        Scheduled_Message * msg = &message_schedule[i];
+        if(msg->free) {
+            new (msg) Scheduled_Message(s, in->t0(), in->period(), in->t0() + in->dt(), interest_id);
+            break;
         }
     }
 }

@@ -126,7 +126,7 @@ template<> struct Traits<Serial_Display>: public Traits<void>
     static const unsigned int ENGINE = uart;
 
     static const bool enabled = true;
-    static const int COLUMNS = 80;
+    static const int COLUMNS = 100;
     static const int LINES = 24;
     static const int TAB_SIZE = 8;
 };
@@ -231,8 +231,10 @@ template<> struct Traits<TSTP>: public Traits<void>
 {
     static const bool enabled = (Traits<Build>::NODES > 1);
 
-    static const unsigned int MAX_INTERESTS = 8;
+    static const unsigned int MAX_SCHEDULED_MESSAGES = Traits<TSTP_MAC>::TX_SCHEDULE_SIZE;
+
     static const unsigned int MAX_SENSORS = 4;
+    static const unsigned int MAX_INTERESTS = MAX_SCHEDULED_MESSAGES - MAX_SENSORS;
 };
 
 template<> struct Traits<IP>: public Traits<Network>

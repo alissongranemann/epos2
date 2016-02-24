@@ -47,7 +47,7 @@ template <> struct Traits<Cortex_M_IC>: public Traits<Cortex_M_Common>
     static const bool debugged = false;
 
     enum ACTION { NOTHING, REBOOT, HALT };
-    static const ACTION ACTION_ON_HARD_FAULT = HALT;
+    static const ACTION ACTION_ON_HARD_FAULT = REBOOT;
 };
 
 template <> struct Traits<Cortex_M_Timer>: public Traits<Cortex_M_Common>
@@ -82,7 +82,7 @@ template <> struct Traits<TSTP_MAC>: public Traits<Cortex_M_Common>
 {
     //static const bool debugged = true;
 
-    static const unsigned int TX_SCHEDULE_SIZE = 4;
+    static const unsigned int TX_SCHEDULE_SIZE = 10;
     typedef eMote3_User_Timer_2 Timer;
 
     // All times in microseconds
@@ -92,8 +92,8 @@ template <> struct Traits<TSTP_MAC>: public Traits<Cortex_M_Common>
     static const unsigned int ADDRESS_X = 0;
     static const unsigned int ADDRESS_Y = 0;
     static const unsigned int ADDRESS_Z = 0;
-    static const unsigned int RETRANSMISSION_DEADLINE = 5 * PERIOD;
-    static const unsigned int DATA_ACK_TIMEOUT = RETRANSMISSION_DEADLINE;
+    static const unsigned int DATA_ACK_TIMEOUT = 2 * PERIOD;
+    static const unsigned int RETRANSMISSION_DEADLINE = 2 * DATA_ACK_TIMEOUT;
     static const int ADDRESS_MATCH_RADIUS = 100;
 
     // == Network / machine characteristics ==
@@ -105,7 +105,7 @@ template <> struct Traits<TSTP_MAC>: public Traits<Cortex_M_Common>
     static const unsigned int MIN_Ti = 2*Tu; // Minimum time between consecutive microframes
     static const unsigned int RADIO_RADIUS = 10 * 100; //TODO
     static const unsigned int TX_UNTIL_PROCESS_DATA_DELAY = 5100; //TODO
-    static const unsigned int DATA_SKIP_TIME = 5000;//Tu + 2032;
+    static const unsigned int DATA_SKIP_TIME = TX_UNTIL_PROCESS_DATA_DELAY;//Tu + 2032;
 
     // == Calculated parameters ==
     static const unsigned int N_MICROFRAMES = ((PERIOD / (MIN_Ti + Ts)) > 256) ? 256 : (PERIOD / (MIN_Ti + Ts));
@@ -132,7 +132,7 @@ template <> struct Traits<Cortex_M_Radio>: public Traits<Cortex_M_Common>
 template <> struct Traits<CC2538>: public Traits<Cortex_M_Radio>
 {
     static const unsigned int UNITS = NICS::Count<CC2538>::Result;
-    static const unsigned int SEND_BUFFERS = 8;
+    static const unsigned int SEND_BUFFERS = 2 * Traits<TSTP_MAC>::TX_SCHEDULE_SIZE;
     static const unsigned int RECEIVE_BUFFERS = 4;
     static const unsigned int DEFAULT_CHANNEL = 15; // From 11 to 26
 

@@ -31,15 +31,12 @@ public:
             return os;
         }
 
-        bool operator==(const Coordinate & rhs) const { return x == rhs.x and y == rhs.y and z == rhs.z; }
-        bool operator!=(const Coordinate & rhs) const { return not (rhs == *this); }
-
         Distance operator-(const Coordinate & rhs) const {
             int xx = rhs.x - x;
             int yy = rhs.y - y;
             int zz = rhs.z - z;
             //return Math::sqrt(xx*xx + yy*yy + zz*zz);
-            return Math::abs(xx + yy + zz);
+            return Math::abs(xx) + Math::abs(yy) + Math::abs(zz);
         }
     }__attribute__((packed));
 
@@ -65,6 +62,9 @@ public:
         R radius;
     }__attribute__((packed));
 };
+
+inline bool operator==(const Units::Coordinate& lhs, const Units::Coordinate& rhs) { return lhs.x == rhs.x and lhs.y == rhs.y and lhs.z == rhs.z; }
+inline bool operator!=(const Units::Coordinate& lhs, const Units::Coordinate& rhs){return !operator==(lhs,rhs);}
 
 class TSTP_Common : public Units
 {
@@ -155,7 +155,7 @@ public:
     {
     public:
         Header() {}
-        Header(const Message_Type & t, const Address & origin) : _message_type(t), _origin_address(origin)  {};
+        Header(const Message_Type & t, const Address & origin) : _message_type(t), _last_hop_address(origin), _origin_address(origin)  {};
 
         Message_Type message_type() const { return static_cast<Message_Type>(_message_type); }
         Address last_hop_address() const { return _last_hop_address; }

@@ -45,7 +45,7 @@ int main()
     coil0->set(coil0_state);
     coil1->set(coil1_state);
 
-    TSTP_MAC::address(TSTP_MAC::Address(444,-200,-40));
+    TSTP_MAC::address(TSTP_MAC::Address(745,300,10));
     TSTP::Watt W;
     TSTP::Sensor s(W, &sense_power0, 1, 500000);
 

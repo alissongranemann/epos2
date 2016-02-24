@@ -151,7 +151,7 @@ public:
 
 
     static bool send(const Interest * interest);
-    static bool send(const Unit & unit, const Data & data, const Time & deadline, const Time & when = time_now());
+    static bool send(const Unit & unit, const Data & data, const Time & deadline, const Time & when);
 
     typedef Frame PDU;
 
@@ -270,7 +270,8 @@ private:
             }
 
             unsigned int min_i = -1u;
-            auto min = _table[0].deadline() + 1;
+            auto min = _table[0].transmit_at() + 1;
+            //auto min = _table[0].deadline() + 1;
 
             for(auto i = 0u; i < _n_entries; i++) {
                 if(_table[i].transmit_at() <= time) {
@@ -278,8 +279,10 @@ private:
                         remove_by_index(i);
                         i--;
                     } else {
-                        if(_table[i].deadline() < min) { // Earliest Deadline First
-                            min = _table[i].deadline();
+                        if(_table[i].transmit_at() < min) {
+                            min = _table[i].transmit_at();
+                        //if(_table[i].deadline() < min) { // Earliest Deadline First
+                        //    min = _table[i].deadline();
                             min_i = i;
                         }
                     }
@@ -295,6 +298,19 @@ private:
         bool remove(Message_ID id) {
             for(auto i = 0u; i < _n_entries; i++) {
                 if(_table[i].id() == id) {
+                    _table[i].free();
+                    if(i < _n_entries - 1) {
+                        _table[i] = _table[_n_entries - 1];
+                    }
+                    _n_entries--;
+                    return true;
+                }
+            }
+            return false;
+        }
+        bool remove_not_ack(Message_ID id) {
+            for(auto i = 0u; i < _n_entries; i++) {
+                if((_table[i].id() == id) and not (TSTP_MAC::is_ack(&_table[i]))) {
                     _table[i].free();
                     if(i < _n_entries - 1) {
                         _table[i] = _table[_n_entries - 1];

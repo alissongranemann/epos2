@@ -3,7 +3,6 @@
 #ifndef __tstp_h
 #define __tstp_h
 
-#include <alarm.h>
 #include <ieee1451_0.h>
 #include <tstp_mac.h>
 #include <nic.h>
@@ -99,21 +98,35 @@ public:
 
 private:
     struct Scheduled_Message {
-        Scheduled_Message(const Sensor * s, const Time & t, const Time & p, const Time & d, const Time & u) : first_time(true), sensor(s), t0(t), period(p), deadline(d), until(u), handler(&TSTP::send_data, this) {
-            alarm = new Alarm(t0 - time_now(), &handler, 1); 
-        }
+        Scheduled_Message() : free(true) { }
 
-        ~Scheduled_Message() { delete alarm; }
+        Scheduled_Message(const Sensor * s, const Time & t, const Time & p, const Time & u, Message_ID int_id) : free(false), sensor(s), when(t), period(p), until(u), interest_id(int_id) { }
 
-        bool first_time;
+        bool free;
         const Sensor * sensor;
-        Time t0;
+        Time when;
         Time period;
-        Time deadline;
         Time until;
-        Functor_Handler<Scheduled_Message> handler;
-        Alarm * alarm;
+        Message_ID interest_id;
     };
+
+    Scheduled_Message message_schedule[Traits<TSTP>::MAX_SCHEDULED_MESSAGES];
+
+    void check_tx_schedule() {
+        auto t = time_now();
+        for(unsigned int i=0; i < Traits<TSTP>::MAX_SCHEDULED_MESSAGES; i++) {
+            Scheduled_Message * msg = &message_schedule[i];
+            if(not msg->free) {
+                if(msg->until < t) {
+                    msg->free = true;
+                } else if(msg->when <= t) {
+                    auto d = msg->sensor->data();
+                    MAC::send(msg->sensor->unit(), d, msg->when + msg->period, msg->when);
+                    msg->when += msg->period;
+                }
+            }
+        }
+    }
 
     void process(const Time & when, const RSSI & rssi, Header * h) {
         db<TSTP>(TRC) << "TSTP: Interest Received : t=" << when << ",rssi=" << rssi << ",h=" << *h << endl;
@@ -128,7 +141,14 @@ private:
         process(payload, h);
     }
 
-    void process(TSTP_Common::Interest * i, Header * h);
+    template<typename T>
+    void process(const Time & when, const RSSI & rssi, Header * h, T * payload, Message_ID id) {
+        db<TSTP>(TRC) << "TSTP::process(t=" << when << ",rssi=" << rssi << ",h=" << *h << ",i=" << *payload << ")" << endl;
+        process(when, rssi, h);
+        process(payload, h, id);
+    }
+
+    void process(TSTP_Common::Interest * i, Header * h, Message_ID interest_id);
     void process(TSTP_Common::Labeled_Data * d, Header * h);
 
     TSTP();
@@ -143,7 +163,7 @@ private:
 
     //void publish(const Sensor & s);
     //void publish(const Interest & i);
-    void subscribe(Sensor * s, TSTP_Common::Interest * i);
+    void subscribe(Sensor * s, TSTP_Common::Interest * i, Message_ID id);
     static void send_data(Scheduled_Message * s);
 
     void add(const Sensor & s) { sensors.insert(new Sensors::Element(&s, s.unit())); }

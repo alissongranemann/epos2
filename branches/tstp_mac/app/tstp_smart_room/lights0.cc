@@ -13,8 +13,10 @@ Power_Meter * pm0;
 
 typedef TSTP::Data Data;
 
+int dummy = 0;
 Data sense_power()
 {
+    return dummy++;
     auto ret = pm0->average();
     return ret;
 }
