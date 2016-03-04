@@ -11,6 +11,7 @@ void TSTP::init()
 {
     db<Init, TSTP>(TRC) << "TSTP::init()" << endl;
     instance = new TSTP();
+    PTP::init();
 }
 
 TSTP::TSTP()

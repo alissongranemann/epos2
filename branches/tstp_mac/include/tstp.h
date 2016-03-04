@@ -4,6 +4,7 @@
 #define __tstp_h
 
 #include <ieee1451_0.h>
+#include <tstp_time.h>
 #include <tstp_mac.h>
 #include <nic.h>
 #include <rtc.h>
@@ -128,23 +129,22 @@ private:
         }
     }
 
-    void process(const Time & when, const RSSI & rssi, Header * h) {
-        db<TSTP>(TRC) << "TSTP: Interest Received : t=" << when << ",rssi=" << rssi << ",h=" << *h << endl;
-        //PTP::process(when, h);
+    void process(const RSSI & rssi, Header * h) {
+        db<TSTP>(TRC) << "TSTP: Interest Received : rssi=" << rssi << ",h=" << *h << endl;
         //HECOPS::process(rssi, h);
     }
 
     template<typename T>
-    void process(const Time & when, const RSSI & rssi, Header * h, T * payload) {
-        db<TSTP>(TRC) << "TSTP::process(t=" << when << ",rssi=" << rssi << ",h=" << *h << ",i=" << *payload << ")" << endl;
-        process(when, rssi, h);
+    void process(const RSSI & rssi, Header * h, T * payload) {
+        db<TSTP>(TRC) << "TSTP::process(rssi=" << rssi << ",h=" << *h << ",i=" << *payload << ")" << endl;
+        process(rssi, h);
         process(payload, h);
     }
 
     template<typename T>
-    void process(const Time & when, const RSSI & rssi, Header * h, T * payload, Message_ID id) {
-        db<TSTP>(TRC) << "TSTP::process(t=" << when << ",rssi=" << rssi << ",h=" << *h << ",i=" << *payload << ")" << endl;
-        process(when, rssi, h);
+    void process(const RSSI & rssi, Header * h, T * payload, Message_ID id) {
+        db<TSTP>(TRC) << "TSTP::process(rssi=" << rssi << ",h=" << *h << ",i=" << *payload << ")" << endl;
+        process(rssi, h);
         process(payload, h, id);
     }
 

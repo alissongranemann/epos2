@@ -25,6 +25,8 @@ public:
 
     static const Statistics & statistics() { return _statistics; }
 
+    static void sfd();
+
     static void init();
 
     typedef CPU::Reg8 Reg8;
@@ -34,8 +36,6 @@ public:
     static Address sink_address() { return _sink_address; }
 
     typedef IEEE802_15_4::Phy_Header Phy_Header;
-
-    static Time time_now();
 
     // TSTP MAC Microframe
     class Microframe
@@ -392,6 +392,7 @@ private:
     static Address _address;
     static Address _sink_address;
     static Statistics _statistics;
+    static Time _last_sfd_time;
 
 
     static TSTP * _tstp;

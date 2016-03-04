@@ -87,13 +87,14 @@ CC2538::CC2538(unsigned int unit, IO_Irq irq, DMA_Buffer * dma_buf):
 
     // Disable frame filtering
     xreg(FRMFILT0) &= ~FRAME_FILTER_EN;
+    //xreg(FRMFILT0) |= FRAME_FILTER_EN;
     xreg(FRMFILT1) &= ~ACCEPT_FT2_ACK; // ACK frames are handled only when expected
 
     // Reset result of source matching (value undefined on reset)
     ffsm(SRCRESINDEX) = 0;
 
     // Enable automatic source address matching
-    xreg(SRCMATCH) |= SRC_MATCH_EN;
+    //xreg(SRCMATCH) |= SRC_MATCH_EN;
 
     // Set FIFOP threshold to maximum
     xreg(FIFOPCTRL) = 0xff;
@@ -117,7 +118,8 @@ CC2538::CC2538(unsigned int unit, IO_Irq irq, DMA_Buffer * dma_buf):
     sfr(RFERRF) = 0;
 
     // Enable useful device interrupts
-    xreg(RFIRQM0) = INT_FIFOP;
+    // Enabling FIFOP and SFD seems to result in no interrupt ever occurring. SoC bug?
+    xreg(RFIRQM0) = INT_FIFOP;    
     xreg(RFIRQM1) = 0;
 
     xreg(FRMCTRL1) &= ~SET_RXENMASK_ON_TX; // Do not enter receive mode after TX

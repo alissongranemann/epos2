@@ -5,9 +5,9 @@
 
 #include <machine/cortex_m/machine.h>
 #include <machine/cortex_m/timer.h>
+#include <tstp.h>
 #include "../../../include/machine/cortex_m/cc2538_radio.h"
 #include <utility/malloc.h>
-#include <alarm.h>
 #include <gpio.h>
 
 __BEGIN_SYS
@@ -361,6 +361,12 @@ void CC2538::handle_int()
     Reg32 irqrf0 = sfr(RFIRQF0);
     Reg32 irqrf1 = sfr(RFIRQF1);
 
+    if(irqrf0 & INT_SFD) {
+        PTP::t1(PTP::time_now());
+        sfr(RFIRQF0) &= ~INT_SFD;
+        db<CC2538>(TRC) << "SFD" << endl;
+    }
+
     if((irqrf0 & INT_FIFOP)) { // Frame received
         // Note that ISRs in EPOS are reentrant, that's why locking was carefully made atomic
         // Therefore, several instances of this code can compete to handle received buffers
@@ -417,6 +423,7 @@ void CC2538::handle_int()
                 }
             }
         }
+        db<CC2538>(TRC) << "FIFOP" << endl;
     }
 
     db<CC2538>(TRC) << "CC2538::int: " << endl << "RFIRQF0 = " << irqrf0 << endl;
@@ -425,7 +432,6 @@ void CC2538::handle_int()
     if(irqrf0 & INT_FRAME_ACCEPTED) db<CC2538>(TRC) << "FRAME_ACCEPTED" << endl;
     if(irqrf0 & INT_SRC_MATCH_FOUND) db<CC2538>(TRC) << "SRC_MATCH_FOUND" << endl;
     if(irqrf0 & INT_SRC_MATCH_DONE) db<CC2538>(TRC) << "SRC_MATCH_DONE" << endl;
-    if(irqrf0 & INT_SFD) db<CC2538>(TRC) << "SFD" << endl;
     if(irqrf0 & INT_ACT_UNUSED) db<CC2538>(TRC) << "ACT_UNUSED" << endl;
 
     db<CC2538>(TRC) << "RFIRQF1 = " << irqrf1 << endl;

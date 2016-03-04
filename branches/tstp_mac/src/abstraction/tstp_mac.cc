@@ -3,7 +3,7 @@
 #include <timer.h>
 #include <tsc.h>
 
-__USING_SYS
+__BEGIN_SYS
 
 TSTP_MAC::Message_ID TSTP_MAC::_receiving_data_id;
 TSTP * TSTP_MAC::_tstp;
@@ -16,6 +16,7 @@ NIC TSTP_MAC::_radio;
 TSTP_MAC::Address TSTP_MAC::_address(Traits<TSTP_MAC>::ADDRESS_X, Traits<TSTP_MAC>::ADDRESS_Y, Traits<TSTP_MAC>::ADDRESS_Z);
 TSTP_MAC::Address TSTP_MAC::_sink_address(0,0,0);
 Traits<TSTP_MAC>::Timer TSTP_MAC::_timer;
+TSTP_MAC::Time TSTP_MAC::_last_sfd_time;
 
 bool TSTP_MAC::send(const Interest * interest)
 {
@@ -54,8 +55,6 @@ void TSTP_MAC::TX_Schedule::TX_Schedule_Entry::free()
 void TSTP_MAC::init()
 {
     new (&_radio) NIC();
-    MAC_Timer::config();
-    MAC_Timer::enable();
     _radio.off();
     timeout(Traits<TSTP_MAC>::SLEEP_PERIOD, check_tx_schedule);
     _timer.enable();
@@ -72,15 +71,8 @@ void TSTP_MAC::check_tx_schedule(const unsigned int & int_id)
         db<TSTP_MAC>(TRC) << "TSTP_MAC::backing off " << _tx_pending_data->backoff() << endl;
     } else {
         timeout(Traits<TSTP_MAC>::SLEEP_PERIOD, rx_mf);
-        db<TSTP_MAC>(TRC) << "TSTP_MAC::sleeping S" << endl;
+        //db<TSTP_MAC>(TRC) << "TSTP_MAC::sleeping S" << endl;
     }
-}
-
-TSTP_MAC::Time TSTP_MAC::time_now()
-{
-    auto ret = MAC_Timer::ts_to_us(MAC_Timer::read());
-    //db<TSTP_MAC>(TRC) << "TSTP_MAC::time_now() : " << ret << endl;
-    return ret;
 }
 
 void TSTP_MAC::timeout(Time time, const Timer_Handler & handler) 
@@ -184,7 +176,6 @@ void TSTP_MAC::tx_mf(const unsigned int & int_id)
 void TSTP_MAC::tx_data(const unsigned int & int_id)
 {
     _timer.clear_interrupt();
-    //db<TSTP_MAC>(TRC) << "TSTP_MAC::tx_data(" << _tx_pending_data->buffer() << ")" << endl;
     auto buffer = _tx_pending_data->buffer();
     auto header = buffer->frame()->data<Header>();
     
@@ -201,6 +192,7 @@ void TSTP_MAC::tx_data(const unsigned int & int_id)
     }
 
     _tx_schedule.update_timeout(_tx_pending_data, time_now() + Traits<TSTP_MAC>::DATA_ACK_TIMEOUT);
+    db<TSTP_MAC>(TRC) << "TSTP_MAC::tx_data(" << _tx_pending_data->buffer() << ")" << endl;
     check_tx_schedule();
 }
 
@@ -377,6 +369,12 @@ void TSTP_MAC::process_data(Data_Message * data)
 {
     _radio.off();
     clear_timeout();
+
+    if(not is_sink()) {
+        PTP::t0(data->header()->last_hop_time());
+        //PTP::adjust();
+    }
+
     db<TSTP_MAC>(TRC) << "TSTP_MAC::process_data(data=" << data << ")" << endl;
     if(should_forward(data)) {
         // Copy RX Buffer to TX Buffer
@@ -389,12 +387,11 @@ void TSTP_MAC::process_data(Data_Message * data)
     }
 
     // TODO: time and RSSI
-    auto time = time_now();
     auto rssi = 0;
     if(is_sink()) {
-        _tstp->process(time, rssi, data->header(), data->labeled_data());
+        _tstp->process(rssi, data->header(), data->labeled_data());
     } else {
-        _tstp->process(time, rssi, data->header());
+        _tstp->process(rssi, data->header());
     }
 }
 
@@ -403,8 +400,8 @@ void TSTP_MAC::process_data(Interest_Message * interest)
     _radio.off();
     clear_timeout();
 
-    //if(interest->header()->last_hop_address() == _sink_address)
-        MAC_Timer::set(interest->header()->last_hop_time() + Traits<TSTP_MAC>::TX_UNTIL_PROCESS_DATA_DELAY);
+    PTP::t0(interest->header()->last_hop_time());
+    PTP::set();
 
     db<TSTP_MAC>(TRC) << "TSTP_MAC::process_data(interest=" << interest << ")" << endl;
     if(should_forward(interest)) {
@@ -417,12 +414,11 @@ void TSTP_MAC::process_data(Interest_Message * interest)
     }
 
     // TODO: time and RSSI
-    auto time = time_now();
     auto rssi = 0;
     if(interest->region().contains(_address)) {
-        _tstp->process(time, rssi, interest->header(), interest->interest(), _receiving_data_id);
+        _tstp->process(rssi, interest->header(), interest->interest(), _receiving_data_id);
     } else {
-        _tstp->process(time, rssi, interest->header());
+        _tstp->process(rssi, interest->header());
     }
 }
 
@@ -486,3 +482,5 @@ void TSTP_MAC::rx_data(const unsigned int & int_id)
     timeout(Traits<TSTP_MAC>::RX_DATA_TIMEOUT, check_tx_schedule);
     _radio.receive(parse_data);
 }
+
+__END_SYS

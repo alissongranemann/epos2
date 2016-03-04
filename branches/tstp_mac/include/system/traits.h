@@ -10,7 +10,7 @@ template<typename T>
 struct Traits
 {
     static const bool enabled = true;
-    static const bool debugged = false;
+    static const bool debugged = true;
     static const bool hysterically_debugged = false;
     typedef TLIST<> ASPECTS;
 };

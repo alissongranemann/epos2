@@ -31,6 +31,7 @@ int main()
 
     pm0 = new Power_Meter(ADC::SINGLE_ENDED_ADC7, ADC::SINGLE_ENDED_ADC5, ADC::GND);
 
+    coil_state = true;
     led->set(led_state);
     coil->set(coil_state);
 

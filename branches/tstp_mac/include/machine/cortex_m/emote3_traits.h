@@ -104,8 +104,8 @@ template <> struct Traits<TSTP_MAC>: public Traits<Cortex_M_Common>
     static const unsigned int MICROFRAME_TIME = Ts;
     static const unsigned int MIN_Ti = 2*Tu; // Minimum time between consecutive microframes
     static const unsigned int RADIO_RADIUS = 10 * 100; //TODO
-    static const unsigned int TX_UNTIL_PROCESS_DATA_DELAY = 5100; //TODO
-    static const unsigned int DATA_SKIP_TIME = TX_UNTIL_PROCESS_DATA_DELAY;//Tu + 2032;
+    static const unsigned int TX_UNTIL_PROCESS_DATA_DELAY = 0;//5100; //TODO
+    static const unsigned int DATA_SKIP_TIME = 5100;//TX_UNTIL_PROCESS_DATA_DELAY;//Tu + 2032;
 
     // == Calculated parameters ==
     static const unsigned int N_MICROFRAMES = ((PERIOD / (MIN_Ti + Ts)) > 256) ? 256 : (PERIOD / (MIN_Ti + Ts));
@@ -134,7 +134,7 @@ template <> struct Traits<CC2538>: public Traits<Cortex_M_Radio>
     static const unsigned int UNITS = NICS::Count<CC2538>::Result;
     static const unsigned int SEND_BUFFERS = 2 * Traits<TSTP_MAC>::TX_SCHEDULE_SIZE;
     static const unsigned int RECEIVE_BUFFERS = 4;
-    static const unsigned int DEFAULT_CHANNEL = 15; // From 11 to 26
+    static const unsigned int DEFAULT_CHANNEL = 12; // From 11 to 26
 
     static const bool auto_listen = false;
 

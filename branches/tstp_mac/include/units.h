@@ -74,6 +74,8 @@ public:
     typedef IEEE1451_0::Unit Unit;
     typedef int Data;
 
+    static Time time_now();
+
     struct Labeled_Data {
         Labeled_Data() {}
         Labeled_Data(const Unit & u) : unit(u) { };

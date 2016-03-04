@@ -3,6 +3,8 @@
 
 __BEGIN_SYS
 
+TSTP_Common::Time TSTP_Common::time_now() { return MAC_Timer::ts_to_us(MAC_Timer::read()); }
+
 void TSTP::process(TSTP_Common::Interest * i, Header * h, Message_ID interest_id)
 {
     db<TSTP>(TRC) << "TSTP::process: Interest " << *i << endl;
@@ -22,7 +24,7 @@ void TSTP::process(TSTP_Common::Labeled_Data * d, Header * h)
         auto interest = el->object();
         if((interest->last_reading() < h->origin_time()) and (interest->region().contains(h->origin_address()))) {
             interest->handle(d->data, h);
-            interest->last_reading(h->origin_time());
+            //interest->last_reading(h->origin_time());
             db<TSTP>(TRC) << "Found interest " << endl;
             db<TSTP>(TRC) << "interest: " << *interest << ", received data: " << d->data << endl;
         }

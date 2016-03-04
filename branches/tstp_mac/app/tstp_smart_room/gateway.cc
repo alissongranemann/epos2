@@ -87,19 +87,19 @@ int main()
 
     Region desk0_region(745, 300, 10);
 
-    Time period(2000000);
+    Time period(1000000);
     Time t0(TSTP::time_now() + period * 2);
-    Time dt(30 * period);
+    Time dt(10 * period);
 
     cout << "t0 = " << t0 << " , period = " << period << " , tend = " << t0 + dt << endl;
 
     TSTP::RESPONSE_MODE response_mode(TSTP::RESPONSE_MODE::SINGLE);
 
     TSTP::Interest outlet1_interest(&outlet1_update, outlet1_region, t0, dt, period * 5, W, 100, response_mode);
-    TSTP::Interest lights0_interest(&lights0_update, lights0_region, t0, dt, period * 3, W, 100, response_mode);
+    //TSTP::Interest lights0_interest(&lights0_update, lights0_region, t0, dt, period * 3, W, 100, response_mode);
     //TSTP::Interest lights1_interest(&lights1_update, lights1_region, t0, dt, period, W, 100, response_mode);
-    TSTP::Interest outlet0_interest(&outlet0_update, outlet0_region, t0, dt, period * 2, W, 100, response_mode);
-    TSTP::Interest desk0_interest(&desk0_update, desk0_region, t0, dt, period, W, 100, response_mode);
+    //TSTP::Interest outlet0_interest(&outlet0_update, outlet0_region, t0, dt, period * 2, W, 100, response_mode);
+    //TSTP::Interest desk0_interest(&desk0_update, desk0_region, t0, dt, period, W, 100, response_mode);
 
     while(TSTP::time_now() <= t0+dt+period) {
         outlet0_data.process();
@@ -107,7 +107,7 @@ int main()
         lights0_data.process();
         lights1_data.process();
         desk0_data.process();
-        if(uart1.has_data()) { Machine::reboot(); }
+//        if(uart1.has_data()) { Machine::reboot(); }
     }
 
     cout << endl << "=====================" << endl;
@@ -121,7 +121,7 @@ int main()
 
     while(true) {
         if(uart1.has_data()) {
-            Machine::reboot();        
+ //           Machine::reboot();        
         }
     }
 
