@@ -1,3 +1,4 @@
+#ifndef __traits_h
 #define __traits_h
 
 #include <system/config.h>
