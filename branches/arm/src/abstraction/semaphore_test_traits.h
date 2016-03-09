@@ -1,3 +1,4 @@
+#ifndef __traits_h
 #define __traits_h
 
 #include <system/config.h>
@@ -19,14 +20,14 @@ template<> struct Traits<Build>
     enum {LIBRARY, BUILTIN, KERNEL};
     static const unsigned int MODE = LIBRARY;
 
-    enum {IA32, ARMv7};
-    static const unsigned int ARCHITECTURE = ARMv7;
+    enum {IA32};
+    static const unsigned int ARCHITECTURE = IA32;
 
-    enum {PC, Cortex_M, Cortex_A};
-    static const unsigned int MACHINE = Cortex_M;
+    enum {PC};
+    static const unsigned int MACHINE = PC;
 
-    enum {Legacy, eMote3, LM3S811};
-    static const unsigned int MODEL = LM3S811;
+    enum {Legacy};
+    static const unsigned int MODEL = Legacy;
 
     static const unsigned int CPUS = 1;
     static const unsigned int NODES = 1; // > 1 => NETWORKING
@@ -38,8 +39,8 @@ template<> struct Traits<Debug>
 {
     static const bool error   = true;
     static const bool warning = true;
-    static const bool info    = false;
-    static const bool trace   = false;
+    static const bool info    = true;
+    static const bool trace   = true;
 };
 
 template<> struct Traits<Lists>: public Traits<void>
@@ -56,35 +57,7 @@ template<> struct Traits<Heaps>: public Traits<void>
 {
     static const bool debugged = hysterically_debugged;
 };
-template <> struct Traits<Bignum> : public Traits<void>
-{
-	// You can edit these values
-	typedef unsigned int digit;
-	typedef unsigned long long double_digit;
-	static const unsigned int word = 4;
 
-	// You shouldn't edit these
-	static const unsigned int sz_digit = sizeof(digit);
-	static const unsigned int sz_word = sz_digit * word;
-	static const unsigned int double_word = 2 * word;
-	static const unsigned int bits_in_digit = sz_digit * 8;
-};
-
-template <> struct Traits<Diffie_Hellman> : public Traits<void>
-{
-	// Don't edit these, unless you really know what you're doing
-	static const unsigned int SECRET_SIZE = Traits<Bignum>::sz_word;
-	static const unsigned int PUBLIC_KEY_SIZE = Traits<Bignum>::sz_word * 2;
-};
-
-template <> struct Traits<Secure_NIC> : public Traits<void>
-{
-	static const int PROTOCOL_ID = 42;    
-	static const unsigned int ID_SIZE = 2;
-	static const unsigned long long TIME_WINDOW = 100000000U; // In Microseconds
-//	static const bool is_gateway = true;
-//	static const bool is_sensor = !is_gateway;
-};
 
 // System Parts (mostly to fine control debugging)
 template<> struct Traits<Boot>: public Traits<void>
@@ -152,7 +125,7 @@ template<> struct Traits<Thread>: public Traits<void>
 {
     static const bool smp = Traits<System>::multicore;
 
-    typedef Scheduling_Criteria::RR Criterion;
+    typedef Scheduling_Criteria::CPU_Affinity Criterion;
     static const unsigned int QUANTUM = 10000; // us
 
     static const bool trace_idle = hysterically_debugged;

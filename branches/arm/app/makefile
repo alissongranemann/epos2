@@ -12,6 +12,6 @@ $(APPLICATION).o: $(APPLICATION).cc $(SRC)
 
 install: $(APPLICATION)
 		$(INSTALL) $(APPLICATION) $(IMG)
-		
+
 clean:
 		$(CLEAN) *.o $(APPLICATION)

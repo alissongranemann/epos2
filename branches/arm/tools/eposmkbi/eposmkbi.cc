@@ -95,14 +95,11 @@ int main(int argc, char **argv)
     
     // Check ARGS
     if(argc < 3) {
-        fprintf(stderr, 
-        	"Usage: %s <options> <EPOS root> <boot image> <app1> <app2> ...\n", 
-        	argv[0]);
+        fprintf(stderr, "Usage: %s <options> <EPOS root> <boot image> <app1> <app2> ...\n", argv[0]);
         return 1;
     }
     if(!strcmp(CONFIG.mode, "library") && (argc > 4)) {
-        fprintf(stderr,
-        	"Error: library mode supports a single application!\n");
+        fprintf(stderr, "Error: library mode supports a single application!\n");
         return 1;
     }
     
@@ -147,8 +144,7 @@ int main(int argc, char **argv)
     } else
         if(sizeof(System_Info) > MAX_SI_LEN) {
             printf(" failed!\n");
-            fprintf(stderr, "System_Info structure is too large (%d)!\n",
-        	    sizeof(System_Info));
+            fprintf(stderr, "System_Info structure is too large (%d)!\n", sizeof(System_Info));
             return 1;
         } else	
             image_size += pad(fd_img, MAX_SI_LEN);
@@ -185,12 +181,13 @@ int main(int argc, char **argv)
 
     // Add LOADER (if multiple applications) or the single application otherwise
     si.bm.application_offset = image_size - boot_size;
+//    if((argc == 4) && strcmp(CONFIG.mode, "kernel")) { // Add Single APP
     if(argc == 4) { // Add Single APP
         printf("    Adding application \"%s\":", argv[3]);
         image_size += put_file(fd_img, argv[3]);
         si.bm.extras_offset = -1;
     } else { // Add LOADER
-        sprintf(file, "%s/img/%s_app", argv[1], CONFIG.mach);
+        sprintf(file, "%s/img/%s_loader", argv[1], CONFIG.mach);
         printf("    Adding loader \"%s\":", file);
         image_size += put_file(fd_img, file);
 
@@ -253,31 +250,34 @@ bool parse_config(FILE * cfg_file, Configuration * cfg)
     char * token;
 
     // EPOS Mode
-    token = fgets(line, 256, cfg_file); // Assigning just to suppress compiler warning about unused result
+    fgets(line, 256, cfg_file);
     token = strtok(line, "=");
     if(strcmp(token, "MODE") || !(token = strtok(NULL, "\n"))) {
         fprintf(stderr, "Error: no valid MODE in configuration!\n");
         return false;
     }
-    strtolower(cfg->mode, token);						
+    strtolower(cfg->mode, token);
+
     // Arch
-    token = fgets(line, 256, cfg_file); // Assigning just to suppress compiler warning about unused result
+    fgets(line, 256, cfg_file);
     token = strtok(line, "=");
     if(strcmp(token, "ARCH") || !(token = strtok(NULL, "\n"))) {
         fprintf(stderr, "Error: no valid ARCH in configuration!\n");
         return false;
     }
     strtolower(cfg->arch, token);
+
     // Machine
-    token = fgets(line, 256, cfg_file); // Assigning just to suppress compiler warning about unused result
+    fgets(line, 256, cfg_file);
     token = strtok(line, "=");
     if(strcmp(token, "MACH") || !(token = strtok(NULL, "\n"))) {
         fprintf(stderr, "Error: no valid MACH in configuration!\n");
         return false;
     }
-    strtolower(cfg->mach, token);	
+    strtolower(cfg->mach, token);
+
     // Model
-    token = fgets(line, 256, cfg_file); // Assigning just to suppress compiler warning about unused result
+    fgets(line, 256, cfg_file);
     token = strtok(line, "=");
     if(strcmp(token, "MMOD") || !(token = strtok(NULL, "\n"))) {
         fprintf(stderr, "Error: no valid MMOD in configuration!\n");
@@ -286,7 +286,7 @@ bool parse_config(FILE * cfg_file, Configuration * cfg)
     strtolower(cfg->mmod, token);	
 
     // Clock
-    token = fgets(line, 256, cfg_file); // Assigning just to suppress compiler warning about unused result
+    fgets(line, 256, cfg_file);
     token = strtok(line, "=");
     if(strcmp(token, "CLOCK") || !(token = strtok(NULL, "\n"))) {
         fprintf(stderr, "Error: no valid CLOCK in configuration!\n");
@@ -295,7 +295,7 @@ bool parse_config(FILE * cfg_file, Configuration * cfg)
     cfg->clock = atoi(token);	
 
     // Word Size
-    token = fgets(line, 256, cfg_file); // Assigning just to suppress compiler warning about unused result
+    fgets(line, 256, cfg_file);
     token = strtok(line, "=");
     if(strcmp(token, "WORD_SIZE") || !(token = strtok(NULL, "\n"))) {
         fprintf(stderr, "Error: no valid WORD_SIZE in configuration!\n");
@@ -304,7 +304,7 @@ bool parse_config(FILE * cfg_file, Configuration * cfg)
     cfg->word_size = atoi(token);
 
     // Endianess
-    token = fgets(line, 256, cfg_file); // Assigning just to suppress compiler warning about unused result
+    fgets(line, 256, cfg_file);
     token = strtok(line, "=");
     if(strcmp(token, "ENDIANESS") || !(token = strtok(NULL, "\n"))) {
         fprintf(stderr, "Error: no valid ENDIANESS in configuration!\n");
@@ -313,7 +313,7 @@ bool parse_config(FILE * cfg_file, Configuration * cfg)
     cfg->endianess = !strcmp(token, "little");
 
     // Memory Base
-    token = fgets(line, 256, cfg_file); // Assigning just to suppress compiler warning about unused result
+    fgets(line, 256, cfg_file);
     token = strtok(line, "=");
     if(strcmp(token, "MEM_BASE") || !(token = strtok(NULL, "\n"))) {
         fprintf(stderr, "Error: no valid MEM_BASE in configuration!\n");
@@ -322,7 +322,7 @@ bool parse_config(FILE * cfg_file, Configuration * cfg)
     cfg->mem_base = strtol(token, 0, 16);
 
     // Memory Top
-    token = fgets(line, 256, cfg_file); // Assigning just to suppress compiler warning about unused result
+    fgets(line, 256, cfg_file);
     token = strtok(line, "=");
     if(strcmp(token, "MEM_TOP") || !(token = strtok(NULL, "\n"))) {
         fprintf(stderr, "Error: no valid MEM_TOP in configuration!\n");
@@ -331,7 +331,7 @@ bool parse_config(FILE * cfg_file, Configuration * cfg)
     cfg->mem_top=strtol(token, 0, 16);
 
     // Boot Lenght Min
-    token = fgets(line, 256, cfg_file); // Assigning just to suppress compiler warning about unused result
+    fgets(line, 256, cfg_file);
     token = strtok(line, "=");
     if(!strcmp(token, "BOOT_LENGTH_MIN") && (token = strtok(NULL, "\n")))
         cfg->boot_length_min=atoi(token);
@@ -339,7 +339,7 @@ bool parse_config(FILE * cfg_file, Configuration * cfg)
         cfg->boot_length_min=0;
 
     // Boot Lenght Max
-    token = fgets(line, 256, cfg_file); // Assigning just to suppress compiler warning about unused result
+    fgets(line, 256, cfg_file);
     token = strtok(line, "=");
     if(!strcmp(token, "BOOT_LENGTH_MAX") && (token = strtok(NULL, "\n")))
         cfg->boot_length_max=atoi(token);
@@ -347,7 +347,7 @@ bool parse_config(FILE * cfg_file, Configuration * cfg)
         cfg->boot_length_max=0;
 
     // Node Id
-    token = fgets(line, 256, cfg_file); // Assigning just to suppress compiler warning about unused result
+    fgets(line, 256, cfg_file);
     token = strtok(line, "=");
     if(!strcmp(token, "NODE_ID") && (token = strtok(NULL, "\n")))
         cfg->node_id = atoi(token);
@@ -355,7 +355,7 @@ bool parse_config(FILE * cfg_file, Configuration * cfg)
         cfg->node_id = -1; // get from net
 
     // Number of Nodes in SAN
-    token = fgets(line, 256, cfg_file); // Assigning just to suppress compiler warning about unused result
+    fgets(line, 256, cfg_file);
     token = strtok(line, "=");
     if(!strcmp(token, "N_NODES") && (token = strtok(NULL, "\n")))
         cfg->n_nodes = atoi(token);
@@ -447,10 +447,8 @@ bool add_machine_secrets(int fd, unsigned int i_size, char * mach, char *mmod)
         put_buf(fd, key_string, (strlen(key_string)+1));		
     }
     else if (!strcmp(mmod, "emote3")) { // EPOSMoteIII
-        // Customer Configuration Area (CCA)
-        char key_string[] = ":020000040027D3\r\n:0CFFD400FFFFFFF700000000000020000D\r\n:00000001FF\r\n"; // Bottloader Enabled, enter by setting pin PA7 to low
-        //char key_string[] = ":020000040027D3\r\n:0CFFD400FFFFFFFF000000000000200005\r\n:00000001FF\r\n"; // Bottloader Enabled, enter by setting pin PA7 to high
-        //char key_string[] = ":020000040027D3\r\n:0CFFD400FFFFFFEF000000000000200015\r\n:00000001FF\r\n"; // Bootloader Disabled
+        //Customer Configuration Area (CCA)
+        char key_string[] = ":020000040027D3\r\n:0CFFD400FFFFFFEF000000000000200015\r\n:00000001FF\r\n";
         const int key_offset = -strlen(":00000001FF\r\n");
  
         // Write key string to unlock epos

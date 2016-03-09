@@ -1,8 +1,9 @@
 // EPOS Thread Abstraction Implementation
 
 #include <machine.h>
+#include <system.h>
 #include <thread.h>
-#include <alarm.h>
+#include <alarm.h> // for FCFS
 
 // This_Thread class attributes
 __BEGIN_UTIL
@@ -18,7 +19,18 @@ Scheduler<Thread> Thread::_scheduler;
 Spin Thread::_lock;
 
 // Methods
-void Thread::constructor(Log_Addr entry, unsigned int stack_size)
+void Thread::constructor_prolog(unsigned int stack_size)
+{
+    lock();
+
+    _thread_count++;
+    _scheduler.insert(this);
+
+    _stack = new (SYSTEM) char[stack_size];
+}
+
+
+void Thread::constructor_epilog(const Log_Addr & entry, unsigned int stack_size)
 {
     db<Thread>(TRC) << "Thread(task=" << _task
                     << ",entry=" << entry
@@ -29,9 +41,9 @@ void Thread::constructor(Log_Addr entry, unsigned int stack_size)
                     << "},context={b=" << _context
                     << "," << *_context << "}) => " << this << "@" << _link.rank().queue() << endl;
 
-    _thread_count++;
+    if(multitask)
+        _task->insert(this);
 
-    _scheduler.insert(this);
     if((_state != READY) && (_state != RUNNING))
         _scheduler.suspend(this);
 
@@ -55,7 +67,7 @@ Thread::~Thread()
 
     // The running thread cannot delete itself!
     assert(_state != RUNNING);
-    
+
     switch(_state) {
     case RUNNING:  // For switch completion only: the running thread would have deleted itself! Stack wouldn't have been released!
         exit(-1);
@@ -77,6 +89,11 @@ Thread::~Thread()
         break;
     case FINISHING: // Already called exit()
         break;
+    }
+
+    if(multitask) {
+        _task->remove(this);
+        delete _user_stack;
     }
 
     if(_joining)
@@ -180,7 +197,7 @@ void Thread::resume()
     if(_state == SUSPENDED) {
         _state = READY;
         _scheduler.resume(this);
-        
+
         if(preemptive)
             reschedule(_link.rank().queue());
     } else {
@@ -209,7 +226,7 @@ void Thread::exit(int status)
 {
     lock();
 
-    db<Thread>(TRC) << "Thread::exit(running=" << running() <<",status=" << status << ")" << endl;
+    db<Thread>(TRC) << "Thread::exit(status=" << status << ") [running=" << running() << "]" << endl;
 
     Thread * prev = running();
     _scheduler.remove(prev);
@@ -331,12 +348,6 @@ void Thread::time_slicer(const IC::Interrupt_Id & i)
 }
 
 
-void Thread::implicit_exit() 
-{
-    exit(CPU::fr()); 
-}
-
-
 void Thread::dispatch(Thread * prev, Thread * next, bool charge)
 {
     if(charge) {
@@ -370,28 +381,26 @@ void Thread::dispatch(Thread * prev, Thread * next, bool charge)
 
 int Thread::idle()
 {
-    while(true) {
+    while(_thread_count > Machine::n_cpus()) { // someone else besides idles
         if(Traits<Thread>::trace_idle)
             db<Thread>(TRC) << "Thread::idle(CPU=" << Machine::cpu_id() << ",this=" << running() << ")" << endl;
 
-        if(_thread_count <= Machine::n_cpus()) { // Only idle is left
-            CPU::int_disable();
-            if(Machine::cpu_id() == 0) {
-                db<Thread>(WRN) << "The last thread has exited!" << endl;
-                if(reboot) {
-                    db<Thread>(WRN) << "Rebooting the machine ..." << endl;
-                    Machine::reboot();
-                } else
-                    db<Thread>(WRN) << "Halting the machine ..." << endl;
-            }
-            CPU::halt();
-        } else {
-            CPU::int_enable();
-            CPU::halt();
-            if(_scheduler.schedulables() > 0) // A thread might have been woken up by another CPU
-                yield();
-        }
+        CPU::int_enable();
+        CPU::halt();
+        if(_scheduler.schedulables() > 0) // A thread might have been woken up by another CPU
+            yield();
     }
+
+    CPU::int_disable();
+    if(Machine::cpu_id() == 0) {
+        db<Thread>(WRN) << "The last thread has exited!" << endl;
+        if(reboot) {
+            db<Thread>(WRN) << "Rebooting the machine ..." << endl;
+            Machine::reboot();
+        } else
+            db<Thread>(WRN) << "Halting the machine ..." << endl;
+    }
+    CPU::halt();
 
     return 0;
 }
@@ -400,8 +409,8 @@ __END_SYS
 
 // Id forwarder to the spin lock
 __BEGIN_UTIL
-unsigned int This_Thread::id() 
-{ 
+unsigned int This_Thread::id()
+{
     return _not_booting ? reinterpret_cast<volatile unsigned int>(Thread::self()) : Machine::cpu_id() + 1;
 }
 __END_UTIL

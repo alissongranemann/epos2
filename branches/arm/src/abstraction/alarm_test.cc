@@ -21,14 +21,14 @@ int main()
 
     Function_Handler handler_a(&func_a);
     Alarm alarm_a(2000000, &handler_a, iterations);
- 
+
     Function_Handler handler_b(&func_b);
     Alarm alarm_b(1000000, &handler_b, iterations);
 
     // Note that in case of idle-waiting, this thread will go into suspend
     // and the alarm handlers above will trigger the functions in the context
     // of the idle thread!
-    Alarm::delay(1000000 * (iterations + 1));
+    Alarm::delay(2000000 * (iterations + 2));
 
     cout << "I'm done, bye!" << endl;
 

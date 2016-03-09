@@ -15,7 +15,7 @@ protected:
 
 public:
     typedef TSC::Hertz Hertz;
-    typedef TSC::Time_Stamp Tick;
+    typedef TSC::Hertz Tick;
     typedef IC::Interrupt_Handler Handler;
     typedef unsigned int Channel;
 };

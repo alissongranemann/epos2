@@ -2,6 +2,9 @@
 
 #include <machine/pc/ic.h>
 
+extern "C" { void _exit(int s); }
+extern "C" { void __exit(); }
+
 __BEGIN_SYS
 
 void PC_IC::entry()
@@ -778,15 +781,65 @@ void PC_IC::entry()
         //        "        jmp        .GO         \n"
         //        "        .align 16              \n"
         //        "        movl        $255, %0   \n"
-        ".GO:    pushal                 \n"
-        : "=m"(id) : );
+        ".GO:    pushal                 \n" : "=m"(id) : );
 
     ASM("        pushl  %0              \n"
         "        call   *%1             \n"
         "        popl   %%eax           \n"
         "        popal                  \n"
-        "        iret                   \n"
-        : : "m"(id), "c"(dispatch));
+        "        iret                   \n" : : "m"(id), "c"(dispatch));
 };
+
+// Default logical handler
+void PC_IC::int_not(const Interrupt_Id & i)
+{
+    db<IC,Machine>(WRN) << "IC::int_not(i=" << i << ")" << endl;
+}
+
+// Exception and fault handlers
+void PC_IC::exc_not(Reg32 eip, Reg32 cs, Reg32 eflags, Reg32 error)
+{
+    db<IC,Machine>(WRN) << "IC::exc_not(cs=" << hex << cs << ",ip=" << reinterpret_cast<void *>(eip) << ",fl=" << eflags << ")" << endl;
+    db<IC,Machine>(WRN) << "The running thread will now be terminated!" << endl;
+    _exit(-1);
+}
+
+void PC_IC::exc_pf(Reg32 eip, Reg32 cs, Reg32 eflags, Reg32 error)
+{
+    register Reg32 fr = CPU::fr();
+
+    if(CPU::cr2() == reinterpret_cast<CPU::Reg32>(&__exit)) {
+        db<IC,Machine>(INF) << "IC::exc_pf[address=" << reinterpret_cast<void *>(CPU::cr2()) << "]: final return!" << endl;
+       _exit(fr);
+    }
+
+    db<IC,Machine>(WRN) << "IC::exc_pf[address=" << reinterpret_cast<void *>(CPU::cr2()) << "](cs=" << hex << cs << ",ip=" << reinterpret_cast<void *>(eip) << ",fl=" << eflags << ",err=";
+    if(error & (1 << 0))
+        db<IC,Machine>(WRN) << "P";
+    if(error & (1 << 1))
+        db<IC,Machine>(WRN) << "W";
+    if(error & (1 << 2))
+        db<IC,Machine>(WRN) << "S";
+    if(error & (1 << 3))
+        db<IC,Machine>(WRN) << "R";
+    db<IC,Machine>(WRN) << ")" << endl;
+
+    db<IC,Machine>(WRN) << "The running thread will now be terminated!" << endl;
+    _exit(-1);
+}
+
+void PC_IC::exc_gpf(Reg32 eip, Reg32 cs, Reg32 eflags, Reg32 error)
+{
+    db<IC,Machine>(WRN) << "IC::exc_gpf(cs=" << hex << cs << ",ip=" << reinterpret_cast<void *>(eip) << ",fl=" << eflags << ")" << endl;
+    db<IC,Machine>(WRN) << "The running thread will now be terminated!" << endl;
+    _exit(-1);
+}
+
+void PC_IC::exc_fpu(Reg32 eip, Reg32 cs, Reg32 eflags, Reg32 error)
+{
+    db<IC,Machine>(WRN) << "IC::exc_fpu(cs=" << hex << cs << ",ip=" << reinterpret_cast<void *>(eip) << ",fl=" << eflags << ")" << endl;
+    db<IC,Machine>(WRN) << "The running thread will now be terminated!" << endl;
+    _exit(-1);
+}
 
 __END_SYS

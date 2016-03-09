@@ -8,6 +8,7 @@
 #include <cpu.h>
 #include <utility/list.h>
 #include <utility/observer.h>
+#include <utility/buffer.h>
 
 __BEGIN_SYS
 
@@ -89,45 +90,7 @@ public:
 
 
     // Buffers used to hold frames across a zero-copy network stack
-    class Buffer: private Frame
-    {
-    public:
-        typedef Simple_List<Buffer> List;
-        typedef List::Element Element;
-
-    public:
-        Buffer(void * back): _lock(false), _nic(0), _back(back), _size(sizeof(Frame)), _link(this) {}
-        Buffer(NIC * nic, const Address & src, const Address & dst, const Protocol & prot, unsigned int size):
-            Frame(src, dst, prot), _lock(false), _nic(nic), _size(size), _link(this) {}
-
-        Frame * frame() { return this; }
-
-        bool lock() { return !CPU::tsl(_lock); }
-        void unlock() { _lock = 0; }
-
-        NIC * nic() const { return _nic; }
-        void nic(NIC * n) { _nic = n; }
-
-        template<typename T>
-        T * back() const { return reinterpret_cast<T *>(_back); }
-
-        unsigned int size() const { return _size; }
-        void size(unsigned int s) { _size = s; }
-
-        Element * link() { return &_link; }
-
-        friend Debug & operator<<(Debug & db, const Buffer & b) {
-            db << "{nc=" << b._nic << ",lk=" << b._lock << ",sz=" << b._size << ",bl=" << b._back << "}";
-            return db;
-        }
-
-    private:
-        volatile bool _lock;
-        NIC * _nic;
-        void * _back;
-        unsigned int _size;
-        Element _link;
-    };
+    typedef _UTIL::Buffer<NIC, Frame, void> Buffer;
 
 
     // Observers of a protocol get a also a pointer to the received buffer

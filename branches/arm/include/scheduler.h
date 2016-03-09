@@ -98,6 +98,18 @@ namespace Scheduling_Criteria
         static volatile unsigned int _next_queue;
     };
 
+    // Global Round-Robin
+    class GRR: public RR
+    {
+    public:
+        static const unsigned int HEADS = Traits<Machine>::CPUS;
+
+    public:
+        GRR(int p = NORMAL): RR(p) {}
+
+        static unsigned int current_head() { return Machine::cpu_id(); }
+    };
+
     // CPU Affinity
     class CPU_Affinity: public Priority, public Variable_Queue
     {
@@ -258,6 +270,10 @@ template<typename T, typename R = typename T::Criterion>
 class Scheduling_Queue: public Scheduling_List<T> {};
 
 template<typename T>
+class Scheduling_Queue<T, Scheduling_Criteria::GRR>:
+public Multihead_Scheduling_List<T> {};
+
+template<typename T>
 class Scheduling_Queue<T, Scheduling_Criteria::CPU_Affinity>:
 public Scheduling_Multilist<T> {};
 
@@ -296,7 +312,7 @@ public:
 
     unsigned int schedulables() { return Base::size(); }
 
-    T * volatile chosen() { 
+    T * volatile chosen() {
     	// If called before insert(), chosen will dereference a null pointer!
     	// For threads, we this won't happen (see Thread::init()).
     	// But if you are unsure about your new use of the scheduler,
