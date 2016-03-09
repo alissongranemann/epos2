@@ -27,10 +27,10 @@ template<> struct Traits<Build>
     static const unsigned int MACHINE = Cortex_M;
 
     enum {Legacy, eMote3, LM3S811};
-    static const unsigned int MODEL = eMote3;
+    static const unsigned int MODEL = LM3S811;
 
     static const unsigned int CPUS = 1;
-    static const unsigned int NODES = 2; // > 1 => NETWORKING
+    static const unsigned int NODES = 1; // > 1 => NETWORKING
 };
 
 
@@ -89,6 +89,7 @@ template <> struct Traits<Diffie_Hellman> : public Traits<void>
 	static const unsigned int SECRET_SIZE = Traits<Bignum>::sz_word;
 	static const unsigned int PUBLIC_KEY_SIZE = Traits<Bignum>::sz_word * 2;
 };
+
 template <> struct Traits<Secure_NIC> : public Traits<void>
 {
 	static const int PROTOCOL_ID = 42;    

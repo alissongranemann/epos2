@@ -85,11 +85,17 @@ pc_CC_FLAGS             := -Wa,--32
 pc_AS_FLAGS             := --32
 pc_LD_FLAGS             := 
 pc_EMULATOR             = qemu-system-i386 -smp $(CPUS) -m $(MEM_SIZE)k -nographic -no-reboot -fda
+pc_GDB                  := gdb
 
 cortex_m_CC_FLAGS       := -mcpu=cortex-m3 -mthumb -mno-thumb-interwork -mfpu=fpa #-Wa,-mimplicit-it=arm -marm 
 cortex_m_AS_FLAGS       := -mcpu=cortex-m3 -mthumb -mfpu=fpa
 cortex_m_LD_FLAGS       := 
-cortex_m_EMULATOR       = timeout --foreground 20s qemu-system-arm -cpu cortex-m3 -machine lm3s811evb -m $(MEM_SIZE)k -nographic -no-reboot -kernel
+ifeq ($(GDB),1)
+cortex_m_EMULATOR       := qemu-system-arm -cpu cortex-m3 -machine lm3s811evb -m $(MEM_SIZE)k -nographic -no-reboot -kernel
+else
+cortex_m_EMULATOR       := timeout --foreground 20s qemu-system-arm -cpu cortex-m3 -machine lm3s811evb -m $(MEM_SIZE)k -nographic -no-reboot -kernel
+endif
+cortex_m_GDB            := arm-none-eabi-gdb
 
 ifeq ($(GDB),1)
 emote3_DEPLOYER         := $(TOP)/tools/emote3_tst_env/jtag_gdb.sh
@@ -114,7 +120,7 @@ MACH_EMULATOR           = $(subst -m ,-s -S -m ,$($(MACH)_EMULATOR))
 else
 MACH_EMULATOR           = $($(MACH)_EMULATOR)
 endif
-MACH_DEBUGGER           = $(TERM) gdb -ex "target remote:1234" -ex "set confirm off"
+MACH_DEBUGGER           = $(TERM) $($(MACH)_GDB) -ex "target remote:1234" -ex "set confirm off"
 ifneq ($(wildcard $(IMG)/$(MACH)_setup),) 
 MACH_DEBUGGER           := $(MACH_DEBUGGER) -ex "add-symbol-file $(SRC)/setup/$(MACH)_setup $(SETUP_ADDR)"
 endif
