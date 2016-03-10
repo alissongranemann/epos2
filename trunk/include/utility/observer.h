@@ -199,6 +199,7 @@ private:
     typedef typename Simple_Ordered_List<Data_Observer<T1, T2>, T2>::Element Element;
 
 public:
+    typedef T1 Observed_Data;
     typedef T2 Observing_Condition;
 
 public:
@@ -239,6 +240,19 @@ public:
         return notified;
     }
 
+    virtual Observer * observer(T2 c, unsigned int index = 0) {
+        Observer * o = 0;
+        for(Element * e = _observers.head(); e; e = e->next()) {
+            if(e->rank() == c) {
+                if(!index)
+                    o =  e->object();
+                else
+                    index--;
+            }
+        }
+        return o;
+    }
+
 private:
     Simple_Ordered_List<Data_Observer<T1, T2>, T2> _observers;
 };
@@ -249,6 +263,7 @@ class Data_Observer
     friend class Data_Observed<T1, T2>;
 
 public:
+    typedef T1 Observed_Data;
     typedef T2 Observing_Condition;
 
 public:

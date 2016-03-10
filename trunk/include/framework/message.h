@@ -3,6 +3,8 @@
 #ifndef __message_h
 #define __message_h
 
+#include <utility/observer.h>
+#include <utility/buffer.h>
 #include "id.h"
 
 extern "C" { void _syscall(void *); }
@@ -25,14 +27,19 @@ public:
         CREATE6,
         CREATE7,
         CREATE8,
+        CREATE9,
         DESTROY,
         SELF,
+
         COMPONENT = 0x10,
 
-        THREAD_SUSPEND = COMPONENT,
-        THREAD_RESUME,
+        THREAD_STATE = COMPONENT,
+        THREAD_PRIORITY,
+        THREAD_PRIORITY1,
         THREAD_JOIN,
         THREAD_PASS,
+        THREAD_SUSPEND,
+        THREAD_RESUME,
         THREAD_YIELD,
         THREAD_EXIT,
         THREAD_WAIT_NEXT,
@@ -64,6 +71,10 @@ public:
 
         ALARM_DELAY = COMPONENT,
 
+        COMMUNICATOR_SEND = COMPONENT,
+        COMMUNICATOR_REPLY,
+        COMMUNICATOR_RECEIVE,
+
         PRINT = COMPONENT,
 
         UNDEFINED = -1
@@ -71,49 +82,59 @@ public:
     typedef int Method;
     typedef Method Result;
 
+    typedef Simple_List<Message> List;
+    typedef List::Element Element;
+
 public:
-    Message() {}
-    Message(const Id & id): _id(id) {}
+    Message(): _link(this) {}
+    Message(const Message & msg): _link(this) { *this = msg; _link = this; }
+    Message(const Id & id): _id(id), _link(this) {}
+    template<typename ... Tn>
+    Message(const Id & id, const Method & m, Tn && ... an): _id(id), _method(m), _link(this) { out(an ...); }
 
     const Id & id() const { return _id; }
     void id(const Id & id) { _id = id; }
 
     const Method & method() const { return _method; }
+    void method(const Method & m) { _method = m; }
+    const Result & result() const { return _method; }
     void result(const Result & r) { _method = r; }
 
     template<typename ... Tn>
-    int act(const Method & m, const Tn & ... an) {
-        _method = m;
-        out(an ...);
-        _syscall(this);
-        return _method;
-    }
-
-    template<typename ... Tn>
     void in(Tn && ... an) {
-        // Force a compilation error in case out is called with too many parameters
+        // Force a compilation error in case out is called with too many arguments
         typename IF<(SIZEOF<Tn ...>::Result <= MAX_PARAMETERS_SIZE), int, void>::Result index = 0;
         DESERIALIZE(_parms, index, an ...);
     }
     template<typename ... Tn>
     void out(const Tn & ... an) {
-        // Force a compilation error in case out is called with too many parameters
+        // Force a compilation error in case out is called with too many arguments
         typename IF<(SIZEOF<Tn ...>::Result <= MAX_PARAMETERS_SIZE), int, void>::Result index = 0;
         SERIALIZE(_parms, index, an ...);
     }
 
+    void reply_to(const Id & id) { _reply_to = id; }
+    const Id & reply_to() { return _reply_to; }
+
+    void act() { _syscall(this); }
+
+    Element * lext() { return &_link; }
+
     friend Debug & operator << (Debug & db, const Message & m) {
-          db << "{id=" << m._id << ",m=" << hex << m._method
+          db << "{id=" << m._id << ",m=" << hex << m._method << ",rt=" << m._reply_to
              << ",p={" << reinterpret_cast<void *>(*static_cast<const int *>(reinterpret_cast<const void *>(&m._parms[0]))) << ","
              << reinterpret_cast<void *>(*static_cast<const int *>(reinterpret_cast<const void *>(&m._parms[4]))) << ","
              << reinterpret_cast<void *>(*static_cast<const int *>(reinterpret_cast<const void *>(&m._parms[8]))) << "}}";
           return db;
       }
 
-private:
+public:
     Id _id;
     Method _method;
     char _parms[MAX_PARAMETERS_SIZE];
+
+    Id _reply_to;
+    Element _link;
 };
 
 __END_SYS

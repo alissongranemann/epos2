@@ -8,7 +8,7 @@
 
 __BEGIN_UTIL
 
-template<typename Owner, typename Data, typename Shadow>
+template<typename Owner, typename Data, typename Shadow = void>
 class Buffer: private Data
 {
 public:
@@ -19,7 +19,8 @@ public:
     // This constructor is meant to be used at initialization time to correlate shadow data structures (e.g. NIC ring buffers)
     Buffer(Shadow * s): _lock(false), _owner(0), _shadow(s), _size(sizeof(Data)), _link1(this), _link2(this) {}
 
-    // This constructor is used whenever a Buffer receives new data
+    // These constructors are used whenever a Buffer receives new data
+    Buffer(Owner * o, unsigned int s): _lock(false), _owner(o), _size(s), _link1(this), _link2(this) {}
     template<typename ... Tn>
     Buffer(Owner * o, unsigned int s, Tn ... an): Data(an ...), _lock(false), _owner(o), _size(s), _link1(this), _link2(this) {}
 

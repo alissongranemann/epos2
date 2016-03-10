@@ -6,6 +6,7 @@
 #define __proxy_h
 
 #include "message.h"
+#include "ipc.h"
 
 __BEGIN_SYS
 
@@ -58,10 +59,13 @@ public:
     static Proxy<Component> * self() { return new (reinterpret_cast<void *>(static_invoke(SELF))) Proxied<Component>; }
 
     // Process management
-    void suspend() { invoke(THREAD_SUSPEND); }
-    void resume() { invoke(THREAD_RESUME); }
+    int state() { return invoke(THREAD_STATE); }
+    int priority() { return invoke(THREAD_PRIORITY); }
+    void priority(int p) { invoke(THREAD_PRIORITY1, p); }
     int join() { return invoke(THREAD_JOIN); }
     int pass() { return invoke(THREAD_PASS); }
+    void suspend() { invoke(THREAD_SUSPEND); }
+    void resume() { invoke(THREAD_RESUME); }
     static int yield() { return static_invoke(THREAD_YIELD); }
     static void exit(int r) { static_invoke(THREAD_EXIT, r); }
     static volatile bool wait_next() { return static_invoke(THREAD_WAIT_NEXT); }
@@ -99,21 +103,35 @@ public:
     static void delay(T t) { static_invoke(ALARM_DELAY, t); }
 
     // Communication
-    template<typename T1, typename T2, typename T3>
-    int send(T1 a1, T2 a2, T3 a3) { return invoke(SELF, a1, a2, a3); }
-    template<typename T1, typename T2, typename T3>
-    int receive(T1 a1, T2 a2, T3 a3) { return invoke(SELF, a1, a2, a3); }
+    template<typename ... Tn>
+    int send(Tn ... an) { return invoke(COMMUNICATOR_SEND, an ...); }
+    template<typename ... Tn>
+    int receive(Tn ... an) { return invoke(COMMUNICATOR_RECEIVE, an ...); }
+    template<typename ... Tn>
+    int reply(Tn ... an) { return invoke(COMMUNICATOR_REPLY, an ...); }
 
     template<typename ... Tn>
-    static int static_invoke(const Method & m, const Tn & ... an) {
-        Message msg(Id(Type<Component>::ID, 0)); // avoid calling ~Proxy()
-        Result res = msg.act(m, an ...);
-        return (m == SELF) ? msg.id().unit() : res;
+    int read(Tn ... an) { return receive(an ...); }
+    template<typename ... Tn>
+    int write(Tn ... an) { return send(an ...); }
+
+ private:
+    template<typename ... Tn>
+    Result invoke(const Method & m, const Tn & ... an) {
+        method(m);
+        out(an ...);
+        act();
+        return result();
     }
 
-private:
     template<typename ... Tn>
-    int invoke(const Method & m, const Tn & ... an) { return act(m, an ...); }
+    static Result static_invoke(const Method & m, const Tn & ... an) {
+        Message msg(Id(Type<Component>::ID, 0)); // avoid calling ~Proxy()
+        msg.method(m);
+        msg.out(an ...);
+        msg.act();
+        return (m == SELF) ? msg.id().unit() : msg.result();
+    }
 };
 
 __END_SYS

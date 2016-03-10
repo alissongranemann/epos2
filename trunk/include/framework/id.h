@@ -10,15 +10,20 @@ __BEGIN_SYS
 class Pointer_Id
 {
 public:
+    enum Null { NULL = 0 };
+
     enum {
-        ANY_UNIT
+        ANY_UNIT = (unsigned(1) << (sizeof(int) * 8 - 1)) - 1
     };
 
+    typedef void Host_Id;
     typedef unsigned int Type_Id;
     typedef unsigned int Unit_Id;
+    typedef Type_Id Local;
 
 public:
     Pointer_Id() {}
+    Pointer_Id(const Null &): _type(NULL), _unit(NULL) {}
     Pointer_Id(const Type_Id & t, const Unit_Id & u): _type(t), _unit(u) {}
     template<typename Component>
     Pointer_Id(const Component * c): _type(Type<Component>::ID), _unit(reinterpret_cast<Unit_Id>(c)) {}

@@ -69,10 +69,12 @@ public:
     static Handle<Component> * self() { return new (_Stub::self()) Handled<Component>; }
 
     // Process management
-    void suspend() { _stub->suspend(); }
-    void resume() { _stub->resume(); }
+    int priority() { return _stub->priority(); }
+    void priority(int p) { _stub->priority(p); }
     int join() { return _stub->join(); }
     int pass() { return _stub->pass(); }
+    void suspend() { _stub->suspend(); }
+    void resume() { _stub->resume(); }
     static void yield() { _Stub::yield(); }
     static void exit(int r = 0) { _Stub::exit(r); }
     static volatile bool wait_next() { return _Stub::wait_next(); }
@@ -107,7 +109,7 @@ public:
 
     // Timing
     template<typename T>
-    static void delay(T a) { _Stub::delay(a); }
+    static void delay(T t) { _Stub::delay(t); }
 
     void reset() { _stub->reset(); }
     void start() { _stub->start(); }
@@ -123,6 +125,8 @@ public:
     int send(Tn ... an) { return _stub->send(an ...);}
     template<typename ... Tn>
     int receive(Tn ... an) { return _stub->receive(an ...);}
+    template<typename ... Tn>
+    int reply(Tn ... an) { return _stub->reply(an ...);}
 
     template<typename ... Tn>
     int read(Tn ... an) { return _stub->read(an ...);}

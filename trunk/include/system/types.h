@@ -134,6 +134,7 @@ namespace Scheduling_Criteria
     class RM;
     class DM;
     class EDF;
+    class GRR;
     class CPU_Affinity;
     class GEDF;
     class PEDF;
@@ -161,16 +162,20 @@ class ICMP;
 class UDP;
 class TCP;
 class DHCP;
-
-template<typename Channel, bool connectionless>
+class IPC;
+template<typename Channel, bool connectionless = Channel::connectionless>
 class Link;
-template<typename Channel, bool connectionless>
+template<typename Channel, bool connectionless = Channel::connectionless>
 class Port;
 
 // Framework
 class Framework;
 template<typename Component> class Handle;
+template<typename Component, bool remote> class Stub;
+template<typename Component> class Proxy;
 template<typename Component> class Adapter;
+template<typename Component> class Scenario;
+class Agent;
 
 // Aspects
 class Aspect;
@@ -213,20 +218,18 @@ enum
     ALARM_ID,
     CHRONOMETER_ID,
 
-    IP_ID,
-    ICMP_ID,
-    UDP_ID,
-    TCP_ID,
-    DHCP_ID,
-
-    LINK_ID,
-    PORT_ID,
+    IPC_COMMUNICATOR_ID,
+    IP_COMMUNICATOR_ID,
+    ICMP_COMMUNICATOR_ID,
+    UDP_COMMUNICATOR_ID,
+    TCP_COMMUNICATOR_ID,
+    DHCP_COMMUNICATOR_ID,
 
     UTILITY_ID,
 
-    UNKNOWN_TYPE_ID,
+    LAST_TYPE_ID,
 
-    LAST_TYPE_ID = UNKNOWN_TYPE_ID
+    UNKNOWN_TYPE_ID = 0xffff
 };
 
 // Type IDs for system components
@@ -279,13 +282,9 @@ template<> struct Type<Chronometer> { static const Type_Id ID = CHRONOMETER_ID; 
 template<> struct Type<Alarm> { static const Type_Id ID = ALARM_ID; };
 template<> struct Type<Delay> { static const Type_Id ID = ALARM_ID; };
 
-template<> struct Type<IP> { static const Type_Id ID = IP_ID; };
-template<> struct Type<ICMP> { static const Type_Id ID = ICMP_ID; };
-template<> struct Type<UDP> { static const Type_Id ID = UDP_ID; };
-template<> struct Type<TCP> { static const Type_Id ID = TCP_ID; };
-template<> struct Type<DHCP> { static const Type_Id ID = DHCP_ID; };
-
 template<> struct Type<Utility> { static const Type_Id ID = UTILITY_ID; };
+
+// Type IDs for system components whose parameters are themselves components are defined where they are declared.
 
 __END_SYS
 
