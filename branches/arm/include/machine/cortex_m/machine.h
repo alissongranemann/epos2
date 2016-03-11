@@ -29,11 +29,11 @@ public:
 
     static void panic();
     static void reboot() { 
-        Cortex_M_Model::reboot();
-
         db<Machine>(WRN) << "Machine::reboot()" << endl;
-        scs(AIRCR) |=  SYSRESREQ ;
-        for(;;); // TODO: the above is not working!
+        Reg32 val = scs(AIRCR) & (~((-1u / VECTKEY) * VECTKEY));
+        val |= SYSRESREQ;
+        val |= 0x05FA * VECTKEY;
+        scs(AIRCR) =  val;
     }
     static void poweroff() { reboot(); }
 

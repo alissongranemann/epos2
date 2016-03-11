@@ -639,7 +639,12 @@ public:
     enum AIRCR {                        // Description                                          Type    Value after reset
         VECTRESET       = 1 << 0,       // Reserved for debug                                   wo      0
         VECTCLRACT      = 1 << 1,       // Reserved for debug                                   wo      0
-        SYSRESREQ       = 1 << 2        // System Reset Request                                 wo      0
+        SYSRESREQ       = 1 << 2,       // System Reset Request                                 wo      0
+        VECTKEY         = 1 << 16,      // Register Key                                         rw      0xfa05
+                                        // This field is used to guard against accidental 
+                                        // writes to this register.  0x05FA must be written 
+                                        // to this field in order to change the bits in this
+                                        // register. On a read, 0xFA05 is returned.
     };
 
     // Useful Bits in the Configuration Control Register
@@ -786,10 +791,6 @@ protected:
     static bool _init_clock_done;
 protected:
     eMote3() {}
-
-    static void reboot() {
-        eMote3_ROM::reboot();
-    }
 
     void GPIO_pull_up(int port, int pin) {
         auto over = PA0_OVER + 0x20*port + 0x4*pin;

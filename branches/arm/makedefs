@@ -106,11 +106,7 @@ pc_GDB                  := gdb
 cortex_m_CC_FLAGS       := -mcpu=cortex-m3 -mthumb -mno-thumb-interwork -mfpu=fpa #-Wa,-mimplicit-it=arm -marm 
 cortex_m_AS_FLAGS       := -mcpu=cortex-m3 -mthumb -mfpu=fpa
 cortex_m_LD_FLAGS       := 
-ifeq ($(GDB),1)
 cortex_m_EMULATOR       := qemu-system-arm -cpu cortex-m3 -machine lm3s811evb -m $(MEM_SIZE)k -nographic -no-reboot -kernel
-else
-cortex_m_EMULATOR       := timeout --foreground 10s qemu-system-arm -cpu cortex-m3 -machine lm3s811evb -m $(MEM_SIZE)k -nographic -no-reboot -kernel
-endif
 cortex_m_GDB            := arm-none-eabi-gdb
 
 emote3_DEPLOYER         := $(TOP)/tools/emote3_programmer/jtag.sh
