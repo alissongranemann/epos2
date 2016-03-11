@@ -43,6 +43,8 @@ template <> struct Traits<Cortex_M>: public Traits<Cortex_M_Common>
 
 template <> struct Traits<Cortex_M_IC>: public Traits<Cortex_M_Common>
 {
+    static const bool hysterically_debugged = false;
+    static const bool reboot_on_hard_fault = true;
 };
 
 template <> struct Traits<Cortex_M_Timer>: public Traits<Cortex_M_Common>
@@ -67,6 +69,12 @@ template <> struct Traits<Cortex_M_UART>: public Traits<Cortex_M_Common>
     static const unsigned int DEF_STOP_BITS = 1;
 };
 
+template <> struct Traits<Cortex_M_USB>: public Traits<Cortex_M_Common>
+{
+    static const bool enabled = Traits<Serial_Display>::ENGINE == Traits<Serial_Display>::usb;
+    static const bool blocking = false;
+};
+
 template <> struct Traits<Cortex_M_Radio>: public Traits<Cortex_M_Common>
 {
     static const bool enabled = false;
@@ -80,15 +88,31 @@ template <> struct Traits<CC2538>: public Traits<Cortex_M_Radio>
     static const unsigned int UNITS = NICS::Count<CC2538>::Result;
     static const unsigned int SEND_BUFFERS = 1;
     static const unsigned int RECEIVE_BUFFERS = 1;
+    static const unsigned int DEFAULT_CHANNEL = 15; // From 11 to 26
 
     // There is no listen command on the radio interface yet,
     // so the only way to receive data is setting this flag
-    static const bool auto_listen = true;
+    static const bool auto_listen = false;
+
+    static const bool CSMA_CA = false;
+    static const unsigned int CSMA_CA_MIN_BACKOFF_EXPONENT = 3;
+    static const unsigned int CSMA_CA_MAX_BACKOFF_EXPONENT = 5;
+    static const unsigned int CSMA_CA_UNIT_BACKOFF_PERIOD = 320; // us
+    static const unsigned int CSMA_CA_MAX_TRANSMISSION_TRIALS = 4;
+
+    static const bool ACK = false;
+    static const unsigned int RETRANSMISSIONS = 3;
+    static const unsigned int ACK_TIMEOUT = 3 * 832; // us
 };
 
 template <> struct Traits<Cortex_M_Scratchpad>: public Traits<Cortex_M_Common>
 {
     static const bool enabled = false;
+};
+
+template <> struct Traits<Cortex_M_SPI>: public Traits<Cortex_M_Common>
+{
+    static const unsigned int UNITS = 2;
 };
 
 __END_SYS

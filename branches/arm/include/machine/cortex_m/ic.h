@@ -22,7 +22,7 @@ public:
     using IC_Common::Interrupt_Handler;
 
     // IRQs
-    static const unsigned int IRQS = 29;
+    static const unsigned int IRQS = 44;
     typedef Interrupt_Id IRQ;
     enum {
         IRQ_TIMER       = 0,
@@ -42,7 +42,7 @@ public:
     };
 
     // Interrupts
-    static const unsigned int INTS = 48;
+    static const unsigned int INTS = 64;
     static const unsigned int HARD_INT = 16;
     static const unsigned int SOFT_INT = HARD_INT + IRQS;
     enum {
@@ -55,8 +55,8 @@ public:
 public:
     Cortex_M_IC() {}
 
-    static int irq2int(int i) { return i + 16; }
-    static int int2irq(int i) { return i - 16; }
+    static Interrupt_Id irq2int(const IRQ & i) { return i + 16; }
+    static IRQ int2irq(const Interrupt_Id & i) { return i - 16; }
 
     static Interrupt_Handler int_vector(const Interrupt_Id & i) {
         assert(i < INTS);
@@ -72,36 +72,47 @@ public:
     static void enable() {
         db<IC>(TRC) << "IC::enable()" << endl;
         scs(IRQ_ENABLE) = ~0;
+        scs(IRQ_ENABLE1) = ~0;
     }
 
     static void enable(const IRQ & i) {
         db<IC>(TRC) << "IC::enable(irq=" << i << ")" << endl;
         assert(i < IRQS);
-        scs(IRQ_ENABLE) |= 1 << i;
+        if(i < 32)
+            scs(IRQ_ENABLE) = 1 << i;
+        else
+            scs(IRQ_ENABLE1) = 1 << (i-32);
     }
 
     static void disable() {
         db<IC>(TRC) << "IC::disable()" << endl;
         scs(IRQ_DISABLE) = ~0;
+        scs(IRQ_DISABLE1) = ~0;
     }
 
     static void disable(const IRQ & i) {
         db<IC>(TRC) << "IC::disable(irq=" << i << ")" << endl;
         assert(i < IRQS);
-        scs(IRQ_DISABLE) |= 1 << i;
+        if(i < 32) 
+            scs(IRQ_DISABLE) = 1 << i;
+        else
+            scs(IRQ_DISABLE1) = 1 << (i-32);
     }
 
     static void unpend() {
         db<IC>(TRC) << "IC::unpend()" << endl;
         scs(IRQ_UNPEND) = ~0;
+        scs(IRQ_UNPEND1) = ~0;
     }
 
     static void unpend(const IRQ & i) {
         db<IC>(TRC) << "IC::unpend(irq=" << i << ")" << endl;
         assert(i < IRQS);
-        scs(IRQ_UNPEND) |= 1 << i;
+        if(i < 32)
+            scs(IRQ_UNPEND) = 1 << i;
+        else
+            scs(IRQ_UNPEND) = 1 << (i-32);
     }
-
 
     static void ipi_send(unsigned int cpu, unsigned int interrupt) {}
 
@@ -110,6 +121,8 @@ private:
     static void _dispatch();
 
     static void int_not(const Interrupt_Id & i);
+
+    static void hard_fault(const Interrupt_Id & i);
 
     static void init();
 

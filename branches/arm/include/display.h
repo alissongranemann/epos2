@@ -4,6 +4,7 @@
 #define __display_h
 
 #include <uart.h>
+#include <usb.h>
 
 __BEGIN_SYS
 
@@ -13,12 +14,38 @@ protected:
     Display_Common() {}
 };
 
+class Null_Display : public Display_Common 
+{
+    friend class PC_Setup;
+    friend class First_Object;
+
+public:
+    Null_Display() {}
+
+    static void clear() { }
+
+    static void putc(char c) { }
+
+    static void puts(const char * s) { }
+
+    static void geometry(int * lines, int * columns) { }
+
+    static void position(int * line, int * column) { }
+
+    static void position(int line, int column) { }
+
+private:
+    static void init() { }
+};
+
 class Serial_Display: public Display_Common
 {
     friend class PC_Setup;
     friend class First_Object;
 
 private:
+    typedef UART Engine;
+    //typedef SWITCH<Traits<Serial_Display>::ENGINE, CASE<Traits<Serial_Display>::usb, USB, CASE<Traits<Serial_Display>::uart, UART>>>::Result Engine;
     static const int LINES = Traits<Serial_Display>::LINES;
     static const int COLUMNS = Traits<Serial_Display>::COLUMNS;
     static const int TAB_SIZE = Traits<Serial_Display>::TAB_SIZE;
@@ -80,12 +107,12 @@ public:
         puti(_line);
         put(';');
         puti(_column);
-        put('H');	
+        put('H');
     }
 
 private:
     static void put(char c) {
-        _uart.put(c);
+        _engine.put(c);
     }
 
     static void escape() {
@@ -120,14 +147,14 @@ private:
     static void init() {
         // Display must be on very early in the boot process, so it is
         // subject to memory remappings. Renewing it cares for it.
-        new (&_uart) UART;
+        new (&_engine) Engine;
 
         _line = 0;
         _column = 0;
     }
 
 private:
-    static UART _uart;
+    static Engine _engine;
     static int _line;
     static int _column;
 };

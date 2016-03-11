@@ -27,9 +27,7 @@ public:
             delete[] _firmware_version;
     }
 
-    char * firmware_version() {
-        return _firmware_version;
-    }
+    char * firmware_version() { return _firmware_version; }
 
     // FIXME: Results doesn't match protocol specification (contact supplier)
     unsigned int serial_number();
@@ -140,10 +138,13 @@ private:
             return;
         }
 
+        // TODO: CM1101 v1.21 measures only CO2 concentration, v3.03 also measures
+        // temperature, check sensor version before writing to _temp and _humid
         _co2 = resp[0]*0x100 + resp[1];
-        //_temp = ((resp[2]*0x100 + resp[3])/10.0 - 32)/1.8;
-        //_humid = (resp[4]*0x100 + resp[5])/10.0;
-        _humid = (resp[4]*0x100 + resp[5])/10;
+        // Temperature seem to be in Fahrenheit despite the manual stating that
+        // they're in Celsius!
+        _temp = 10*((resp[2]*0x100 + resp[3])/10.0 - 32)/18;
+        //_humid = (resp[4]*0x100 + resp[5])/10;
         _status = OK;
 
         delete[] resp;

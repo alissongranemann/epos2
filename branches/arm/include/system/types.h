@@ -96,6 +96,12 @@ class Cortex_M_Display;
 class Cortex_M_Scratchpad;
 class Cortex_M_Radio;
 class Cortex_M_IEEE802_15_4;
+class Cortex_M_USB;
+class Cortex_M_SPI;
+class Cortex_M_I2C;
+class Cortex_M_GPIO;
+class Cortex_M_ADC;
+class Cortex_M_Bootloader;
 class CC2538_TSC;
 
 class ATmega;
@@ -120,6 +126,10 @@ class AT86RF;
 class eMote3_Radio;
 
 class Serial_Display;
+class Null_Display;
+
+class eMote3_USB;
+class eMote3_Flash;
 
 // Abstractions
 class System;
@@ -170,6 +180,8 @@ class DHCP;
 class Diffie_Hellman;
 class Secure_NIC;
 class AES;
+class TSTP;
+class Modbus_ASCII;
 
 template<typename Channel, bool connectionless>
 class Link;
@@ -206,6 +218,8 @@ enum
     UART_ID,
     DISPLAY_ID,
     NIC_ID,
+    SPI_ID,
+    I2C_ID,
 
     THREAD_ID = 0,
     TASK_ID,
@@ -268,7 +282,8 @@ template<> struct Type<Cortex_M_RTC> { static const Type_Id ID = RTC_ID; };
 template<> struct Type<Cortex_M_Display> { static const Type_Id ID = DISPLAY_ID; };
 template<> struct Type<Cortex_M_Scratchpad> { static const Type_Id ID = SCRATCHPAD_ID; };
 template<> struct Type<Cortex_M_Radio> { static const Type_Id ID = NIC_ID; };
-
+template<> struct Type<Cortex_M_SPI> { static const Type_Id ID = SPI_ID; };
+template<> struct Type<Cortex_M_I2C> { static const Type_Id ID = I2C_ID; };
 
 template<> struct Type<Thread> { static const Type_Id ID = THREAD_ID; };
 template<> struct Type<Periodic_Thread> { static const Type_Id ID = THREAD_ID; };

@@ -13,6 +13,8 @@ private:
     typedef CPU::Log_Addr Log_Addr;
 
 public:
+    typedef CPU::Reg32 Reg32;
+
     static const unsigned int IRQS = 30;
 
     // Base address for memory-mapped System Control Registers
@@ -149,10 +151,15 @@ public:
         STRELOAD        = 0x014,        // SysTick Reload Value Register                        R/W     0x00000000
         STCURRENT       = 0x018,        // SysTick Current Value Register                       R/WC    0x00000000
         IRQ_ENABLE      = 0x100,        // Interrupt 0-29 Set Enable                            R/W     0x00000000
+        IRQ_ENABLE1     = 0x104,        // Interrupt 0-64 Set Enable                            R/W     0x00000000
         IRQ_DISABLE     = 0x180,        // Interrupt 0-29 Clear Enable                          R/W     0x00000000
+        IRQ_DISABLE1    = 0x184,        // Interrupt 0-32 Clear Enable                          R/W     0x00000000
         IRQ_PEND        = 0x200,        // Interrupt 0-29 Set Pending                           R/W     0x00000000
+        IRQ_PEND1       = 0x204,        // Interrupt 0-32 Set Pending                           R/W     0x00000000
         IRQ_UNPEND      = 0x280,        // Interrupt 0-29 Clear Pending                         R/W     0x00000000
+        IRQ_UNPEND1     = 0x284,        // Interrupt 0-32 Clear Pending                         R/W     0x00000000
         IRQ_ACTIVE      = 0x300,        // Interrupt 0-29 Active Bit                            R/W     0x00000000
+        IRQ_ACTIVE1     = 0x304,        // Interrupt 0-32 Active Bit                            R/W     0x00000000
         CPUID           = 0xd00,        // CPUID Base Register                                  RO      0x410fc231
         INTCTRL         = 0xd04,        // Interrupt Control and State Register                 R/W     0x00000000
         VTOR            = 0xd08,        // Vector Table Offset Register                         R/W     0x00000000
@@ -209,6 +216,9 @@ public:
         GPIOE_BASE      = 0x40024000    // GPIO Port E
     };
 
+    static const unsigned int GPIO_PORTS = 5;
+    static const bool supports_gpio_power_up = false;
+
     // GPIO Ports Registers offsets
     enum {                              // Description                  Type    Value after reset
         DATA		= 0x000,	// Data  	                R/W	0x0000.0000
@@ -229,6 +239,9 @@ public:
         PDR		= 0x514,	// Pull-Down Select 	        R/W	0x0000.0000
         SLR		= 0x518,	// Slew Rate Control Select	R/W	0x0000.0000
         DEN		= 0x51c,	// Digital Enable 	        R/W	0x0000.00ff
+        P_EDGE_CTRL = 0x704, // Power-up Interrupt Edge Control R/W 0x0000.0000
+        PI_IEN  = 0x710,	// Power-up Interrupt Enable       R/W	0x0000.0000
+        IRQ_DETECT_ACK = 0x718, 
         PeriphID4	= 0xfd0,	// Peripheral Identification 4	RO	0x0000.0000
         PeriphID5	= 0xfd4,	// Peripheral Identification 5 	RO	0x0000.0000
         PeriphID6	= 0xfd8,	// Peripheral Identification 6	RO	0x0000.0000
@@ -270,6 +283,12 @@ public:
 protected:
     LM3S811() {}
 
+    static void reboot() { }
+
+    void config_GPTM(unsigned int which_timer)
+    {
+        //TODO
+    }
     void config_UART(volatile Log_Addr * base)
     {
         if(base == reinterpret_cast<Log_Addr *>(UART0_BASE)) {
@@ -285,18 +304,27 @@ protected:
         }
     }
 
+    void GPIO_pull_up(int port, int pin) {
+        gpio(port, PUR) &= 1 << pin;
+    }
+    void GPIO_pull_down(int port, int pin) {
+        gpio(port, PDR) &= 1 << pin;
+    }
+
 public:
     static void radio_enable(){};
     static void radio_disable(){};
 
-    static Log_Addr & scr(unsigned int o) { return reinterpret_cast<Log_Addr *>(SCR_BASE)[o / sizeof(Log_Addr)]; }
-    static Log_Addr & scs(unsigned int o) { return reinterpret_cast<Log_Addr *>(SCS_BASE)[o / sizeof(Log_Addr)]; }
+    //static volatile Reg32 & ioc(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(IOC_BASE)[o / sizeof(Reg32)]; }
+    static volatile Reg32 & scr(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(SCR_BASE)[o / sizeof(Reg32)]; }
+    static volatile Reg32 & scs(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(SCS_BASE)[o / sizeof(Reg32)]; }
 
-    static Log_Addr & gpioa(unsigned int o) { return reinterpret_cast<Log_Addr *>(GPIOA_BASE)[o / sizeof(Log_Addr)]; }
-    static Log_Addr & gpiob(unsigned int o) { return reinterpret_cast<Log_Addr *>(GPIOB_BASE)[o / sizeof(Log_Addr)]; }
-    static Log_Addr & gpioc(unsigned int o) { return reinterpret_cast<Log_Addr *>(GPIOC_BASE)[o / sizeof(Log_Addr)]; }
-    static Log_Addr & gpiod(unsigned int o) { return reinterpret_cast<Log_Addr *>(GPIOD_BASE)[o / sizeof(Log_Addr)]; }
-    static Log_Addr & gpioe(unsigned int o) { return reinterpret_cast<Log_Addr *>(GPIOE_BASE)[o / sizeof(Log_Addr)]; }
+    static volatile Reg32 & gpio(unsigned int port, unsigned int o) { return reinterpret_cast<volatile Reg32 *>(GPIOA_BASE + 0x1000*(port))[o / sizeof(Reg32)]; }
+    static volatile Reg32 & gpioa(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(GPIOA_BASE)[o / sizeof(Reg32)]; }
+    static volatile Reg32 & gpiob(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(GPIOB_BASE)[o / sizeof(Reg32)]; }
+    static volatile Reg32 & gpioc(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(GPIOC_BASE)[o / sizeof(Reg32)]; }
+    static volatile Reg32 & gpiod(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(GPIOD_BASE)[o / sizeof(Reg32)]; }
+    static volatile Reg32 & gpioe(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(GPIOE_BASE)[o / sizeof(Reg32)]; }
 
 protected:
     static void init();
@@ -306,6 +334,14 @@ typedef LM3S811 Cortex_M_Model;
 
 class PL011;
 typedef PL011 Cortex_M_Model_UART;
+
+class LM3S811_Dummy_USB
+{
+public:
+    static void init() {}
+};
+
+typedef LM3S811_Dummy_USB Cortex_M_Model_USB;
 
 __END_SYS
 

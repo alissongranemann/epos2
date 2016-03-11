@@ -1,17 +1,34 @@
 // EPOS eMote3 (Cortex-M3) MCU Initialization
 
-#include <machine/cortex_m/emote3.h>
+#include <system/config.h>
+#include __MODEL_H
+#ifdef __emote3_h
+
+#include <ic.h>
 
 __BEGIN_SYS
 
-// eMote3 TSC static values
-CC2538_TSC::Time_Stamp CC2538_TSC::_offset = 0;
-bool CC2538_TSC::_positive_offset;
+bool eMote3::_init_clock_done = false;
 
 void eMote3::init()
 {
+    init_clock();
+
+    // Enable alternate interrupt mapping
+    scr(I_MAP) |= I_MAP_ALTMAP;
+}
+
+void eMote3::init_clock()
+{
+    // Since the clock is configured in traits and never changes,
+    // this needs to be done only once, but this method will be 
+    // called at least twice during EPOS' initialization 
+    // (in eMote3::config_UART() and Cortex_M::init())
+    if(_init_clock_done)
+        return;
+
     // Clock setup
-    Reg32 clock_val;    
+    Reg32 clock_val;
     switch(Traits<CPU>::CLOCK)
     {
         case 32000000: clock_val = 0; break;
@@ -22,16 +39,43 @@ void eMote3::init()
         case  1000000: clock_val = 5; break;
         case   500000: clock_val = 6; break;
         case   250000: clock_val = 7; break;
+        default: while(1) assert(false);
     }
-    // Select IO and system oscilators
-    // Delay qualification of crystal oscillator (XOSC) until it is stable
-    scr(CLOCK_CTRL) = AMP_DET | (SYS_DIV * clock_val) | OSC32K | (IO_DIV * clock_val); 
 
-    // Wait until oscillator stabilizes
-    while((scr(CLOCK_STA) & (STA_OSC)));
+    // Set pins PD6 and PD7 to enable external oscillator
+    {
+        const auto pin_bit = 1 << 6;
+        gpiod(AFSEL) &= ~pin_bit; // Set pin D6 as software-controlled
+        gpiod(DIR) &= ~pin_bit; // Set pin D6 as output
+        ioc(PD6_OVER) = ANA;
+    }
+    {
+        const auto pin_bit = 1 << 7;
+        gpiod(AFSEL) &= ~pin_bit; // Set pin D7 as software-controlled
+        gpiod(DIR) &= ~pin_bit; // Set pin D7 as output
+        ioc(PD7_OVER) = ANA;
+    }
 
-    // Enable alternate interrupt mapping
-    scr(I_MAP) |= I_MAP_ALTMAP;
+    Reg32 clock_ctrl = scr(CLOCK_CTRL) & ~(SYS_DIV * 7);
+    clock_ctrl |= clock_val * SYS_DIV; // Set system clock rate
+    clock_ctrl |= AMP_DET; // Enable AMP detect to make sure XOSC starts correctly    
+    clock_ctrl |= OSC_PD; // Power down unused oscillator
+    clock_ctrl &= ~OSC; // Select 32Mhz oscillator
+    clock_ctrl &= ~OSC32K; // Select 32Khz crystal oscillator
+
+    scr(CLOCK_CTRL) = clock_ctrl; // Write back to register
+
+    // Wait until oscillators stabilize
+    while((scr(CLOCK_STA) & (STA_OSC | STA_OSC32K)));
+
+    clock_ctrl = scr(CLOCK_CTRL) & ~(IO_DIV * 7);
+    scr(CLOCK_CTRL) = clock_ctrl | (clock_val * IO_DIV); // Set IO clock rate
+
+    //while((scr(CLOCK_STA) & (STA_SYNC_32K))); // Contiki includes this line too for some reason 
+    while(!(scr(CLOCK_STA) & (STA_SYNC_32K)));
+
+    _init_clock_done = true;
 }
 
 __END_SYS
+#endif

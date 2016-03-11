@@ -8,6 +8,9 @@
 
 __BEGIN_SYS
 
+//Default ID
+const char __attribute__((weak)) Traits<Build>::ID[Traits<Build>::ID_SIZE] = {'0','0'};
+
 class Init_System
 {
 private:
@@ -71,6 +74,9 @@ public:
                 Random::seed(Random::random() ^ adc.read());
             }
 #endif
+            for(unsigned int i=0; i<Traits<Build>::ID_SIZE; i++)
+                Random::seed(Random::random() ^ Traits<Build>::ID[i]);
+
             if(!Traits<TSC>::enabled && !Traits<NIC>::enabled)
                 db<Init>(WRN) << "Due to lack of entropy, Random is a pseudo random numbers generator!" << endl;
             db<Init>(INF) << "done!" << endl;

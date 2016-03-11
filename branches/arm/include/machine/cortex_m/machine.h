@@ -9,6 +9,7 @@
 #include <tsc.h>
 #include <machine.h>
 #include <rtc.h>
+#include <usb.h>
 #include __MODEL_H
 #include "info.h"
 #include "memory_map.h"
@@ -28,8 +29,7 @@ public:
 
     static void panic();
     static void reboot() { 
-        db<Machine>(ERR) << "Machine::reboot() : There is an error in this method. Will just loop forever to avoid int_not spam." << endl;
-        for(;;);
+        Cortex_M_Model::reboot();
 
         db<Machine>(WRN) << "Machine::reboot()" << endl;
         scs(AIRCR) |=  SYSRESREQ ;

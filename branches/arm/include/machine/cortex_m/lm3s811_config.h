@@ -16,6 +16,9 @@
 #define __TIMER_H       __HEADER_MACH(timer)
 #define __RTC_H         __HEADER_MACH(rtc)
 #define __UART_H        __HEADER_MACH(uart)
+#define __USB_H         __HEADER_MACH(usb)
+#define __GPIO_H        __HEADER_MACH(gpio)
+#define __NIC_H         __HEADER_MACH(nic)
 
 __BEGIN_SYS
 
@@ -31,6 +34,8 @@ typedef Cortex_M_UART        UART;
 typedef IF<Traits<Serial_Display>::enabled, Serial_Display, Dummy>::Result Display;
 typedef Cortex_M_Radio       NIC;
 typedef Cortex_M_Scratchpad  Scratchpad;
+typedef Cortex_M_USB         USB;
+typedef Cortex_M_GPIO        GPIO;
 
 __END_SYS
 

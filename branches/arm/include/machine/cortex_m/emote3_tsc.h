@@ -37,17 +37,33 @@ private:
         SMWDTHROSC_STCV2  =  0x64, //RO    32     0x00000000 
         SMWDTHROSC_STCV3  =  0x68, //RO    32     0x00000000 
     };
+    enum
+    {
+        STLOAD = 1 << 0,
+    };
 
     static volatile Reg32 & reg(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(TSC_BASE)[o / sizeof(Reg32)]; }
 
+    typedef unsigned int Interrupt_Id;
+    typedef void (* Interrupt_Handler)(const Interrupt_Id &);
+
+    static const Interrupt_Id SM_TIMER_IRQ = 32;
+
 public:
     using ARMv7_TSC::Hertz;
-    typedef Reg32 Time_Stamp;
+    typedef int Time_Stamp;
 
 public:
     static Hertz frequency() { return CLOCK; }
+    
+    static void wake_up_at(Time_Stamp t, const Interrupt_Handler & handler);
 
-    static Time_Stamp time_stamp()
+    static Time_Stamp us_to_ts(const Time_Stamp & us)
+    {
+        return (us / 1000) * (frequency() / 1000);
+    }
+
+    static volatile Time_Stamp time_stamp()
     {
         Time_Stamp ret = 0;
         // Ensuring read order. The time read from ST1-3 is latched at the moment ST0 is read
@@ -56,16 +72,14 @@ public:
         ret += reg(SMWDTHROSC_ST2) << 16;
         ret += reg(SMWDTHROSC_ST3) << 24;
         
-        return _positive_offset ? (ret + _offset) : (ret - _offset);
+        return ret + _offset;
     }
 
-    // Positive flag accounts for unsigned values
-    // Not setting a default value for "positive" argument reminds the programmer of this
-    static void offset(Time_Stamp o, bool positive) { _offset = o; _positive_offset = positive; }
+    static void offset(Time_Stamp o) { _offset += o; }
+    static Time_Stamp offset() { return _offset; }
 
 private:
     static Time_Stamp _offset;
-    static bool _positive_offset;
 };
 
 __END_SYS

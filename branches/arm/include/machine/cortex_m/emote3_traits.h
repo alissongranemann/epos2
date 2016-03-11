@@ -18,32 +18,82 @@ template <> struct Traits<Cortex_M>: public Traits<Cortex_M_Common>
     static const unsigned int CPUS = Traits<Build>::CPUS;
 
     // Physical Memory
-    static const unsigned int MEM_BASE  = 0x20000000;
-    static const unsigned int MEM_TOP   = 0x20007fff; // (MAX for 32-bit is 0x70000000 / 1792 MB)
+    static const unsigned int MEM_BASE  = 0x20000004;
+    static const unsigned int MEM_TOP   = 0x20007ffb; // (MAX for 32-bit is 0x70000000 / 1792 MB)
 
     // Logical Memory Map
-    static const unsigned int APP_LOW   = 0x20000000;
-    static const unsigned int APP_CODE  = 0x00200000;
-    static const unsigned int APP_DATA  = 0x20000000;
-    static const unsigned int APP_HIGH  = 0x20007fff; 
+    static const unsigned int APP_LOW   = 0x20000004;
+    static const unsigned int APP_CODE  = 0x00204000;
+    static const unsigned int APP_DATA  = 0x20000004;
+    static const unsigned int APP_HIGH  = 0x20007ffb;
 
-    static const unsigned int PHY_MEM   = 0x20000000;
+    static const unsigned int PHY_MEM   = 0x20000004;
     static const unsigned int IO_BASE   = 0x40000000;
     static const unsigned int IO_TOP    = 0x440067ff;
 
-    static const unsigned int SYS       = 0x00200000;
-    static const unsigned int SYS_CODE  = 0x00200000; // Library mode only => APP + SYS
-    static const unsigned int SYS_DATA  = 0x20000000; // Library mode only => APP + SYS
+    static const unsigned int SYS       = 0x00204000;
+    static const unsigned int SYS_CODE  = 0x00204000; // Library mode only => APP + SYS
+    static const unsigned int SYS_DATA  = 0x20000004; // Library mode only => APP + SYS
 
     // Default Sizes and Quantities
-    static const unsigned int STACK_SIZE = 2048;
-    static const unsigned int HEAP_SIZE = 512;
-    static const unsigned int MAX_THREADS = 5;
+    static const unsigned int STACK_SIZE = 4 * 1024;
+    static const unsigned int HEAP_SIZE = 4 * 1024;
+    static const unsigned int MAX_THREADS = 2;
+};
+
+template<> struct Traits<Cortex_M_Bootloader>: public Traits<void>
+{
+    static const unsigned int NIC_CHANNEL = 11;
+    static const unsigned int NIC_PROTOCOL = 0x1010;
+
+    // Set to 0 to try forever
+    static const unsigned int HANDSHAKE_WAITING_LIMIT = 1000000; // in microseconds
+
+    // Word in RAM reserved for the bootloader
+    static const unsigned int BOOTLOADER_STATUS_ADDRESS = 0x20007ffb;
+    enum STATUS 
+    {
+        FINISHED = 42,
+    };
+
+    // Physical Memory
+    static const unsigned int BOOTLOADER_MEM_BASE  = 0x20000000;
+    static const unsigned int BOOTLOADER_MEM_TOP   = 0x20007ffb; // (MAX for 32-bit is 0x70000000 / 1792 MB)
+
+    // Logical Memory Map
+    static const unsigned int BOOTLOADER_APP_LOW   = 0x20000000;
+    static const unsigned int BOOTLOADER_APP_CODE  = 0x00200000;
+    static const unsigned int BOOTLOADER_APP_DATA  = 0x20000000;
+    static const unsigned int BOOTLOADER_APP_HIGH  = 0x20007ffb;
+
+    static const unsigned int BOOTLOADER_PHY_MEM   = 0x20000000;
+    static const unsigned int BOOTLOADER_IO_BASE   = 0x40000000;
+    static const unsigned int BOOTLOADER_IO_TOP    = 0x440067ff;
+
+    static const unsigned int BOOTLOADER_SYS       = 0x00200000;
+    static const unsigned int BOOTLOADER_SYS_CODE  = 0x00200000; // Library mode only => APP + SYS
+    static const unsigned int BOOTLOADER_SYS_DATA  = 0x20000000; // Library mode only => APP + SYS
+
+    // Flash memory reserved for the bootloader
+    static const unsigned int LOW_ADDR = BOOTLOADER_SYS;
+    static const unsigned int TOP_ADDR = Traits<Cortex_M>::SYS;
+
+    // Loaded image bounds
+    static const unsigned int IMAGE_LOW = TOP_ADDR;
+    static const unsigned int IMAGE_TOP = 0x0027f800; 
+
+    // Pointers to loaded EPOS' interrupt table
+    const static unsigned int LOADED_EPOS_STACK_POINTER_ADDRESS = IMAGE_LOW;
+    const static unsigned int LOADED_EPOS_ENTRY_POINT_ADDRESS   = IMAGE_LOW + 4;
+    const static unsigned int LOADED_EPOS_INT_HANDLER_ADDRESS   = IMAGE_LOW + 8;
+
+    const static unsigned int BUFFER_SIZE = 256;
 };
 
 template <> struct Traits<Cortex_M_IC>: public Traits<Cortex_M_Common>
 {
     static const bool hysterically_debugged = false;
+    static const bool reboot_on_hard_fault = true;
 };
 
 template <> struct Traits<Cortex_M_Timer>: public Traits<Cortex_M_Common>
@@ -68,6 +118,12 @@ template <> struct Traits<Cortex_M_UART>: public Traits<Cortex_M_Common>
     static const unsigned int DEF_STOP_BITS = 1;
 };
 
+template <> struct Traits<Cortex_M_USB>: public Traits<Cortex_M_Common>
+{
+    static const bool enabled = Traits<Serial_Display>::ENGINE == Traits<Serial_Display>::usb;
+    static const bool blocking = false;
+};
+
 template <> struct Traits<Cortex_M_Radio>: public Traits<Cortex_M_Common>
 {
     static const bool enabled = (Traits<Build>::NODES > 1);
@@ -78,21 +134,34 @@ template <> struct Traits<Cortex_M_Radio>: public Traits<Cortex_M_Common>
 
 template <> struct Traits<CC2538>: public Traits<Cortex_M_Radio>
 {
-    static const bool debugged = true;
-
     static const unsigned int UNITS = NICS::Count<CC2538>::Result;
     static const unsigned int SEND_BUFFERS = 1;
-    static const unsigned int RECEIVE_BUFFERS = 1;
-   
+    static const unsigned int RECEIVE_BUFFERS = 4;
+    static const unsigned int DEFAULT_CHANNEL = 15; // From 11 to 26
+
     // There is no listen command on the radio interface yet,
     // so the only way to receive data is setting this flag
     static const bool auto_listen = true;
-};
 
+    static const bool CSMA_CA = true;
+    static const unsigned int CSMA_CA_MIN_BACKOFF_EXPONENT = 3;
+    static const unsigned int CSMA_CA_MAX_BACKOFF_EXPONENT = 5;
+    static const unsigned int CSMA_CA_UNIT_BACKOFF_PERIOD = 320; // us
+    static const unsigned int CSMA_CA_MAX_TRANSMISSION_TRIALS = 4;
+
+    static const bool ACK = true;
+    static const unsigned int RETRANSMISSIONS = 3;
+    static const unsigned int ACK_TIMEOUT = 3 * 832; // us
+};
 
 template <> struct Traits<Cortex_M_Scratchpad>: public Traits<Cortex_M_Common>
 {
     static const bool enabled = false;
+};
+
+template <> struct Traits<Cortex_M_SPI>: public Traits<Cortex_M_Common>
+{
+    static const unsigned int UNITS = 2;
 };
 
 __END_SYS

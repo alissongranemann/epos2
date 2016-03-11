@@ -12,9 +12,9 @@
 // For more information, refer to doc/security/howto.pdf
 //------------------------------------------------------
 
-#define SERVER_ADDR NIC::Address(40)
-
 using namespace EPOS;
+
+const char Traits<Build>::ID[Traits<Build>::ID_SIZE] = {'A','0'};
 
 OStream cout;
 
@@ -107,18 +107,19 @@ class Secure_NIC_Listener : public Secure_NIC::Observer
 	{
         Frame * f = b->frame();
         char * d = f->data<char>();
+        auto src = f->src();
         cout << "================" << endl;
-        cout << "Received " << b->size() << " bytes of payload from " << f->src() << " :" << endl;
+        cout << "Received " << b->size() << " bytes of payload from " << src << " :" << endl;        
         for(int i=0; i<b->size(); i++)
             cout << d[i];
-        cout << "================" << endl;
+        cout << endl << "================" << endl;
         for(int i=0; i<b->size(); i++)
-            cout << (int)d[i];
+            cout << (int)d[i] << " / " << d[i] << endl;
         cout << "================" << endl;
         _s->free(b);
 		cout<<"Sending hi\n";
 		// Reply securely
-		_s->send(nic->broadcast(), "Hi Sensor!", sizeof("Hi Sensor!"));
+		_s->send(src, "Hi Sensor!", sizeof("Hi Sensor!"));
 	}
 
 	private:
@@ -171,8 +172,8 @@ int sink()
 
 	// This ID is to be trusted
 	char id[Secure_NIC::ID_SIZE];
-	for(int i=0;i<sizeof(id);i++)
-		id[i] = '1';
+    id[0] = 'A';
+    id[1] = '1';
 	s->insert_trusted_id(id);
 
 	// This ID is to be trusted
@@ -203,8 +204,6 @@ int main()
 // 	ptp = new PTP();
 // 	ptp->setNIC(nic);
 
-// 	nic->address(SERVER_ADDR);
-// 	cout << "Address: " << nic->address() << '\n';
 	sink();
 	return 0;
 }

@@ -32,8 +32,11 @@ public:
         Engine::config(*baud_rate, *data_bits, *parity, *stop_bits);
     }
 
+    volatile bool has_data() { return rxd_ok(); }
     char get() { while(!rxd_ok()); return rxd(); }
     void put(char c) { while(!txd_ok()); txd(c); }
+
+    volatile bool is_busy() { return busy(); };
 
     void int_enable(bool receive = true, bool send = true, bool line = true, bool modem = true) {
         Engine::int_enable(receive, send, line, modem);

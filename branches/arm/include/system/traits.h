@@ -29,6 +29,10 @@ template<> struct Traits<Build>
     enum {Legacy, eMote3, LM3S811};
     static const unsigned int MODEL = LM3S811;
 
+    static const unsigned int ID_SIZE = 2;
+    // Default value initialized at init_system.cc. The application can overwrite it.
+    static const char ID[ID_SIZE];
+
     static const unsigned int CPUS = 1;
     static const unsigned int NODES = 1; // > 1 => NETWORKING
 };
@@ -59,32 +63,46 @@ template<> struct Traits<Heaps>: public Traits<void>
 };
 template <> struct Traits<Bignum> : public Traits<void>
 {
-	// You can edit these values
-	typedef unsigned int digit;
-	typedef unsigned long long double_digit;
-	static const unsigned int word = 4;
+    // You can edit these values
+    typedef unsigned int digit;
+    typedef unsigned long long double_digit;
+    static const unsigned int word = 4;
 
-	// You shouldn't edit these
-	static const unsigned int sz_digit = sizeof(digit);
-	static const unsigned int sz_word = sz_digit * word;
-	static const unsigned int double_word = 2 * word;
-	static const unsigned int bits_in_digit = sz_digit * 8;
+    // You shouldn't edit these
+    static const unsigned int sz_digit = sizeof(digit);
+    static const unsigned int sz_word = sz_digit * word;
+    static const unsigned int double_word = 2 * word;
+    static const unsigned int bits_in_digit = sz_digit * 8;
+};
+
+template <> struct Traits<AES> : public Traits<void>
+{
+    // The number of columns comprising a state in AES. This is a constant in AES. Value=4
+    static const unsigned int Nb = 4;
+    // The number of 32 bit words in a key.
+    static const unsigned int Nk = 4;
+    // The number of rounds in AES _Cipher.
+    static const unsigned int Nr = 10;
+    // Key length in bytes [128 bit]
+    static const unsigned int KEYLEN = 16;
 };
 
 template <> struct Traits<Diffie_Hellman> : public Traits<void>
 {
-	// Don't edit these, unless you really know what you're doing
-	static const unsigned int SECRET_SIZE = Traits<Bignum>::sz_word;
-	static const unsigned int PUBLIC_KEY_SIZE = Traits<Bignum>::sz_word * 2;
+    // Don't edit these, unless you really know what you're doing
+    static const unsigned int SECRET_SIZE = Traits<Bignum>::sz_word;
+    static const unsigned int PUBLIC_KEY_SIZE = Traits<Bignum>::sz_word * 2;
 };
 
 template <> struct Traits<Secure_NIC> : public Traits<void>
 {
-	static const int PROTOCOL_ID = 42;    
-	static const unsigned int ID_SIZE = 2;
-	static const unsigned long long TIME_WINDOW = 100000000U; // In Microseconds
-//	static const bool is_gateway = true;
-//	static const bool is_sensor = !is_gateway;
+    static const int PROTOCOL_ID = 46;
+    static const unsigned long long TIME_WINDOW = 100000000U; // In Microseconds
+    static const bool ALLOW_MULTIPLE_NODES_WITH_SAME_ID = true;
+
+    static const unsigned int MAX_PEERS = 8;
+    static const bool USE_FLASH = false;
+    static const unsigned int FLASH_ADDRESS = 0x50000;
 };
 
 // System Parts (mostly to fine control debugging)
@@ -104,6 +122,9 @@ template<> struct Traits<Init>: public Traits<void>
 // Mediators
 template<> struct Traits<Serial_Display>: public Traits<void>
 {
+    enum {usb, uart};
+    static const unsigned int ENGINE = uart;
+
     static const bool enabled = true;
     static const int COLUMNS = 80;
     static const int LINES = 24;
@@ -198,6 +219,21 @@ template<> struct Traits<Network>: public Traits<void>
 
     // This list is positional, with one network for each NIC in traits<NIC>::NICS
     typedef LIST<IP> NETWORKS;
+};
+
+template<> struct Traits<Modbus_ASCII>: public Traits<void>
+{
+    static const unsigned int PROTOCOL_ID = 83;
+    static const unsigned int MSG_LEN = 96;
+};
+
+template<> struct Traits<TSTP>: public Traits<void>
+{
+    static const bool enabled = false;//(Traits<Build>::NODES > 1);
+
+    static const unsigned int PROTOCOL_ID = 84;
+    static const unsigned int MAX_INTERESTS = 8;
+    static const unsigned int MAX_SENSORS = 8;
 };
 
 template<> struct Traits<IP>: public Traits<Network>

@@ -22,7 +22,7 @@ public:
     typedef NIC_Common::Address<8> Extended_Address;
     typedef Short_Address Address;
     typedef CPU::Reg8 Reg8;
-    typedef CPU::Reg16 Reg16;    
+    typedef CPU::Reg16 Reg16;
 
     // Frame types
     enum Frame_Type
@@ -62,17 +62,17 @@ public:
     {
     public:
         Phy_Header() {};
-        Phy_Header(Reg8 len) : _frame_length(len) {};
+        Phy_Header(Reg8 len) : _frame_length((len & (~0x7f)) ? 0x7f : len) {};
 
         Reg8 frame_length() const { return _frame_length; }
-        void frame_length(Reg8 len) { _frame_length = len; }
-    
+        void frame_length(Reg8 len) { _frame_length = ((len & (~0x7f)) ? 0x7f : len); }
+
     protected:
-        Reg8 _frame_length;        
+        Reg8 _frame_length;
     } __attribute__((packed, may_alias));
 
     // The IEEE 802.15.4 MHR
-    // 802.15.4 headers can have variable format, for now this only 
+    // 802.15.4 headers can have variable format, for now this only
     // supports a simple, fixed format
     // Adding the Protocol field for compatibility with ethernet/nic headers
     class Header : public Phy_Header
@@ -85,20 +85,22 @@ public:
             public:
                 // TODO: For now, we'll only support data frames
                 // TODO: This order assumes that the machine is little-endian
-                Frame_Control() : 
+                Frame_Control() :
                     _frame_type(DATA),
                     _security_enabled(0),
                     _frame_pending(0),
                     _ar(0),
-                    _pan_id_compression(1), 
+                    _pan_id_compression(1),
                     _reserved(0),
-                    _dst_addressing_mode(ADDR_MODE_SHORT_ADDR), 
+                    _dst_addressing_mode(ADDR_MODE_SHORT_ADDR),
                     _frame_version(0),
                     _src_addressing_mode(ADDR_MODE_SHORT_ADDR)
             { }
 
                 bool frame_pending() const { return _frame_pending; }
                 unsigned char frame_type() const { return _frame_type; }
+                void ack_request(bool val) { _ar = val; }
+                bool ack_request() { return _ar; }
 
             protected:
                 // TODO: This order assumes that the machine is little-endian
@@ -129,6 +131,14 @@ public:
 
         Protocol prot() const { return ntohs(_prot); }
 
+        void sequence_number(Reg8 seq) { _sequence_number = seq; }
+        Reg8 sequence_number() { return _sequence_number; }
+
+        bool frame_pending() const { return _frame_control.frame_pending(); }
+        unsigned char frame_type() const { return _frame_control.frame_type(); }
+        void ack_request(bool val) { _frame_control.ack_request(val); }
+        bool ack_request() { return _frame_control.ack_request(); }
+
     public:
     //protected:
         Frame_Control _frame_control;
@@ -145,13 +155,13 @@ public:
     {
     public:
         Frame() {}
-        Frame(const Address & src, const Address & dst, const Protocol & prot) : Header(src, dst, prot) {}
+        Frame(const Address & src, const Address & dst, const Protocol & prot, Reg8 size) : Header(size+sizeof(CRC), src, dst, prot) {}
         Frame(const Address & src, const Address & dst, const Protocol & prot, const void * data, Reg8 size)
             : Header(size+sizeof(CRC), src, dst, prot)
         {
             memcpy(_data, data, size);
         }
-        
+
         Header * header() { return this; }
 
         template<typename T>
@@ -161,7 +171,7 @@ public:
             db << "{" << f.dst() << "," << f.src() << "," << f.prot() << "," << f._data << "}";
             return db;
         }
-        
+
     protected:
         Data _data;
         CRC _crc;
@@ -180,9 +190,12 @@ public:
     public:
         Buffer(void * back): _lock(false), _nic(0), _back(back), _size(sizeof(Frame)), _link(this) {}
         Buffer(NIC * nic, const Address & src, const Address & dst, const Protocol & prot, unsigned int size):
-            Frame(src, dst, prot), _lock(false), _nic(nic), _size(size), _link(this) {}
+            Frame(src, dst, prot, size), _lock(false), _nic(nic), _size(size), _link(this) {}
 
         Frame * frame() { return this; }
+
+        template <typename T>
+        T * raw() { return reinterpret_cast<T *>(this); }
 
         bool lock() { return !CPU::tsl(_lock); }
         void unlock() { _lock = 0; }
@@ -237,18 +250,13 @@ public:
                << "}";
             return db;
         }
-        
+
         unsigned int rx_overruns;
         unsigned int tx_overruns;
         unsigned int frame_errors;
         unsigned int carrier_errors;
         unsigned int collisions;
     };
-
-/*
-    virtual void listen() = 0;
-    virtual void stop_listening() = 0;
-    */
 
 protected:
     IEEE802_15_4() {}

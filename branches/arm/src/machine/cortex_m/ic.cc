@@ -12,8 +12,8 @@ __BEGIN_SYS
 Cortex_M_IC::Interrupt_Handler Cortex_M_IC::_int_vector[Cortex_M_IC::INTS];
 
 // Class methods
-// We need a naked wrapper to dispatch because the compiler doesn't see the 
-// register pushes when reserving stack space in the prologue, and this 
+// We need a naked wrapper to dispatch because the compiler doesn't see the
+// register pushes when reserving stack space in the prologue, and this
 // was causing registers to be corrupted
 void Cortex_M_IC::dispatch()
 {
@@ -40,8 +40,17 @@ void Cortex_M_IC::_dispatch()
 
 void Cortex_M_IC::int_not(const Interrupt_Id & i)
 {
-    db<IC>(WRN) << "IC::int_not(i=" << i << ")" << endl;
+    db<IC>(ERR) << "IC::int_not(i=" << i << ")" << endl;
 }
+
+void Cortex_M_IC::hard_fault(const Interrupt_Id & i)
+{
+    db<IC>(ERR) << "IC::hard_fault(i=" << i << ")" << endl;
+    if(Traits<Cortex_M_IC>::reboot_on_hard_fault) {
+        Machine::reboot();
+    }
+}
+
 
 __END_SYS
 

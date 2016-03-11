@@ -5,7 +5,6 @@
 #ifndef __no_networking__
 
 #include <nic.h>
-#include <ieee802_15_4.h>
 #include <thread.h>
 #include <cpu.h>
 #include <utility/cipher.h>
@@ -16,29 +15,39 @@
 
 __BEGIN_SYS;
 
-class Secure_NIC : public Diffie_Hellman, public IEEE802_15_4::Observed, public IEEE802_15_4::Observer
+class Secure_NIC : public Diffie_Hellman, public NIC::Observed, public NIC::Observer, private NIC
 {
 public:        
-    typedef IEEE802_15_4::Protocol Protocol;
-    typedef IEEE802_15_4::Observed Observed;
-    typedef IEEE802_15_4::Observer Observer;
-    typedef IEEE802_15_4::Frame Frame;
-    typedef IEEE802_15_4::Buffer Buffer;
-    typedef IEEE802_15_4::Address Address;
+    typedef NIC::Protocol Protocol;
+    typedef NIC::Observed Observed;
+    typedef NIC::Observer Observer;
+    typedef NIC::Frame Frame;
+    typedef NIC::Buffer Buffer;
+    typedef NIC::Address Address;
     typedef Key_Database<Address> Key_Db;
 
+    const Address broadcast() { return _nic->broadcast(); }
     void free(Buffer *b){_nic->free(b);}
 
-	const static unsigned int ID_SIZE = Traits<Secure_NIC>::ID_SIZE;
+	const static unsigned int ID_SIZE = Traits<Build>::ID_SIZE;
 
 	// Round up to a multiple of 16, for AES
-    static unsigned int round16(const unsigned int n) { return n + 15 - (n - 1) % 16; }
+    static unsigned int round16(const unsigned int n) { return n + 15 - ((n - 1) % 16); }
 
 	Secure_NIC(bool is_gateway, Cipher *c, Poly1305 *p, NIC *nic = new NIC(), Key_Db *db = new Key_Db())
 		: Diffie_Hellman()
 	{
 		_is_gateway = is_gateway;
+        _authenticating = false;
 		_nic = nic; _keydb = db; _cipher = c; _poly = p;
+
+        if(_is_gateway) {
+            gateway_address = _nic->address();
+            if(Traits<Secure_NIC>::USE_FLASH) {
+                //_keydb->load(Traits<Secure_NIC>::FLASH_ADDRESS);
+            }
+        }
+
 		_nic->attach(this, Traits<Secure_NIC>::PROTOCOL_ID);
 
 		_waiting_dh_response = false;
@@ -80,14 +89,22 @@ public:
 	bool insert_trusted_id(const char *id)
 	{
 		calculate_auth(_auth, id);
-		return _keydb->insert_peer(id, _auth);
+        auto ret = _keydb->insert_peer(id, _auth);
+        if(Traits<Secure_NIC>::USE_FLASH && ret) {
+            //_keydb->save(Traits<Secure_NIC>::FLASH_ADDRESS);
+        }
+        return ret;
 	}
 	// Used by the server.
 	// This ID should not be trusted anymore.
 	bool remove_trusted_id(const char *id)
 	{ 
 		calculate_auth(_auth, id);
-		return _keydb->remove_peer(id, _auth);
+		auto ret = _keydb->remove_peer(id, _auth);
+        if(Traits<Secure_NIC>::USE_FLASH && ret) {
+            _keydb->save(Traits<Secure_NIC>::FLASH_ADDRESS);
+        }
+        return ret;
 	}
 
 	// Used by the sensor.
@@ -96,10 +113,12 @@ public:
 
 	// Sends a secure message to an already authenticated destination.
 	int send(const NIC::Address &dst, const char *data, unsigned int size);
+	// Sends a secure message to an already authenticated destination.
+	int send(const char * id, const char *data, unsigned int size);
 
 	// Used by the sensor.
 	// Am I authenticated yet?
-	inline bool authenticated(){ return _authenticated; }
+	bool authenticated(){ return _authenticated; }
 
 	// Used by the server.
 	// Set to true to start accepting authentication requests.
@@ -107,6 +126,8 @@ public:
 	volatile bool accepting_connections;
 
 	void update(Observed * o, Protocol p, Buffer *b);
+
+	NIC::Address gateway_address;
 
 	private:
 	// Type of message
@@ -174,8 +195,8 @@ public:
 	int _send(const NIC::Address &dst, char *data, unsigned int size) 
 	{
 		db<Secure_NIC>(INF) << "Secure_NIC: Sending msg of size " << size << ", header " << (int)data[0] << endl;
-// 		int ret = _nic->send(dst, Traits<Secure_NIC>::PROTOCOL_ID, data, size); 
-		int ret = _nic->send(_nic->broadcast(), Traits<Secure_NIC>::PROTOCOL_ID, data, size); 
+		int ret = _nic->send(dst, Traits<Secure_NIC>::PROTOCOL_ID, data, size); 
+// 		int ret = _nic->send(_nic->broadcast(), Traits<Secure_NIC>::PROTOCOL_ID, data, size); 
 		db<Secure_NIC>(TRC) << "Secure_NIC: nic::send returned " << ret << endl;
 		return ret;
 	}
@@ -185,6 +206,7 @@ public:
 	bool _authenticate(const char *msg, NIC::Address from);
 
 	bool _is_gateway;
+    volatile bool _authenticating;
 
 	NIC::Address _received_from;
 	char _received_data[NIC::MTU];

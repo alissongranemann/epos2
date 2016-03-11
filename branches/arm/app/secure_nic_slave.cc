@@ -18,6 +18,8 @@
 
 using namespace EPOS;
 
+const char Traits<Build>::ID[Traits<Build>::ID_SIZE] = {'A','1'};
+
 OStream cout;
 
 NIC * nic;
@@ -112,7 +114,7 @@ class Secure_NIC_Listener : public Secure_NIC::Observer
         cout << "Received " << b->size() << " bytes of payload from " << f->src() << " :" << endl;
         for(int i=0; i<b->size(); i++)
             cout << d[i];
-        cout << "================" << endl;
+        cout << endl << "================" << endl;
         for(int i=0; i<b->size(); i++)
             cout << (int)d[i] << " / " << d[i] << endl;
         cout << "================" << endl;
@@ -138,12 +140,6 @@ int sensor()
 //  ptp->_ptp_parameters._clock_stratum = PTP::PTP_DataSet::STRATUM_SLAVE;
 //  ptp->_ptp_parameters._state = PTP::INITIALIZING;
 //  ptp->execute();
-
-    // Initialize this sensor's ID
-    char id[Secure_NIC::ID_SIZE];
-    for(int i=0;i<sizeof(id);i++)
-        id[i] = '1';
-    Random::seed(id[0]);
 
 //     AES aes;
 //     char plain[16];
@@ -179,7 +175,7 @@ int sensor()
 
     // Initialize the secure NIC
     Secure_NIC * s = new Secure_NIC(false, new AES(), new Poly1305(new AES()), nic);
-    s->set_id(id);
+    s->set_id(Traits<Build>::ID);
     do
     {
         cout << "Delaying..." << endl;
@@ -209,7 +205,7 @@ int sensor()
         Alarm::delay(Random::random() % 10000000);
         cout << "Sending hi\n";
         // Send an encrypted message to the server
-        s->send(nic->broadcast(), "Hi, server!", 12);
+        s->send(s->gateway_address, "Hi, server!", 12);
     }
 
     cout << "Done!\n";

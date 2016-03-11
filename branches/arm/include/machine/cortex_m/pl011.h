@@ -105,13 +105,32 @@ public:
 
         Cortex_M_Model::config_UART(_base);
 
+        unsigned int lcrh_config = 0;
+
+        //config data bits
+        lcrh_config = data_bits == 8 ? WLEN8 :
+                          data_bits == 7 ? WLEN7 :
+                              data_bits = 6 ? WLEN6 : WLEN5;
+        //always use FIFO
+        lcrh_config |= FEN;
+
+        //config stop bits
+        lcrh_config |= stop_bits == 2 ? STP2 : 0;
+
+        //config and enable even parity
+        lcrh_config |= parity == 1 ? EPS | PEN : 0;
+
+        //config and enable odd parity
+        lcrh_config |= parity == 2 ? PEN : 0;
+
         reg(UCR) &= ~UEN;                       // Disable UART for configuration
         reg(ICR) = ~0;                          // Clear all interrupts
         reg(UIM) = UIMALL;                      // Disable all interrupts
         Reg32 br = CLOCK / (baud_rate / 300);   // Factor by the minimum BR to preserve meaningful bits of FBRD
         reg(IBRD) = br / 300;                   // IBRD = int(CLOCK / baud_rate)
         reg(FBRD) = br / 1000;                  // FBRD = int(0.1267 * 64 + 0.5) = 8
-        reg(LCRH) = WLEN8 | FEN;                // 8 bit word length (no parity bits, one stop bit, FIFOs)
+        //reg(LCRH) = WLEN8 | FEN;                // 8 bit word length (no parity bits, one stop bit, FIFOs)
+        reg(LCRH) = lcrh_config;
         reg(UCR) |= UEN | TXE | RXE;            // Enable UART
         reg(UIM) = UIMTX | UIMRX;               // Mask TX and RX interrupts for polling operation
     }
@@ -148,6 +167,8 @@ public:
 
     bool rxd_ok() { return !(reg(FR) & RXFE); }
     volatile bool txd_ok() { return !(reg(FR) & TXFF); }
+
+    volatile bool busy() { return (reg(FR) & BUSY); }
 
 private:
     volatile Reg32 & reg(unsigned int o) { return reinterpret_cast<volatile Reg32*>(_base)[o / sizeof(Reg32)]; }

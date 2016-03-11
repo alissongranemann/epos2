@@ -11,7 +11,7 @@ namespace Math {
 
 static const float E = 2.71828183;
 
-float logf(float num, float base = E, float epsilon = 1e-12) {
+inline float logf(float num, float base = E, float epsilon = 1e-12) {
     float integer = 0;
     if (num == 0) return 1;
 
@@ -41,7 +41,7 @@ float logf(float num, float base = E, float epsilon = 1e-12) {
     return (integer + decimal);
 }
 
-float fast_log2(float val)
+inline float fast_log2(float val)
 {
    int * const exp_ptr = reinterpret_cast <int *> (&val);
    int x = *exp_ptr;
@@ -55,10 +55,22 @@ float fast_log2(float val)
    return (val + log_2);
 }
 
-float fast_log(const float &val)
+inline float fast_log(const float &val)
 {
     static const float ln_2 = 0.69314718f;
     return (fast_log2(val) * ln_2);
+}
+
+template <typename T>
+const T &min(const T& x, const T& y)
+{
+    return (x <= y) ? x : y;
+}
+
+template <typename T>
+const T &max(const T& x, const T& y)
+{
+    return (x > y) ? x : y;
 }
 
 };

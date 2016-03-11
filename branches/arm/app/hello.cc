@@ -8,6 +8,9 @@ OStream cout;
 
 int main()
 {
-    cout << "Hello, World!" << endl;
+    while(1) {
+        cout << "Hello, World!" << endl;
+    }
+    
     return 0;
 }

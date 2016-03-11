@@ -68,6 +68,20 @@ COMP_PREFIX		= $($(ARCH)_COMP_PREFIX)
 
 # Boot Memory Map
 MACH_TRAITS	= $(INCLUDE)/machine/$(MACH)/$(MMOD)_traits.h 
+ifeq ($(BOOTLOADER),1)
+MEM_BASE	= $(call GETTK,BOOTLOADER_MEM_BASE,$(MACH_TRAITS))
+MEM_TOP		= $(call GETTK,BOOTLOADER_MEM_TOP,$(MACH_TRAITS))
+MEM_SIZE	= $(shell echo "(`printf "%d" $(MEM_TOP)` + 1 - `printf "%d" $(MEM_BASE)`) / 1024"|bc)
+BOOT_ADDR	= $(call GETTK,BOOTLOADER_BOOT,$(MACH_TRAITS))
+SETUP_ADDR	= $(call GETTK,BOOTLOADER_SETUP,$(MACH_TRAITS))
+INIT_ADDR	= $(call GETTK,BOOTLOADER_INIT,$(MACH_TRAITS))
+SYS_CODE_ADDR	= $(call GETTK,BOOTLOADER_SYS_CODE,$(MACH_TRAITS))
+SYS_DATA_ADDR	= $(call GETTK,BOOTLOADER_SYS_DATA,$(MACH_TRAITS))
+APP_CODE_ADDR	= $(call GETTK,BOOTLOADER_APP_CODE,$(MACH_TRAITS))
+APP_DATA_ADDR	= $(call GETTK,BOOTLOADER_APP_DATA,$(MACH_TRAITS))
+BOOT_LENGTH_MIN	= $(call GETTK,BOOTLOADER_BOOT_LENGTH_MIN,$(MACH_TRAITS))
+BOOT_LENGTH_MAX = $(call GETTK,BOOTLOADER_BOOT_LENGTH_MAX,$(MACH_TRAITS))
+else
 MEM_BASE	= $(call GETTK,MEM_BASE,$(MACH_TRAITS))
 MEM_TOP		= $(call GETTK,MEM_TOP,$(MACH_TRAITS))
 MEM_SIZE	= $(shell echo "(`printf "%d" $(MEM_TOP)` + 1 - `printf "%d" $(MEM_BASE)`) / 1024"|bc)
@@ -80,6 +94,7 @@ APP_CODE_ADDR	= $(call GETTK,APP_CODE,$(MACH_TRAITS))
 APP_DATA_ADDR	= $(call GETTK,APP_DATA,$(MACH_TRAITS))
 BOOT_LENGTH_MIN	= $(call GETTK,BOOT_LENGTH_MIN,$(MACH_TRAITS))
 BOOT_LENGTH_MAX = $(call GETTK,BOOT_LENGTH_MAX,$(MACH_TRAITS))
+endif
 
 #Machine specifics
 pc_CC_FLAGS             := -Wa,--32
@@ -98,11 +113,7 @@ cortex_m_EMULATOR       := timeout --foreground 20s qemu-system-arm -cpu cortex-
 endif
 cortex_m_GDB            := arm-none-eabi-gdb
 
-ifeq ($(GDB),1)
-emote3_DEPLOYER         := $(TOP)/tools/emote3_tst_env/jtag_gdb.sh
-else
-emote3_DEPLOYER         := $(TOP)/tools/emote3_tst_env/jtag.sh
-endif
+emote3_DEPLOYER         := $(TOP)/tools/emote3_programmer/jtag.sh
 
 $(MACH)_DATA_NAME       := .bss
 $(MACH)_CODE_NAME       := .init

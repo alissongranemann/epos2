@@ -12,7 +12,7 @@ class AES: public Cipher
 public:
     static const unsigned int Nb = Traits<AES>::Nb;
     static const unsigned int Nk = Traits<AES>::Nk;
-    static const unsigned int Nr = Traits<AES>::Nr;
+    static const int Nr = Traits<AES>::Nr;
     static const unsigned int KEYLEN = Traits<AES>::KEYLEN;
 
 	AES(){ _mode = ECB; }
@@ -98,9 +98,9 @@ private:
     // Initial Vector used only for MODE_CBC mode
     static char* Iv;
 
-    static const char sbox[256];
-    static const char rsbox[256];
-    static const char Rcon[255];
+    static const unsigned char sbox[256];
+    static const unsigned char rsbox[256];
+    static const unsigned char Rcon[255];
 
     static char getSBoxValue(int num) { return sbox[num]; }
     static char getSBoxInvert(int num) { return rsbox[num]; }

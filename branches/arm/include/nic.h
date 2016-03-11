@@ -4,6 +4,7 @@
 #define __nic_h
 
 #include <utility/string.h>
+#include <utility/random.h>
 #include <cpu.h>
 
 __BEGIN_SYS
@@ -21,6 +22,7 @@ public:
     public:
         enum Null { NULL = 0 };
         enum Broadcast { BROADCAST = 255 };
+        enum Random_Address { RANDOM = 42 };
 
     public:
         Address() {}
@@ -33,6 +35,11 @@ public:
         Address(const Broadcast &) {
             for(unsigned int i = 0; i < LENGTH; i++)
                 _address[i] = BROADCAST;
+        }
+
+        Address(const Random_Address &) {
+            for(unsigned int i = 0; i < LENGTH; i++)
+                _address[i] = Random::random();
         }
 
         Address(const char * str) { // String formated as A.B.C.D or A:B:C:D:E:F

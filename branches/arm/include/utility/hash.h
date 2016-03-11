@@ -164,7 +164,7 @@ public:
         return _table[e->key() % SIZE].remove(e);
     }
     Element * remove(const Object_Type * obj) {
-        for(int i = 0; i < SIZE; i++) {
+        for(unsigned int i = 0; i < SIZE; i++) {
             Element * e = _table[i].remove(obj);
             if(e)
         	return e;
@@ -173,7 +173,7 @@ public:
     }
     
     Element * search(const Object_Type * obj) {
-        for(int i = 0; i < SIZE; i++) {
+        for(unsigned int i = 0; i < SIZE; i++) {
             Element * e = _table[i].search(obj);
             if(e)
         	return e;
