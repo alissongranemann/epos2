@@ -1,6 +1,5 @@
 #include <poly1305.h>
 #include <aes.h>
-// #include <mach/mc13224v/aes_controller.h>
 #include <utility/random.h>
 #include <alarm.h>
 
