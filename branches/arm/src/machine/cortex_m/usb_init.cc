@@ -1,17 +1,12 @@
-#include <system/config.h>
-#include __MODEL_H
-#ifdef __emote3_h
-
 #include <ic.h>
 #include <usb.h>
-#include <machine/cortex_m/emote3_gptm.h>
 
 __USING_SYS
 
-volatile USB_2_0::STATE eMote3_USB::_state = USB_2_0::STATE::ATTACHED;
-volatile bool eMote3_USB::_ready_to_print = false;
+volatile USB_2_0::STATE Cortex_M_USB::_state = USB_2_0::STATE::ATTACHED;
+volatile bool Cortex_M_USB::_ready_to_print = false;
 
-const USB_2_0::Descriptor::Device eMote3_USB::_device_descriptor = 
+const USB_2_0::Descriptor::Device Cortex_M_USB::_device_descriptor = 
 {
     sizeof(Descriptor::Device), // Descriptor length
     DESC_DEVICE,               // Descriptor type
@@ -29,7 +24,7 @@ const USB_2_0::Descriptor::Device eMote3_USB::_device_descriptor =
     0x01,                      // Number of possible configurations
 };
 
-const eMote3_USB::Full_Config eMote3_USB::_config = 
+const Cortex_M_USB::Full_Config Cortex_M_USB::_config = 
 {
     //_configuration_descriptor = 
     {
@@ -126,7 +121,7 @@ const eMote3_USB::Full_Config eMote3_USB::_config =
 };
 
 // Configurations that need to be done at every USB reset
-void eMote3_USB::reset()
+void Cortex_M_USB::reset()
 {
     _state = USB_2_0::STATE::DEFAULT;
     _send_buffer = reinterpret_cast<const char *>(0);
@@ -154,7 +149,7 @@ void eMote3_USB::reset()
     reg(CIE) = INT_RESET;    
 }
 
-void eMote3_USB::init()
+void Cortex_M_USB::init()
 {
     // Make sure that eMote3::init_clock() has been called and 
     // the crystal oscillator is selected as source and stable.
@@ -182,4 +177,3 @@ void eMote3_USB::init()
     IC::enable(USB_IRQ);
     CPU::int_enable();
 }
- #endif

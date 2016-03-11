@@ -1,44 +1,21 @@
-// EPOS Display Mediator Common Package
+// EPOS Cortex-M3 Display Mediator Declarations
 
-#ifndef __display_h
-#define __display_h
+#ifndef __cortex_m_display_h
+#define __cortex_m_display_h
 
-#include <uart.h>
+#include <display.h>
+#include <usb.h>
 
 __BEGIN_SYS
 
-class Display_Common
+class Cortex_M_USB_Serial_Display: public Display_Common
 {
-protected:
-    Display_Common() {}
-};
-
-class Null_Display : public Display_Common 
-{
-    friend class PC_Setup;
     friend class First_Object;
-public:
-    Null_Display() {}
-    static void clear() { }
-    static void putc(char c) { }
-    static void puts(const char * s) { }
-    static void geometry(int * lines, int * columns) { }
-    static void position(int * line, int * column) { }
-    static void position(int line, int column) { }
 private:
-    static void init() { }
-};
-
-class Serial_Display: public Display_Common
-{
-    friend class PC_Setup;
-    friend class First_Object;
-
-private:
-    typedef UART Engine;
-    static const int LINES = Traits<Serial_Display>::LINES;
-    static const int COLUMNS = Traits<Serial_Display>::COLUMNS;
-    static const int TAB_SIZE = Traits<Serial_Display>::TAB_SIZE;
+    typedef USB Engine;
+    static const int LINES = Traits<Cortex_M_USB_Serial_Display>::LINES;
+    static const int COLUMNS = Traits<Cortex_M_USB_Serial_Display>::COLUMNS;
+    static const int TAB_SIZE = Traits<Cortex_M_USB_Serial_Display>::TAB_SIZE;
 
     // Special characters
     enum {
@@ -49,7 +26,7 @@ private:
     };
 
 public:
-    Serial_Display() {}
+    Cortex_M_USB_Serial_Display() {}
 
     static void clear() {
         _line = 0;
@@ -150,9 +127,5 @@ private:
 };
 
 __END_SYS
-
-#ifdef __DISPLAY_H
-#include __DISPLAY_H
-#endif
 
 #endif

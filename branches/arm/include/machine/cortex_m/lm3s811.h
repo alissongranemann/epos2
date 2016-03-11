@@ -314,6 +314,8 @@ protected:
 public:
     static void radio_enable(){};
     static void radio_disable(){};
+    static void USB_disable(){};
+    static void config_USB(){};
 
     //static volatile Reg32 & ioc(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(IOC_BASE)[o / sizeof(Reg32)]; }
     static volatile Reg32 & scr(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(SCR_BASE)[o / sizeof(Reg32)]; }
@@ -334,14 +336,6 @@ typedef LM3S811 Cortex_M_Model;
 
 class PL011;
 typedef PL011 Cortex_M_Model_UART;
-
-class LM3S811_Dummy_USB
-{
-public:
-    static void init() {}
-};
-
-typedef LM3S811_Dummy_USB Cortex_M_Model_USB;
 
 __END_SYS
 

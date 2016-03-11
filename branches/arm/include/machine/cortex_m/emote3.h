@@ -852,7 +852,7 @@ protected:
         gpioc(pin_bit << 2) = 0xff; // Set pin C2 (high)
     }
 
-    static void disable_USB()
+    static void USB_disable()
     {
         const unsigned int pin_bit = 1 << 2;
         gpioc(pin_bit << 2) = 0; // Clear pin C2 (low)
@@ -1037,7 +1037,6 @@ typedef eMote3 Cortex_M_Model;
 
 class PL011;
 typedef PL011 Cortex_M_Model_UART;
-typedef eMote3_USB Cortex_M_Model_USB;
 class CC2538_SSI;
 typedef CC2538_SSI Cortex_M_Model_SPI;
 class CC2538_I2C;
@@ -1053,6 +1052,5 @@ __END_SYS
 #include "emote3_i2c.h"
 #include "emote3_tsc.h"
 #include <usb.h>
-#include "emote3_usb.h"
 #include "pl011.h"
 #include <adc.h>

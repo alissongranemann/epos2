@@ -17,6 +17,7 @@
 #define __RTC_H         __HEADER_MACH(rtc)
 #define __UART_H        __HEADER_MACH(uart)
 #define __USB_H         __HEADER_MACH(usb)
+#define __DISPLAY_H     __HEADER_MACH(display)
 #define __GPIO_H        __HEADER_MACH(gpio)
 #define __NIC_H         __HEADER_MACH(nic)
 
@@ -31,7 +32,12 @@ typedef Cortex_M_IC          IC;
 typedef Cortex_M_Timer       Timer;
 typedef Cortex_M_RTC         RTC;
 typedef Cortex_M_UART        UART;
-typedef IF<Traits<Serial_Display>::enabled, Serial_Display, Dummy>::Result Display;
+
+typedef SWITCH<Traits<Cortex_M_Display>::ENGINE, 
+        CASE<Traits<Cortex_M_Display>::Engine::null, Null_Display,
+        CASE<Traits<Cortex_M_Display>::Engine::uart, Serial_Display
+        >>>::Result          Display;
+
 typedef Cortex_M_Radio       NIC;
 typedef Cortex_M_Scratchpad  Scratchpad;
 typedef Cortex_M_USB         USB;

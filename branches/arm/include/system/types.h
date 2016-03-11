@@ -93,6 +93,7 @@ class Cortex_M_RTC;
 class Cortex_M_UART;
 class Cortex_M_EEPROM;
 class Cortex_M_Display;
+class Cortex_M_USB_Serial_Display;
 class Cortex_M_Scratchpad;
 class Cortex_M_Radio;
 class Cortex_M_USB;

@@ -54,7 +54,6 @@ if [ "$GDB" == "1" ]; then
     KILL_THIS=$!
     sleep 1
     echo $APP
-    echo $APP
     arm-none-eabi-gdb -s ${APP%\.hex} -ex "target remote localhost:2331" -ex "mon halt" -ex "mon reset"
     #gdb-arm-elf -s ${APP%\.hex} -ex "target remote localhost:2331" -ex "mon halt" -ex "mon reset"
     kill $KILL_THIS

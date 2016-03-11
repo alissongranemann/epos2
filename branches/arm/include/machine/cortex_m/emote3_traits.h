@@ -36,8 +36,8 @@ template <> struct Traits<Cortex_M>: public Traits<Cortex_M_Common>
     static const unsigned int SYS_DATA  = 0x20000004; // Library mode only => APP + SYS
 
     // Default Sizes and Quantities
-    static const unsigned int STACK_SIZE = 4 * 1024;
-    static const unsigned int HEAP_SIZE = 4 * 1024;
+    static const unsigned int STACK_SIZE = 1024;
+    static const unsigned int HEAP_SIZE = 1024;
     static const unsigned int MAX_THREADS = 2;
 };
 
@@ -118,9 +118,21 @@ template <> struct Traits<Cortex_M_UART>: public Traits<Cortex_M_Common>
     static const unsigned int DEF_STOP_BITS = 1;
 };
 
+template<> struct Traits<Cortex_M_Display>: public Traits<Cortex_M_Common>
+{
+    enum Engine {null, uart, usb};
+    static const Engine ENGINE = null;
+
+    static const int COLUMNS = 80;
+    static const int LINES = 25;
+    static const int TAB_SIZE = 8;
+};
+
+template<> struct Traits<Cortex_M_USB_Serial_Display>: public Traits<Cortex_M_Display> { };
+
 template <> struct Traits<Cortex_M_USB>: public Traits<Cortex_M_Common>
 {
-    static const bool enabled = Traits<Serial_Display>::ENGINE == Traits<Serial_Display>::usb;
+    static const bool enabled = Traits<Cortex_M_Display>::ENGINE == Traits<Cortex_M_Display>::Engine::usb;
     static const bool blocking = false;
 };
 

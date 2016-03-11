@@ -69,9 +69,21 @@ template <> struct Traits<Cortex_M_UART>: public Traits<Cortex_M_Common>
     static const unsigned int DEF_STOP_BITS = 1;
 };
 
+template<> struct Traits<Cortex_M_Display>: public Traits<Cortex_M_Common>
+{
+    enum Engine {null, uart};
+    static const Engine ENGINE = uart;
+
+    static const int COLUMNS = 80;
+    static const int LINES = 25;
+    static const int TAB_SIZE = 8;
+};
+
+template<> struct Traits<Cortex_M_USB_Serial_Display>: public Traits<Cortex_M_Display> { };
+
 template <> struct Traits<Cortex_M_USB>: public Traits<Cortex_M_Common>
 {
-    static const bool enabled = Traits<Serial_Display>::ENGINE == Traits<Serial_Display>::usb;
+    static const bool enabled = false;
     static const bool blocking = false;
 };
 

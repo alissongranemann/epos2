@@ -1,39 +1,32 @@
-#include <system/config.h>
-#include __MODEL_H
-#ifdef __emote3_h
-
 #include <usb.h>
 #include <ic.h>
 
-#include <gpio.h>
-#include <machine/cortex_m/emote3_gptm.h>
-
 __USING_SYS
 
-const char * eMote3_USB::_send_buffer = reinterpret_cast<const char *>(0);
-unsigned int eMote3_USB::_send_buffer_size = 0;
+const char * Cortex_M_USB::_send_buffer = reinterpret_cast<const char *>(0);
+unsigned int Cortex_M_USB::_send_buffer_size = 0;
 
-void eMote3_USB::disable()
+void Cortex_M_USB::disable()
 {
     flush();
     reg(CTRL) &= ~USBEN;
-    Cortex_M_Model::disable_USB();
+    Cortex_M_Model::USB_disable();
 }
 
-bool eMote3_USB::has_data()
+bool Cortex_M_USB::has_data()
 {
     reg(INDEX) = 4;
     return reg(CSOL) & CSOL_OUTPKTRDY;
 }
 
-char eMote3_USB::get()
+char Cortex_M_USB::get()
 {
     char ret = 0;
-    while(eMote3_USB::get_data(&ret, 1) == 0);
+    while(Cortex_M_USB::get_data(&ret, 1) == 0);
     return ret;
 }
 
-unsigned int eMote3_USB::get_data(char * out, unsigned int max_size)
+unsigned int Cortex_M_USB::get_data(char * out, unsigned int max_size)
 {
     if(Traits<Cortex_M_USB>::blocking) {
         while(!has_data());
@@ -62,15 +55,15 @@ unsigned int eMote3_USB::get_data(char * out, unsigned int max_size)
     }
 }
 
-void eMote3_USB::flush(unsigned int index/*=3*/)
+void Cortex_M_USB::flush(unsigned int index/*=3*/)
 {
     Reg32 old_index = reg(INDEX);
     reg(INDEX) = index;
-    _flush();
+    do_flush();
     reg(INDEX) = old_index;
 }
 
-void eMote3_USB::put(char c)
+void Cortex_M_USB::put(char c)
 {
     if(!ready_to_print()) {
         if(Traits<Cortex_M_USB>::blocking) {
@@ -96,12 +89,13 @@ void eMote3_USB::put(char c)
     }
     reg(F3) = c;
     // If newline, signal that a packet is ready. Otherwise, let the hardware signal when the FIFO is full
-    if(c == '\n')
-        _flush();
+    if(c == '\n') {
+        do_flush();
+    }
     reg(INDEX) = old_index;
 }
 
-bool eMote3_USB::handle_ep0(const USB_2_0::Request::Device_Request & data)
+bool Cortex_M_USB::handle_ep0(const USB_2_0::Request::Device_Request & data)
 {    
     switch(data.bRequest)
     {
@@ -189,11 +183,11 @@ bool eMote3_USB::handle_ep0(const USB_2_0::Request::Device_Request & data)
     return false;
 }
 
-void eMote3_USB::int_handler(const IC::Interrupt_Id & interrupt)
+void Cortex_M_USB::int_handler(const IC::Interrupt_Id & interrupt)
 {
     Reg32 index = reg(INDEX); // Save old index
 
-    //db<Cortex_M_USB>(TRC) << "eMote3_USB::int_handler" << endl;
+    //db<Cortex_M_USB>(TRC) << "Cortex_M_USB::int_handler" << endl;
     //db<Cortex_M_USB>(TRC) << "CS0_CSIL = " << reg(CS0_CSIL) << endl;
     //db<Cortex_M_USB>(TRC) << "CIF = " << cif << endl;
     //db<Cortex_M_USB>(TRC) << "OIF = " << reg(OIF) << endl;
@@ -238,7 +232,7 @@ void eMote3_USB::int_handler(const IC::Interrupt_Id & interrupt)
                 {
                     // Signal that the command could not be executed
                     reg(CS0_CSIL) |= CS0_SENDSTALL;
-                    //db<Cortex_M_USB>(WRN) << "eMote3_USB::int_handler: command NOT processed" << endl;
+                    //db<Cortex_M_USB>(WRN) << "Cortex_M_USB::int_handler: command NOT processed" << endl;
                 }
             }
 
@@ -269,5 +263,3 @@ void eMote3_USB::int_handler(const IC::Interrupt_Id & interrupt)
     }
     reg(INDEX) = index; // Restore old index
 }
-
-#endif

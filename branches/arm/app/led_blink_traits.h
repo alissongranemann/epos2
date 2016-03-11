@@ -10,7 +10,7 @@ template<typename T>
 struct Traits
 {
     static const bool enabled = true;
-    static const bool debugged = true;
+    static const bool debugged = false;
     static const bool hysterically_debugged = false;
     typedef TLIST<> ASPECTS;
 };
@@ -27,7 +27,7 @@ template<> struct Traits<Build>
     static const unsigned int MACHINE = Cortex_M;
 
     enum {Legacy, eMote3, LM3S811};
-    static const unsigned int MODEL = LM3S811;
+    static const unsigned int MODEL = eMote3;
 
     static const unsigned int ID_SIZE = 2;
     // Default value initialized at init_system.cc. The application can overwrite it.
