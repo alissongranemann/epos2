@@ -109,7 +109,7 @@ cortex_m_LD_FLAGS       :=
 ifeq ($(GDB),1)
 cortex_m_EMULATOR       := qemu-system-arm -cpu cortex-m3 -machine lm3s811evb -m $(MEM_SIZE)k -nographic -no-reboot -kernel
 else
-cortex_m_EMULATOR       := timeout --foreground 20s qemu-system-arm -cpu cortex-m3 -machine lm3s811evb -m $(MEM_SIZE)k -nographic -no-reboot -kernel
+cortex_m_EMULATOR       := timeout --foreground 10s qemu-system-arm -cpu cortex-m3 -machine lm3s811evb -m $(MEM_SIZE)k -nographic -no-reboot -kernel
 endif
 cortex_m_GDB            := arm-none-eabi-gdb
 

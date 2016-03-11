@@ -27,7 +27,7 @@ __USING_SYS;
 extern "C" {
     void _syscall(void * m) { CPU::syscall(m); }
     void _print(const char * s) {
-        Message msg(Id(UTILITY_ID, 0));
-        msg.act(Message::PRINT, reinterpret_cast<unsigned int>(s));
+        Message msg(Id(UTILITY_ID, 0), Message::PRINT, reinterpret_cast<unsigned int>(s));
+        msg.act();
     }
 }
