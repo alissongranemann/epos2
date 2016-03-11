@@ -157,11 +157,11 @@ public:
 
     static Reg32 fr() {
         Reg32 value;
-        ASM("" : "=r"(value) : : "r0");
+        ASM("mov %0, r0" : "=r"(value));
         return value;
     }
     static void fr(const Reg32 & fr) {
-        ASM("" : : "r"(fr) : "r0");
+        ASM("mov r0, %0" : : "r"(fr) : "r0");
     }
 
     static Log_Addr ip() // due to RISC pipelining PC is read with a +8 (4 for thumb) offset
