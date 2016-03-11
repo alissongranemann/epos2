@@ -64,7 +64,7 @@ LINIT		= $(LINITNAME)_$(ARCH)
 LUTIL		= $(LUTILNAME)_$(ARCH)
 
 ifeq ($(NO_DOMAIN_2),false)
-DOMAIN_2	:= domain_2
+DOMAIN_2	:= $(APPLICATION)_domain_2
 endif
 
 

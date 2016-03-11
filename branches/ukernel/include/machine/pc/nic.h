@@ -27,7 +27,7 @@ public:
         db<PC_Ethernet>(TRC) << "NIC::NIC(u=" << UNIT << ",d=" << _dev << ") => " << this << endl;
     }
     ~PC_Ethernet() { _dev = 0; }
-    
+
     Buffer * alloc(NIC * nic, const Address & dst, const Protocol & prot, unsigned int once, unsigned int always, unsigned int payload) {
         return _dev->alloc(nic, dst, prot, once, always, payload);
     }
@@ -43,6 +43,13 @@ private:
     }
 
 public:
+    void remap()
+    {
+        db<PC_Ethernet>(TRC) << "PC_Ethernet::remap" << endl;
+
+        _dev = reinterpret_cast<Meta_NIC<NICS>::Base *>(unsigned(_dev) | Memory_Map<PC>::PHY_MEM);
+    }
+
     const unsigned int mtu() const { return _dev->mtu(); }
     const Address broadcast() const { return _dev->broadcast(); }
     

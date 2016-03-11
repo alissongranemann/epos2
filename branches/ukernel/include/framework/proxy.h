@@ -120,6 +120,7 @@ public:
 
     // NIC
     Proxy<NIC::Statistics> * statistics() { return new (reinterpret_cast<Adapter<NIC::Statistics> *>(invoke(NIC_STATISTICS))) Proxied<NIC::Statistics>; }
+    Proxy<NIC::Address> * nic_address() { return new (reinterpret_cast<Adapter<NIC::Address> *>(invoke(NIC_ADDRESS))) Proxied<NIC::Address>; }
 
     // IP
     Proxy<NIC> * nic() { return new (reinterpret_cast<Adapter<NIC> *>(invoke(IP_NIC))) Proxied<NIC>; }
@@ -137,7 +138,13 @@ public:
     static void int_enable() { static_invoke(CPU_INT_ENABLE); }
     static void int_disable() { static_invoke(CPU_INT_DISABLE); }
 
- private:
+public:
+    template<typename ... Tn>
+    Result __invoke(const Method & m, const Tn & ... an) {
+        return invoke(m, an ...);
+    }
+
+private:
     template<typename ... Tn>
     Result invoke(const Method & m, const Tn & ... an) {
         method(m);

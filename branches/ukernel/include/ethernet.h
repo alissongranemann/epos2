@@ -173,6 +173,8 @@ public:
     static const Address broadcast() { return Address::BROADCAST; }
 };
 
+template<> struct Type<Ethernet::Statistics> { static const Type_Id ID = NIC_STATISTICS_ID; };
+
 __END_SYS
 
 #endif

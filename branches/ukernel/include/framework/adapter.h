@@ -111,6 +111,13 @@ public:
 
     // NIC
     NIC::Statistics * statistics() { enter(); NIC::Statistics * res = Component::statistics_prt(); leave(); return res; }
+    NIC::Address * nic_address() { enter(); NIC::Address * res = &(const_cast<NIC::Address &>(Component::address())); leave(); return res; }
+
+    // NIC::Statistics
+    unsigned int rx_packets() { enter(); unsigned int res = Component::rx_packets; leave(); return res; }
+    unsigned int rx_bytes() { enter(); unsigned int res = Component::rx_bytes; leave(); return res; }
+    unsigned int tx_packets() { enter(); unsigned int res = Component::tx_packets; leave(); return res; }
+    unsigned int tx_bytes() { enter(); unsigned int res = Component::tx_bytes; leave(); return res; }
 
     // IP
     NIC * nic() { enter(); NIC * res = Component::nic(); leave(); return res; }

@@ -2,6 +2,8 @@
 
 #include <task.h>
 
+#include <ip.h>
+
 __BEGIN_SYS
 
 // Class attributes
@@ -35,9 +37,17 @@ void Task::constructor_4_prologue(Segment * cs, Segment * ds)
 {
 }
 
+/* Refactor-me: This method is too machine dependent. */
 void Task::setup()
 {
     PC_Display::remap(Memory_Map<PC>::VGA);
+
+    db<void>(WRN) << "Task::setup" << endl;
+
+    IP * ip = IP::get_by_nic(0); /* Assuming there is one NIC */
+    if (ip->nic()) {
+        ip->nic()->remap();
+    }
 }
 
 __END_SYS

@@ -189,8 +189,10 @@ enum
     MACHINE_ID,
     THIS_THREAD_ID,
     IP_ID,
+    IP_ADDRESS_ID,
     NETWORK_ID,
     NIC_ID,
+    NIC_STATISTICS_ID,
 
     ICMP_ID,
     UDP_ID,
@@ -199,6 +201,7 @@ enum
 
     LINK_ID,
     PORT_ID,
+    TCP_LINK_ID,
 
     PEDF_ID,
     PERIODIC_THREAD_ID,

@@ -10,6 +10,7 @@
 #include <communicator.h>
 #include <network.h>
 #include <aux_debug.h>
+#include <color.h>
 
 using namespace EPOS;
 
@@ -32,11 +33,11 @@ OStream cout;
 
 int main(int argc, char * argv[])
 {
-    Network::init();
+    // Network::init();
     is_domain_hrt[1] = _SYS::Traits<Application>::IS_DOM_1_HRT;
     is_domain_hrt[2] = _SYS::Traits<Application>::IS_DOM_2_HRT;
 
-    cout << "EPOS Application Loader" << endl;
+    cout << Color::BLUE() << "EPOS Application Loader" << Color::END_COLOR() << endl;
 
     if(!argc) {
         cout << "No extra ELF programs found in boot image. Exiting!" << endl;
@@ -69,7 +70,13 @@ int main(int argc, char * argv[])
             return -1;
         }
 
-        cout << "Domain " << i << " loaded! Waiting for it to finish ... " << endl;
+        cout << "Domain " << i << " loaded!" << endl;
+    }
+
+    cout << "I will wait for all domains to finish!" << endl;
+    for (unsigned int i = 1; i < NUM_OF_DOMAINS; i++)
+    {
+        cout << "Waiting for Domain " << i << " to finish... " << endl;
         domains[i]->main()->join();
     }
 
@@ -175,7 +182,7 @@ Task * create_domain(unsigned int domain_number, ELF * elf)
     cout << "Domain system object = " << reinterpret_cast<void *>(task->__stub()->id().unit()) << endl;
 
     cout << "Creating the new VCPU: ";
-    Thread * vcpu = create_vcpu(task, entry, 1, is_domain_hrt[domain_number]);
+    Thread * vcpu = create_vcpu(task, entry, domain_number, is_domain_hrt[domain_number]);
     // vcpu is inspected at Thread::epilogue
     cout << "done!" << endl;
 
@@ -183,8 +190,8 @@ Task * create_domain(unsigned int domain_number, ELF * elf)
     task->main(vcpu);
     cout << "done!" << endl;
 
-    as->detach(cs);
-    as->detach(ds);
+    // as->detach(cs);
+    // as->detach(ds);
 
     return task;
 
@@ -226,7 +233,7 @@ Thread * create_vcpu(Task * domain_u, int (* guest_os_task) (), int pcpu, bool h
     } else {
         db<void>(WRN) << "creating BE vcpu...";
         ASM("bevcpu:");
-        Thread * be_vcpu = new Thread(Thread::Configuration(Thread::READY, PEDF(PEDF::APERIODIC), domain_u), guest_os_task);
+        Thread * be_vcpu = new Thread(Thread::Configuration(Thread::READY, PEDF(PEDF::APERIODIC, pcpu), domain_u), guest_os_task);
         db<void>(WRN) << "done" << endl;
         vcpu = be_vcpu;
     }

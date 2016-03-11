@@ -188,6 +188,9 @@ public:
 
     PEDF(const Microsecond & d, const Microsecond & p, const Microsecond & c, int cpu) : Base(d, p, c, cpu)
     {}
+
+    PEDF(int priority, int cpu) : Base(priority, cpu)
+    {}
 };
 }
 
@@ -237,10 +240,13 @@ public:
         typedef SELECT(Thread::Configuration) Base;
     public:
         Configuration(const State & s = READY, const Criterion & c = NORMAL, Task * t = 0, unsigned int ss = STACK_SIZE)
-        : Base((Thread::Sys::State &) s,
-                reinterpret_cast<Sys_Criterion &>(const_cast<_SYS::Type_Id &>(const_cast<Criterion &>(c).__stub()->id().unit())),
-                t ? reinterpret_cast<_SYS::Task *>(reinterpret_cast<_SYS::Proxy<_SYS::Task> *>(t->__stub())->id().unit()) : 0,
-                ss)
+        : Base(t ? reinterpret_cast<_SYS::Task *>(reinterpret_cast<_SYS::Proxy<_SYS::Task> *>(t->__stub())->id().unit()) : 0
+                , (Thread::Sys::State &) s
+                , ss
+                , reinterpret_cast<Sys_Criterion &>(const_cast<_SYS::Type_Id &>(const_cast<Criterion &>(c).__stub()->id().unit()))
+              ) /* For some reason if criterion is not the last,
+                 * everything that goes after criterion won't
+                 * (des)serialize correctly. */
         {
         }
     };
@@ -362,10 +368,121 @@ private:
     typedef _SYS::NIC Sys;
 
 public:
-    typedef Sys::Statistics Statistics;
+    class Statistics: SELECT(NIC::Statistics)
+    {
+    public:
+        unsigned int rx_packets()
+        {
+            return __stub()->__invoke(_SYS::Message::NIC_STATISTICS_RX_PACKETS);
+        }
+
+        unsigned int rx_bytes()
+        {
+            return __stub()->__invoke(_SYS::Message::NIC_STATISTICS_RX_BYTES);
+        }
+
+        unsigned int tx_packets()
+        {
+            return __stub()->__invoke(_SYS::Message::NIC_STATISTICS_TX_PACKETS);
+        }
+
+        unsigned int tx_bytes()
+        {
+            return __stub()->__invoke(_SYS::Message::NIC_STATISTICS_TX_BYTES);
+        }
+    };
+
+    class Address: SELECT(NIC::Address)
+    {
+    public:
+        friend OStream & operator<<(OStream & db, const Address & addr)
+        {
+            _SYS::Message msg(_SYS::Id(_SYS::NIC_ID, 0), _SYS::Message::NIC_ADDRESS_PRINT, const_cast<Address &>(addr).__stub()->id().unit());
+            msg.act();
+            return db;
+        }
+
+        Address operator=(const Address & a)
+        {
+            db<void>(ERR) << "TODO: method not implemented" << endl;
+            return a;
+        }
+
+        Address operator=(const Address & a) volatile
+        {
+            db<void>(ERR) << "TODO: method not implemented" << endl;
+            return a;
+        }
+
+        operator bool() const
+        {
+            db<void>(ERR) << "TODO: method not implemented" << endl;
+            return false;
+        }
+
+        operator bool() const volatile
+        {
+            db<void>(ERR) << "TODO: method not implemented" << endl;
+            return false;
+        }
+
+        bool operator==(const Address & a) const
+        {
+            db<void>(ERR) << "TODO: method not implemented" << endl;
+            return false;
+        }
+
+        bool operator!=(const Address & a) const
+        {
+            db<void>(ERR) << "TODO: method not implemented" << endl;
+            return false;
+        }
+
+        Address operator&(const Address & a) const
+        {
+            db<void>(ERR) << "TODO: method not implemented" << endl;
+            return a;
+        }
+
+        Address operator|(const Address & a) const
+        {
+            db<void>(ERR) << "TODO: method not implemented" << endl;
+            return a;
+        }
+
+        Address operator~() const
+        {
+            db<void>(ERR) << "TODO: method not implemented" << endl;
+            Address ret;
+            return ret;
+        }
+
+        unsigned int operator%(unsigned int i) const
+        {
+            db<void>(ERR) << "TODO: method not implemented" << endl;
+            return 0;
+        }
+
+        unsigned char & operator[](const size_t i)
+        {
+            db<void>(ERR) << "TODO: method not implemented" << endl;
+            return _address_field;
+        }
+
+        const unsigned char & operator[](const size_t i) const
+        {
+            db<void>(ERR) << "TODO: method not implemented" << endl;
+            return _address_field;
+        }
+
+    private:
+        unsigned char _address_field; // Temporary. Remove that later.
+    };
 
 public:
     NIC::Statistics & statistics() { return *(reinterpret_cast<NIC::Statistics*>(Base::statistics())); }
+
+    NIC::Address & address() { return *(reinterpret_cast<NIC::Address *>(Base::nic_address())); }
 };
 
 // BIND(IP);
@@ -374,8 +491,97 @@ class IP: public SELECT(IP)
 private:
     typedef SELECT(IP) Base;
     typedef _SYS::IP Sys;
+
 public:
-    typedef Sys::Address Address;
+    class Address: SELECT(IP::Address)
+    {
+    public:
+        friend OStream & operator<<(OStream & db, const Address & addr)
+        {
+            _SYS::Message msg(_SYS::Id(_SYS::IP_ADDRESS_ID, 0), _SYS::Message::IP_ADDRESS_PRINT, const_cast<Address &>(addr).__stub()->id().unit());
+            msg.act();
+            return db;
+        }
+
+        Address operator=(const Address & a)
+        {
+            db<void>(ERR) << "TODO: method not implemented" << endl;
+            return a;
+        }
+
+        Address operator=(const Address & a) volatile
+        {
+            db<void>(ERR) << "TODO: method not implemented" << endl;
+            return a;
+        }
+
+        operator bool() const
+        {
+            db<void>(ERR) << "TODO: method not implemented" << endl;
+            return false;
+        }
+
+        operator bool() const volatile
+        {
+            db<void>(ERR) << "TODO: method not implemented" << endl;
+            return false;
+        }
+
+        bool operator==(const Address & a) const
+        {
+            db<void>(ERR) << "TODO: method not implemented" << endl;
+            return false;
+        }
+
+        bool operator!=(const Address & a) const
+        {
+            db<void>(ERR) << "TODO: method not implemented" << endl;
+            return false;
+        }
+
+        Address operator&(const Address & a) const
+        {
+            db<void>(ERR) << "TODO: method not implemented" << endl;
+            return a;
+        }
+
+        Address operator|(const Address & a) const
+        {
+            db<void>(ERR) << "TODO: method not implemented" << endl;
+            return a;
+        }
+
+        Address operator~() const
+        {
+            db<void>(ERR) << "TODO: method not implemented" << endl;
+            Address ret;
+            return ret;
+        }
+
+        unsigned int operator%(unsigned int i) const
+        {
+            db<void>(ERR) << "TODO: method not implemented" << endl;
+            return 0;
+        }
+
+        unsigned char & operator[](const size_t i)
+        {
+            // _SYS::Message msg(_SYS::Id(_SYS::IP_ID, 0), _SYS::Message::IP_ADDRESS_ARRAY_SUBSCRIPT, i);
+            // msg.act();
+            // return ((unsigned char &) msg.result());
+            _address_field = __stub()->__invoke(_SYS::Message::IP_ADDRESS_ARRAY_SUBSCRIPT, i);
+            return _address_field;
+        }
+
+        const unsigned char & operator[](const size_t i) const
+        {
+            db<void>(ERR) << "TODO: method not implemented" << endl;
+            return _address_field;
+        }
+
+    private:
+        unsigned char _address_field;
+    };
 
 public:
     NIC * nic() { return reinterpret_cast<NIC*>(Base::nic()); }
@@ -383,7 +589,11 @@ public:
     static IP * get_by_nic(unsigned int unit) { return reinterpret_cast<IP*>(Base::get_by_nic(unit)); }
 
 public:
-    IP::Address & address() { return *(reinterpret_cast<IP::Address*>(Base::address())); }
+    IP::Address & address()
+    {
+        db<void>(TRC) << "IP Handle, IP::address" << endl;
+        return *(reinterpret_cast<IP::Address*>(Base::address()));
+    }
 };
 
 // BIND(TCP);
@@ -399,6 +609,8 @@ public:
 public:
     static const bool connectionless = Sys::connectionless;
 };
+
+BIND(TCP_Link);
 
 template<typename Channel, bool connectionless = Channel::connectionless>
 class Link: public _SYS::IF<(_SYS::Traits<_SYS::Link<Channel, connectionless> >::ASPECTS::Length || (_SYS::Traits<_SYS::Build>::MODE == _SYS::Traits<_SYS::Build>::KERNEL)), _SYS::Handle<_SYS::Link<Channel, connectionless> >, _SYS::Link<Channel, connectionless> >::Result

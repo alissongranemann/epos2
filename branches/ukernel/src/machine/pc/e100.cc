@@ -696,6 +696,8 @@ int E100::self_test()
     if(dmadump->selftest.result != 0) {
         db<E100>(WRN) << "E100:self_test() => failed with code " << dmadump->selftest.result << "!" << endl;
         return -1;
+    } else {
+        db<E100>(TRC) << "E100:self_test() => PASSED with code " << dmadump->selftest.result << "!" << endl;
     }
 
     if(dmadump->selftest.signature == 0) {

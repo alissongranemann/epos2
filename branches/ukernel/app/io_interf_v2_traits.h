@@ -111,7 +111,7 @@ template<> struct Traits<Application>: public Traits<void>
     static const unsigned long DOMAIN_PERIOD = 100000; // Microsecond
     static const unsigned long GUEST_OS_TASK_ITERATIONS = 3;
     static const unsigned int NUM_OF_DOMAINS = 3;
-    static const bool IS_DOM_1_HRT = false;
+    static const bool IS_DOM_1_HRT = true;
     static const bool IS_DOM_2_HRT = false;
 };
 

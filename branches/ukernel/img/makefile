@@ -29,8 +29,14 @@ debug:		$(IMAGE)
 
 flash:		$(FLASH)
 
-strip:		$(SYSTEM) $(APPLICATION) domain_2
+
+ifeq ($(NO_DOMAIN_2),false)
+strip:		$(SYSTEM) $(APPLICATION) $(APPLICATION)_domain_2
 		@for file in $^; do $(STRIP) "$${file}"; done;
+else
+strip:		$(SYSTEM) $(APPLICATION)
+		@for file in $^; do $(STRIP) "$${file}"; done;
+endif
 
 clean:
 		$(CLEAN) $(SYSTEM) $(APPLICATION)

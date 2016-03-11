@@ -202,8 +202,7 @@ PC_Setup::PC_Setup(char * boot_image)
         setup_sys_pd();
 
         IO_APIC::remap(APIC::IO_APIC_PHY_ADDR);
-        // IO_APIC::set_irq(i8259A::IRQ_KEYBOARD, 0, IC::INT_KEYBOARD);
-        // IO_APIC::set_irq(10, 0, 42); /* 10 is the IRQ assigned to E100. 42 is the E100 interrupt */
+        IO_APIC::set_irq(2, 0, 42); /*  42 is the E100 interrupt */
 
         // Enable paging
         // We won't be able to print anything before the remap() bellow
@@ -957,9 +956,14 @@ void PC_Setup::call_next()
     // Check for next stage and obtain the entry point
     register Log_Addr ip;
     if(si->lm.has_ini) {
-        db<Setup>(TRC) << "Executing system's global constructors ..." << endl;
-        reinterpret_cast<void (*)()>((void *)si->lm.sys_entry)();
+
+        if(cpu_id == 0) {
+            db<Setup>(TRC) << "Executing system's global constructors ..." << endl;
+            reinterpret_cast<void (*)()>((void *)si->lm.sys_entry)();
+        }
+
         ip = si->lm.ini_entry;
+
     } else if(si->lm.has_sys)
         ip = si->lm.sys_entry;
     else

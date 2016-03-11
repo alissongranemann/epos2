@@ -41,11 +41,15 @@ void E100::init(unsigned int unit)
      * using the physical address of the E100 device and attaching it to the
      * current address space.
      */
-    // Log_Addr io_mem = hdr.region[PCI_REG_MEM].log_addr; // Original Code
+    // Original Code
+    Log_Addr io_mem = hdr.region[PCI_REG_MEM].log_addr;
+    // ---
     // Bypass code:
-    Address_Space * as = new (SYSTEM) Address_Space(MMU::current());
-    Segment * seg = new (SYSTEM) Segment(hdr.region[PCI_REG_MEM].phy_addr, hdr.region[PCI_REG_MEM].size, MMU::IA32_Flags::DMA);
-    Log_Addr io_mem = as->attach(seg);
+    // Address_Space * as = new (SYSTEM) Address_Space(MMU::current());
+    // Segment * seg = new (SYSTEM) Segment(hdr.region[PCI_REG_MEM].phy_addr, hdr.region[PCI_REG_MEM].size, MMU::IA32_Flags::DMA);
+    // Log_Addr io_mem = as->attach(seg);
+    // ---
+
     db<Init, E100>(INF) << "E100::init: I/O memory at "
                         << hdr.region[PCI_REG_MEM].phy_addr
                         << " mapped to "

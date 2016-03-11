@@ -32,13 +32,16 @@ void Agent::init()
     _handlers[MACHINE_ID]                           =       &Agent::handle_machine;
     _handlers[THIS_THREAD_ID]                       =       &Agent::handle_this_thread;
     _handlers[IP_ID]                                =       &Agent::handle_ip;
+    _handlers[IP_ADDRESS_ID]                        =       &Agent::handle_ip_address;
     _handlers[NETWORK_ID]                           =       &Agent::handle_network;
     _handlers[NIC_ID]                               =       &Agent::handle_nic;
+    _handlers[NIC_STATISTICS_ID]                    =       &Agent::handle_nic_statistics;
     _handlers[CPU_ID]                               =       &Agent::handle_cpu;
     _handlers[PEDF_ID]                              =       &Agent::handle_pedf;
     _handlers[PERIODIC_THREAD_ID]                   =       &Agent::handle_periodic_thread;
     _handlers[THREAD_CONFIGURATION_ID]              =       &Agent::handle_thread_configuration;
     _handlers[PERIODIC_THREAD_CONFIGURATION_ID]     =       &Agent::handle_periodic_thread_configuration;
+    _handlers[TCP_LINK_ID]                          =       &Agent::handle_tcp_link;
 }
 
 

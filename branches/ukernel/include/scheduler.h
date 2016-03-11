@@ -274,6 +274,8 @@ namespace Scheduling_Criteria
             db<void>(TRC) << "PEDF::PEDF d = " << d << ", p = " << p << ", c = " << c << ", cpu = " << cpu << endl;
         }
 
+        PEDF(int priority, int cpu) : EDF(priority), Variable_Queue(cpu) {}
+
         using Variable_Queue::queue;
 
         static unsigned int current_queue() { return Machine::cpu_id(); }

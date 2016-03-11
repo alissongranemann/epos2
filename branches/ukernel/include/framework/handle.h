@@ -138,6 +138,7 @@ public:
 
     // NIC
     Handle<NIC::Statistics> * statistics() { return new (_stub->statistics()) Handled<NIC::Statistics>; }
+    Handle<NIC::Address> * nic_address() { return (new (_stub->address()) Handled<NIC::Address>); }
 
     // IP
     Handle<NIC> * nic() { return new (_stub->nic()) Handled<NIC>; }

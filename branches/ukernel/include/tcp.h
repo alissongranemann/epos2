@@ -267,7 +267,7 @@ public:
     static Connection * attach(Observer * obs, const Port & from, const Address & to) {
         db<TCP>(TRC) << "TCP::attach(obs=" << obs << ",from=" << hex << from << ",to=" << to << ")" << endl;
 
-        Connection * conn = new Connection(from, to);
+        Connection * conn = new (SYSTEM) Connection(from, to);
         unsigned long long id = conn->id();
         conn->attach(obs);
         _observed.attach(conn, id);

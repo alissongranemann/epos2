@@ -34,8 +34,13 @@ public:
     {
         // db<void>(WRN) << "exec, Component = " << id().type() << ", method = " << method() << endl;
 
-        if (id().type() != UTILITY_ID)
+        if (id().type() == UNKNOWN_TYPE_ID) {
+            db<Framework>(ERR) << "Error in exec. UNKNOWN_TYPE_ID" << endl;
+        }
+
+        if (id().type() != UTILITY_ID) {
             db<Framework>(TRC) << ":=>" << *reinterpret_cast<Message *>(this) << endl;
+        }
 
         if (id().type() < LAST_TYPE_ID) { // in-kernel services
             if (_handlers[id().type()]) {
@@ -84,12 +89,15 @@ private:
     void handle_this_thread();
     void handle_network();
     void handle_nic();
+    void handle_nic_statistics();
     void handle_ip();
+    void handle_ip_address();
     void handle_cpu();
     void handle_pedf();
     void handle_periodic_thread();
     void handle_thread_configuration();
     void handle_periodic_thread_configuration();
+    void handle_tcp_link();
 
 public:
     static void init();
@@ -587,7 +595,7 @@ void Agent::handle_network()
 
     switch (method()) {
     case NETWORK_INIT: {
-        Adapter<Network>::init_network();
+        // Adapter<Network>::init_network();
     } break;
     default: {
         db<Framework>(WRN) << "Undefined method for Network agent. Method = " << method() << endl;
@@ -608,8 +616,46 @@ void Agent::handle_nic()
     case NIC_STATISTICS: {
         res = reinterpret_cast<Result>(nic->statistics());
     } break;
+    case NIC_ADDRESS: {
+        res = reinterpret_cast<Result>(nic->nic_address());
+    } break;
+    case NIC_ADDRESS_PRINT: {
+        db<Framework>(TRC) << "NIC::Address Agent, PRINT" << endl;
+        NIC::Address * addr;
+        in(addr);
+        db<void>(WRN) << " " << *addr << endl;
+    } break;
     default: {
         db<Framework>(WRN) << "Undefined method for NIC agent. Method = " << method() << endl;
+        res = UNDEFINED;
+    }
+    }
+
+    result(res);
+}
+
+
+void Agent::handle_nic_statistics()
+{
+    Adapter<NIC::Statistics> * nic_statistics = reinterpret_cast<Adapter<NIC::Statistics> *>(id().unit());
+
+    Result res = 0;
+
+    switch (method()) {
+    case NIC_STATISTICS_RX_PACKETS: {
+        res = nic_statistics->rx_packets();
+    } break;
+    case NIC_STATISTICS_RX_BYTES: {
+        res = nic_statistics->rx_bytes();
+    } break;
+    case NIC_STATISTICS_TX_PACKETS: {
+        res = nic_statistics->tx_packets();
+    } break;
+    case NIC_STATISTICS_TX_BYTES: {
+        res = nic_statistics->tx_bytes();
+    } break;
+    default: {
+        db<Framework>(WRN) << "Undefined method for NIC::Statistics Agent. Method = " << method() << endl;
         res = UNDEFINED;
     }
     }
@@ -628,9 +674,16 @@ void Agent::handle_ip()
         res = reinterpret_cast<Result>(ip->nic());
     } break;
     case IP_ADDRESS: {
+        db<Framework>(TRC) << "IP agent, IP_ADDRESS" << endl;
+
         res = reinterpret_cast<Result>(ip->address());
+
+        db<Framework>(TRC) << "res = " << res << " (" << reinterpret_cast<void *>(res) << ")" << endl;
+
     } break;
     case IP_GET_BY_NIC: {
+        db<Framework>(TRC) << "IP agent, IP_GET_BY_NIC" << endl;
+
         unsigned int unit;
         in(unit);
         res = reinterpret_cast<Result>(Adapter<IP>::get_by_nic(unit));
@@ -644,6 +697,38 @@ void Agent::handle_ip()
     result(res);
 }
 
+void Agent::handle_ip_address()
+{
+    Adapter<IP::Address> * ip_address = reinterpret_cast<Adapter<IP::Address> *>(id().unit());
+    Result res = 0;
+
+    switch (method()) {
+    case IP_ADDRESS_PRINT: {
+        db<Framework>(TRC) << "IP::Address Agent, PRINT" << endl;
+        IP::Address * addr;
+        in(addr);
+        db<void>(WRN) << " " << *addr << endl;
+    } break;
+    case IP_ADDRESS_ARRAY_SUBSCRIPT: {
+        size_t i;
+        in(i);
+        res = ip_address[i];
+    } break;
+    case DESTROY: {
+        db<Framework>(WRN) << "IP::Address Agent, DESTROY: " << reinterpret_cast<void *>(ip_address) << endl;
+
+        // delete ip_address; /* XXX: the deletion of ip_address is causing a page fault. Investigate that. */
+        db<Framework>(TRC) << "IP::Address destroyed" << endl;
+
+    } break;
+    default: {
+        db<Framework>(WRN) << "Undefined method for IP::Address agent. Method = " << method() << endl;
+        res = UNDEFINED;
+    }
+    }
+
+    result(res);
+}
 
 void Agent::handle_cpu()
 {
@@ -678,6 +763,14 @@ void Agent::handle_pedf()
     case CREATE1: {
         db<Framework>(WRN) << "PEDF Agent, CREATE1" << endl;
         id(Id(PEDF_ID, reinterpret_cast<Id::Unit_Id>(new Adapter<Scheduling_Criteria::PEDF>()))); // Scheduling_Criteria::PEDF::APERIODIC
+        db<Framework>(WRN) << "PEDF created: " << reinterpret_cast<void *>(id().unit()) << endl;
+    } break;
+    case CREATE2: {
+        db<Framework>(WRN) << "PEDF Agent, CREATE2" << endl;
+        int priority;
+        int cpu;
+        in(priority, cpu);
+        id(Id(PEDF_ID, reinterpret_cast<Id::Unit_Id>(new Adapter<Scheduling_Criteria::PEDF>(priority, cpu))));
         db<Framework>(WRN) << "PEDF created: " << reinterpret_cast<void *>(id().unit()) << endl;
     } break;
     case CREATE4: {
@@ -720,10 +813,10 @@ void Agent::handle_thread_configuration()
         Periodic_Thread::State state;
         Periodic_Thread::Criterion * criterion;
         Task * task;
-        // unsigned int stack_size;
-        in(state, criterion, task /*, stack_size */);
+        unsigned int stack_size;
+        in(task, state, stack_size, criterion);
         db<Framework>(WRN) << "Thread::Configuration Agent, CREATE4" << endl;
-        db<Framework>(TRC) << ", state = " << state
+        db<Framework>(WRN) << ", state = " << state
                             << ", criterion = " << *criterion
                             << ", task = " << reinterpret_cast<void *>(task)
                             // << ", stack_size = " << stack_size
@@ -801,6 +894,30 @@ void Agent::handle_periodic_thread_configuration()
         res = UNDEFINED;
     }
     }
+    result(res);
+}
+
+
+void Agent::handle_tcp_link()
+{
+    Result res = 0;
+
+    switch(method()) {
+    case CREATE1: {
+        TCP::Port local;
+        in(local);
+
+        db<Framework>(WRN) << "Agent: Creating TCP Link. local = " << local << endl;
+
+        id(Id(TCP_LINK_ID, reinterpret_cast<Id::Unit_Id>(new Adapter<TCP_Link>(local))));
+
+    } break;
+    default: {
+        db<Framework>(WRN) << "Undefined method for TCP Link agent. Method = " << method() << endl;
+        res = UNDEFINED;
+    }
+    }
+
     result(res);
 }
 

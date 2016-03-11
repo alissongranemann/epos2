@@ -409,6 +409,8 @@ protected:
     static Observed _observed; // shared by all IP instances, so the default for binding on a port is for all IPs
 };
 
+template<> struct Type<IP::Address> { static const Type_Id ID = IP_ADDRESS_ID; };
+
 __END_SYS
 
 #include <icmp.h>
