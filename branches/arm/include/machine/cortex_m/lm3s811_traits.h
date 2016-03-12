@@ -36,9 +36,9 @@ template <> struct Traits<Cortex_M>: public Traits<Cortex_M_Common>
     static const unsigned int SYS_DATA  = 0x20000000; // Library mode only => APP + SYS
 
     // Default Sizes and Quantities
-    static const unsigned int STACK_SIZE = 1024;
+    static const unsigned int STACK_SIZE = 512;
     static const unsigned int HEAP_SIZE = 512;
-    static const unsigned int MAX_THREADS = 3;
+    static const unsigned int MAX_THREADS = 5;
 };
 
 template <> struct Traits<Cortex_M_IC>: public Traits<Cortex_M_Common>
