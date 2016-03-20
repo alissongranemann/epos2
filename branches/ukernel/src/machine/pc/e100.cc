@@ -2,6 +2,7 @@
 
 #include <machine/pc/machine.h>
 #include <machine/pc/e100.h>
+#include <task.h>
 
 __BEGIN_SYS
 
@@ -65,6 +66,7 @@ E100::E100(unsigned int unit,
     _io_mem = io_mem;
     _irq = irq;
     csr = (CSR_Desc *) io_mem;
+    _dma_buffer = dma_buf;
 
     // Distribute the DMA_Buffer allocated by init()
     Log_Addr log = dma_buf->log_address();
@@ -706,6 +708,15 @@ int E100::self_test()
     }
 
     return 0;
+}
+
+
+void E100::remap()
+{
+    MMU::Directory * current = reinterpret_cast<MMU::Directory *>(Task::self()->address_space());
+    current->attach(*_dma_buffer, _dma_buffer->log_address());
+
+    db<E100>(TRC) << "Attached: " << _dma_buffer->log_address() << " on: " << current->pd() << endl;
 }
 
 __END_SYS

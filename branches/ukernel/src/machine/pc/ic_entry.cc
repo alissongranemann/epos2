@@ -808,7 +808,7 @@ void PC_IC::exc_pf(Reg32 eip, Reg32 cs, Reg32 eflags, Reg32 error)
 {
 
     register Reg32 error_code;
-    ASM("movl 0x5c(%%esp), %0" : "=r" (error_code));
+    ASM("movl 0x7c(%%esp), %0" : "=r" (error_code));
 
     register Reg32 fr = CPU::fr();
 
@@ -817,7 +817,7 @@ void PC_IC::exc_pf(Reg32 eip, Reg32 cs, Reg32 eflags, Reg32 error)
        _exit(fr);
     }
 
-    db<IC,Machine>(WRN) << "IC::exc_pf[address=" << reinterpret_cast<void *>(CPU::cr2()) << "](cs=" << hex << cs << ",ip=" << reinterpret_cast<void *>(eip) << ",fl=" << eflags << ",err=" << error;
+    db<IC,Machine>(WRN) << "IC::exc_pf[address=" << reinterpret_cast<void *>(CPU::cr2()) << "](cs=" << hex << cs << ",ip=" << reinterpret_cast<void *>(eip) << ",fl=" << eflags << ",err=" << error << endl;
     /*
     if(error & (1 << 0))
         db<IC,Machine>(WRN) << "P";
@@ -862,9 +862,11 @@ void PC_IC::exc_pf(Reg32 eip, Reg32 cs, Reg32 eflags, Reg32 error)
         db<IC,Machine>(WRN) << "N";
     }
 
-    db<IC,Machine>(WRN) << ")" << endl;
-
-    db<IC,Machine>(WRN) << "error_code = " << reinterpret_cast<void *>(error_code);
+    db<IC,Machine>(WRN) << "\nerror_code = " << reinterpret_cast<void *>(error_code) << endl;
+    db<IC,Machine>(WRN) << "cr3 = " << reinterpret_cast<void *>(CPU::cr3())
+                            << ", tr = " << reinterpret_cast<void *>(CPU::tr())
+                            << ", esp = " << reinterpret_cast<void *>(CPU::sp() + 0x7c)
+                            << ", *eip = " << reinterpret_cast<void *>(*reinterpret_cast<Reg32 *>(eip)) << endl;
 
     db<IC,Machine>(WRN) << "The running thread will now be terminated!" << endl;
     _exit(-1);

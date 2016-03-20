@@ -9,6 +9,7 @@
 #define __CPU_H         __HEADER_ARCH(cpu)
 #define __TSC_H         __HEADER_ARCH(tsc)
 #define __MMU_H         __HEADER_ARCH(mmu)
+#define __MMU_AUX_H     __HEADER_ARCH(mmu_aux)
 
 #define __MACH_H        __HEADER_MACH(machine)
 #define __PCI_H         __HEADER_MACH(pci)
@@ -25,6 +26,7 @@ __BEGIN_SYS
 
 typedef IA32            CPU;
 typedef IA32_MMU        MMU;
+typedef IA32_MMU_Aux    MMU_Aux;
 typedef IA32_TSC        TSC;
 
 typedef PC              Machine;

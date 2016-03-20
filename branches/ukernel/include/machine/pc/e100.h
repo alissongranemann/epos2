@@ -395,6 +395,8 @@ public:
 
     static E100 * get(unsigned int unit = 0) { return get_by_unit(unit); }
 
+    void remap();
+
 private:
     E100(unsigned int unit, Log_Addr io_mem, IO_Irq irq, DMA_Buffer * dma);
 
@@ -554,6 +556,8 @@ private:
     Buffer * _tx_buffer[TX_BUFS];
 
     Buffer * _tx_buffer_prev; // Previously transmitted buffer
+
+    DMA_Buffer * _dma_buffer;
 
     static Device _devices[UNITS];
 };

@@ -41,7 +41,8 @@ struct Memory_Map<PC>
         SYS_SHARED =    SYS + 0x00340000,
         SYS_DATA =      SYS + 0x00341000,
         SYS_STACK =     SYS + 0x003c1000,
-        SYS_HEAP =      SYS + 0x00401000
+        SYS_HEAP =      SYS + 0x00401000,
+        SYS_HEAP_END =  SYS + 0x00501000
     };
 
     static unsigned int tss_logical_address(unsigned int cpu_id)

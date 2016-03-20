@@ -66,6 +66,10 @@ public:
     CPU::Phy_Addr phy_address() { enter(); CPU::Phy_Addr res = Component::phy_address(); leave(); return res; }
     int resize(int amount) { enter(); int res = Component::resize(amount); leave(); return res; }
 
+    static unsigned long physical_address(unsigned long log_addr, unsigned long * out_page_frame_present) { static_enter(); unsigned long res = Component::physical_address(log_addr, out_page_frame_present); static_leave(); return res; }
+    static void dump_memory_mapping() { static_enter(); Component::dump_memory_mapping(); static_leave(); }
+    static void check_memory_mapping() { static_enter(); Component::check_memory_mapping(); static_leave(); }
+
     // Synchronization
     void lock() { enter(); Component::lock(); leave(); }
     void unlock() { enter(); Component::unlock(); leave(); }
@@ -87,14 +91,17 @@ public:
 
     // Communication
     template<typename ... Tn>
-    int send(Tn ... an) {
+    int send(Tn ... an)
+    {
         enter();
         int res = Component::send(an ...);
         leave();
         return res;
     }
+
     template<typename ... Tn>
-    int receive(Tn ... an) {
+    int receive(Tn ... an)
+    {
         enter();
         int res = Component::receive(an ...);
         leave();
@@ -102,9 +109,11 @@ public:
     }
 
     template<typename ... Tn>
-    int read(Tn ... an) { return receive(an ...);}
+    int read(Tn ... an) { return receive(an ...); }
     template<typename ... Tn>
-    int write(Tn ... an) { return send(an ...);}
+    int write(Tn ... an) { return send(an ...); }
+
+    int tcp_link_read(void * data, unsigned int size) { enter(); int res = Component::read(data, size); leave(); return res; }
 
     // Network
     static void init_network() { static_enter(); Component::init(); static_leave(); }
@@ -114,10 +123,10 @@ public:
     NIC::Address * nic_address() { enter(); NIC::Address * res = &(const_cast<NIC::Address &>(Component::address())); leave(); return res; }
 
     // NIC::Statistics
-    unsigned int rx_packets() { enter(); unsigned int res = Component::rx_packets; leave(); return res; }
-    unsigned int rx_bytes() { enter(); unsigned int res = Component::rx_bytes; leave(); return res; }
-    unsigned int tx_packets() { enter(); unsigned int res = Component::tx_packets; leave(); return res; }
-    unsigned int tx_bytes() { enter(); unsigned int res = Component::tx_bytes; leave(); return res; }
+    unsigned int get_rx_packets() { enter(); unsigned int res = Component::rx_packets; leave(); return res; }
+    unsigned int get_rx_bytes() { enter(); unsigned int res = Component::rx_bytes; leave(); return res; }
+    unsigned int get_tx_packets() { enter(); unsigned int res = Component::tx_packets; leave(); return res; }
+    unsigned int get_tx_bytes() { enter(); unsigned int res = Component::tx_bytes; leave(); return res; }
 
     // IP
     NIC * nic() { enter(); NIC * res = Component::nic(); leave(); return res; }

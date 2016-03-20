@@ -370,10 +370,13 @@ void Thread::dispatch(Thread * prev, Thread * next, bool charge)
         db<Thread>(INF) << "prev={" << prev << ",ctx=" << *prev->_context << "}" << endl;
         db<Thread>(INF) << "next={" << next << ",ctx=" << *next->_context << "}" << endl;
 
-        if(smp)
+        if(smp) {
             _lock.release();
+        }
 
-        Big_Kernel_Lock::unlock();
+        if(Traits<Build>::MODE == Traits<Build>::KERNEL) {
+            Big_Kernel_Lock::unlock();
+        }
 
         if(multitask && (next->_task != prev->_task)) {
             Task::current(next->_task);

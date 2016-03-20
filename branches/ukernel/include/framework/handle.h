@@ -98,6 +98,10 @@ public:
     CPU::Phy_Addr phy_address() const { return _stub->phy_address(); }
     int resize(int amount) { return _stub->resize(amount); }
 
+    static unsigned long physical_address(unsigned long log_addr, unsigned long * out_page_frame_present) { return _Stub::physical_address(log_addr, out_page_frame_present); }
+    static void dump_memory_mapping() { _Stub::dump_memory_mapping(); }
+    static void check_memory_mapping() { _Stub::check_memory_mapping(); }
+
     // Synchronization
     void lock() { _stub->lock(); }
     void unlock() { _stub->unlock(); }
@@ -124,14 +128,16 @@ public:
 
     // Communication
     template<typename ... Tn>
-    int send(Tn ... an) { return _stub->send(an ...);}
+    int send(Tn ... an) { return _stub->send(an ...); }
     template<typename ... Tn>
-    int receive(Tn ... an) { return _stub->receive(an ...);}
+    int receive(Tn ... an) { return _stub->receive(an ...); }
 
     template<typename ... Tn>
-    int read(Tn ... an) { return _stub->read(an ...);}
+    int read(Tn ... an) { return _stub->read(an ...); }
     template<typename ... Tn>
-    int write(Tn ... an) { return _stub->write(an ...);}
+    int write(Tn ... an) { return _stub->write(an ...); }
+
+    int tcp_link_read(void * data, unsigned int size) { return _stub->tcp_link_read(data, size); }
 
     // Network
     static void init_network() { _Stub::init_network(); }

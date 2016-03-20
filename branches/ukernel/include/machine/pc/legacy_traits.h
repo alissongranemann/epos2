@@ -50,6 +50,14 @@ template<> struct Traits<PC>: public Traits<PC_Common>
     static const unsigned int STACK_SIZE = 16 * 1024;
     static const unsigned int HEAP_SIZE = 16 * 1024 * 1024;
     static const unsigned int MAX_THREADS = 16;
+
+    // Maximum Sizes and Quantities - must be in accordance with memory map
+    static const unsigned int MAX_SYS_CODE_SIZE     =   64   * 4096;
+    static const unsigned int MAX_SYS_DATA_SIZE     =   128  * 4096;
+    static const unsigned int MAX_SYS_STACK_SIZE    =   32   * 4096;
+    static const unsigned int MAX_SYS_HEAP_SIZE     =   256  * 4096;
+    static const unsigned int MAX_PCI_APERTURE_SIZE =   1030 * 4096;
+
 };
 
 template<> struct Traits<PC_PCI>: public Traits<PC_Common>

@@ -70,7 +70,9 @@ public:
         }
 
         // Init Agent
-        _agent_init();
+        if(Traits<Build>::MODE == Traits<Build>::KERNEL) {
+            _agent_init();
+        }
 
         // Initialization continues at init_first
     }

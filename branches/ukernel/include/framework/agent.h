@@ -16,6 +16,8 @@
 #include <chronometer.h>
 #include <communicator.h>
 
+#include <architecture/ia32/mmu_aux.h>
+
 #include "message.h"
 #include "ipc.h"
 
@@ -98,6 +100,7 @@ private:
     void handle_thread_configuration();
     void handle_periodic_thread_configuration();
     void handle_tcp_link();
+    void handle_mmu_aux();
 
 public:
     static void init();
@@ -470,53 +473,6 @@ void Agent::handle_chronometer()
     result(UNDEFINED);
 }
 
-
-//void Agent::handle_communicator()
-//{
-//    Adapter<Port<IPC>> * comm = reinterpret_cast<Adapter<Port<IPC>> *>(id().unit());
-//    Result res = 0;
-//
-//    switch(method()) {
-//    case CREATE1: {
-//        Port<IPC>::Local_Address local;
-//        in(local);
-//        id(Id(COMMUNICATOR_ID, reinterpret_cast<Id::Unit_Id>(new Adapter<Port<IPC>>(local))));
-//
-//        if((local == DOM0_ID) && !_dom0)
-//            _dom0 = reinterpret_cast<Port<IPC> *>(id().unit());
-//    } break;
-//    case DESTROY: {
-//        delete comm;
-//    } break;
-//    case COMMUNICATOR_SEND: {
-//        IPC::Address to;
-//        void * data;
-//        unsigned int size;
-//        in(to, data, size);
-//        comm->send(to, data, size);
-//    } break;
-//    case COMMUNICATOR_RECEIVE: {
-//        IPC::Address from;
-//        void * data;
-//        unsigned int size;
-//        in(from, data, size);
-//        comm->receive(&from, data, size);
-//        out(from);
-//    } break;
-//    case COMMUNICATOR_BIND: {
-//        IPC::Address addr;
-//        Port<IPC> * comm;
-//        in(addr, comm);
-//        _dom0 = comm;
-//    } break;
-//    default: {
-//        db<Framework>(WRN) << "Undefined method for Communicator agent. Method = " << method() << endl;
-//        res = UNDEFINED;
-//    }
-//    }
-//}
-
-
 void Agent::handle_ipc()
 {
     Adapter<Port<IPC>> * comm = reinterpret_cast<Adapter<Port<IPC>> *>(id().unit());
@@ -532,12 +488,12 @@ void Agent::handle_ipc()
     case DESTROY: {
         delete comm;
     } break;
-    case COMMUNICATOR_SEND: {
+    case IPC_SEND: {
         Message * msg;
         in(msg);
         comm->send(msg);
     } break;
-    case COMMUNICATOR_RECEIVE: {
+    case IPC_RECEIVE: {
         Message * msg;
         in(msg);
         comm->receive(msg);
@@ -642,17 +598,20 @@ void Agent::handle_nic_statistics()
     Result res = 0;
 
     switch (method()) {
+    case DESTROY: {
+        // delete nic_statistics; /* Adapter object must be destroyed but not "core" object. Decided to not delete at all. */
+    } break;
     case NIC_STATISTICS_RX_PACKETS: {
-        res = nic_statistics->rx_packets();
+        res = nic_statistics->get_rx_packets();
     } break;
     case NIC_STATISTICS_RX_BYTES: {
-        res = nic_statistics->rx_bytes();
+        res = nic_statistics->get_rx_bytes();
     } break;
     case NIC_STATISTICS_TX_PACKETS: {
-        res = nic_statistics->tx_packets();
+        res = nic_statistics->get_tx_packets();
     } break;
     case NIC_STATISTICS_TX_BYTES: {
-        res = nic_statistics->tx_bytes();
+        res = nic_statistics->get_tx_bytes();
     } break;
     default: {
         db<Framework>(WRN) << "Undefined method for NIC::Statistics Agent. Method = " << method() << endl;
@@ -900,6 +859,8 @@ void Agent::handle_periodic_thread_configuration()
 
 void Agent::handle_tcp_link()
 {
+    Adapter<TCP_Link> * link = reinterpret_cast<Adapter<TCP_Link> *>(id().unit());
+
     Result res = 0;
 
     switch(method()) {
@@ -912,6 +873,19 @@ void Agent::handle_tcp_link()
         id(Id(TCP_LINK_ID, reinterpret_cast<Id::Unit_Id>(new Adapter<TCP_Link>(local))));
 
     } break;
+    case DESTROY: {
+        delete link;
+    } break;
+    case TCP_LINK_READ: {
+        void * data;
+        unsigned int size;
+
+        in(data, size);
+
+        db<Framework>(WRN) << "Agent: TCP_Link read. data = " << data << ", size = " << size << endl;
+
+        res = link->tcp_link_read(data, size);
+    } break;
     default: {
         db<Framework>(WRN) << "Undefined method for TCP Link agent. Method = " << method() << endl;
         res = UNDEFINED;
@@ -921,6 +895,45 @@ void Agent::handle_tcp_link()
     result(res);
 }
 
+void Agent::handle_mmu_aux()
+{
+    Result res = 0;
+
+    switch(method()) {
+    case MMU_AUX_PHYSICAL_ADDRESS: {
+        unsigned long log_addr;
+        unsigned long * out_page_frame_present;
+        in(log_addr, out_page_frame_present);
+
+        db<Framework>(TRC) << "MMU_Aux agent, MMU_AUX_PHYSICAL_ADDRESS. log_addr = "
+                            << reinterpret_cast<void *>(log_addr)
+                            << ", out_page_frame_present = " << reinterpret_cast<void *>(out_page_frame_present)
+                            << endl;
+
+        res = Adapter<MMU_Aux>::physical_address(log_addr, out_page_frame_present);
+
+        db<Framework>(TRC) << "phy_addr = "
+            << reinterpret_cast<void *>(res)
+            << ", page_frame_present = " << out_page_frame_present
+            << endl;
+
+    } break;
+    case MMU_AUX_DUMP_MEMORY_MAPPING: {
+        Adapter<MMU_Aux>::dump_memory_mapping();
+
+    } break;
+    case MMU_AUX_CHECK_MEMORY_MAPPING: {
+        Adapter<MMU_Aux>::check_memory_mapping();
+
+    } break;
+    default: {
+        db<Framework>(WRN) << "Undefined method for MMU_Aux agent. Method = " << method() << endl;
+        res = UNDEFINED;
+    }
+    }
+
+    result(res);
+}
 
 void Agent::handle_utility()
 {

@@ -30,6 +30,7 @@ __END_SYS
 #include <rtc.h>
 #include <cpu.h>
 #include <mmu.h>
+#include <mmu_aux.h>
 #include <system.h>
 #include <thread.h>
 #include <task.h>
@@ -73,6 +74,7 @@ public:
 
 };
 
+BIND(MMU_Aux);
 
 EXPORT(Handler);
 EXPORT(Function_Handler);
@@ -371,22 +373,22 @@ public:
     class Statistics: SELECT(NIC::Statistics)
     {
     public:
-        unsigned int rx_packets()
+        unsigned int get_rx_packets()
         {
             return __stub()->__invoke(_SYS::Message::NIC_STATISTICS_RX_PACKETS);
         }
 
-        unsigned int rx_bytes()
+        unsigned int get_rx_bytes()
         {
             return __stub()->__invoke(_SYS::Message::NIC_STATISTICS_RX_BYTES);
         }
 
-        unsigned int tx_packets()
+        unsigned int get_tx_packets()
         {
             return __stub()->__invoke(_SYS::Message::NIC_STATISTICS_TX_PACKETS);
         }
 
-        unsigned int tx_bytes()
+        unsigned int get_tx_bytes()
         {
             return __stub()->__invoke(_SYS::Message::NIC_STATISTICS_TX_BYTES);
         }
@@ -610,7 +612,20 @@ public:
     static const bool connectionless = Sys::connectionless;
 };
 
-BIND(TCP_Link);
+// BIND(TCP_Link);
+class TCP_Link: public SELECT(TCP_Link)
+{
+private:
+    typedef SELECT(TCP_Link) Base;
+
+public:
+    TCP_Link(TCP::Port local): Base(local) {};
+
+    int read(void * data, unsigned int size)
+    {
+        return Base::tcp_link_read(data, size);
+    }
+};
 
 template<typename Channel, bool connectionless = Channel::connectionless>
 class Link: public _SYS::IF<(_SYS::Traits<_SYS::Link<Channel, connectionless> >::ASPECTS::Length || (_SYS::Traits<_SYS::Build>::MODE == _SYS::Traits<_SYS::Build>::KERNEL)), _SYS::Handle<_SYS::Link<Channel, connectionless> >, _SYS::Link<Channel, connectionless> >::Result

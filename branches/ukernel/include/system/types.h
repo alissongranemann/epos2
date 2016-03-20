@@ -61,6 +61,7 @@ class Utility;
 class IA32;
 class IA32_TSC;
 class IA32_MMU;
+class IA32_MMU_Aux;
 class IA32_PMU;
 
 // Machine Hardware Mediators
@@ -163,6 +164,7 @@ enum
     CPU_ID = 100,
     TSC_ID,
     MMU_ID,
+    MMU_AUX_ID,
 
     PCI_ID,
     IC_ID,
@@ -219,6 +221,7 @@ template<typename T> struct Type { static const Type_Id ID = UNKNOWN_TYPE_ID; };
 template<> struct Type<IA32> { static const Type_Id ID = CPU_ID; };
 template<> struct Type<IA32_TSC> { static const Type_Id ID = TSC_ID; };
 template<> struct Type<IA32_MMU> { static const Type_Id ID = MMU_ID; };
+template<> struct Type<IA32_MMU_Aux> { static const Type_Id ID = MMU_AUX_ID; };
 
 template<> struct Type<PC> { static const Type_Id ID = MACHINE_ID; };
 template<> struct Type<PC_IC> { static const Type_Id ID = IC_ID; };

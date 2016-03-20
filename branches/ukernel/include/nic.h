@@ -149,6 +149,11 @@ public:
         unsigned int tx_packets;
         unsigned int rx_bytes;
         unsigned int tx_bytes;
+
+        unsigned int get_rx_packets() { return rx_packets; }
+        unsigned int get_tx_packets() { return tx_packets; }
+        unsigned int get_rx_bytes() { return rx_bytes; }
+        unsigned int get_tx_bytes() { return tx_bytes; }
     };
 
     // Polymorphic (or not) NIC wrapper

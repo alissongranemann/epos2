@@ -43,7 +43,9 @@ public:
         * In any case, the smp_barrier seems unnecessary.
         * Therefore, commenting it. */
 
-        _task_setup();
+        if(Traits<Build>::MODE == Traits<Build>::KERNEL) {
+            _task_setup();
+        }
 
         // Initialize Application's heap
         db<Init>(INF) << "Initializing application's heap: " << endl;

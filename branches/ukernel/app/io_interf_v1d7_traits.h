@@ -208,7 +208,8 @@ template<> struct Traits<IP>: public Traits<Network>
 template<> struct Traits<IP>::Config<0> //: public Traits<IP>::Default_Config
 {
     static const unsigned int  TYPE      = MAC;
-    static const unsigned long ADDRESS   = 0x0a000100;  // 10.0.1.x x=MAC[5]
+    static const unsigned long ADDRESS   = 0xc2a70100;  // 194.167.1.x x=MAC[5]
+    // static const unsigned long ADDRESS   = 0x0a000100;  // 10.0.1.x x=MAC[5]
     static const unsigned long NETMASK   = 0xffffff00;  // 255.255.255.0
     static const unsigned long GATEWAY   = 0;           // 10.0.1.1
 };

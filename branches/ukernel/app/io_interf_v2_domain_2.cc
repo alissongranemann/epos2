@@ -8,8 +8,7 @@
  * */
 
 #include <utility/ostream.h>
-#include <scheduler.h>
-#include <periodic_thread.h>
+#include <communicator.h>
 
 using namespace EPOS;
 
@@ -27,7 +26,7 @@ int main()
     cout << "TCP Test" << endl;
 
     char data[PDU];
-    Link<TCP> * com;
+    TCP_Link * com;
 
     IP * ip = IP::get_by_nic(0);
 
@@ -40,7 +39,7 @@ int main()
     peer_ip[3]++;
 
     db<void>(WRN) << "Will listen at: " << ip->address() << ":8000" << endl;
-    com = new Link<TCP>(TCP::Port(8000)); // listen
+    com = new TCP_Link(TCP::Port(8000)); // listen
     db<void>(WRN) << "Some client has connected" << endl;
 
     for(int i = 0; i < ITERATIONS; i++) {
@@ -55,14 +54,12 @@ int main()
 
     NIC::Statistics stat = ip->nic()->statistics();
     cout << "Statistics\n"
-         << "Tx Packets: " << stat.tx_packets << "\n"
-         << "Tx Bytes:   " << stat.tx_bytes << "\n"
-         << "Rx Packets: " << stat.rx_packets << "\n"
-         << "Rx Bytes:   " << stat.rx_bytes << endl;
-
-    return stat.tx_bytes + stat.rx_bytes;
+         << "Tx Packets: " << stat.get_tx_packets() << "\n"
+         << "Tx Bytes:   " << stat.get_tx_bytes() << "\n"
+         << "Rx Packets: " << stat.get_rx_packets() << "\n"
+         << "Rx Bytes:   " << stat.get_rx_bytes() << endl;
 
     cout << "Task on Guest OS 2 (Domain 2) finishing..." << endl;
 
-    return 0;
+    return stat.get_tx_bytes() + stat.get_rx_bytes();
 }

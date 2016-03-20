@@ -1,5 +1,5 @@
 #include <utility/ostream.h>
-#include <scheduler.h>
+#include <communicator.h>
 
 using namespace EPOS;
 
@@ -41,12 +41,12 @@ int main()
 
     NIC::Statistics stat = ip->nic()->statistics();
     cout << "Statistics\n"
-         << "Tx Packets: " << stat.tx_packets() << "\n"
-         << "Tx Bytes:   " << stat.tx_bytes() << "\n"
-         << "Rx Packets: " << stat.rx_packets() << "\n"
-         << "Rx Bytes:   " << stat.rx_bytes() << endl;
+         << "Tx Packets: " << stat.get_tx_packets() << "\n"
+         << "Tx Bytes:   " << stat.get_tx_bytes() << "\n"
+         << "Rx Packets: " << stat.get_rx_packets() << "\n"
+         << "Rx Bytes:   " << stat.get_rx_bytes() << endl;
 
     cout << "Task on Guest OS 1 (Domain 1) finishing..." << endl;
 
-    return stat.tx_bytes() + stat.rx_bytes();
+    return stat.get_tx_bytes() + stat.get_rx_bytes();
 }

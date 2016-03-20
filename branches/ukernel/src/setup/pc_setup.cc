@@ -328,11 +328,11 @@ void PC_Setup::build_lm()
     si->lm.sys_entry = 0;
     si->lm.sys_segments = 0;
     si->lm.sys_code = ~0U;
-    si->lm.sys_code_size = 0;
+    si->lm.sys_code_size = Traits<PC>::MAX_SYS_CODE_SIZE;
     si->lm.sys_data = ~0U;
-    si->lm.sys_data_size = 0;
+    si->lm.sys_data_size = Traits<PC>::MAX_SYS_DATA_SIZE;
     si->lm.sys_stack = SYS_STACK;
-    si->lm.sys_stack_size = Traits<System>::STACK_SIZE * si->bm.n_cpus;
+    si->lm.sys_stack_size = Traits<PC>::MAX_SYS_STACK_SIZE;
     if(si->lm.has_sys) {
         ELF * sys_elf = reinterpret_cast<ELF *>(&bi[si->bm.system_offset]);
         if(!sys_elf->valid()) {
@@ -343,14 +343,14 @@ void PC_Setup::build_lm()
         si->lm.sys_entry = sys_elf->entry();
         si->lm.sys_segments = sys_elf->segments();
         si->lm.sys_code = sys_elf->segment_address(0);
-        si->lm.sys_code_size = sys_elf->segment_size(0);
+
         if(sys_elf->segments() > 1) {
             for(int i = 1; i < sys_elf->segments(); i++) {
-            if(sys_elf->segment_type(i) != PT_LOAD)
-                continue;
-            if(sys_elf->segment_address(i) < si->lm.sys_data)
-                si->lm.sys_data = sys_elf->segment_address(i);
-            si->lm.sys_data_size += sys_elf->segment_size(i);
+                if(sys_elf->segment_type(i) != PT_LOAD)
+                    continue;
+
+                if(sys_elf->segment_address(i) < si->lm.sys_data)
+                    si->lm.sys_data = sys_elf->segment_address(i);
             }
         }
 
@@ -445,8 +445,8 @@ void PC_Setup::build_pmm()
     top_page -= 1;
     si->pmm.sys_info = top_page * sizeof(Page);
 
-    // TSS, one for each CPU, one page each
-    for (unsigned int i = 0; i < Traits<PC>::CPUS; i++) {
+    // TSS, one for each CPU, one page each. Using MAX_CPUS so PMM will be fixed.
+    for (unsigned int i = 0; i < Traits<PC>::MAX_CPUS; i++) {
         top_page -= 1; // (1 x sizeof(Page))
         si->pmm.tss[i] = top_page * sizeof(Page);
     }
@@ -458,17 +458,6 @@ void PC_Setup::build_pmm()
     unsigned int mem_size = MMU::pages(si->bm.mem_top - si->bm.mem_base);
     top_page -= (mem_size + MMU::PT_ENTRIES - 1) / MMU::PT_ENTRIES;
     si->pmm.phy_mem_pts = top_page * sizeof(Page);
-
-    // Page tables to map the IO address space
-    // = NP/NPTE_PT * sizeof(Page)
-    // NP = size of PCI address space in pages
-    // NPTE_PT = number of page table entries per page table
-    detect_pci(&si->pmm.io_base, &si->pmm.io_top);
-    unsigned int io_size = MMU::pages(si->pmm.io_top - si->pmm.io_base);
-    io_size += APIC_SIZE / sizeof(Page); // Add room for APIC (4 kB, 1 page)
-    io_size += VGA_SIZE / sizeof(Page); // Add room for VGA (64 kB, 16 pages)
-    top_page -= (io_size + MMU::PT_ENTRIES - 1) / MMU::PT_ENTRIES;
-    si->pmm.io_pts = top_page * sizeof(Page);
 
     // SYSTEM code segment
     top_page -= MMU::pages(si->lm.sys_code_size);
@@ -485,6 +474,20 @@ void PC_Setup::build_pmm()
     // SYSTEM stack segment
     top_page -= MMU::pages(si->lm.sys_stack_size);
     si->pmm.sys_stack = top_page * sizeof(Page);
+
+    // Some space for SYSTEM heap
+    top_page -= MMU::pages(Traits<PC>::MAX_SYS_HEAP_SIZE);
+
+    // Page tables to map the IO address space
+    // = NP/NPTE_PT * sizeof(Page)
+    // NP = size of PCI address space in pages
+    // NPTE_PT = number of page table entries per page table
+    detect_pci(&si->pmm.io_base, &si->pmm.io_top);
+    unsigned int io_size = MMU::pages(si->pmm.io_top - si->pmm.io_base);
+    io_size += APIC_SIZE / sizeof(Page); // Add room for APIC (4 kB, 1 page)
+    io_size += VGA_SIZE / sizeof(Page); // Add room for VGA (64 kB, 16 pages)
+    top_page -= (io_size + MMU::PT_ENTRIES - 1) / MMU::PT_ENTRIES;
+    si->pmm.io_pts = top_page * sizeof(Page);
 
     // The memory allocated so far will "disappear" from the system as we
     // set mem_top as follows:
@@ -654,7 +657,7 @@ void PC_Setup::setup_gdt() /* called only by BSP */
     gdt[CPU::GDT_APP_CODE]  = GDT_Entry(0,  0xfffff, CPU::SEG_APP_CODE);
     gdt[CPU::GDT_APP_DATA]  = GDT_Entry(0,  0xfffff, CPU::SEG_APP_DATA);
 
-    for (unsigned int i = 0; i < Traits<PC>::CPUS; i++) {
+    for (unsigned int i = 0; i < Traits<PC>::MAX_CPUS; i++) {
         gdt[CPU::gdt_tss_index(i)] = GDT_Entry(Memory_Map<PC>::tss_logical_address(i), 0xfff, CPU::SEG_TSS_ALL);
     }
 
@@ -664,7 +667,7 @@ void PC_Setup::setup_gdt() /* called only by BSP */
     db<Setup>(INF) << "GDT[APCD=" << CPU::GDT_APP_CODE << "]=" << gdt[CPU::GDT_APP_CODE] << endl;
     db<Setup>(INF) << "GDT[APDT=" << CPU::GDT_APP_DATA << "]=" << gdt[CPU::GDT_APP_DATA] << endl;
 
-    for (unsigned int i = 0; i < Traits<PC>::CPUS; i++) {
+    for (unsigned int i = 0; i < Traits<PC>::MAX_CPUS; i++) {
         db<Setup>(INF) << "GDT[TSS " << i << "=" << CPU::gdt_tss_index(i) << "]=" << gdt[CPU::gdt_tss_index(i)] << endl;
     }
 
@@ -710,7 +713,7 @@ void PC_Setup::setup_sys_pt()
     sys_pt[MMU::page(GDT)] = si->pmm.gdt | Flags::SYS;
 
     // TSSs
-    for (unsigned int i = 0; i < Traits<PC>::CPUS; i++) {
+    for (unsigned int i = 0; i < Traits<PC>::MAX_CPUS; i++) {
         sys_pt[MMU::page(Memory_Map<PC>::tss_logical_address(i))] = si->pmm.tss[i] | Flags::SYS;
     }
 

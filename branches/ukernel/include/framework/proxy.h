@@ -89,6 +89,10 @@ public:
     CPU::Phy_Addr phy_address() { return invoke(SEGMENT_PHY_ADDRESS); }
     int resize(int amount) { return invoke(SEGMENT_RESIZE, amount); }
 
+    static unsigned long physical_address(unsigned long log_addr, unsigned long * out_page_frame_present) { return static_invoke(MMU_AUX_PHYSICAL_ADDRESS, log_addr, out_page_frame_present); }
+    static void dump_memory_mapping() { static_invoke(MMU_AUX_DUMP_MEMORY_MAPPING); }
+    static void check_memory_mapping() { static_invoke(MMU_AUX_CHECK_MEMORY_MAPPING); }
+
     // Synchronization
     void lock() { invoke(SYNCHRONIZER_LOCK); }
     void unlock() { invoke(SYNCHRONIZER_UNLOCK); }
@@ -106,14 +110,16 @@ public:
 
     // Communication
     template<typename ... Tn>
-    int send(Tn ... an) { return invoke(COMMUNICATOR_SEND, an ...); }
+    int send(Tn ... an) { return invoke(IPC_SEND, an ...); }
     template<typename ... Tn>
-    int receive(Tn ... an) { return invoke(COMMUNICATOR_RECEIVE, an ...); }
+    int receive(Tn ... an) { return invoke(IPC_RECEIVE, an ...); }
 
     template<typename ... Tn>
     int read(Tn ... an) { return receive(an ...); }
     template<typename ... Tn>
     int write(Tn ... an) { return send(an ...); }
+
+    int tcp_link_read(void * data, unsigned int size) { return invoke(TCP_LINK_READ, data, size); }
 
     // Network
     static void init_network() { static_invoke(NETWORK_INIT); }

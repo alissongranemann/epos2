@@ -47,7 +47,7 @@ public:
         PAddr ext_top;          // Boot Image EXTRA segment top address
         PAddr idt;              // IDT
         PAddr gdt;              // GDT
-        PAddr tss[Traits<PC>::CPUS]; // TSSs (one for CPU)
+        PAddr tss[Traits<PC>::MAX_CPUS]; // TSSs (one for CPU). Set to MAX_CPUS so PMM will be fixed.
         PAddr sys_pt;           // System Page Table
         PAddr sys_pd;           // System Page Directory
         PAddr sys_info;         // System Info
