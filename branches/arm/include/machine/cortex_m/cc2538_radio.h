@@ -5,6 +5,7 @@
 
 #include <ic.h>
 #include <ieee802_15_4.h>
+#include <tstp_mac.h>
 
 __BEGIN_SYS
 
@@ -19,7 +20,6 @@ protected:
     typedef CPU::Phy_Addr Phy_Addr;
     typedef CPU::IO_Irq IO_Irq;
     typedef MMU::DMA_Buffer DMA_Buffer;
-    typedef IEEE802_15_4::Address MAC_Address;
 
     // Bases
     enum
@@ -348,43 +348,51 @@ public:
     static bool running() { return reg(CTRL) & CTRL_STATE; }
 };
 
-// CC2538 IEEE 802.15.4 Radio Mediator
-class CC2538: public IEEE802_15_4, public IEEE802_15_4::Observed, private CC2538RF
+// CC2538 Radio Mediator
+template <typename MAC = typename Traits<Cortex_M_Radio>::MAC>
+class CC2538: private MAC, public MAC::Observed, private CC2538RF
 {
-    template <int unit> friend void call_init();
+public:
+    using MAC::broadcast;
+    using MAC::mtu;
+    using MAC::MTU;
+
+    typedef typename MAC::Address MAC_Address;
+    typedef typename MAC::Frame Frame;
+    typedef typename MAC::Address Address;
+    typedef typename MAC::Protocol Protocol;
+    typedef typename MAC::Buffer Buffer;
+    typedef typename MAC::Statistics Statistics;
+    typedef typename MAC::Header Header;
+    typedef typename MAC::Phy_Header Phy_Header;
+    typedef typename MAC::CRC CRC;
 
 private:
+    template <int unit> friend void call_init();
+
     // Transmit and Receive Ring sizes
-    static const unsigned int UNITS = Traits<CC2538>::UNITS;
-    static const unsigned int TX_BUFS = Traits<CC2538>::SEND_BUFFERS;
-    static const unsigned int RX_BUFS = Traits<CC2538>::RECEIVE_BUFFERS;
+    static const unsigned int UNITS = Traits<CC2538<MAC>>::UNITS;
+    static const unsigned int TX_BUFS = Traits<CC2538<MAC>>::SEND_BUFFERS;
+    static const unsigned int RX_BUFS = Traits<CC2538<MAC>>::RECEIVE_BUFFERS;
 
-
-    /*
-    // Size of the DMA Buffer that will host the ring buffers and the init block
-    static const unsigned int DMA_BUFFER_SIZE = ((sizeof(Init_Block) + 15) & ~15U) +
-        RX_BUFS * ((sizeof(Rx_Desc) + 15) & ~15U) + TX_BUFS * ((sizeof(Tx_Desc) + 15) & ~15U) +
-        RX_BUFS * ((sizeof(Buffer) + 15) & ~15U) + TX_BUFS * ((sizeof(Buffer) + 15) & ~15U); // align128() cannot be used here
-    */
     static const unsigned int DMA_BUFFER_SIZE = RX_BUFS * sizeof(Buffer) + TX_BUFS * sizeof(Buffer);
-
 
     // Interrupt dispatching binding
     struct Device {
-        CC2538 * device;
+        CC2538<MAC> * device;
         unsigned int interrupt;
     };
 
 protected:
     CC2538(unsigned int unit, IO_Irq irq, DMA_Buffer * dma_buf);
 
+    ~CC2538();
+
 public:
     void channel(unsigned int channel);
     unsigned int channel() { return _channel; }
     void stop_listening();
     void listen();
-
-    ~CC2538();
 
     int send(const Address & dst, const Protocol & prot, const void * data, unsigned int size);
     int receive(Address * src, Protocol * prot, void * data, unsigned int size);
@@ -400,7 +408,7 @@ public:
 
     void reset();
 
-    static CC2538 * get(unsigned int unit = 0) { return get_by_unit(unit); }
+    static CC2538<MAC> * get(unsigned int unit = 0) { return get_by_unit(unit); }
 
 private:
     unsigned int _channel;
@@ -419,7 +427,7 @@ private:
             return _devices[unit].device;
     }
 
-    static CC2538 * get_by_interrupt(unsigned int interrupt) {
+    static CC2538<MAC> * get_by_interrupt(unsigned int interrupt) {
         for(unsigned int i = 0; i < UNITS; i++)
             if(_devices[i].interrupt == interrupt) {
                 return _devices[i].device;
@@ -452,22 +460,8 @@ private:
 
     DMA_Buffer * _dma_buf;
 
-    /*
-    Init_Block * _iblock;
-    Phy_Addr  _iblock_phy;
-    */
-
     int _rx_cur;
-    /*
-    Rx_Desc * _rx_ring;
-    Phy_Addr _rx_ring_phy;
-    */
-
     int _tx_cur;
-    /*
-    Tx_Desc * _tx_ring;
-    Phy_Addr _tx_ring_phy;
-    */
 
     Buffer * _rx_buffer[RX_BUFS];
     Buffer * _tx_buffer[TX_BUFS];

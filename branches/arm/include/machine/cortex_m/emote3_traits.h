@@ -139,19 +139,45 @@ template <> struct Traits<Cortex_M_Radio>: public Traits<Cortex_M_Common>
 {
     static const bool enabled = (Traits<Build>::NODES > 1);
 
-    typedef LIST<CC2538> NICS;
+    enum {IEEE802_15_4, TSTP_MAC};
+    typedef class IEEE802_15_4 MAC;
+
+    typedef LIST<CC2538<MAC>> NICS;
     static const unsigned int UNITS = NICS::Length;
 };
 
-template <> struct Traits<CC2538>: public Traits<Cortex_M_Radio>
+template <> struct Traits<CC2538<void>>: public Traits<Cortex_M_Radio>
 {
-    static const unsigned int UNITS = NICS::Count<CC2538>::Result;
     static const unsigned int SEND_BUFFERS = 16;
     static const unsigned int RECEIVE_BUFFERS = 16;
     static const unsigned int DEFAULT_CHANNEL = 15; // From 11 to 26
 
-    // There is no listen command on the radio interface yet,
-    // so the only way to receive data is setting this flag
+    static const bool auto_listen = true;
+
+    static const bool CSMA_CA = true;
+    static const unsigned int CSMA_CA_MIN_BACKOFF_EXPONENT = 3;
+    static const unsigned int CSMA_CA_MAX_BACKOFF_EXPONENT = 5;
+    static const unsigned int CSMA_CA_UNIT_BACKOFF_PERIOD = 320; // us
+    static const unsigned int CSMA_CA_MAX_TRANSMISSION_TRIALS = 4;
+
+    static const bool ACK = true;
+    static const unsigned int RETRANSMISSIONS = 3;
+    static const unsigned int ACK_TIMEOUT = 3 * 832; // us
+};
+
+template <> struct Traits<CC2538<class TSTP_MAC>>: public Traits<CC2538<void>>
+{
+    static const unsigned int UNITS = NICS::Count<CC2538<class TSTP_MAC>>::Result;
+
+    static const bool auto_listen = false;
+    static const bool CSMA_CA = false;
+    static const bool ACK = false;
+};
+
+template <> struct Traits<CC2538<class IEEE802_15_4>>: public Traits<CC2538<void>>
+{
+    static const unsigned int UNITS = NICS::Count<CC2538<class IEEE802_15_4>>::Result;
+
     static const bool auto_listen = true;
 
     static const bool CSMA_CA = true;

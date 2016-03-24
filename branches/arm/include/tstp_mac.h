@@ -1,9 +1,9 @@
-// EPOS IEEE 802.15.4 Mediator Common Package
+// EPOS TSTP MAC Common Package
 
 #include <nic.h>
 
-#ifndef __ieee802_15_4_h
-#define __ieee802_15_4_h
+#ifndef __tstp_mac_h
+#define __tstp_mac_h
 
 #include <cpu.h>
 #include <utility/list.h>
@@ -12,7 +12,7 @@
 
 __BEGIN_SYS
 
-class IEEE802_15_4: private NIC_Common
+class TSTP_MAC: private NIC_Common
 {
 public:
     typedef NIC_Common::Address<2> Short_Address;
@@ -223,7 +223,7 @@ public:
     };
 
 protected:
-    IEEE802_15_4() {}
+    TSTP_MAC() {}
 
 public:
     static const unsigned int mtu() { return MTU; }

@@ -9,17 +9,17 @@
 
 __BEGIN_SYS
 
-class Cortex_M_Radio: public IEEE802_15_4
+class Cortex_M_Radio: public Traits<Cortex_M_Radio>::MAC
 {
     friend class Cortex_M;
 
-private:
+    typedef Traits<Cortex_M_Radio>::MAC MAC;
     typedef Traits<Cortex_M_Radio>::NICS NICS;
     static const unsigned int UNITS = NICS::Length;
 
 public:
-    typedef IEEE802_15_4::Observed Observed;
-    typedef IEEE802_15_4::Observer Observer;
+    typedef MAC::Observed Observed;
+    typedef MAC::Observer Observer;
 
     template<unsigned int UNIT = 0>
     Cortex_M_Radio(unsigned int u = UNIT) {

@@ -13,15 +13,18 @@
 __BEGIN_SYS
 
 // Class attributes
-CC2538::Device CC2538::_devices[UNITS];
+template<typename MAC>
+typename CC2538<MAC>::Device CC2538<MAC>::_devices[UNITS];
 
 // Methods
-CC2538::~CC2538()
+template <typename MAC>
+CC2538<MAC>::~CC2538<MAC>()
 {
     db<CC2538>(TRC) << "~Radio(unit=" << _unit << ")" << endl;
 }
 
-void CC2538::address(const Address & address)
+template <typename MAC>
+void CC2538<MAC>::address(const Address & address)
 {
     _address[0] = address[0];
     _address[1] = address[1];
@@ -29,7 +32,8 @@ void CC2538::address(const Address & address)
     ffsm(SHORT_ADDR1) = _address[1];
 }
 
-void CC2538::listen()
+template <typename MAC>
+void CC2538<MAC>::listen()
 {
     // Clear interrupts
     sfr(RFIRQF0) = 0;
@@ -41,7 +45,8 @@ void CC2538::listen()
     sfr(RFST) = ISRXON;
 }
 
-void CC2538::stop_listening()
+template <typename MAC>
+void CC2538<MAC>::stop_listening()
 {
     // Disable device interrupts
     xreg(RFIRQM0) = 0;
@@ -50,7 +55,8 @@ void CC2538::stop_listening()
     sfr(RFST) = ISRFOFF;
 }
 
-void CC2538::channel(unsigned int channel)
+template <typename MAC>
+void CC2538<MAC>::channel(unsigned int channel)
 {
     if((channel < 11) || (channel > 26)) return;
     /*
@@ -69,7 +75,8 @@ void CC2538::channel(unsigned int channel)
     xreg(FREQCTRL) = 11+5*(_channel-11);
 }
 
-int CC2538::send(const Address & dst, const Protocol & prot, const void * data, unsigned int size)
+template <typename MAC>
+int CC2538<MAC>::send(const Address & dst, const Protocol & prot, const void * data, unsigned int size)
 {
     if(size > MTU) {
         return 0;
@@ -82,8 +89,8 @@ int CC2538::send(const Address & dst, const Protocol & prot, const void * data, 
     }
 }
 
-
-int CC2538::receive(Address * src, Protocol * prot, void * data, unsigned int size)
+template <typename MAC>
+int CC2538<MAC>::receive(Address * src, Protocol * prot, void * data, unsigned int size)
 {
     db<CC2538>(TRC) << "CC2538::receive(s=" << *src << ",p=" << hex << *prot << dec
         << ",d=" << data << ",s=" << size << ") => " << endl;
@@ -111,7 +118,7 @@ int CC2538::receive(Address * src, Protocol * prot, void * data, unsigned int si
         buf->size(buf->frame()->frame_length() - sizeof(Header) - sizeof(CRC) + sizeof(Phy_Header)); // Phy_Header is included in Header, but is already discounted in frame_length
 
         // Copy the data
-        memcpy(data, frame->data<void>(), (buf->size() > size) ? size : buf->size());
+        memcpy(data, frame->data(), (buf->size() > size) ? size : buf->size());
 
         _statistics.rx_packets++;
         _statistics.rx_bytes += buf->size();
@@ -131,9 +138,8 @@ int CC2538::receive(Address * src, Protocol * prot, void * data, unsigned int si
     }
 }
 
-
-// Allocated buffers must be sent or release IN ORDER as assumed by the Radio
-CC2538::Buffer * CC2538::alloc(NIC * nic, const Address & dst, const Protocol & prot, unsigned int once, unsigned int always, unsigned int payload)
+template<typename MAC>
+typename CC2538<MAC>::Buffer * CC2538<MAC>::alloc(NIC * nic, const Address & dst, const Protocol & prot, unsigned int once, unsigned int always, unsigned int payload)
 {
     db<CC2538>(TRC) << "CC2538::alloc(s=" << _address << ",d=" << dst << ",p=" << hex << prot << dec << ",on=" << once << ",al=" << always << ",ld=" << payload << ")" << endl;
 
@@ -148,7 +154,7 @@ CC2538::Buffer * CC2538::alloc(NIC * nic, const Address & dst, const Protocol & 
         return 0;
     }
 
-    Buffer::List pool;
+    typename Buffer::List pool;
 
     // Calculate how many frames are needed to hold the transport PDU and allocate enough buffers
     for(int size = once + payload; size > 0; size -= max_data) {
@@ -175,11 +181,12 @@ CC2538::Buffer * CC2538::alloc(NIC * nic, const Address & dst, const Protocol & 
     return pool.head()->object();
 }
 
-int CC2538::send(Buffer * buf)
+template <typename MAC>
+int CC2538<MAC>::send(Buffer * buf)
 {
     int size = 0;
 
-    for(Buffer::Element * el = buf->link(); el; el = el->next()) {
+    for(typename Buffer::Element * el = buf->link(); el; el = el->next()) {
         buf = el->object();
         const bool ack = Traits<CC2538>::ACK and (buf->frame()->dst() != broadcast());
 
@@ -216,12 +223,12 @@ int CC2538::send(Buffer * buf)
     return size;
 }
 
-
-void CC2538::free(Buffer * buf)
+template <typename MAC>
+void CC2538<MAC>::free(Buffer * buf)
 {
     db<CC2538>(TRC) << "CC2538::free(buf=" << buf << ")" << endl;
 
-    for(Buffer::Element * el = buf->link(); el; el = el->next()) {
+    for(typename Buffer::Element * el = buf->link(); el; el = el->next()) {
         buf = el->object();
 
         _statistics.rx_packets++;
@@ -234,8 +241,8 @@ void CC2538::free(Buffer * buf)
     }
 }
 
-
-void CC2538::reset()
+template <typename MAC>
+void CC2538<MAC>::reset()
 {
     db<CC2538>(TRC) << "Radio::reset()" << endl;
 
@@ -245,7 +252,8 @@ void CC2538::reset()
 
 // TODO: Memory in the fifos is padded: you can only write one byte every 4bytes.
 // For now, we'll just copy using the RFDATA register
-void CC2538::copy_from_rxfifo(Buffer * buf)
+template <typename MAC>
+void CC2538<MAC>::copy_from_rxfifo(Buffer * buf)
 {
     auto * data = reinterpret_cast<unsigned char *>(buf->frame());
     data[0] = sfr(RFDATA); // First field is length of MAC frame
@@ -255,7 +263,8 @@ void CC2538::copy_from_rxfifo(Buffer * buf)
     clear_rxfifo();
 }
 
-bool CC2538::wait_for_ack()
+template <typename MAC>
+bool CC2538<MAC>::wait_for_ack()
 {
     while(!(sfr(RFIRQF1) & INT_TXDONE));
     sfr(RFIRQF1) &= ~INT_TXDONE;
@@ -272,7 +281,8 @@ bool CC2538::wait_for_ack()
     return acked;
 }
 
-bool CC2538::send_and_wait(bool ack)
+template <typename MAC>
+bool CC2538<MAC>::send_and_wait(bool ack)
 {
     bool do_ack = Traits<CC2538>::ACK and ack;
     Reg32 saved_filter_settings = 0;
@@ -315,7 +325,8 @@ bool CC2538::send_and_wait(bool ack)
     return sent;
 }
 
-bool CC2538::backoff_and_send()
+template <typename MAC>
+bool CC2538<MAC>::backoff_and_send()
 {
     bool ret = true;
     if(Traits<CC2538>::CSMA_CA) {
@@ -362,7 +373,8 @@ bool CC2538::backoff_and_send()
     return ret;
 }
 
-bool CC2538::frame_in_rxfifo()
+template <typename MAC>
+bool CC2538<MAC>::frame_in_rxfifo()
 {
     bool ret = false;
     if(xreg(RXFIFOCNT) > 0) {
@@ -389,7 +401,8 @@ bool CC2538::frame_in_rxfifo()
     return ret;
 }
 
-void CC2538::handle_int()
+template <typename MAC>
+void CC2538<MAC>::handle_int()
 {
     Reg32 irqrf0 = sfr(RFIRQF0);
     Reg32 irqrf1 = sfr(RFIRQF1);
@@ -421,7 +434,7 @@ void CC2538::handle_int()
                 auto * frame = buf->frame();
 
                 db<CC2538>(TRC) << "CC2538::int:receive(s=" << frame->src() << ",p=" << hex << frame->header()->prot() << dec
-                    << ",d=" << frame->data<void>() << ",s=" << buf->size() << ")" << endl;
+                    << ",d=" << frame->data() << ",s=" << buf->size() << ")" << endl;
 
                 db<CC2538>(INF) << "CC2538::handle_int[" << _rx_cur << "]" << endl;
 
@@ -452,10 +465,10 @@ void CC2538::handle_int()
     //if(irqrf1 & INT_TXACKDONE) db<CC2538>(TRC) << "TXACKDONE" << endl;
 }
 
-
-void CC2538::int_handler(const IC::Interrupt_Id & interrupt)
+template<typename MAC>
+void CC2538<MAC>::int_handler(const IC::Interrupt_Id & interrupt)
 {
-    CC2538 * dev = get_by_interrupt(interrupt);
+    CC2538<MAC> * dev = get_by_interrupt(interrupt);
 
     db<CC2538>(TRC) << "Radio::int_handler(int=" << interrupt << ",dev=" << dev << ")" << endl;
 
@@ -464,6 +477,9 @@ void CC2538::int_handler(const IC::Interrupt_Id & interrupt)
     else
         dev->handle_int();
 }
+
+template class CC2538<TSTP_MAC>;
+template class CC2538<IEEE802_15_4>;
 
 __END_SYS
 

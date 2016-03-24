@@ -118,9 +118,13 @@ class ATmega_ADC;
 class ATmega_Battery;
 class ATmega_Radio;
 
+class TSTP_MAC;
+class IEEE802_15_4;
+
 class PCNet32;
 class C905;
 class E100;
+template<typename MAC>
 class CC2538;
 class AT86RF;
 

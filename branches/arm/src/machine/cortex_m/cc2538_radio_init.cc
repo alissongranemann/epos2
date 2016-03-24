@@ -10,7 +10,8 @@
 
 __BEGIN_SYS
 
-CC2538::CC2538(unsigned int unit, IO_Irq irq, DMA_Buffer * dma_buf):
+template<typename MAC>
+CC2538<MAC>::CC2538(unsigned int unit, IO_Irq irq, DMA_Buffer * dma_buf):
     _unit(unit), _irq(irq), _dma_buf(dma_buf), _rx_cur(0), _tx_cur(0)
 {
     db<CC2538>(TRC) << "CC2538(unit=" << unit << ",irq=" << irq << ")" << endl;
@@ -128,8 +129,8 @@ CC2538::CC2538(unsigned int unit, IO_Irq irq, DMA_Buffer * dma_buf):
     }
 }
 
-
-void CC2538::init(unsigned int unit)
+template<typename MAC>
+void CC2538<MAC>::init(unsigned int unit)
 {
     db<Init, CC2538>(TRC) << "CC2538::init(unit=" << unit << ")" << endl;
 
@@ -139,7 +140,7 @@ void CC2538::init(unsigned int unit)
     IO_Irq irq = 26;
 
     // Initialize the device
-    CC2538 * dev = new (SYSTEM) CC2538(unit, irq, dma_buf);
+    CC2538<MAC> * dev = new (SYSTEM) CC2538<MAC>(unit, irq, dma_buf);
 
     // Register the device
     _devices[unit].interrupt = IC::irq2int(irq);
@@ -150,6 +151,9 @@ void CC2538::init(unsigned int unit)
     // Enable interrupts for device
     IC::enable(irq);
 }
+
+template class CC2538<TSTP_MAC>;
+template class CC2538<IEEE802_15_4>;
 
 __END_SYS
 
