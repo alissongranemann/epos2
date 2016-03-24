@@ -127,7 +127,6 @@ class AT86RF;
 class Serial_Display;
 class Null_Display;
 
-class eMote3_USB;
 class eMote3_Flash;
 
 // Abstractions

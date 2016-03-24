@@ -37,7 +37,6 @@ template<> struct Traits<Build>
     static const unsigned int NODES = 2; // > 1 => NETWORKING
 };
 
-
 // Utilities
 template<> struct Traits<Debug>
 {
@@ -126,9 +125,6 @@ template<> struct Traits<Init>: public Traits<void>
 // Mediators
 template<> struct Traits<Serial_Display>: public Traits<void>
 {
-    enum {usb, uart};
-    static const unsigned int ENGINE = usb;
-
     static const bool enabled = false;
     static const int COLUMNS = 80;
     static const int LINES = 24;
@@ -138,11 +134,10 @@ template<> struct Traits<Serial_Display>: public Traits<void>
 __END_SYS
 
 #include __ARCH_TRAITS_H
-#include __MACH_CONFIG_H
 #include __MACH_TRAITS_H
+#include __MACH_CONFIG_H
 
 __BEGIN_SYS
-
 
 // Abstractions
 template<> struct Traits<Application>: public Traits<void>
@@ -176,7 +171,6 @@ template<> struct Traits<Task>: public Traits<void>
 
 template<> struct Traits<Thread>: public Traits<void>
 {
-    static const bool enabled = false;
     static const bool smp = Traits<System>::multicore;
 
     typedef Scheduling_Criteria::RR Criterion;
@@ -198,7 +192,7 @@ template<> struct Traits<Periodic_Thread>: public Traits<void>
 
 template<> struct Traits<Address_Space>: public Traits<void>
 {
-    static const bool enabled = false;
+    static const bool enabled = Traits<System>::multiheap;
 };
 
 template<> struct Traits<Segment>: public Traits<void>
@@ -208,7 +202,6 @@ template<> struct Traits<Segment>: public Traits<void>
 
 template<> struct Traits<Alarm>: public Traits<void>
 {
-    static const bool enabled = false;
     static const bool visible = hysterically_debugged;
 };
 
@@ -220,7 +213,6 @@ template<> struct Traits<Synchronizer>: public Traits<void>
 template<> struct Traits<Network>: public Traits<void>
 {
     static const bool enabled = false;
-
     static const unsigned int RETRIES = 3;
     static const unsigned int TIMEOUT = 10; // s
 

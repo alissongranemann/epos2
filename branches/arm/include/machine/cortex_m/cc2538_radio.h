@@ -51,27 +51,30 @@ protected:
     // Useful XREG register offsets
     enum
     {
-        FRMFILT0  = 0x000,
-        FRMFILT1  = 0x004,
-        SRCMATCH  = 0x008,
-        FRMCTRL0  = 0x024,
-        FRMCTRL1  = 0x028,
-        RXMASKSET = 0x030,
-        FREQCTRL  = 0x03C,
-        FSMSTAT1  = 0x04C,
-        FIFOPCTRL = 0x050,
-        RXFIFOCNT = 0x06C,
-        TXFIFOCNT = 0x070,
-        RFIRQM0   = 0x08c,
-        RFIRQM1   = 0x090,
-        CSPT      = 0x194,
-        AGCCTRL1  = 0x0c8,
-        TXFILTCFG = 0x1e8,
-        FSCAL1    = 0x0b8,
-        CCACTRL0  = 0x058,
-        TXPOWER   = 0x040,
-        RSSI      = 0x060,
-        RSSISTAT  = 0x064,
+        FRMFILT0    = 0x000,
+        FRMFILT1    = 0x004,
+        SRCMATCH    = 0x008,
+        FRMCTRL0    = 0x024,
+        FRMCTRL1    = 0x028,
+        RXMASKSET   = 0x030,
+        FREQCTRL    = 0x03C,
+        FSMSTAT1    = 0x04C,
+        FIFOPCTRL   = 0x050,
+        RXFIRST     = 0x068,
+        RXFIFOCNT   = 0x06C,
+        TXFIFOCNT   = 0x070,
+        RXFIRST_PTR = 0x074,
+        RXLAST_PTR  = 0x078,
+        RFIRQM0     = 0x08c,
+        RFIRQM1     = 0x090,
+        CSPT        = 0x194,
+        AGCCTRL1    = 0x0c8,
+        TXFILTCFG   = 0x1e8,
+        FSCAL1      = 0x0b8,
+        CCACTRL0    = 0x058,
+        TXPOWER     = 0x040,
+        RSSI        = 0x060,
+        RSSISTAT    = 0x064,
     };
 
     // Useful SFR register offsets
@@ -136,6 +139,13 @@ protected:
         ENERGY_SCAN      = 1 << 4,
         RX_MODE          = 1 << 2,
         TX_MODE          = 1 << 0,
+    };
+    enum RX_MODES
+    {
+        RX_MODE_NORMAL = 0,
+        RX_MODE_OUTPUT_TO_IOC,
+        RX_MODE_CYCLIC,
+        RX_MODE_NO_SYMBOL_SEARCH,
     };
 
     // Bit set by hardware in FCS field when AUTO_CRC is set
@@ -356,7 +366,7 @@ private:
         RX_BUFS * ((sizeof(Rx_Desc) + 15) & ~15U) + TX_BUFS * ((sizeof(Tx_Desc) + 15) & ~15U) +
         RX_BUFS * ((sizeof(Buffer) + 15) & ~15U) + TX_BUFS * ((sizeof(Buffer) + 15) & ~15U); // align128() cannot be used here
     */
-    static const unsigned int DMA_BUFFER_SIZE = RX_BUFS * sizeof(Buffer);
+    static const unsigned int DMA_BUFFER_SIZE = RX_BUFS * sizeof(Buffer) + TX_BUFS * sizeof(Buffer);
 
 
     // Interrupt dispatching binding
@@ -395,8 +405,8 @@ public:
 private:
     unsigned int _channel;
     void handle_int();
-    bool copy_from_rxfifo(Buffer * buf);
-    bool rxfifo_crc_check();
+    void copy_from_rxfifo(Buffer * buf);
+    bool frame_in_rxfifo();
     void clear_rxfifo() { sfr(RFST) = ISFLUSHRX; }
 
     static void int_handler(const IC::Interrupt_Id & interrupt);
@@ -423,9 +433,13 @@ private:
     // Send a message and wait for it to be correctly sent
     bool send_and_wait(bool ack);
 
-    bool wait_for_ack(Reg32 filter_restore_value);
+    bool wait_for_ack();
 
-    bool do_send();
+    bool backoff_and_send();
+
+    void rx_mode(RX_MODES m) {
+        xreg(FRMCTRL0) = (xreg(FRMCTRL0) & ~(3 * RX_MODE)) | (m * RX_MODE);
+    }
 
 private:
     volatile bool _acked;

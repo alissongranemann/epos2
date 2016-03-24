@@ -15,21 +15,27 @@ public:
     typedef IEEE802_15_4::Frame Frame;
     typedef IEEE802_15_4::Observed Observed;
 
-    NIC_Handler(const Protocol & p = Traits<Cortex_M_Bootloader>::NIC_PROTOCOL, unsigned int channel = Traits<Cortex_M_Bootloader>::NIC_CHANNEL) : _prot(p), _channel(channel), _peer(_nic.broadcast()) {        
+    NIC_Handler(const Protocol & p = Traits<Cortex_M_Bootloader>::NIC_PROTOCOL, unsigned int channel = Traits<Cortex_M_Bootloader>::NIC_CHANNEL) : _prot(p), _channel(channel), _peer(_nic.broadcast()) {
+        _nic.stop_listening();
         _nic.channel(_channel);
-        _nic.attach(this, _prot);        
+        _nic.attach(this, _prot);
+        _nic.listen();
     }
 
     void update(Observed * o, Protocol p, Buffer * b) {
-        auto f = b->frame();
-        if(_peer == _nic.broadcast()) {
-            _peer = f->src();
-        }
-        if(f->src() == _peer) {
-            auto d = f->data<char>();
-            for(int i=0; i<b->size(); i++)
-                eMote3_USB::put(d[i]);
-            eMote3_USB::flush();
+        if(b->size() == MESSAGE_SIZE) {
+            auto f = b->frame();
+            if(_peer == _nic.broadcast()) {
+                _peer = f->src();
+            }
+            if(f->src() == _peer) {
+                auto d = f->data<char>();
+                for(int i=0; i<b->size(); i++)
+                    USB::put(d[i]);
+                USB::flush();
+            } else {
+                kerr << "Wrong src!" << endl;
+            }
         }
         _nic.free(b);
     }
@@ -49,7 +55,7 @@ int main()
 {
     GPIO led('c',3,GPIO::OUTPUT);
     led.set(false);
-    while(eMote3_USB::state() < USB_2_0::STATE::CONFIGURED);
+    while(not USB::ready());
     for(unsigned int i=0; i<10; i++) {
         led.set(true);
         for(volatile unsigned int j=0;j<0xffff;j++);
@@ -61,7 +67,7 @@ int main()
     NIC_Handler nh;
     char buffer[MESSAGE_SIZE];
     while(true) {
-        while(eMote3_USB::get_data(buffer, MESSAGE_SIZE) != MESSAGE_SIZE);
+        while(USB::get_data(buffer, MESSAGE_SIZE) != MESSAGE_SIZE);
         nh.send(buffer, MESSAGE_SIZE);
     }
     

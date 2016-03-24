@@ -8,21 +8,20 @@
 #include <cpu.h>
 #include <utility/list.h>
 #include <utility/observer.h>
+#include <utility/buffer.h>
 
 __BEGIN_SYS
 
 class IEEE802_15_4: private NIC_Common
 {
-protected:
-//    static const unsigned int HEADER_SIZE = 14;
-
 public:
-    static const unsigned int MTU = 127;
     typedef NIC_Common::Address<2> Short_Address;
     typedef NIC_Common::Address<8> Extended_Address;
     typedef Short_Address Address;
     typedef CPU::Reg8 Reg8;
     typedef CPU::Reg16 Reg16;
+    typedef NIC_Common::CRC16 CRC;
+
 
     // Frame types
     enum Frame_Type
@@ -53,9 +52,6 @@ public:
         PTP    = 0x88F7
     };
 
-
-    typedef unsigned char Data[MTU];
-    typedef NIC_Common::CRC16 CRC;
 
     // The IEEE 802.15.4 PHR
     class Phy_Header
@@ -116,10 +112,10 @@ public:
         } __attribute__((packed, may_alias));
 
         Header() {}
-        Header(Reg8 len): Phy_Header(len+sizeof(Header)-sizeof(Phy_Header)) {};
+        Header(Reg8 payload_size): Phy_Header(payload_size + sizeof(Header) - sizeof(Phy_Header)) {};
         Header(const Short_Address & src, const Short_Address & dst, const Protocol & prot): Phy_Header(), _frame_control(), _dst(dst), _src(src), _prot(htons(prot)) {}
-        Header(Reg8 len, const Short_Address & src, const Short_Address & dst, const Protocol & prot):
-            Phy_Header(len+sizeof(Header)-sizeof(Phy_Header)), _frame_control(), _sequence_number(0), _dst_pan_id(PAN_ID_BROADCAST), _dst(dst), _src(src), _prot(htons(prot)) {}
+        Header(Reg8 payload_size, const Short_Address & src, const Short_Address & dst, const Protocol & prot):
+            Phy_Header(payload_size+sizeof(Header)-sizeof(Phy_Header)), _frame_control(), _sequence_number(0), _dst_pan_id(PAN_ID_BROADCAST), _dst(dst), _src(src), _prot(htons(prot)) {}
 
         friend Debug & operator<<(Debug & db, const Header & h) {
             db << "{" << h._dst << "," << h._src << "," << h.prot() << "}";
@@ -146,8 +142,16 @@ public:
         Reg16 _dst_pan_id;
         Short_Address _dst;
         Short_Address _src;
-        Protocol _prot;
+        Protocol _prot; // TODO: this is not part of 802.15.4
     } __attribute__((packed, may_alias));
+
+private:
+    static const unsigned int HEADER_SIZE = sizeof(Header) - sizeof(Phy_Header);
+    static const unsigned int FOOTER_SIZE = sizeof(CRC);
+
+public:
+    static const unsigned int MTU = 127 - HEADER_SIZE - FOOTER_SIZE;
+    typedef unsigned char Data[MTU];
 
 
     // The IEEE 802.15.4 Frame
@@ -155,11 +159,16 @@ public:
     {
     public:
         Frame() {}
-        Frame(const Address & src, const Address & dst, const Protocol & prot, Reg8 size) : Header(size+sizeof(CRC), src, dst, prot) {}
-        Frame(const Address & src, const Address & dst, const Protocol & prot, const void * data, Reg8 size)
-            : Header(size+sizeof(CRC), src, dst, prot)
+        Frame(const Address & src, const Address & dst, const Protocol & prot, Reg8 payload_size) 
+            : Header(payload_size + FOOTER_SIZE, src, dst, prot) {}
+        Frame(const Address & src, const Address & dst, const Protocol & prot, const void * dat, Reg8 payload_size)
+            : Header(payload_size + FOOTER_SIZE, src, dst, prot)
         {
-            memcpy(_data, data, size);
+            data(dat);
+        }
+
+        void data(const void * d) {
+            memcpy(_data, d, frame_length() - HEADER_SIZE - FOOTER_SIZE);
         }
 
         Header * header() { return this; }
@@ -179,58 +188,13 @@ public:
 
     typedef Frame PDU;
 
-
     // Buffers used to hold frames across a zero-copy network stack
-    class Buffer: private Frame
-    {
-    public:
-        typedef Simple_List<Buffer> List;
-        typedef List::Element Element;
-
-    public:
-        Buffer(void * back): _lock(false), _nic(0), _back(back), _size(sizeof(Frame)), _link(this) {}
-        Buffer(NIC * nic, const Address & src, const Address & dst, const Protocol & prot, unsigned int size):
-            Frame(src, dst, prot, size), _lock(false), _nic(nic), _size(size), _link(this) {}
-
-        Frame * frame() { return this; }
-
-        template <typename T>
-        T * raw() { return reinterpret_cast<T *>(this); }
-
-        bool lock() { return !CPU::tsl(_lock); }
-        void unlock() { _lock = 0; }
-
-        NIC * nic() const { return _nic; }
-        void nic(NIC * n) { _nic = n; }
-
-        template<typename T>
-        T * back() const { return reinterpret_cast<T *>(_back); }
-
-        unsigned int size() const { return _size; }
-        void size(unsigned int s) { _size = s; }
-
-        Element * link() { return &_link; }
-
-        friend Debug & operator<<(Debug & db, const Buffer & b) {
-            db << "{nc=" << b._nic << ",lk=" << b._lock << ",sz=" << b._size << ",bl=" << b._back << "}";
-            return db;
-        }
-
-    private:
-        volatile bool _lock;
-        NIC * _nic;
-        void * _back;
-        unsigned int _size;
-        Element _link;
-    };
-//    } __attribute__((packed, may_alias));
-
+    typedef _UTIL::Buffer<NIC, Frame, void> Buffer;
 
 public:
     // Observers of a protocol get a also a pointer to the received buffer
     typedef Data_Observer<Buffer, Protocol> Observer;
     typedef Data_Observed<Buffer, Protocol> Observed;
-
 
     // Meaningful statistics for Ethernet
     struct Statistics: public NIC_Common::Statistics

@@ -160,7 +160,7 @@ while not os.path.exists(dev) or not os.access(dev, os.W_OK):
 
 print(dev, "found, trying to open it")
 
-mote = serial.Serial(baudrate = 115200, port=dev, timeout=1)
+mote = serial.Serial(baudrate = 115200, port=dev, timeout=0.5)
 mote.close()
 mote.open()
 

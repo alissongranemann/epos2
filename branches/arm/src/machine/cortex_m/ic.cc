@@ -1,6 +1,7 @@
 // EPOS Cortex_M IC Mediator Implementation
 
 #include <machine/cortex_m/ic.h>
+#include <machine/cortex_m/bootloader.h>
 #include <machine.h>
 
 extern "C" { void _exit(int s); }
@@ -29,6 +30,13 @@ void Cortex_M_IC::dispatch()
 void Cortex_M_IC::_dispatch()
 {
     // The function is compiled without omitting frame stacking because the compiler saves what it uses
+
+    if(Traits<Cortex_M_Bootloader>::enabled) {
+        if(Cortex_M_Bootloader::bootloader_finished()) {
+            Cortex_M_Bootloader::jump_to_epos_int_handler();
+            return;
+        }
+    }
 
     register Interrupt_Id id = CPU::int_id();
 

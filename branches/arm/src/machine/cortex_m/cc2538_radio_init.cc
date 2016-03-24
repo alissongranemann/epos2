@@ -14,11 +14,6 @@ CC2538::CC2538(unsigned int unit, IO_Irq irq, DMA_Buffer * dma_buf):
     _unit(unit), _irq(irq), _dma_buf(dma_buf), _rx_cur(0), _tx_cur(0)
 {
     db<CC2538>(TRC) << "CC2538(unit=" << unit << ",irq=" << irq << ")" << endl;
-    // TODO: it has been observed that at least the FRMCTRL1 register does not get
-    // its value updated on a write if this instruction is executed.
-    // Disable clock to the RF CORE module
-//     Cortex_M_Model::radio_disable();
-//     for(volatile int i=0; i<0x1ffff; i++);
 
     // Enable clock to the RF CORE module
     Cortex_M_Model::radio_enable();
@@ -42,23 +37,16 @@ CC2538::CC2538(unsigned int unit, IO_Irq irq, DMA_Buffer * dma_buf):
     // For now, we'll just copy using RFDATA register.
 	//xreg(FRMCTRL1) |= IGNORE_TX_UNDERF;
 
-    // TODO: Memory in the fifos is padded: you can only write one byte every 4bytes.
-    // For now, we'll just copy using RFDATA register.
-    //_tx_buffer[0] = reinterpret_cast<Buffer*>(TXFIFO);
-    //_rx_buffer[0] = reinterpret_cast<Buffer*>(RXFIFO);
-
-    _tx_buffer[0] = new (SYSTEM) Buffer(0);
-
     auto log = _dma_buf->log_address();
 
+    for (auto i = 0u; i < TX_BUFS; ++i) {
+        _tx_buffer[i] = new (log) Buffer(0);
+        log += sizeof(Buffer);
+    }
     for (auto i = 0u; i < RX_BUFS; ++i) {
         _rx_buffer[i] = new (log) Buffer(0);
         log += sizeof(Buffer);
     }
-
-    // Disable symbol search completely (will be turned on by listen())
-    // TODO: This line caused interrupts to stop and never turn on.
-    //xreg(FRMCTRL0) |= (3 * RX_MODE);
 
     sfr(RFST) = ISFLUSHTX; // Clear TXFIFO
     sfr(RFST) = ISFLUSHRX; // Clear RXFIFO
@@ -94,6 +82,8 @@ CC2538::CC2538(unsigned int unit, IO_Irq irq, DMA_Buffer * dma_buf):
 
 	// Enable auto-CRC
 	xreg(FRMCTRL0) |= AUTO_CRC;
+
+    rx_mode(RX_MODE_NORMAL);
 
     channel(Traits<CC2538>::DEFAULT_CHANNEL);
 

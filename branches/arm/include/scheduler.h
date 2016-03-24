@@ -310,7 +310,9 @@ public:
 public:
     Scheduler() {}
 
-    unsigned int schedulables() { return Base::size(); }
+    // Force function call, otherwise compiler might optimize and
+    // not see when a thread is woken up inside an interrupt (in Thread::idle())
+    unsigned int schedulables()__attribute__((noinline)) { return Base::size(); }
 
     T * volatile chosen() {
     	// If called before insert(), chosen will dereference a null pointer!

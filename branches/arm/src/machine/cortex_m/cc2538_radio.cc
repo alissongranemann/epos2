@@ -71,47 +71,14 @@ void CC2538::channel(unsigned int channel)
 
 int CC2538::send(const Address & dst, const Protocol & prot, const void * data, unsigned int size)
 {
-    // Wait for the buffer to become free and seize it
-    for(bool locked = false; !locked; ) {
-        locked = _tx_buffer[_tx_cur]->lock();
-        if(!locked) ++_tx_cur;
+    if(size > MTU) {
+        return 0;
     }
-
-    Buffer * buf = _tx_buffer[_tx_cur];
-
-    db<CC2538>(TRC) << "CC2538::send(s=" << _address << ",d=" << dst << ",p=" << prot
-        << ",d=" << data << ",s=" << size << ")" << endl;
-
-    char * f = reinterpret_cast<char *>(new (buf->frame()) Frame(_address, dst, prot, data, size));
-    const bool ack = Traits<CC2538>::ACK and (dst != broadcast());
-    if(ack) {
-        buf->frame()->ack_request(true);
-    }
-
-    // Assemble the 802.15.4 frame
-    // TODO: Memory in the fifos is padded: you can only write one byte every 4bytes.
-    // For now, we'll just copy using the RFDATA register
-    sfr(RFST) = ISFLUSHTX; // Clear TXFIFO
-    for(int i=0; i<f[0]+1; i++) // First field is length of MAC
-        sfr(RFDATA) = f[i];
-
-    // Trigger an immediate send poll
-    bool ok = send_and_wait(ack);
-    if(ack and not ok)
-        db<CC2538>(INF) << "CC2538::no ack received!" << endl;
-
-    _statistics.tx_packets++;
-    _statistics.tx_bytes += size;
-
-    db<CC2538>(INF) << "CC2538::send done" << endl;
-
-    buf->unlock();
-
-    if(ack) {
-        return ok ? size : -size;
-    }
-    else {
-        return size;
+    if(auto b = alloc(reinterpret_cast<NIC*>(this), dst, prot, 0, 0, size)) {
+        b->frame()->data(data);
+        return send(b);
+    } else {
+        return 0;
     }
 }
 
@@ -132,8 +99,9 @@ int CC2538::receive(Address * src, Protocol * prot, void * data, unsigned int si
 
     Buffer * buf = _rx_buffer[_rx_cur];
 
-    if(copy_from_rxfifo(buf))
-    {
+    if(frame_in_rxfifo()) {
+        copy_from_rxfifo(buf);
+
         // Disassemble the frame
         Frame * frame = buf->frame();
         *src = frame->src();
@@ -157,11 +125,9 @@ int CC2538::receive(Address * src, Protocol * prot, void * data, unsigned int si
         ++_rx_cur %= RX_BUFS;
 
         return tmp;
-    }
-    else
-    {
+    } else {
         buf->unlock();
-        return -1;
+        return 0;
     }
 }
 
@@ -173,7 +139,11 @@ CC2538::Buffer * CC2538::alloc(NIC * nic, const Address & dst, const Protocol & 
 
     int max_data = MTU - always;
 
-    if((payload + once) / max_data > TX_BUFS) {
+    // TODO: replace with division
+    unsigned int buffers = 0;
+    for(int size = once + payload; size > 0; size -= max_data, buffers++);
+    if(buffers > TX_BUFS) {
+//    if((payload + once) / max_data > TX_BUFS) {
         db<CC2538>(WRN) << "CC2538::alloc: sizeof(Network::Packet::Data) > sizeof(NIC::Frame::Data) * TX_BUFS!" << endl;
         return 0;
     }
@@ -185,12 +155,13 @@ CC2538::Buffer * CC2538::alloc(NIC * nic, const Address & dst, const Protocol & 
         // Wait for the next buffer to become free and seize it
         for(bool locked = false; !locked; ) {
             locked = _tx_buffer[_tx_cur]->lock();
-            if(!locked) ++_tx_cur;
+            if(!locked) ++_tx_cur %= TX_BUFS;
         }
         Buffer * buf = _tx_buffer[_tx_cur];
 
         // Initialize the buffer and assemble the IEEE 802.15.4 Frame Header
-        new (buf) Buffer(nic, _address, dst, prot, (size > max_data) ? MTU : size + always);
+        auto sz = (size > max_data) ? MTU : size + always;
+        new (buf) Buffer(nic, sz, _address, dst, prot, sz);
         if(Traits<CC2538>::ACK and (dst != broadcast()))
             buf->frame()->ack_request(true);
 
@@ -206,41 +177,43 @@ CC2538::Buffer * CC2538::alloc(NIC * nic, const Address & dst, const Protocol & 
 
 int CC2538::send(Buffer * buf)
 {
-    unsigned int size = 0;
-
-    const bool ack = Traits<CC2538>::ACK and (buf->frame()->dst() != broadcast());
-    bool frame_sent = true;
+    int size = 0;
 
     for(Buffer::Element * el = buf->link(); el; el = el->next()) {
         buf = el->object();
+        const bool ack = Traits<CC2538>::ACK and (buf->frame()->dst() != broadcast());
 
         db<CC2538>(TRC) << "CC2538::send(buf=" << buf << ")" << endl;
 
         // TODO: Memory in the fifos is padded: you can only write one byte every 4bytes.
         // For now, we'll just copy using the RFDATA register
         char * f = reinterpret_cast<char *>(buf->frame());
+
         sfr(RFST) = ISFLUSHTX; // Clear TXFIFO
-        for(int i=0; i<f[0]+1; i++) // First field is length of MAC
+        while(xreg(TXFIFOCNT) != 0);
+
+        // First field is length of MAC
+        // CRC is inserted by hardware (assuming auto-CRC is enabled)
+        const int crc_size = sizeof(CRC);
+        for(int i=0; i < f[0] + 1 - crc_size; i++)
             sfr(RFDATA) = f[i];
 
         // Trigger an immediate send poll
         bool ok = send_and_wait(ack);
-        if(ack and not ok) {
-            db<CC2538>(INF) << "CC2538::no ack received!" << endl;
-            frame_sent = false;
+
+        if(ok) {
+            db<CC2538>(INF) << "CC2538::send done" << endl;
+            _statistics.tx_packets++;
+            _statistics.tx_bytes += buf->size();
+            size += buf->size();
+        } else {
+            db<CC2538>(INF) << "CC2538::send failed!" << endl;
         }
-
-        size += buf->size();
-
-        _statistics.tx_packets++;
-        _statistics.tx_bytes += buf->size();
-
-        db<CC2538>(INF) << "CC2538::send done" << endl;
 
         buf->unlock();
     }
 
-    return frame_sent ? size : -size;
+    return size;
 }
 
 
@@ -257,7 +230,7 @@ void CC2538::free(Buffer * buf)
         // Release the buffer to the OS
         buf->unlock();
 
-        db<CC2538>(INF) << "CC2538::free" << endl;
+        db<CC2538>(INF) << "CC2538::free " << buf << endl;
     }
 }
 
@@ -266,115 +239,88 @@ void CC2538::reset()
 {
     db<CC2538>(TRC) << "Radio::reset()" << endl;
 
-
     // Reset statistics
     new (&_statistics) Statistics;
 }
 
-bool CC2538::rxfifo_crc_check()
-{
-    auto end = xreg(RXFIFOCNT); // Number of bytes currently in RXFIFO
-    if(end == 0) {
-        return false;
-    }
-
-    const bool auto_crc_disabled = !(xreg(FRMCTRL0) & AUTO_CRC);
-    if(auto_crc_disabled) {
-        return true;
-    }
-
-    volatile int * rxfifo = reinterpret_cast<volatile int*>(RXFIFO); // RXFIFO mapped in memory
-    return rxfifo[end - 1] & AUTO_CRC_OK;
-}
-
 // TODO: Memory in the fifos is padded: you can only write one byte every 4bytes.
 // For now, we'll just copy using the RFDATA register
-bool CC2538::copy_from_rxfifo(Buffer * buf)
+void CC2538::copy_from_rxfifo(Buffer * buf)
 {
-    auto * data = buf->raw<char>();
-    auto end = xreg(RXFIFOCNT); // Number of bytes currently in RXFIFO
-    //volatile int * rxfifo = reinterpret_cast<volatile int*>(RXFIFO); // RXFIFO mapped in memory
-    //const bool auto_crc_disabled = !(xreg(FRMCTRL0) & AUTO_CRC);
-    bool ret = false;
-
-    // Check CRC           // Last byte in the frame
-    //if (auto_crc_disabled || ((rxfifo[end-1] & AUTO_CRC_OK)))
-    //{
-        data[0] = sfr(RFDATA); // First field is length of MAC
-
-        if (data[0] > 127) {// Force size to at most 127
-            data[0] = 127;
-        }
-
-        for(auto i = 1u; i < end; ++i) {// Copy rest of data
-            data[i] = sfr(RFDATA);
-        }
-
-        ret = true;
-    //}
-
+    auto * data = reinterpret_cast<unsigned char *>(buf->frame());
+    data[0] = sfr(RFDATA); // First field is length of MAC frame
+    for(auto i = 0u; i < data[0]; ++i) { // Copy MAC frame
+        data[i + 1] = sfr(RFDATA);
+    }
     clear_rxfifo();
-    return ret;
 }
 
-bool CC2538::wait_for_ack(Reg32 filter_restore_value)
+bool CC2538::wait_for_ack()
 {
-    bool acked = false;
+    while(!(sfr(RFIRQF1) & INT_TXDONE));
+    sfr(RFIRQF1) &= ~INT_TXDONE;
 
-    if(!Traits<CC2538>::auto_listen) {
+    if(not Traits<CC2538>::auto_listen) {
         xreg(RFST) = ISRXON;
     }
 
-    eMote3_GPTM timer(2, Traits<CC2538>::ACK_TIMEOUT); 
+    bool acked = false;
+    eMote3_GPTM timer(2, Traits<CC2538>::ACK_TIMEOUT);
     timer.enable();
-    while(timer.running() and not (acked = sfr(RFIRQF0) & INT_FIFOP));
-
-    //clear_rxfifo();
-    //xreg(FRMFILT1) = filter_restore_value; // Done with ACKs
-    //sfr(RFIRQF0) &= ~INT_FIFOP; // Clear FIFOP flag
-    //xreg(RFIRQM0) |= INT_FIFOP; // Enable FIFOP int
+    while(timer.running() and not (acked = (sfr(RFIRQF0) & INT_FIFOP)));
 
     return acked;
 }
 
 bool CC2538::send_and_wait(bool ack)
-{    
+{
     bool do_ack = Traits<CC2538>::ACK and ack;
-    Reg32 saved_filter_settings;
+    Reg32 saved_filter_settings = 0;
     if(do_ack) {
         saved_filter_settings = xreg(FRMFILT1);
         xreg(RFIRQM0) &= ~INT_FIFOP; // Disable FIFOP int. We'll poll the interrupt flag
         xreg(FRMFILT1) = ACCEPT_FT2_ACK; // Accept only ACK frames now
     }
 
-    bool sent = do_send();
+    bool sent = backoff_and_send();
 
     if(do_ack) {
-        bool acked = sent and wait_for_ack(saved_filter_settings);
+        bool acked = sent and wait_for_ack();
 
         for(auto i = 0u; (i < Traits<CC2538>::RETRANSMISSIONS) and not acked; i++) {
             db<CC2538>(TRC) << "CC2538::retransmitting" << endl;
-            sent = do_send();
+            sent = backoff_and_send();
 
-            acked = sent and wait_for_ack(saved_filter_settings);
+            acked = sent and wait_for_ack();
         }
 
-        clear_rxfifo();
+        if(acked) {
+            sfr(RFIRQF0) &= ~INT_FIFOP; // Clear FIFOP flag
+            clear_rxfifo();
+        }
+
+        if(not Traits<CC2538>::auto_listen) {
+            xreg(RFST) = ISRFOFF;
+        }
+
         xreg(FRMFILT1) = saved_filter_settings; // Done with ACKs
-        sfr(RFIRQF0) &= ~INT_FIFOP; // Clear FIFOP flag
         xreg(RFIRQM0) |= INT_FIFOP; // Enable FIFOP int
         return acked;
     }
-    else if (sent) {
+    else if(sent) {
         while(!(sfr(RFIRQF1) & INT_TXDONE));
         sfr(RFIRQF1) &= ~INT_TXDONE;
     }
+
     return sent;
 }
 
-bool CC2538::do_send()
+bool CC2538::backoff_and_send()
 {
+    bool ret = true;
     if(Traits<CC2538>::CSMA_CA) {
+        rx_mode(RX_MODE_NO_SYMBOL_SEARCH);
+
         unsigned int two_raised_to_be = 1;
         unsigned int BE;
         for(BE = 0; BE < Traits<CC2538>::CSMA_CA_MIN_BACKOFF_EXPONENT; BE++) {
@@ -383,21 +329,16 @@ bool CC2538::do_send()
 
         unsigned int trials;
         for(trials = 0u; trials < Traits<CC2538>::CSMA_CA_MAX_TRANSMISSION_TRIALS; trials++) {
-            if(!Traits<CC2538>::auto_listen)
+            if(not Traits<CC2538>::auto_listen)
                 xreg(RFST) = ISRXON;
 
-            //unsigned int delay_time = 0;
-            //while(delay_time < 192) {
-            //    delay_time = Random::random() % Traits<CC2538>::CSMA_CA_DELAY_MAX;
-            //}
-            //auto delay_time = (1 + (Random::random() % (Traits<CC2538>::CSMA_CA_DELAY_MAX / 192))) * 192;
-
-            auto delay_time = (Random::random() % (two_raised_to_be - 1)) * Traits<CC2538>::CSMA_CA_UNIT_BACKOFF_PERIOD;
+            const auto ubp = Traits<CC2538>::CSMA_CA_UNIT_BACKOFF_PERIOD;
+            auto delay_time = (Random::random() % (two_raised_to_be - 1)) * ubp;
+            delay_time = delay_time < ubp ? ubp : delay_time;
 
             eMote3_GPTM::delay(delay_time, 2);
             sfr(RFST) = ISTXONCCA;
             if(xreg(FSMSTAT1) & SAMPLED_CCA) {
-                clear_rxfifo();
                 break; // Success
             }
             
@@ -406,34 +347,46 @@ bool CC2538::do_send()
                 two_raised_to_be *= 2;
             }
         }
+
+        rx_mode(RX_MODE_NORMAL);
+
         if(trials >= Traits<CC2538>::CSMA_CA_MAX_TRANSMISSION_TRIALS) {
-            db<CC2538>(WRN) << "CC2538::do_send() FAILED" << endl;
-            return false;
+            db<CC2538>(WRN) << "CC2538::backoff_and_send() FAILED" << endl;
+            ret = false;
         }
     }
     else {
         sfr(RFST) = ISTXON;
     }
 
-    return true;
+    return ret;
+}
 
-    //if(Traits<CC2538>::ACK) {
-    //    xreg(RFIRQM0) &= ~INT_FIFOP; // Disable FIFOP int. We'll poll the interrupt flag
-    //    xreg(FRMFILT1) = ACCEPT_FT2_ACK; // Accept only ACK frames now
-    //}
-    //db<CC2538>(TRC) << "bytes in RXFIFO after CCA = " << xreg(RXFIFOCNT) << endl;
+bool CC2538::frame_in_rxfifo()
+{
+    bool ret = false;
+    if(xreg(RXFIFOCNT) > 0) {
+        auto rxfifo = reinterpret_cast<volatile unsigned int*>(RXFIFO);
+        unsigned char mac_frame_size = rxfifo[0];
+        if (mac_frame_size > 127) {
+            db<CC2538>(WRN) << "CC2538::frame_in_rxfifo(): Wrong frame size, dropping RXFIFO contents!" << endl;
+            clear_rxfifo();
+            ret = false;
+        }
+        else {
+            // On RX, last byte in the frame contains info like CRC result
+            // (obs: mac frame is preceeded by one byte containing the frame length, 
+            // so total rxfifo data's size is 1 + mac_frame_size)
+            ret = rxfifo[mac_frame_size] & AUTO_CRC_OK;
+            
+            if(not ret) {
+                db<CC2538>(WRN) << "CC2538::frame_in_rxfifo(): Wrong CRC, dropping RXFIFO contents!" << endl;
+                clear_rxfifo();
+            }
+        }
+    }
 
-    //sfr(RFST) = ISCLEAR; // Clear program memory
-    //sfr(RFST) = STXON;
-    //sfr(RFST) = ISSTART; // Start TX
-
-    //while(!(sfr(RFIRQF1) & INT_TXDONE));
-    //sfr(RFIRQF1) &= ~INT_TXDONE;
-    //db<CC2538>(TRC) << "bytes in RXFIFO after TX = " << xreg(RXFIFOCNT) << endl;
-
-//    if(Traits<CC2538>::auto_listen)
-//        xreg(RFST) = ISRXON;
-    //db<CC2538>(TRC) << "bytes in RXFIFO after RX = " << xreg(RXFIFOCNT) << endl;
+    return ret;
 }
 
 void CC2538::handle_int()
@@ -441,14 +394,9 @@ void CC2538::handle_int()
     Reg32 irqrf0 = sfr(RFIRQF0);
     Reg32 irqrf1 = sfr(RFIRQF1);
 
-    if((irqrf0 & INT_FIFOP)) { // Frame received
-        // Note that ISRs in EPOS are reentrant, that's why locking was carefully made atomic
-        // Therefore, several instances of this code can compete to handle received buffers
+    if(irqrf0 & INT_FIFOP) { // Frame received
         sfr(RFIRQF0) &= ~INT_FIFOP;
-
-        if(!rxfifo_crc_check()) {
-            clear_rxfifo();
-        } else {
+        if(frame_in_rxfifo()) {
             Buffer * buf = 0;
 
             // NIC received a frame in the RXFIFO, so we need to find an unused buffer for it
@@ -467,51 +415,41 @@ void CC2538::handle_int()
                 clear_rxfifo();
             } else {
                 // We have a buffer, so we fetch a packet from the fifo
-                if (copy_from_rxfifo(buf)) {
-                    buf->size(buf->frame()->frame_length() - (sizeof(Header) + sizeof(CRC) - sizeof(Phy_Header))); // Phy_Header is included in Header, but is already discounted in frame_length
+                copy_from_rxfifo(buf);
+                buf->size(buf->frame()->frame_length() - (sizeof(Header) + sizeof(CRC) - sizeof(Phy_Header))); // Phy_Header is included in Header, but is already discounted in frame_length
 
-                    auto * frame = buf->frame();
+                auto * frame = buf->frame();
 
-                    db<CC2538>(TRC) << "CC2538::int:receive(s=" << frame->src() << ",p=" << hex << frame->header()->prot() << dec
-                        << ",d=" << frame->data<void>() << ",s=" << buf->size() << ")" << endl;
+                db<CC2538>(TRC) << "CC2538::int:receive(s=" << frame->src() << ",p=" << hex << frame->header()->prot() << dec
+                    << ",d=" << frame->data<void>() << ",s=" << buf->size() << ")" << endl;
 
-                    db<CC2538>(INF) << "CC2538::handle_int[" << _rx_cur << "]" << endl;
+                db<CC2538>(INF) << "CC2538::handle_int[" << _rx_cur << "]" << endl;
 
-                    IC::disable(_irq);
-                    if(!notify(frame->header()->prot(), buf)) {// No one was waiting for this frame, so let it free for receive()
-                        free(buf);
-                    }
-                    // TODO: this serialization is much too restrictive. It was done this way for students to play with
-                    IC::enable(_irq);
-                } else { // something went wrong when checking the received data
+                //IC::disable(_irq);
+                if(!notify(frame->header()->prot(), buf)) {// No one was waiting for this frame, so let it free for receive()
                     free(buf);
                 }
+                // TODO: this serialization is much too restrictive. It was done this way for students to play with
+                //IC::enable(_irq);
             }
         }
     }
+    db<CC2538>(TRC) << "CC2538::int: " << endl << "RFIRQF0 = " << hex << irqrf0 << endl;
+    //if(irqrf0 & INT_RXMASKZERO) db<CC2538>(TRC) << "RXMASKZERO" << endl;
+    //if(irqrf0 & INT_RXPKTDONE) db<CC2538>(TRC) << "RXPKTDONE" << endl;
+    //if(irqrf0 & INT_FRAME_ACCEPTED) db<CC2538>(TRC) << "FRAME_ACCEPTED" << endl;
+    //if(irqrf0 & INT_SRC_MATCH_FOUND) db<CC2538>(TRC) << "SRC_MATCH_FOUND" << endl;
+    //if(irqrf0 & INT_SRC_MATCH_DONE) db<CC2538>(TRC) << "SRC_MATCH_DONE" << endl;
+    //if(irqrf0 & INT_SFD) db<CC2538>(TRC) << "SFD" << endl;
+    //if(irqrf0 & INT_ACT_UNUSED) db<CC2538>(TRC) << "ACT_UNUSED" << endl;
 
-    db<CC2538>(TRC) << "CC2538::int: " << endl << "RFIRQF0 = " << irqrf0 << endl;
-    if(irqrf0 & INT_RXMASKZERO) db<CC2538>(TRC) << "RXMASKZERO" << endl;
-    if(irqrf0 & INT_RXPKTDONE) db<CC2538>(TRC) << "RXPKTDONE" << endl;
-    if(irqrf0 & INT_FRAME_ACCEPTED) db<CC2538>(TRC) << "FRAME_ACCEPTED" << endl;
-    if(irqrf0 & INT_SRC_MATCH_FOUND) db<CC2538>(TRC) << "SRC_MATCH_FOUND" << endl;
-    if(irqrf0 & INT_SRC_MATCH_DONE) db<CC2538>(TRC) << "SRC_MATCH_DONE" << endl;
-    if(irqrf0 & INT_SFD) db<CC2538>(TRC) << "SFD" << endl;
-    if(irqrf0 & INT_ACT_UNUSED) db<CC2538>(TRC) << "ACT_UNUSED" << endl;
-
-    db<CC2538>(TRC) << "RFIRQF1 = " << irqrf1 << endl;
-    if(irqrf1 & INT_CSP_WAIT) db<CC2538>(TRC) << "CSP_WAIT" << endl;
-    if(irqrf1 & INT_CSP_STOP) db<CC2538>(TRC) << "CSP_STOP" << endl;
-    if(irqrf1 & INT_CSP_MANINT) db<CC2538>(TRC) << "CSP_MANINT" << endl;
-    if(irqrf1 & INT_RFIDLE) db<CC2538>(TRC) << "RFIDLE" << endl;
-    if(irqrf1 & INT_TXDONE) db<CC2538>(TRC) << "TXDONE" << endl;
-    if(irqrf1 & INT_TXACKDONE) db<CC2538>(TRC) << "TXACKDONE" << endl;
-
-
-    if(false) { // Error
-        db<CC2538>(WRN) << "CC2538::int:error =>";
-        db<CC2538>(WRN) << endl;
-    }
+    db<CC2538>(TRC) << "RFIRQF1 = " << hex << irqrf1 << endl;
+    //if(irqrf1 & INT_CSP_WAIT) db<CC2538>(TRC) << "CSP_WAIT" << endl;
+    //if(irqrf1 & INT_CSP_STOP) db<CC2538>(TRC) << "CSP_STOP" << endl;
+    //if(irqrf1 & INT_CSP_MANINT) db<CC2538>(TRC) << "CSP_MANINT" << endl;
+    //if(irqrf1 & INT_RFIDLE) db<CC2538>(TRC) << "RFIDLE" << endl;
+    //if(irqrf1 & INT_TXDONE) db<CC2538>(TRC) << "TXDONE" << endl;
+    //if(irqrf1 & INT_TXACKDONE) db<CC2538>(TRC) << "TXACKDONE" << endl;
 }
 
 

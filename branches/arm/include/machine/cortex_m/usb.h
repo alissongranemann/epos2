@@ -239,7 +239,7 @@ public:
 
     static void init();
     static void disable();
-    static bool ready_to_print() { return _ready_to_print; }
+    static bool ready() { return state() >= USB_2_0::STATE::CONFIGURED; }
 
     static bool has_data();
     static unsigned int get_data(char * out, unsigned int max_size);

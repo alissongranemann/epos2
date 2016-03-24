@@ -136,7 +136,6 @@ __END_SYS
 
 __BEGIN_SYS
 
-
 // Abstractions
 template<> struct Traits<Application>: public Traits<void>
 {

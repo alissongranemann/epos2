@@ -290,9 +290,8 @@ protected:
 
     static void reboot() { }
 
-    void config_GPTM(unsigned int which_timer)
+    void config_GPTM(unsigned int which_timer) //TODO
     {
-        //TODO
     }
     void config_UART(volatile Log_Addr * base)
     {

@@ -164,8 +164,7 @@ public:
             { return (reinterpret_cast<const char*>(this))[idx]; };
         } __attribute__((packed));
 
-        //TODO
-        //struct String
+        //struct String //TODO
         //{
         //} __attribute__((packed));
     };

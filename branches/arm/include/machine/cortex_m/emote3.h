@@ -765,23 +765,21 @@ public:
         GPIO_A = 1 << 0,
     };
 
+    // Change in power mode will only be effective when ASM("wfi") is called
     static void power_mode(POWER_MODE p)
     {
-        if(p <= SLEEP)
-        {
+        if(p <= SLEEP) {
             scs(SCR) &= ~SLEEPDEEP;
         }
-        else
-        {
+        else {
             scs(SCR) |= SLEEPDEEP;
             scr(PMCTL) = p - POWER_MODE_0;
         }
-        if(p != POWER_MODE::ACTIVE)
-            ASM("wfi");
+        //if(p != POWER_MODE::ACTIVE)
+        //    ASM("wfi");
     }
 
-    static void wake_up_on(WAKE_UP_EVENT e)
-    {
+    static void wake_up_on(WAKE_UP_EVENT e) {
         scs(IWE) = e;
     }
 

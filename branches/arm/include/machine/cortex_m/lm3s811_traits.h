@@ -35,10 +35,55 @@ template <> struct Traits<Cortex_M>: public Traits<Cortex_M_Common>
     static const unsigned int SYS_CODE  = 0x00200000; // Library mode only => APP + SYS
     static const unsigned int SYS_DATA  = 0x20000000; // Library mode only => APP + SYS
 
+    // Bootloader Memory Map (not supported for this model)
+    // Word in RAM reserved for the bootloader
+    static const unsigned int BOOTLOADER_STATUS_ADDRESS = 0x20001ffc;
+
+    // Physical Memory
+    static const unsigned int BOOTLOADER_MEM_BASE  = 0x20000000;
+    static const unsigned int BOOTLOADER_MEM_TOP   = 0x20001ff7; // (MAX for 32-bit is 0x70000000 / 1792 MB)
+
+    // Logical Memory Map
+    static const unsigned int BOOTLOADER_APP_LOW   = 0x20000000;
+    static const unsigned int BOOTLOADER_APP_CODE  = 0x00000000;
+    static const unsigned int BOOTLOADER_APP_DATA  = 0x20000000;
+    static const unsigned int BOOTLOADER_APP_HIGH  = 0x20001ff7;
+
+    static const unsigned int BOOTLOADER_PHY_MEM   = 0x20000000;
+
+    static const unsigned int BOOTLOADER_SYS       = 0x00200000;
+    static const unsigned int BOOTLOADER_SYS_CODE  = 0x00200000; // Library mode only => APP + SYS
+    static const unsigned int BOOTLOADER_SYS_DATA  = 0x20000000; // Library mode only => APP + SYS
+
     // Default Sizes and Quantities
     static const unsigned int STACK_SIZE = 512;
     static const unsigned int HEAP_SIZE = 512;
     static const unsigned int MAX_THREADS = 5;
+};
+
+template<> struct Traits<Cortex_M_Bootloader>: public Traits<Cortex_M>
+{
+    static const bool enabled = false; // Not supported for this model
+    static const unsigned int NIC_CHANNEL = 11;
+    static const unsigned int NIC_PROTOCOL = 0x1010;
+
+    // Set to 0 to try forever
+    static const unsigned int HANDSHAKE_WAITING_LIMIT = 1000000; // in microseconds
+
+    // Flash memory reserved for the bootloader
+    static const unsigned int BOOTLOADER_LOW_ADDR = Traits<Cortex_M>::BOOTLOADER_SYS;
+    static const unsigned int BOOTLOADER_TOP_ADDR = Traits<Cortex_M>::SYS;
+
+    // Loaded image bounds
+    static const unsigned int BOOTLOADER_IMAGE_LOW = BOOTLOADER_TOP_ADDR;
+    static const unsigned int BOOTLOADER_IMAGE_TOP = 0x0027f800; 
+
+    // Pointers to loaded EPOS' interrupt table
+    const static unsigned int LOADED_EPOS_STACK_POINTER_ADDRESS = BOOTLOADER_IMAGE_LOW;
+    const static unsigned int LOADED_EPOS_ENTRY_POINT_ADDRESS   = BOOTLOADER_IMAGE_LOW + 4;
+    const static unsigned int LOADED_EPOS_INT_HANDLER_ADDRESS   = BOOTLOADER_IMAGE_LOW + 8;
+
+    const static unsigned int BUFFER_SIZE = 256;
 };
 
 template <> struct Traits<Cortex_M_IC>: public Traits<Cortex_M_Common>
