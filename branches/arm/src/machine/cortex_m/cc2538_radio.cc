@@ -168,7 +168,7 @@ typename CC2538<MAC>::Buffer * CC2538<MAC>::alloc(NIC * nic, const Address & dst
         // Initialize the buffer and assemble the IEEE 802.15.4 Frame Header
         auto sz = (size > max_data) ? MTU : size + always;
         new (buf) Buffer(nic, sz, _address, dst, prot, sz);
-        if(Traits<CC2538>::ACK and (dst != broadcast()))
+        if(Traits<CC2538<MAC>>::ACK and (dst != broadcast()))
             buf->frame()->ack_request(true);
 
         db<CC2538>(INF) << "CC2538::alloc[" << _tx_cur << "]" << endl;
@@ -188,7 +188,7 @@ int CC2538<MAC>::send(Buffer * buf)
 
     for(typename Buffer::Element * el = buf->link(); el; el = el->next()) {
         buf = el->object();
-        const bool ack = Traits<CC2538>::ACK and (buf->frame()->dst() != broadcast());
+        const bool ack = Traits<CC2538<MAC>>::ACK and (buf->frame()->dst() != broadcast());
 
         db<CC2538>(TRC) << "CC2538::send(buf=" << buf << ")" << endl;
 
@@ -269,12 +269,12 @@ bool CC2538<MAC>::wait_for_ack()
     while(!(sfr(RFIRQF1) & INT_TXDONE));
     sfr(RFIRQF1) &= ~INT_TXDONE;
 
-    if(not Traits<CC2538>::auto_listen) {
+    if(not Traits<CC2538<MAC>>::auto_listen) {
         xreg(RFST) = ISRXON;
     }
 
     bool acked = false;
-    eMote3_GPTM timer(2, Traits<CC2538>::ACK_TIMEOUT);
+    eMote3_GPTM timer(2, Traits<CC2538<MAC>>::ACK_TIMEOUT);
     timer.enable();
     while(timer.running() and not (acked = (sfr(RFIRQF0) & INT_FIFOP)));
 
@@ -284,7 +284,7 @@ bool CC2538<MAC>::wait_for_ack()
 template <typename MAC>
 bool CC2538<MAC>::send_and_wait(bool ack)
 {
-    bool do_ack = Traits<CC2538>::ACK and ack;
+    bool do_ack = Traits<CC2538<MAC>>::ACK and ack;
     Reg32 saved_filter_settings = 0;
     if(do_ack) {
         saved_filter_settings = xreg(FRMFILT1);
@@ -297,7 +297,7 @@ bool CC2538<MAC>::send_and_wait(bool ack)
     if(do_ack) {
         bool acked = sent and wait_for_ack();
 
-        for(auto i = 0u; (i < Traits<CC2538>::RETRANSMISSIONS) and not acked; i++) {
+        for(auto i = 0u; (i < Traits<CC2538<MAC>>::RETRANSMISSIONS) and not acked; i++) {
             db<CC2538>(TRC) << "CC2538::retransmitting" << endl;
             sent = backoff_and_send();
 
@@ -309,7 +309,7 @@ bool CC2538<MAC>::send_and_wait(bool ack)
             clear_rxfifo();
         }
 
-        if(not Traits<CC2538>::auto_listen) {
+        if(not Traits<CC2538<MAC>>::auto_listen) {
             xreg(RFST) = ISRFOFF;
         }
 
@@ -329,21 +329,21 @@ template <typename MAC>
 bool CC2538<MAC>::backoff_and_send()
 {
     bool ret = true;
-    if(Traits<CC2538>::CSMA_CA) {
+    if(Traits<CC2538<MAC>>::CSMA_CA) {
         rx_mode(RX_MODE_NO_SYMBOL_SEARCH);
 
         unsigned int two_raised_to_be = 1;
         unsigned int BE;
-        for(BE = 0; BE < Traits<CC2538>::CSMA_CA_MIN_BACKOFF_EXPONENT; BE++) {
+        for(BE = 0; BE < Traits<CC2538<MAC>>::CSMA_CA_MIN_BACKOFF_EXPONENT; BE++) {
             two_raised_to_be *= 2;
         }
 
         unsigned int trials;
-        for(trials = 0u; trials < Traits<CC2538>::CSMA_CA_MAX_TRANSMISSION_TRIALS; trials++) {
-            if(not Traits<CC2538>::auto_listen)
+        for(trials = 0u; trials < Traits<CC2538<MAC>>::CSMA_CA_MAX_TRANSMISSION_TRIALS; trials++) {
+            if(not Traits<CC2538<MAC>>::auto_listen)
                 xreg(RFST) = ISRXON;
 
-            const auto ubp = Traits<CC2538>::CSMA_CA_UNIT_BACKOFF_PERIOD;
+            const auto ubp = Traits<CC2538<MAC>>::CSMA_CA_UNIT_BACKOFF_PERIOD;
             auto delay_time = (Random::random() % (two_raised_to_be - 1)) * ubp;
             delay_time = delay_time < ubp ? ubp : delay_time;
 
@@ -353,7 +353,7 @@ bool CC2538<MAC>::backoff_and_send()
                 break; // Success
             }
             
-            if(BE < Traits<CC2538>::CSMA_CA_MAX_BACKOFF_EXPONENT) {
+            if(BE < Traits<CC2538<MAC>>::CSMA_CA_MAX_BACKOFF_EXPONENT) {
                 BE++;
                 two_raised_to_be *= 2;
             }
@@ -361,7 +361,7 @@ bool CC2538<MAC>::backoff_and_send()
 
         rx_mode(RX_MODE_NORMAL);
 
-        if(trials >= Traits<CC2538>::CSMA_CA_MAX_TRANSMISSION_TRIALS) {
+        if(trials >= Traits<CC2538<MAC>>::CSMA_CA_MAX_TRANSMISSION_TRIALS) {
             db<CC2538>(WRN) << "CC2538::backoff_and_send() FAILED" << endl;
             ret = false;
         }

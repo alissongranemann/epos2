@@ -86,13 +86,13 @@ CC2538<MAC>::CC2538(unsigned int unit, IO_Irq irq, DMA_Buffer * dma_buf):
 
     rx_mode(RX_MODE_NORMAL);
 
-    channel(Traits<CC2538>::DEFAULT_CHANNEL);
+    channel(Traits<CC2538<MAC>>::DEFAULT_CHANNEL);
 
 	// Disable counting of MAC overflows
 	xreg(CSPT) = 0xff;
 
     // Enable auto ACK
-    if(Traits<CC2538>::ACK)
+    if(Traits<CC2538<MAC>>::ACK)
         xreg(FRMCTRL0) |= AUTO_ACK;
 
     // Clear interrupts
@@ -105,7 +105,7 @@ CC2538<MAC>::CC2538(unsigned int unit, IO_Irq irq, DMA_Buffer * dma_buf):
     // Reset statistics
     reset();
 
-    if(Traits<CC2538>::auto_listen)
+    if(Traits<CC2538<MAC>>::auto_listen)
     {
  	    xreg(FRMCTRL1) |= SET_RXENMASK_ON_TX; // Enter receive mode after TX
 
