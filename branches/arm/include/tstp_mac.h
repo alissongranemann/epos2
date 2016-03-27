@@ -2,20 +2,34 @@
 #define __tstp_mac_h
 
 #include <system.h>
-#include <tstp.h>
 #include <utility/buffer.h>
 #include <mmu.h>
+#include <cpu.h>
+#include <ic.h>
+#include <tstp_router.h>
 
 __BEGIN_SYS
 
-class TSTP_MAC : private Traits<TSTP>::MAC_Config<0>::PHY_Layer // TODO: Polymorphic PHY
+class TSTP_MAC
 {
+    typedef CPU::Reg32 Reg32;
+
+    friend class TSTP;
     friend class TSTP_NIC;
     typedef Traits<TSTP>::MAC_Config<0>::PHY_Layer PHY_Layer; // TODO: Polymorphic PHY
     typedef MMU::DMA_Buffer DMA_Buffer;
+    typedef CPU::IO_Irq IO_Irq;
+    typedef Traits<TSTP>::Router::Address Address;
 
 public:
-    typedef IEEE802_15_4::Frame Frame;
+    class Frame {// TODO
+    public:
+        template<typename T>
+        T* data() { return 0; } 
+    private:
+        Address _me;
+    }__attribute__((packed));
+
     typedef _UTIL::Buffer<TSTP_MAC, Frame> Buffer;
 
 private:
@@ -68,6 +82,7 @@ private:
     void handle_int();
 
     PHY_Layer * _phy;
+    TSTP * _tstp;
 };
 
 __END_SYS

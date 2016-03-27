@@ -1,6 +1,8 @@
 #include <tstp_mac.h>
 #include <ic.h>
 
+#include "../../../include/machine/cortex_m/cc2538_phy.h"
+
 __BEGIN_SYS
 
 TSTP_MAC::MACS TSTP_MAC::_macs[TSTP_MAC::UNITS];
@@ -22,12 +24,12 @@ TSTP_MAC::TSTP_MAC(CC2538_PHY * phy, unsigned int tx_bufs, unsigned int rx_bufs,
 template <>
 void TSTP_MAC::handle_int<CC2538_PHY>()
 {
-    Reg32 irqrf0 = sfr(RFIRQF0);
-    Reg32 irqrf1 = sfr(RFIRQF1);
+    Reg32 irqrf0 = _phy->sfr(_phy->RFIRQF0);
+    Reg32 irqrf1 = _phy->sfr(_phy->RFIRQF1);
 
-    if(irqrf0 & INT_FIFOP) { // Frame received
-        sfr(RFIRQF0) &= ~INT_FIFOP;
-        if(frame_in_rxfifo()) {
+    if(irqrf0 & _phy->INT_FIFOP) { // Frame received
+        _phy->sfr(_phy->RFIRQF0) &= ~_phy->INT_FIFOP;
+        if(_phy->frame_in_rxfifo()) {
             Buffer * buf = 0;
 
             // NIC received a frame in the RXFIFO, so we need to find an unused buffer for it
@@ -43,16 +45,15 @@ void TSTP_MAC::handle_int<CC2538_PHY>()
             if (not buf) {
                 db<TSTP_MAC>(WRN) << "TSTP_MAC::handle_int: no buffers left" << endl;
                 db<TSTP_MAC>(WRN) << "TSTP_MAC::handle_int: dropping fifo contents" << endl;
-                clear_rxfifo();
+                _phy->clear_rxfifo();
             } else {
                 // We have a buffer, so we fetch a packet from the fifo
-                auto sz = copy_from_rxfifo(reinterpret_cast<unsigned char *>(buf->frame()));
+                auto sz = _phy->copy_from_rxfifo(reinterpret_cast<unsigned char *>(buf->frame()));
                 buf->size(sz);
 
                 auto * frame = buf->frame();
 
-                db<TSTP_MAC>(TRC) << "TSTP_MAC::int:receive(s=" << frame->src() << ",p=" << hex << frame->header()->prot() << dec
-                    << ",d=" << frame->data<void>() << ",s=" << buf->size() << ")" << endl;
+                db<TSTP_MAC>(TRC) << "TSTP_MAC::int:receive(d=" << frame->data<void>() << ",s=" << buf->size() << ")" << endl;
 
                 db<TSTP_MAC>(INF) << "TSTP_MAC::handle_int[" << _rx_cur << "]" << endl;
 

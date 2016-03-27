@@ -182,9 +182,14 @@ class IPC;
 class Diffie_Hellman;
 class Secure_NIC;
 class AES;
+class Modbus_ASCII;
+
 class TSTP;
 class TSTP_NIC;
-class Modbus_ASCII;
+class TSTP_MAC;
+class PTP;
+class Geo_Greedy_Router;
+class TSTP_Security;
 
 template<typename Channel, bool connectionless = Channel::connectionless>
 class Link;

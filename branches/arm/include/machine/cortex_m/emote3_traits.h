@@ -144,7 +144,7 @@ template <> struct Traits<Cortex_M_Radio>: public Traits<Cortex_M_Common>
 {
     static const bool enabled = (Traits<Build>::NODES > 1);
 
-    enum {TSTP_NIC, eMote3_IEEE802_15_4};
+    // {TSTP_NIC, eMote3_IEEE802_15_4};
     typedef LIST<eMote3_IEEE802_15_4> NICS;
 
     static const unsigned int UNITS = NICS::Length;

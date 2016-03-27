@@ -1,3 +1,4 @@
+/*
 #include <utility/malloc.h>
 #include <tstp.h>
 #include <alarm.h>
@@ -103,3 +104,4 @@ void TSTP::update(NIC::Observed * o, NIC::Protocol p, NIC::Buffer *b)
 }
 
 __END_SYS
+*/

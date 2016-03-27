@@ -34,7 +34,7 @@ template<> struct Traits<Build>
     static const char ID[ID_SIZE];
 
     static const unsigned int CPUS = 1;
-    static const unsigned int NODES = 2; // > 1 => NETWORKING
+    static const unsigned int NODES = 1; // > 1 => NETWORKING
 };
 
 
@@ -141,14 +141,24 @@ template<> struct Traits<Network>: public Traits<void>
 
 template<> struct Traits<TSTP>: public Traits<Network>
 {
-    static const bool enabled = false;//(Traits<Build>::NODES > 1);
-
     struct Default_MAC_Config {
         typedef void PHY_Layer;
     };
 
     template<unsigned int UNIT>
     struct MAC_Config : public Default_MAC_Config {};
+
+    // {TSTP_MAC};
+    typedef TSTP_MAC MAC;
+    
+    // {PTP};
+    typedef PTP Time_Manager;
+
+    // {Geo_Greedy_Router};
+    typedef Geo_Greedy_Router Router;
+
+    // {TSTP_Security};
+    typedef TSTP_Security Security;
 
     static const unsigned int PROTOCOL_ID = 84;
     static const unsigned int MAX_INTERESTS = 8;

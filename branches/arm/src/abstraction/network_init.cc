@@ -7,6 +7,7 @@
 #include <icmp.h>
 #include <udp.h>
 #include <tcp.h>
+#include <tstp.h>
 
 __BEGIN_SYS
 
