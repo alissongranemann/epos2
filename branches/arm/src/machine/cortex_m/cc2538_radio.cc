@@ -1,4 +1,4 @@
-// EPOS CC2538 IEEE 802.15.4 NIC Mediator Implementation
+// EPOS eMote3_IEEE802_15_4 IEEE 802.15.4 NIC Mediator Implementation
 
 #include <system/config.h>
 #ifndef __no_networking__
@@ -13,18 +13,15 @@
 __BEGIN_SYS
 
 // Class attributes
-template<typename MAC>
-typename CC2538<MAC>::Device CC2538<MAC>::_devices[UNITS];
+eMote3_IEEE802_15_4::Device eMote3_IEEE802_15_4::_devices[UNITS];
 
 // Methods
-template <typename MAC>
-CC2538<MAC>::~CC2538<MAC>()
+eMote3_IEEE802_15_4::~eMote3_IEEE802_15_4()
 {
-    db<CC2538>(TRC) << "~Radio(unit=" << _unit << ")" << endl;
+    db<eMote3_IEEE802_15_4>(TRC) << "~Radio(unit=" << _unit << ")" << endl;
 }
 
-template <typename MAC>
-void CC2538<MAC>::address(const Address & address)
+void eMote3_IEEE802_15_4::address(const Address & address)
 {
     _address[0] = address[0];
     _address[1] = address[1];
@@ -32,8 +29,7 @@ void CC2538<MAC>::address(const Address & address)
     ffsm(SHORT_ADDR1) = _address[1];
 }
 
-template <typename MAC>
-void CC2538<MAC>::listen()
+void eMote3_IEEE802_15_4::listen()
 {
     // Clear interrupts
     sfr(RFIRQF0) = 0;
@@ -42,41 +38,19 @@ void CC2538<MAC>::listen()
     xreg(RFIRQM0) = INT_FIFOP;
     xreg(RFIRQM1) = 0;
     // Issue the listen command
-    sfr(RFST) = ISRXON;
+    rx();
 }
 
-template <typename MAC>
-void CC2538<MAC>::stop_listening()
+void eMote3_IEEE802_15_4::stop_listening()
 {
     // Disable device interrupts
     xreg(RFIRQM0) = 0;
     xreg(RFIRQM1) = 0;
     // Issue the OFF command
-    sfr(RFST) = ISRFOFF;
+    off();
 }
 
-template <typename MAC>
-void CC2538<MAC>::channel(unsigned int channel)
-{
-    if((channel < 11) || (channel > 26)) return;
-    /*
-       The carrier frequency is set by programming the 7-bit frequency word in the FREQ[6:0] bits of the
-       FREQCTRL register. Changes take effect after the next recalibration. Carrier frequencies in the range
-       from 2394 to 2507 MHz are supported. The carrier frequency f C , in MHz, is given by
-       f C = (2394 + FREQCTRL.FREQ[6:0]) MHz, and is programmable in 1-MHz steps.
-       IEEE 802.15.4-2006 specifies 16 channels within the 2.4-GHz band. These channels are numbered 11
-       through 26 and are 5 MHz apart. The RF frequency of channel k is given by Equation 1.
-       f c = 2405 + 5(k –11) [MHz] k [11, 26]
-       (1)
-       For operation in channel k, the FREQCTRL.FREQ register should therefore be set to
-       FREQCTRL.FREQ = 11 + 5 (k – 11).
-       */
-    _channel = channel;
-    xreg(FREQCTRL) = 11+5*(_channel-11);
-}
-
-template <typename MAC>
-int CC2538<MAC>::send(const Address & dst, const Protocol & prot, const void * data, unsigned int size)
+int eMote3_IEEE802_15_4::send(const Address & dst, const Protocol & prot, const void * data, unsigned int size)
 {
     if(size > MTU) {
         return 0;
@@ -89,10 +63,10 @@ int CC2538<MAC>::send(const Address & dst, const Protocol & prot, const void * d
     }
 }
 
-template <typename MAC>
-int CC2538<MAC>::receive(Address * src, Protocol * prot, void * data, unsigned int size)
+
+int eMote3_IEEE802_15_4::receive(Address * src, Protocol * prot, void * data, unsigned int size)
 {
-    db<CC2538>(TRC) << "CC2538::receive(s=" << *src << ",p=" << hex << *prot << dec
+    db<eMote3_IEEE802_15_4>(TRC) << "eMote3_IEEE802_15_4::receive(s=" << *src << ",p=" << hex << *prot << dec
         << ",d=" << data << ",s=" << size << ") => " << endl;
 
     // Wait for a received frame and seize it
@@ -107,7 +81,9 @@ int CC2538<MAC>::receive(Address * src, Protocol * prot, void * data, unsigned i
     Buffer * buf = _rx_buffer[_rx_cur];
 
     if(frame_in_rxfifo()) {
-        copy_from_rxfifo(buf);
+        auto b = reinterpret_cast<unsigned char *>(buf->frame());
+        auto sz = copy_from_rxfifo(b + 1);
+        b[0] = sz;
 
         // Disassemble the frame
         Frame * frame = buf->frame();
@@ -118,12 +94,12 @@ int CC2538<MAC>::receive(Address * src, Protocol * prot, void * data, unsigned i
         buf->size(buf->frame()->frame_length() - sizeof(Header) - sizeof(CRC) + sizeof(Phy_Header)); // Phy_Header is included in Header, but is already discounted in frame_length
 
         // Copy the data
-        memcpy(data, frame->data(), (buf->size() > size) ? size : buf->size());
+        memcpy(data, frame->data<void>(), (buf->size() > size) ? size : buf->size());
 
         _statistics.rx_packets++;
         _statistics.rx_bytes += buf->size();
 
-        db<CC2538>(INF) << "CC2538::receive done" << endl;
+        db<eMote3_IEEE802_15_4>(INF) << "eMote3_IEEE802_15_4::receive done" << endl;
 
         int tmp = buf->size();
 
@@ -138,10 +114,11 @@ int CC2538<MAC>::receive(Address * src, Protocol * prot, void * data, unsigned i
     }
 }
 
-template<typename MAC>
-typename CC2538<MAC>::Buffer * CC2538<MAC>::alloc(NIC * nic, const Address & dst, const Protocol & prot, unsigned int once, unsigned int always, unsigned int payload)
+
+// Allocated buffers must be sent or release IN ORDER as assumed by the Radio
+eMote3_IEEE802_15_4::Buffer * eMote3_IEEE802_15_4::alloc(NIC * nic, const Address & dst, const Protocol & prot, unsigned int once, unsigned int always, unsigned int payload)
 {
-    db<CC2538>(TRC) << "CC2538::alloc(s=" << _address << ",d=" << dst << ",p=" << hex << prot << dec << ",on=" << once << ",al=" << always << ",ld=" << payload << ")" << endl;
+    db<eMote3_IEEE802_15_4>(TRC) << "eMote3_IEEE802_15_4::alloc(s=" << _address << ",d=" << dst << ",p=" << hex << prot << dec << ",on=" << once << ",al=" << always << ",ld=" << payload << ")" << endl;
 
     int max_data = MTU - always;
 
@@ -150,11 +127,11 @@ typename CC2538<MAC>::Buffer * CC2538<MAC>::alloc(NIC * nic, const Address & dst
     for(int size = once + payload; size > 0; size -= max_data, buffers++);
     if(buffers > TX_BUFS) {
 //    if((payload + once) / max_data > TX_BUFS) {
-        db<CC2538>(WRN) << "CC2538::alloc: sizeof(Network::Packet::Data) > sizeof(NIC::Frame::Data) * TX_BUFS!" << endl;
+        db<eMote3_IEEE802_15_4>(WRN) << "eMote3_IEEE802_15_4::alloc: sizeof(Network::Packet::Data) > sizeof(NIC::Frame::Data) * TX_BUFS!" << endl;
         return 0;
     }
 
-    typename Buffer::List pool;
+    Buffer::List pool;
 
     // Calculate how many frames are needed to hold the transport PDU and allocate enough buffers
     for(int size = once + payload; size > 0; size -= max_data) {
@@ -168,10 +145,10 @@ typename CC2538<MAC>::Buffer * CC2538<MAC>::alloc(NIC * nic, const Address & dst
         // Initialize the buffer and assemble the IEEE 802.15.4 Frame Header
         auto sz = (size > max_data) ? MTU : size + always;
         new (buf) Buffer(nic, sz, _address, dst, prot, sz);
-        if(Traits<CC2538<MAC>>::ACK and (dst != broadcast()))
+        if(Traits<eMote3_IEEE802_15_4>::ACK and (dst != broadcast()))
             buf->frame()->ack_request(true);
 
-        db<CC2538>(INF) << "CC2538::alloc[" << _tx_cur << "]" << endl;
+        db<eMote3_IEEE802_15_4>(INF) << "eMote3_IEEE802_15_4::alloc[" << _tx_cur << "]" << endl;
 
         ++_tx_cur %= TX_BUFS;
 
@@ -181,16 +158,15 @@ typename CC2538<MAC>::Buffer * CC2538<MAC>::alloc(NIC * nic, const Address & dst
     return pool.head()->object();
 }
 
-template <typename MAC>
-int CC2538<MAC>::send(Buffer * buf)
+int eMote3_IEEE802_15_4::send(Buffer * buf)
 {
     int size = 0;
 
-    for(typename Buffer::Element * el = buf->link(); el; el = el->next()) {
+    for(Buffer::Element * el = buf->link(); el; el = el->next()) {
         buf = el->object();
-        const bool ack = Traits<CC2538<MAC>>::ACK and (buf->frame()->dst() != broadcast());
+        const bool ack = Traits<eMote3_IEEE802_15_4>::ACK and (buf->frame()->dst() != broadcast());
 
-        db<CC2538>(TRC) << "CC2538::send(buf=" << buf << ")" << endl;
+        db<eMote3_IEEE802_15_4>(TRC) << "eMote3_IEEE802_15_4::send(buf=" << buf << ")" << endl;
 
         // TODO: Memory in the fifos is padded: you can only write one byte every 4bytes.
         // For now, we'll just copy using the RFDATA register
@@ -209,12 +185,12 @@ int CC2538<MAC>::send(Buffer * buf)
         bool ok = send_and_wait(ack);
 
         if(ok) {
-            db<CC2538>(INF) << "CC2538::send done" << endl;
+            db<eMote3_IEEE802_15_4>(INF) << "eMote3_IEEE802_15_4::send done" << endl;
             _statistics.tx_packets++;
             _statistics.tx_bytes += buf->size();
             size += buf->size();
         } else {
-            db<CC2538>(INF) << "CC2538::send failed!" << endl;
+            db<eMote3_IEEE802_15_4>(INF) << "eMote3_IEEE802_15_4::send failed!" << endl;
         }
 
         buf->unlock();
@@ -223,12 +199,12 @@ int CC2538<MAC>::send(Buffer * buf)
     return size;
 }
 
-template <typename MAC>
-void CC2538<MAC>::free(Buffer * buf)
-{
-    db<CC2538>(TRC) << "CC2538::free(buf=" << buf << ")" << endl;
 
-    for(typename Buffer::Element * el = buf->link(); el; el = el->next()) {
+void eMote3_IEEE802_15_4::free(Buffer * buf)
+{
+    db<eMote3_IEEE802_15_4>(TRC) << "eMote3_IEEE802_15_4::free(buf=" << buf << ")" << endl;
+
+    for(Buffer::Element * el = buf->link(); el; el = el->next()) {
         buf = el->object();
 
         _statistics.rx_packets++;
@@ -237,14 +213,14 @@ void CC2538<MAC>::free(Buffer * buf)
         // Release the buffer to the OS
         buf->unlock();
 
-        db<CC2538>(INF) << "CC2538::free " << buf << endl;
+        db<eMote3_IEEE802_15_4>(INF) << "eMote3_IEEE802_15_4::free " << buf << endl;
     }
 }
 
-template <typename MAC>
-void CC2538<MAC>::reset()
+
+void eMote3_IEEE802_15_4::reset()
 {
-    db<CC2538>(TRC) << "Radio::reset()" << endl;
+    db<eMote3_IEEE802_15_4>(TRC) << "Radio::reset()" << endl;
 
     // Reset statistics
     new (&_statistics) Statistics;
@@ -252,39 +228,36 @@ void CC2538<MAC>::reset()
 
 // TODO: Memory in the fifos is padded: you can only write one byte every 4bytes.
 // For now, we'll just copy using the RFDATA register
-template <typename MAC>
-void CC2538<MAC>::copy_from_rxfifo(Buffer * buf)
+unsigned int CC2538_PHY::copy_from_rxfifo(unsigned char * data)
 {
-    auto * data = reinterpret_cast<unsigned char *>(buf->frame());
-    data[0] = sfr(RFDATA); // First field is length of MAC frame
-    for(auto i = 0u; i < data[0]; ++i) { // Copy MAC frame
-        data[i + 1] = sfr(RFDATA);
+    unsigned int sz = sfr(RFDATA); // First field is length of MAC frame
+    for(auto i = 0u; i < sz; ++i) { // Copy MAC frame
+        data[i] = sfr(RFDATA);
     }
     clear_rxfifo();
+    return sz;
 }
 
-template <typename MAC>
-bool CC2538<MAC>::wait_for_ack()
+bool eMote3_IEEE802_15_4::wait_for_ack()
 {
     while(!(sfr(RFIRQF1) & INT_TXDONE));
     sfr(RFIRQF1) &= ~INT_TXDONE;
 
-    if(not Traits<CC2538<MAC>>::auto_listen) {
+    if(not Traits<eMote3_IEEE802_15_4>::auto_listen) {
         xreg(RFST) = ISRXON;
     }
 
     bool acked = false;
-    eMote3_GPTM timer(2, Traits<CC2538<MAC>>::ACK_TIMEOUT);
+    eMote3_GPTM timer(2, Traits<eMote3_IEEE802_15_4>::ACK_TIMEOUT);
     timer.enable();
     while(timer.running() and not (acked = (sfr(RFIRQF0) & INT_FIFOP)));
 
     return acked;
 }
 
-template <typename MAC>
-bool CC2538<MAC>::send_and_wait(bool ack)
+bool eMote3_IEEE802_15_4::send_and_wait(bool ack)
 {
-    bool do_ack = Traits<CC2538<MAC>>::ACK and ack;
+    bool do_ack = Traits<eMote3_IEEE802_15_4>::ACK and ack;
     Reg32 saved_filter_settings = 0;
     if(do_ack) {
         saved_filter_settings = xreg(FRMFILT1);
@@ -297,8 +270,8 @@ bool CC2538<MAC>::send_and_wait(bool ack)
     if(do_ack) {
         bool acked = sent and wait_for_ack();
 
-        for(auto i = 0u; (i < Traits<CC2538<MAC>>::RETRANSMISSIONS) and not acked; i++) {
-            db<CC2538>(TRC) << "CC2538::retransmitting" << endl;
+        for(auto i = 0u; (i < Traits<eMote3_IEEE802_15_4>::RETRANSMISSIONS) and not acked; i++) {
+            db<eMote3_IEEE802_15_4>(TRC) << "eMote3_IEEE802_15_4::retransmitting" << endl;
             sent = backoff_and_send();
 
             acked = sent and wait_for_ack();
@@ -309,7 +282,7 @@ bool CC2538<MAC>::send_and_wait(bool ack)
             clear_rxfifo();
         }
 
-        if(not Traits<CC2538<MAC>>::auto_listen) {
+        if(not Traits<eMote3_IEEE802_15_4>::auto_listen) {
             xreg(RFST) = ISRFOFF;
         }
 
@@ -325,63 +298,57 @@ bool CC2538<MAC>::send_and_wait(bool ack)
     return sent;
 }
 
-template <typename MAC>
-bool CC2538<MAC>::backoff_and_send()
+bool eMote3_IEEE802_15_4::backoff_and_send()
 {
     bool ret = true;
-    if(Traits<CC2538<MAC>>::CSMA_CA) {
-        rx_mode(RX_MODE_NO_SYMBOL_SEARCH);
+    if(Traits<eMote3_IEEE802_15_4>::CSMA_CA) {
+        start_cca();
 
         unsigned int two_raised_to_be = 1;
         unsigned int BE;
-        for(BE = 0; BE < Traits<CC2538<MAC>>::CSMA_CA_MIN_BACKOFF_EXPONENT; BE++) {
+        for(BE = 0; BE < Traits<eMote3_IEEE802_15_4>::CSMA_CA_MIN_BACKOFF_EXPONENT; BE++) {
             two_raised_to_be *= 2;
         }
 
         unsigned int trials;
-        for(trials = 0u; trials < Traits<CC2538<MAC>>::CSMA_CA_MAX_TRANSMISSION_TRIALS; trials++) {
-            if(not Traits<CC2538<MAC>>::auto_listen)
-                xreg(RFST) = ISRXON;
-
-            const auto ubp = Traits<CC2538<MAC>>::CSMA_CA_UNIT_BACKOFF_PERIOD;
+        for(trials = 0u; trials < Traits<eMote3_IEEE802_15_4>::CSMA_CA_MAX_TRANSMISSION_TRIALS; trials++) {
+            const auto ubp = Traits<eMote3_IEEE802_15_4>::CSMA_CA_UNIT_BACKOFF_PERIOD;
             auto delay_time = (Random::random() % (two_raised_to_be - 1)) * ubp;
             delay_time = delay_time < ubp ? ubp : delay_time;
 
             eMote3_GPTM::delay(delay_time, 2);
-            sfr(RFST) = ISTXONCCA;
-            if(xreg(FSMSTAT1) & SAMPLED_CCA) {
+            if(tx_if_cca()) {
                 break; // Success
             }
             
-            if(BE < Traits<CC2538<MAC>>::CSMA_CA_MAX_BACKOFF_EXPONENT) {
+            if(BE < Traits<eMote3_IEEE802_15_4>::CSMA_CA_MAX_BACKOFF_EXPONENT) {
                 BE++;
                 two_raised_to_be *= 2;
             }
         }
 
-        rx_mode(RX_MODE_NORMAL);
+        end_cca();
 
-        if(trials >= Traits<CC2538<MAC>>::CSMA_CA_MAX_TRANSMISSION_TRIALS) {
-            db<CC2538>(WRN) << "CC2538::backoff_and_send() FAILED" << endl;
+        if(trials >= Traits<eMote3_IEEE802_15_4>::CSMA_CA_MAX_TRANSMISSION_TRIALS) {
+            db<eMote3_IEEE802_15_4>(WRN) << "eMote3_IEEE802_15_4::backoff_and_send() FAILED" << endl;
             ret = false;
         }
     }
     else {
-        sfr(RFST) = ISTXON;
+        tx();
     }
 
     return ret;
 }
 
-template <typename MAC>
-bool CC2538<MAC>::frame_in_rxfifo()
+bool CC2538_PHY::frame_in_rxfifo()
 {
     bool ret = false;
     if(xreg(RXFIFOCNT) > 0) {
         auto rxfifo = reinterpret_cast<volatile unsigned int*>(RXFIFO);
         unsigned char mac_frame_size = rxfifo[0];
         if (mac_frame_size > 127) {
-            db<CC2538>(WRN) << "CC2538::frame_in_rxfifo(): Wrong frame size, dropping RXFIFO contents!" << endl;
+            db<eMote3_IEEE802_15_4>(WRN) << "eMote3_IEEE802_15_4::frame_in_rxfifo(): Wrong frame size, dropping RXFIFO contents!" << endl;
             clear_rxfifo();
             ret = false;
         }
@@ -392,7 +359,7 @@ bool CC2538<MAC>::frame_in_rxfifo()
             ret = rxfifo[mac_frame_size] & AUTO_CRC_OK;
             
             if(not ret) {
-                db<CC2538>(WRN) << "CC2538::frame_in_rxfifo(): Wrong CRC, dropping RXFIFO contents!" << endl;
+                db<eMote3_IEEE802_15_4>(WRN) << "eMote3_IEEE802_15_4::frame_in_rxfifo(): Wrong CRC, dropping RXFIFO contents!" << endl;
                 clear_rxfifo();
             }
         }
@@ -401,8 +368,7 @@ bool CC2538<MAC>::frame_in_rxfifo()
     return ret;
 }
 
-template <typename MAC>
-void CC2538<MAC>::handle_int()
+void eMote3_IEEE802_15_4::handle_int()
 {
     Reg32 irqrf0 = sfr(RFIRQF0);
     Reg32 irqrf1 = sfr(RFIRQF1);
@@ -415,7 +381,7 @@ void CC2538<MAC>::handle_int()
             // NIC received a frame in the RXFIFO, so we need to find an unused buffer for it
             for (auto i = 0u; (i < RX_BUFS) and not buf; ++i) {
                 if (_rx_buffer[_rx_cur]->lock()) {
-                    db<CC2538>(INF) << "CC2538::handle_int: found buffer: " << _rx_cur << endl;
+                    db<eMote3_IEEE802_15_4>(INF) << "eMote3_IEEE802_15_4::handle_int: found buffer: " << _rx_cur << endl;
                     buf = _rx_buffer[_rx_cur]; // Found a good one
                 } else {
                     ++_rx_cur %= RX_BUFS;
@@ -423,20 +389,22 @@ void CC2538<MAC>::handle_int()
             }
 
             if (not buf) {
-                db<CC2538>(WRN) << "CC2538::handle_int: no buffers left" << endl;
-                db<CC2538>(WRN) << "CC2538::handle_int: dropping fifo contents" << endl;
+                db<eMote3_IEEE802_15_4>(WRN) << "eMote3_IEEE802_15_4::handle_int: no buffers left" << endl;
+                db<eMote3_IEEE802_15_4>(WRN) << "eMote3_IEEE802_15_4::handle_int: dropping fifo contents" << endl;
                 clear_rxfifo();
             } else {
                 // We have a buffer, so we fetch a packet from the fifo
-                copy_from_rxfifo(buf);
+                auto b = reinterpret_cast<unsigned char *>(buf->frame());
+                auto sz = copy_from_rxfifo(b + 1);
+                b[0] = sz;
                 buf->size(buf->frame()->frame_length() - (sizeof(Header) + sizeof(CRC) - sizeof(Phy_Header))); // Phy_Header is included in Header, but is already discounted in frame_length
 
                 auto * frame = buf->frame();
 
-                db<CC2538>(TRC) << "CC2538::int:receive(s=" << frame->src() << ",p=" << hex << frame->header()->prot() << dec
-                    << ",d=" << frame->data() << ",s=" << buf->size() << ")" << endl;
+                db<eMote3_IEEE802_15_4>(TRC) << "eMote3_IEEE802_15_4::int:receive(s=" << frame->src() << ",p=" << hex << frame->header()->prot() << dec
+                    << ",d=" << frame->data<void>() << ",s=" << buf->size() << ")" << endl;
 
-                db<CC2538>(INF) << "CC2538::handle_int[" << _rx_cur << "]" << endl;
+                db<eMote3_IEEE802_15_4>(INF) << "eMote3_IEEE802_15_4::handle_int[" << _rx_cur << "]" << endl;
 
                 //IC::disable(_irq);
                 if(!notify(frame->header()->prot(), buf)) {// No one was waiting for this frame, so let it free for receive()
@@ -447,39 +415,36 @@ void CC2538<MAC>::handle_int()
             }
         }
     }
-    db<CC2538>(TRC) << "CC2538::int: " << endl << "RFIRQF0 = " << hex << irqrf0 << endl;
-    //if(irqrf0 & INT_RXMASKZERO) db<CC2538>(TRC) << "RXMASKZERO" << endl;
-    //if(irqrf0 & INT_RXPKTDONE) db<CC2538>(TRC) << "RXPKTDONE" << endl;
-    //if(irqrf0 & INT_FRAME_ACCEPTED) db<CC2538>(TRC) << "FRAME_ACCEPTED" << endl;
-    //if(irqrf0 & INT_SRC_MATCH_FOUND) db<CC2538>(TRC) << "SRC_MATCH_FOUND" << endl;
-    //if(irqrf0 & INT_SRC_MATCH_DONE) db<CC2538>(TRC) << "SRC_MATCH_DONE" << endl;
-    //if(irqrf0 & INT_SFD) db<CC2538>(TRC) << "SFD" << endl;
-    //if(irqrf0 & INT_ACT_UNUSED) db<CC2538>(TRC) << "ACT_UNUSED" << endl;
+    db<eMote3_IEEE802_15_4>(TRC) << "eMote3_IEEE802_15_4::int: " << endl << "RFIRQF0 = " << hex << irqrf0 << endl;
+    //if(irqrf0 & INT_RXMASKZERO) db<eMote3_IEEE802_15_4>(TRC) << "RXMASKZERO" << endl;
+    //if(irqrf0 & INT_RXPKTDONE) db<eMote3_IEEE802_15_4>(TRC) << "RXPKTDONE" << endl;
+    //if(irqrf0 & INT_FRAME_ACCEPTED) db<eMote3_IEEE802_15_4>(TRC) << "FRAME_ACCEPTED" << endl;
+    //if(irqrf0 & INT_SRC_MATCH_FOUND) db<eMote3_IEEE802_15_4>(TRC) << "SRC_MATCH_FOUND" << endl;
+    //if(irqrf0 & INT_SRC_MATCH_DONE) db<eMote3_IEEE802_15_4>(TRC) << "SRC_MATCH_DONE" << endl;
+    //if(irqrf0 & INT_SFD) db<eMote3_IEEE802_15_4>(TRC) << "SFD" << endl;
+    //if(irqrf0 & INT_ACT_UNUSED) db<eMote3_IEEE802_15_4>(TRC) << "ACT_UNUSED" << endl;
 
-    db<CC2538>(TRC) << "RFIRQF1 = " << hex << irqrf1 << endl;
-    //if(irqrf1 & INT_CSP_WAIT) db<CC2538>(TRC) << "CSP_WAIT" << endl;
-    //if(irqrf1 & INT_CSP_STOP) db<CC2538>(TRC) << "CSP_STOP" << endl;
-    //if(irqrf1 & INT_CSP_MANINT) db<CC2538>(TRC) << "CSP_MANINT" << endl;
-    //if(irqrf1 & INT_RFIDLE) db<CC2538>(TRC) << "RFIDLE" << endl;
-    //if(irqrf1 & INT_TXDONE) db<CC2538>(TRC) << "TXDONE" << endl;
-    //if(irqrf1 & INT_TXACKDONE) db<CC2538>(TRC) << "TXACKDONE" << endl;
+    db<eMote3_IEEE802_15_4>(TRC) << "RFIRQF1 = " << hex << irqrf1 << endl;
+    //if(irqrf1 & INT_CSP_WAIT) db<eMote3_IEEE802_15_4>(TRC) << "CSP_WAIT" << endl;
+    //if(irqrf1 & INT_CSP_STOP) db<eMote3_IEEE802_15_4>(TRC) << "CSP_STOP" << endl;
+    //if(irqrf1 & INT_CSP_MANINT) db<eMote3_IEEE802_15_4>(TRC) << "CSP_MANINT" << endl;
+    //if(irqrf1 & INT_RFIDLE) db<eMote3_IEEE802_15_4>(TRC) << "RFIDLE" << endl;
+    //if(irqrf1 & INT_TXDONE) db<eMote3_IEEE802_15_4>(TRC) << "TXDONE" << endl;
+    //if(irqrf1 & INT_TXACKDONE) db<eMote3_IEEE802_15_4>(TRC) << "TXACKDONE" << endl;
 }
 
-template<typename MAC>
-void CC2538<MAC>::int_handler(const IC::Interrupt_Id & interrupt)
-{
-    CC2538<MAC> * dev = get_by_interrupt(interrupt);
 
-    db<CC2538>(TRC) << "Radio::int_handler(int=" << interrupt << ",dev=" << dev << ")" << endl;
+void eMote3_IEEE802_15_4::int_handler(const IC::Interrupt_Id & interrupt)
+{
+    eMote3_IEEE802_15_4 * dev = get_by_interrupt(interrupt);
+
+    db<eMote3_IEEE802_15_4>(TRC) << "Radio::int_handler(int=" << interrupt << ",dev=" << dev << ")" << endl;
 
     if(!dev)
-        db<CC2538>(WRN) << "Radio::int_handler: handler not assigned!" << endl;
+        db<eMote3_IEEE802_15_4>(WRN) << "Radio::int_handler: handler not assigned!" << endl;
     else
         dev->handle_int();
 }
-
-template class CC2538<TSTP_MAC>;
-template class CC2538<IEEE802_15_4>;
 
 __END_SYS
 

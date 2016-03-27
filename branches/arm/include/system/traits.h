@@ -34,7 +34,7 @@ template<> struct Traits<Build>
     static const char ID[ID_SIZE];
 
     static const unsigned int CPUS = 1;
-    static const unsigned int NODES = 1; // > 1 => NETWORKING
+    static const unsigned int NODES = 2; // > 1 => NETWORKING
 };
 
 
@@ -128,6 +128,33 @@ template<> struct Traits<Serial_Display>: public Traits<void>
     static const int TAB_SIZE = 8;
 };
 
+template<> struct Traits<Network>: public Traits<void>
+{
+    static const bool enabled = (Traits<Build>::NODES > 1);
+
+    static const unsigned int RETRIES = 3;
+    static const unsigned int TIMEOUT = 10; // s
+
+    // This list is positional, with one network for each NIC in traits<NIC>::NICS
+    typedef LIST<IP> NETWORKS;
+};
+
+template<> struct Traits<TSTP>: public Traits<Network>
+{
+    static const bool enabled = false;//(Traits<Build>::NODES > 1);
+
+    struct Default_MAC_Config {
+        typedef void PHY_Layer;
+    };
+
+    template<unsigned int UNIT>
+    struct MAC_Config : public Default_MAC_Config {};
+
+    static const unsigned int PROTOCOL_ID = 84;
+    static const unsigned int MAX_INTERESTS = 8;
+    static const unsigned int MAX_SENSORS = 8;
+};
+
 __END_SYS
 
 #include __ARCH_TRAITS_H
@@ -206,30 +233,10 @@ template<> struct Traits<Synchronizer>: public Traits<void>
     static const bool enabled = Traits<System>::multithread;
 };
 
-template<> struct Traits<Network>: public Traits<void>
-{
-    static const bool enabled = (Traits<Build>::NODES > 1);
-
-    static const unsigned int RETRIES = 3;
-    static const unsigned int TIMEOUT = 10; // s
-
-    // This list is positional, with one network for each NIC in traits<NIC>::NICS
-    typedef LIST<IP> NETWORKS;
-};
-
 template<> struct Traits<Modbus_ASCII>: public Traits<void>
 {
     static const unsigned int PROTOCOL_ID = 83;
     static const unsigned int MSG_LEN = 96;
-};
-
-template<> struct Traits<TSTP>: public Traits<void>
-{
-    static const bool enabled = false;//(Traits<Build>::NODES > 1);
-
-    static const unsigned int PROTOCOL_ID = 84;
-    static const unsigned int MAX_INTERESTS = 8;
-    static const unsigned int MAX_SENSORS = 8;
 };
 
 template<> struct Traits<IP>: public Traits<Network>

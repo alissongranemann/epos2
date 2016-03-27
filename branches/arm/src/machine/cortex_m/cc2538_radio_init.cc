@@ -1,4 +1,4 @@
-// EPOS CC2538 IEEE 802.15.4 NIC Mediator Initialization
+// EPOS eMote3_IEEE802_15_4 IEEE 802.15.4 NIC Mediator Initialization
 
 #include <system/config.h>
 #ifndef __no_networking__
@@ -10,28 +10,10 @@
 
 __BEGIN_SYS
 
-template<typename MAC>
-CC2538<MAC>::CC2538(unsigned int unit, IO_Irq irq, DMA_Buffer * dma_buf):
+eMote3_IEEE802_15_4::eMote3_IEEE802_15_4(unsigned int unit, IO_Irq irq, DMA_Buffer * dma_buf):
     _unit(unit), _irq(irq), _dma_buf(dma_buf), _rx_cur(0), _tx_cur(0)
 {
-    db<CC2538>(TRC) << "CC2538(unit=" << unit << ",irq=" << irq << ")" << endl;
-
-    // Enable clock to the RF CORE module
-    Cortex_M_Model::radio_enable();
-
-    // Disable device interrupts
-    xreg(RFIRQM0) = 0;
-    xreg(RFIRQM1) = 0;
-
-    // Change recommended in the user guide (CCACTRL0 register description)
-    xreg(CCACTRL0) = 0xF8;
-
-    // Changes recommended in the user guide (Section 23.15 Register Settings Update)
-    xreg(TXFILTCFG) = 0x09;
-    xreg(AGCCTRL1) = 0x15;
-    ana(IVCTRL) = 0x0b;
-    xreg(FSCAL1) = 0x01;
-
+    db<eMote3_IEEE802_15_4>(TRC) << "eMote3_IEEE802_15_4(unit=" << unit << ",irq=" << irq << ")" << endl;
 
     // Ignore TX underflow to enable writing to TXFIFO through memory
     // TODO: Memory in the fifos is padded: you can only write one byte every 4bytes.
@@ -48,9 +30,6 @@ CC2538<MAC>::CC2538(unsigned int unit, IO_Irq irq, DMA_Buffer * dma_buf):
         _rx_buffer[i] = new (log) Buffer(0);
         log += sizeof(Buffer);
     }
-
-    sfr(RFST) = ISFLUSHTX; // Clear TXFIFO
-    sfr(RFST) = ISFLUSHRX; // Clear RXFIFO
 
     // Set Address
     ffsm(SHORT_ADDR0) = _address[0];
@@ -69,43 +48,22 @@ CC2538<MAC>::CC2538(unsigned int unit, IO_Irq irq, DMA_Buffer * dma_buf):
     xreg(FRMFILT0) |= FRAME_FILTER_EN;
     xreg(FRMFILT1) &= ~ACCEPT_FT2_ACK; // ACK frames are handled only when expected
 
-    // Reset result of source matching (value undefined on reset)
-    ffsm(SRCRESINDEX) = 0;
-
     // Enable automatic source address matching
     xreg(SRCMATCH) |= SRC_MATCH_EN;
-
-    // Set FIFOP threshold to maximum
-    xreg(FIFOPCTRL) = 0xff;
-
-    // Set TXPOWER (this is the value Contiki uses by default)
-    xreg(TXPOWER) = 0xD5;
 
 	// Enable auto-CRC
 	xreg(FRMCTRL0) |= AUTO_CRC;
 
-    rx_mode(RX_MODE_NORMAL);
-
-    channel(Traits<CC2538<MAC>>::DEFAULT_CHANNEL);
-
-	// Disable counting of MAC overflows
-	xreg(CSPT) = 0xff;
+    channel(Traits<eMote3_IEEE802_15_4>::DEFAULT_CHANNEL);
 
     // Enable auto ACK
-    if(Traits<CC2538<MAC>>::ACK)
+    if(Traits<eMote3_IEEE802_15_4>::ACK)
         xreg(FRMCTRL0) |= AUTO_ACK;
-
-    // Clear interrupts
-    sfr(RFIRQF0) = 0;
-    sfr(RFIRQF1) = 0;
-
-    // Clear error flags
-    sfr(RFERRF) = 0;
 
     // Reset statistics
     reset();
 
-    if(Traits<CC2538<MAC>>::auto_listen)
+    if(Traits<eMote3_IEEE802_15_4>::auto_listen)
     {
  	    xreg(FRMCTRL1) |= SET_RXENMASK_ON_TX; // Enter receive mode after TX
 
@@ -118,7 +76,7 @@ CC2538<MAC>::CC2538(unsigned int unit, IO_Irq irq, DMA_Buffer * dma_buf):
         // Cortex_M_Model::radio_enable(); // already done
 
         // Issue the listen command
-        sfr(RFST) = ISRXON;
+        rx();
     }
     else
     {
@@ -129,10 +87,9 @@ CC2538<MAC>::CC2538(unsigned int unit, IO_Irq irq, DMA_Buffer * dma_buf):
     }
 }
 
-template<typename MAC>
-void CC2538<MAC>::init(unsigned int unit)
+void eMote3_IEEE802_15_4::init(unsigned int unit)
 {
-    db<Init, CC2538>(TRC) << "CC2538::init(unit=" << unit << ")" << endl;
+    db<Init, eMote3_IEEE802_15_4>(TRC) << "eMote3_IEEE802_15_4::init(unit=" << unit << ")" << endl;
 
     // Allocate a DMA Buffer for init block, rx and tx rings
     DMA_Buffer * dma_buf = new (SYSTEM) DMA_Buffer(DMA_BUFFER_SIZE);
@@ -140,7 +97,7 @@ void CC2538<MAC>::init(unsigned int unit)
     IO_Irq irq = 26;
 
     // Initialize the device
-    CC2538<MAC> * dev = new (SYSTEM) CC2538<MAC>(unit, irq, dma_buf);
+    eMote3_IEEE802_15_4 * dev = new (SYSTEM) eMote3_IEEE802_15_4(unit, irq, dma_buf);
 
     // Register the device
     _devices[unit].interrupt = IC::irq2int(irq);
@@ -151,9 +108,6 @@ void CC2538<MAC>::init(unsigned int unit)
     // Enable interrupts for device
     IC::enable(irq);
 }
-
-template class CC2538<TSTP_MAC>;
-template class CC2538<IEEE802_15_4>;
 
 __END_SYS
 

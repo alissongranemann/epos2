@@ -103,6 +103,7 @@ class Cortex_M_GPIO;
 class Cortex_M_ADC;
 class Cortex_M_Bootloader;
 class CC2538_TSC;
+class CC2538_PHY;
 
 class ATmega;
 class ATmega_IC;
@@ -118,14 +119,11 @@ class ATmega_ADC;
 class ATmega_Battery;
 class ATmega_Radio;
 
-class TSTP_MAC;
-class IEEE802_15_4;
-
 class PCNet32;
 class C905;
 class E100;
-template<typename MAC>
-class CC2538;
+class eMote3_IEEE802_15_4;
+class IEEE802_15_4;
 class AT86RF;
 
 class Serial_Display;
@@ -185,6 +183,7 @@ class Diffie_Hellman;
 class Secure_NIC;
 class AES;
 class TSTP;
+class TSTP_NIC;
 class Modbus_ASCII;
 
 template<typename Channel, bool connectionless = Channel::connectionless>

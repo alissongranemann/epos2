@@ -12,7 +12,56 @@
 
 __BEGIN_SYS
 
-class IEEE802_15_4: private NIC_Common
+// PHY Layer definitions
+class IEEE802_15_4_PHY 
+{
+    typedef CPU::Reg8 Reg8;
+
+public:
+    // The IEEE 802.15.4 PHR
+    class Header
+    {
+    public:
+        Header() {};
+        Header(Reg8 len) : _frame_length((len & (~0x7f)) ? 0x7f : len) {};
+
+        Reg8 frame_length() const { return _frame_length; }
+        void frame_length(Reg8 len) { _frame_length = ((len & (~0x7f)) ? 0x7f : len); }
+
+    protected:
+        Reg8 _frame_length;
+    } __attribute__((packed, may_alias));
+
+    static const unsigned int MTU = 127;
+    typedef unsigned char Data[MTU];
+    
+    // The IEEE 802.15.4 PHY Frame
+    class Frame: public Header
+    {
+    public:
+        Frame() {}
+        Frame(Reg8 payload_size) : Header(payload_size) {}
+        Frame(const void * dat, Reg8 payload_size) : Header(payload_size)
+        {
+            memcpy(_data, dat, _frame_length);
+        }
+
+        Header * header() { return this; }
+
+        template<typename T>
+        T * data() { return reinterpret_cast<T *>(&_data); }
+
+        friend Debug & operator<<(Debug & db, const Frame & f) {
+            db << "{" << f._data << "}";
+            return db;
+        }
+
+    protected:
+        Data _data;
+    } __attribute__((packed, may_alias));
+};
+
+class IEEE802_15_4: private NIC_Common, public IEEE802_15_4_PHY
 {
 public:
     typedef NIC_Common::Address<2> Short_Address;
@@ -21,7 +70,6 @@ public:
     typedef CPU::Reg8 Reg8;
     typedef CPU::Reg16 Reg16;
     typedef NIC_Common::CRC16 CRC;
-
 
     // Frame types
     enum Frame_Type
@@ -52,20 +100,7 @@ public:
         PTP    = 0x88F7
     };
 
-
-    // The IEEE 802.15.4 PHR
-    class Phy_Header
-    {
-    public:
-        Phy_Header() {};
-        Phy_Header(Reg8 len) : _frame_length((len & (~0x7f)) ? 0x7f : len) {};
-
-        Reg8 frame_length() const { return _frame_length; }
-        void frame_length(Reg8 len) { _frame_length = ((len & (~0x7f)) ? 0x7f : len); }
-
-    protected:
-        Reg8 _frame_length;
-    } __attribute__((packed, may_alias));
+    typedef IEEE802_15_4_PHY::Header Phy_Header;
 
     // The IEEE 802.15.4 MHR
     // 802.15.4 headers can have variable format, for now this only
@@ -150,7 +185,7 @@ private:
     static const unsigned int FOOTER_SIZE = sizeof(CRC);
 
 public:
-    static const unsigned int MTU = 127 - HEADER_SIZE - FOOTER_SIZE;
+    static const unsigned int MTU = IEEE802_15_4_PHY::MTU - HEADER_SIZE - FOOTER_SIZE;
     typedef unsigned char Data[MTU];
 
 
@@ -173,7 +208,7 @@ public:
 
         Header * header() { return this; }
 
-        template<typename T = void>
+        template<typename T>
         T * data() { return reinterpret_cast<T *>(&_data); }
 
         friend Debug & operator<<(Debug & db, const Frame & f) {

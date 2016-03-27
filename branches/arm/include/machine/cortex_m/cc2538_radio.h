@@ -5,7 +5,6 @@
 
 #include <ic.h>
 #include <ieee802_15_4.h>
-#include <tstp_mac.h>
 
 __BEGIN_SYS
 
@@ -16,10 +15,6 @@ protected:
     typedef CPU::Reg8 Reg8;
     typedef CPU::Reg16 Reg16;
     typedef CPU::Reg32 Reg32;
-    typedef CPU::Log_Addr Log_Addr;
-    typedef CPU::Phy_Addr Phy_Addr;
-    typedef CPU::IO_Irq IO_Irq;
-    typedef MMU::DMA_Buffer DMA_Buffer;
 
     // Bases
     enum
@@ -348,51 +343,130 @@ public:
     static bool running() { return reg(CTRL) & CTRL_STATE; }
 };
 
-// CC2538 Radio Mediator
-template <typename MAC = typename Traits<Cortex_M_Radio>::MAC>
-class CC2538: private MAC, public MAC::Observed, private CC2538RF
+// Standalone IEEE 802.15.4 PHY mediator
+class CC2538_PHY : protected CC2538RF, public IEEE802_15_4_PHY
 {
+protected:
+    typedef CPU::IO_Irq IO_Irq;
+
 public:
-    using MAC::broadcast;
-    using MAC::mtu;
-    using MAC::MTU;
+    CC2538_PHY() {
+        // Enable clock to the RF CORE module
+        Cortex_M_Model::radio_enable();
 
-    typedef typename MAC::Address MAC_Address;
-    typedef typename MAC::Frame Frame;
-    typedef typename MAC::Address Address;
-    typedef typename MAC::Protocol Protocol;
-    typedef typename MAC::Buffer Buffer;
-    typedef typename MAC::Statistics Statistics;
-    typedef typename MAC::Header Header;
-    typedef typename MAC::Phy_Header Phy_Header;
-    typedef typename MAC::CRC CRC;
+        // Disable device interrupts
+        xreg(RFIRQM0) = 0;
+        xreg(RFIRQM1) = 0;
 
-private:
-    template <int unit> friend void call_init();
+        // Change recommended in the user guide (CCACTRL0 register description)
+        xreg(CCACTRL0) = 0xF8;
 
-    // Transmit and Receive Ring sizes
-    static const unsigned int UNITS = Traits<CC2538<MAC>>::UNITS;
-    static const unsigned int TX_BUFS = Traits<CC2538<MAC>>::SEND_BUFFERS;
-    static const unsigned int RX_BUFS = Traits<CC2538<MAC>>::RECEIVE_BUFFERS;
+        // Changes recommended in the user guide (Section 23.15 Register Settings Update)
+        xreg(TXFILTCFG) = 0x09;
+        xreg(AGCCTRL1) = 0x15;
+        ana(IVCTRL) = 0x0b;
+        xreg(FSCAL1) = 0x01;
+
+        sfr(RFST) = ISFLUSHTX; // Clear TXFIFO
+        sfr(RFST) = ISFLUSHRX; // Clear RXFIFO
+
+        // Reset result of source matching (value undefined on reset)
+        ffsm(SRCRESINDEX) = 0;
+
+        // Set FIFOP threshold to maximum
+        xreg(FIFOPCTRL) = 0xff;
+
+        // Set TXPOWER (this is the value Contiki uses by default)
+        xreg(TXPOWER) = 0xD5;
+
+        rx_mode(RX_MODE_NORMAL);
+
+        // Disable counting of MAC overflows
+        xreg(CSPT) = 0xff;
+
+        // Clear interrupts
+        sfr(RFIRQF0) = 0;
+        sfr(RFIRQF1) = 0;
+
+        // Clear error flags
+        sfr(RFERRF) = 0;
+    }
+
+    void off() { sfr(RFST) = ISRFOFF; }
+    void rx() { sfr(RFST) = ISRXON; }
+    void tx() { sfr(RFST) = ISTXON; }
+    bool cca();//TODO
+    void start_cca() { rx_mode(RX_MODE_NO_SYMBOL_SEARCH); rx(); }
+    void end_cca() { rx_mode(RX_MODE_NORMAL); }
+    bool valid_frame() { return frame_in_rxfifo(); }
+
+protected:
+    bool tx_if_cca() { sfr(RFST) = ISTXONCCA; return (xreg(FSMSTAT1) & SAMPLED_CCA); }
+    void rx_mode(RX_MODES m) {
+        xreg(FRMCTRL0) = (xreg(FRMCTRL0) & ~(3 * RX_MODE)) | (m * RX_MODE);
+    }
+    unsigned int copy_from_rxfifo(unsigned char * c);
+    bool frame_in_rxfifo();
+    void clear_rxfifo() { sfr(RFST) = ISFLUSHRX; }
+    void frequency(unsigned int freq) { xreg(FREQCTRL) = freq; }
+};
+
+// CC2538 IEEE 802.15.4 Radio Mediator
+class eMote3_IEEE802_15_4: public IEEE802_15_4, public IEEE802_15_4::Observed, private CC2538_PHY
+{
+    static const unsigned int TX_BUFS = Traits<eMote3_IEEE802_15_4>::SEND_BUFFERS;
+    static const unsigned int RX_BUFS = Traits<eMote3_IEEE802_15_4>::RECEIVE_BUFFERS;
 
     static const unsigned int DMA_BUFFER_SIZE = RX_BUFS * sizeof(Buffer) + TX_BUFS * sizeof(Buffer);
 
+    template <int unit> friend void call_init();
+
+    typedef CPU::Log_Addr Log_Addr;
+    typedef CPU::Phy_Addr Phy_Addr;
+    typedef MMU::DMA_Buffer DMA_Buffer;
+    static const unsigned int MTU = IEEE802_15_4::MTU;
+    typedef IEEE802_15_4::Frame Frame;
+    typedef IEEE802_15_4::Header Header;
+
+private:
+    // Transmit and Receive Ring sizes
+    static const unsigned int UNITS = Traits<eMote3_IEEE802_15_4>::UNITS;
+
     // Interrupt dispatching binding
     struct Device {
-        CC2538<MAC> * device;
+        eMote3_IEEE802_15_4 * device;
         unsigned int interrupt;
     };
 
 protected:
-    CC2538(unsigned int unit, IO_Irq irq, DMA_Buffer * dma_buf);
-
-    ~CC2538();
+    eMote3_IEEE802_15_4(unsigned int unit, IO_Irq irq, DMA_Buffer * dma_buf);
 
 public:
-    void channel(unsigned int channel);
-    unsigned int channel() { return _channel; }
-    void stop_listening();
+    typedef IEEE802_15_4::Address MAC_Address;
+    typedef MAC_Address Address;
+
     void listen();
+    void stop_listening();
+    void channel(unsigned int channel) { 
+        if((channel < 11) or (channel > 26)) return;
+        /*
+           The carrier frequency is set by programming the 7-bit frequency word in the FREQ[6:0] bits of the
+           FREQCTRL register. Changes take effect after the next recalibration. Carrier frequencies in the range
+           from 2394 to 2507 MHz are supported. The carrier frequency f C , in MHz, is given by
+           f C = (2394 + FREQCTRL.FREQ[6:0]) MHz, and is programmable in 1-MHz steps.
+           IEEE 802.15.4-2006 specifies 16 channels within the 2.4-GHz band. These channels are numbered 11
+           through 26 and are 5 MHz apart. The RF frequency of channel k is given by Equation 1.
+           f c = 2405 + 5(k –11) [MHz] k [11, 26]
+           (1)
+           For operation in channel k, the FREQCTRL.FREQ register should therefore be set to
+           FREQCTRL.FREQ = 11 + 5 (k – 11).
+           */
+        _channel = channel;
+        frequency(11+5*(_channel-11));
+    }
+    unsigned int channel() { return _channel; }
+
+    ~eMote3_IEEE802_15_4();
 
     int send(const Address & dst, const Protocol & prot, const void * data, unsigned int size);
     int receive(Address * src, Protocol * prot, void * data, unsigned int size);
@@ -408,26 +482,23 @@ public:
 
     void reset();
 
-    static CC2538<MAC> * get(unsigned int unit = 0) { return get_by_unit(unit); }
+    static eMote3_IEEE802_15_4 * get(unsigned int unit = 0) { return get_by_unit(unit); }
 
 private:
     unsigned int _channel;
     void handle_int();
-    void copy_from_rxfifo(Buffer * buf);
-    bool frame_in_rxfifo();
-    void clear_rxfifo() { sfr(RFST) = ISFLUSHRX; }
 
     static void int_handler(const IC::Interrupt_Id & interrupt);
 
-    static CC2538 * get_by_unit(unsigned int unit) {
+    static eMote3_IEEE802_15_4 * get_by_unit(unsigned int unit) {
         if(unit >= UNITS) {
-            db<CC2538>(WRN) << "Radio::get: requested unit (" << unit << ") does not exist!" << endl;
+            db<eMote3_IEEE802_15_4>(WRN) << "Radio::get: requested unit (" << unit << ") does not exist!" << endl;
             return 0;
         } else
             return _devices[unit].device;
     }
 
-    static CC2538<MAC> * get_by_interrupt(unsigned int interrupt) {
+    static eMote3_IEEE802_15_4 * get_by_interrupt(unsigned int interrupt) {
         for(unsigned int i = 0; i < UNITS; i++)
             if(_devices[i].interrupt == interrupt) {
                 return _devices[i].device;
@@ -445,10 +516,6 @@ private:
 
     bool backoff_and_send();
 
-    void rx_mode(RX_MODES m) {
-        xreg(FRMCTRL0) = (xreg(FRMCTRL0) & ~(3 * RX_MODE)) | (m * RX_MODE);
-    }
-
 private:
     volatile bool _acked;
     unsigned int _unit;
@@ -460,8 +527,22 @@ private:
 
     DMA_Buffer * _dma_buf;
 
+    /*
+    Init_Block * _iblock;
+    Phy_Addr  _iblock_phy;
+    */
+
     int _rx_cur;
+    /*
+    Rx_Desc * _rx_ring;
+    Phy_Addr _rx_ring_phy;
+    */
+
     int _tx_cur;
+    /*
+    Tx_Desc * _tx_ring;
+    Phy_Addr _tx_ring_phy;
+    */
 
     Buffer * _rx_buffer[RX_BUFS];
     Buffer * _tx_buffer[TX_BUFS];
