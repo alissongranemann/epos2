@@ -3,6 +3,9 @@
 #ifndef __tstp_nic_h
 #define __tstp_nic_h
 
+#include <ethernet.h>
+#include <ieee802_15_4.h>
+
 __BEGIN_SYS
 
 class TSTP_NIC : public Traits<TSTP_NIC>::MIMIC, public Traits<TSTP_NIC>::MIMIC::Observed {

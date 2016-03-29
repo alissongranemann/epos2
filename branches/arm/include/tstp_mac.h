@@ -6,33 +6,55 @@
 #include <mmu.h>
 #include <cpu.h>
 #include <ic.h>
-#include <tstp_router.h>
+#include <tstp_api.h>
 
 __BEGIN_SYS
 
 class TSTP_MAC
 {
+private:
     typedef CPU::Reg32 Reg32;
 
     friend class TSTP;
     friend class TSTP_NIC;
     typedef Traits<TSTP>::MAC_Config<0>::PHY_Layer PHY_Layer; // TODO: Polymorphic PHY
+    typedef Traits<TSTP>::MAC_Config<0>::Timer Timer; // TODO: Several/polymorphic timers
     typedef MMU::DMA_Buffer DMA_Buffer;
     typedef CPU::IO_Irq IO_Irq;
-    typedef Traits<TSTP>::Router::Address Address;
 
-public:
-    class Frame {// TODO
+    typedef TSTP_API API;
+    typedef API::Local_Address Local_Address;
+    typedef API::Remote_Address Remote_Address;
+    typedef API::Address_Hint Hint;
+    typedef API::Buffer Buffer;
+    typedef API::Scheduled_Message Scheduled_Message;
+    static const auto MTU = API::MTU;
+
+    typedef CPU::Reg16 CRC;
+
+    // Frame to hold PHY packets. Will be cast to either Frame or Microframe
+    class MAC_Frame {
     public:
         template<typename T>
-        T* data() { return 0; } 
+        T* data() { return reinterpret_cast<T*>(_data); }
     private:
-        Address _me;
+        unsigned char _data[MTU - sizeof(CRC)];
+        CRC _crc;
     }__attribute__((packed));
 
-    typedef _UTIL::Buffer<TSTP_MAC, Frame> Buffer;
+    class Microframe {
+    private:
+        unsigned _all_listen : 1;
+        unsigned _id : 15;
+        unsigned _count : 8;
+        Hint _hint;
+        // CRC is handled by the interrupt handler
+    }__attribute__((packed));
 
-private:
+    // Bridge between the hardware-dependent PHY layer and hardware-independent TSTP
+    void update(Buffer * buf) { }
+
+    // == Methods for interacting with the PHY layer ==
     Buffer ** _rx_buffer;
     Buffer ** _tx_buffer;
     unsigned int _rx_cur;
@@ -41,13 +63,11 @@ private:
     unsigned int _tx_bufs;
     unsigned int _rx_bufs;
 
-    void update(Buffer * buf) { }
-
     template<unsigned int UNIT, typename PHY = PHY_Layer>
     static void init(unsigned int unit = UNIT);
 
     template<typename PHY = PHY_Layer>
-    TSTP_MAC(PHY * phy, unsigned int tx_bufs, unsigned int rx_bufs, DMA_Buffer * dma_buf);// : _phy(phy), _tx_bufs(tx_bufs), _rx_bufs(rx_bufs) { } // TODO: Polymorphic PHY
+    TSTP_MAC(PHY * phy, unsigned int tx_bufs, unsigned int rx_bufs, DMA_Buffer * dma_buf);
 
     // Interrupt dispatching binding
     struct MACS {
@@ -80,6 +100,10 @@ private:
 
     template <typename PHY = PHY_Layer>
     void handle_int();
+
+    // == TSTP -> TSTP_MAC interface ==
+    void send(Scheduled_Message * message);
+    bool alloc(Scheduled_Message * message);
 
     PHY_Layer * _phy;
     TSTP * _tstp;

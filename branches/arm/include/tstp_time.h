@@ -10,6 +10,14 @@ class PTP
     PTP(unsigned int unit) { }
 
     TSTP * _tstp;
+
+    bool bootstrap();
+
+public:
+    typedef int Time;
+
+private:
+    Time time_now() { return 0; } // TODO
 };
 
 __END_SYS

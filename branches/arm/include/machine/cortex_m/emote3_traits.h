@@ -145,7 +145,7 @@ template <> struct Traits<Cortex_M_Radio>: public Traits<Cortex_M_Common>
     static const bool enabled = (Traits<Build>::NODES > 1);
 
     // {TSTP_NIC, eMote3_IEEE802_15_4};
-    typedef LIST<eMote3_IEEE802_15_4> NICS;
+    typedef LIST<TSTP_NIC> NICS;
 
     static const unsigned int UNITS = NICS::Length;
 };
@@ -153,6 +153,7 @@ template <> struct Traits<Cortex_M_Radio>: public Traits<Cortex_M_Common>
 template<> struct Traits<TSTP>::MAC_Config<0>: public Traits<TSTP>::Default_MAC_Config
 {
     typedef CC2538_PHY PHY_Layer;
+    typedef MAC_Timer Timer;
     static const unsigned int SEND_BUFFERS = 16;
     static const unsigned int RECEIVE_BUFFERS = 16;
 };

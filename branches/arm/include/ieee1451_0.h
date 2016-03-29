@@ -81,9 +81,15 @@ public:
             };
         };
     }__attribute__((packed));
+
+    class UNIT_CODE {
+    public:
+        typedef unsigned long long UNIT_CODE_T;
+        static const UNIT_CODE_T METER = 0xA000ull;
+        static const UNIT_CODE_T WATT = 0xAAAAull; // TODO
+    };
 };
 
 __END_SYS
 
 #endif
-

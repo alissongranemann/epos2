@@ -9,6 +9,9 @@ TSTP_MAC::MACS TSTP_MAC::_macs[TSTP_MAC::UNITS];
 
 template<>
 TSTP_MAC::TSTP_MAC(CC2538_PHY * phy, unsigned int tx_bufs, unsigned int rx_bufs, DMA_Buffer * dma_buf) : _tx_bufs(tx_bufs), _rx_bufs(rx_bufs), _phy(phy) { // TODO: Polymorphic PHY
+    
+    assert(MTU <= CC2538_PHY::MTU);
+
     auto log = dma_buf->log_address();
 
     for (auto i = 0u; i < _tx_bufs; ++i) {
@@ -19,7 +22,7 @@ TSTP_MAC::TSTP_MAC(CC2538_PHY * phy, unsigned int tx_bufs, unsigned int rx_bufs,
         _rx_buffer[i] = new (log) Buffer(0);
         log += sizeof(Buffer);
     }
-} 
+}
 
 template <>
 void TSTP_MAC::handle_int<CC2538_PHY>()

@@ -12,6 +12,7 @@ __BEGIN_SYS
 // CC2538 IEEE 802.15.4 Radio Mediator
 class eMote3_IEEE802_15_4: public IEEE802_15_4, public IEEE802_15_4::Observed, private CC2538_PHY
 {
+    typedef IEEE802_15_4::CRC CRC;
     static const unsigned int TX_BUFS = Traits<eMote3_IEEE802_15_4>::SEND_BUFFERS;
     static const unsigned int RX_BUFS = Traits<eMote3_IEEE802_15_4>::RECEIVE_BUFFERS;
 

@@ -353,6 +353,8 @@ protected:
     typedef CPU::IO_Irq IO_Irq;
 
 public:
+    typedef IEEE802_15_4_PHY::Frame Frame;
+
     CC2538_PHY() {
         // Enable clock to the RF CORE module
         Cortex_M_Model::radio_enable();

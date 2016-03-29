@@ -104,6 +104,7 @@ class Cortex_M_ADC;
 class Cortex_M_Bootloader;
 class CC2538_TSC;
 class CC2538_PHY;
+class MAC_Timer;
 
 class ATmega;
 class ATmega_IC;

@@ -14,6 +14,8 @@ class IEEE802_15_4_PHY
     typedef CPU::Reg8 Reg8;
 
 public:
+    typedef CPU::Reg16 CRC;
+
     // The IEEE 802.15.4 PHR
     class Header
     {

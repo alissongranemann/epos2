@@ -41,6 +41,27 @@ inline float logf(float num, float base = E, float epsilon = 1e-12) {
     return (integer + decimal);
 }
 
+inline float sqrt(float x)
+{
+    float xhi = x;
+    float xlo = 0;
+    float guess = x/2;
+
+    while (guess * guess != x)
+    {
+        if (guess * guess > x)
+            xhi = guess;
+        else
+            xlo = guess;
+
+        float new_guess = (xhi + xlo) / 2;
+        if (new_guess == guess)
+            break; // not getting closer
+        guess = new_guess;
+    }
+    return guess;
+} 
+
 inline float fast_log2(float val)
 {
    int * const exp_ptr = reinterpret_cast <int *> (&val);
@@ -71,6 +92,13 @@ template <typename T>
 const T &max(const T& x, const T& y)
 {
     return (x > y) ? x : y;
+}
+
+template <typename T>
+T abs(const T& x)
+{
+    if(x > 0) return x;
+    return -x;
 }
 
 };

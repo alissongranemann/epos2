@@ -21,7 +21,7 @@ public:
     typedef Short_Address Address;
     typedef CPU::Reg8 Reg8;
     typedef CPU::Reg16 Reg16;
-    typedef NIC_Common::CRC16 CRC;
+    typedef IEEE802_15_4_PHY::CRC CRC;
 
     // Frame types
     enum Frame_Type
