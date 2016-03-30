@@ -174,9 +174,10 @@ public:
     enum {
         LOCAL_APIC_PHY_ADDR = 0xfee00000,
         LOCAL_APIC_LOG_ADDR = Memory_Map<PC>::APIC,
-        LOCAL_APIC_SIZE     = Memory_Map<PC>::VGA - Memory_Map<PC>::APIC,
+        LOCAL_APIC_SIZE     = Memory_Map<PC>::IO_APIC - Memory_Map<PC>::APIC,
         IO_APIC_PHY_ADDR    = 0xfec00000,
-        IO_APIC_LOG_ADDR    = Memory_Map<PC>::APIC + (IO_APIC_PHY_ADDR - LOCAL_APIC_PHY_ADDR)
+        IO_APIC_LOG_ADDR    = Memory_Map<PC>::IO_APIC,
+        IO_APIC_SIZE        = Memory_Map<PC>::VGA - Memory_Map<PC>::IO_APIC
     };
 
     // Memory-mapped registers
@@ -485,13 +486,15 @@ public:
 public:
     static void remap(Log_Addr addr)
     {
+        db<void>(TRC) << "IO_APIC::remap, addr = " << addr << endl;
         _base = addr;
+        db<void>(TRC) << "IO_APIC::remap, _base = " << _base << endl;
     }
 
 
     static Reg32 ioapic_read(Reg32 index)
     {
-        db<void>(TRC) << "ioapic_read, index: " << hex << index << dec << endl;
+        db<void>(TRC) << "ioapic_read, index: " << reinterpret_cast<void *>(index) << endl;
 
         *reinterpret_cast<volatile Reg32 *>(_base + INDEX_REG) = index;
 
@@ -503,7 +506,7 @@ public:
 
     static void ioapic_write(Reg32 index, Reg32 data)
     {
-        db<void>(TRC) << "ioapic_write, index: " << hex << index << " , data: " << data << dec << endl;
+        db<void>(TRC) << "ioapic_write, index: " << reinterpret_cast<void *>(index) << " , data: " << data << endl;
 
         *reinterpret_cast<volatile Reg32 *>(_base + INDEX_REG) = index;
         *reinterpret_cast<volatile Reg32 *>(_base + DATA_REG) = data;
@@ -512,7 +515,7 @@ public:
 
     static void set_irq(Reg8 irq, Reg64 apic_id, Reg8 vector)
     {
-        db<void>(TRC) << "IO_APIC::set_irq, irq: " << irq << " , apic_id: " << apic_id << ", vector: " << vector << endl;
+        db<void>(TRC) << "IO_APIC::set_irq, irq: " << irq << " , apic_id: " << apic_id << ", vector: " << vector << ", _base: " << _base << endl;
 
         const Reg32 low_index = 0x10 + irq*2;
         const Reg32 high_index = 0x10 + irq*2 + 1;

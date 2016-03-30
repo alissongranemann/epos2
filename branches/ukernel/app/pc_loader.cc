@@ -33,7 +33,8 @@ OStream cout;
 
 int main(int argc, char * argv[])
 {
-    // Network::init();
+    MMU_Aux::check_memory_mapping();
+
     is_domain_hrt[1] = _SYS::Traits<Application>::IS_DOM_1_HRT;
     is_domain_hrt[2] = _SYS::Traits<Application>::IS_DOM_2_HRT;
 
@@ -52,20 +53,19 @@ int main(int argc, char * argv[])
     d0->priority(_SYS::Thread::MAIN);
     cout << "done!" << endl;
 
-    for (unsigned int i = 1; i < NUM_OF_DOMAINS; i++)
-    {
+    for (unsigned int i = 1; i < NUM_OF_DOMAINS; i++) {
         cout << "Trying to load Domain " << i << endl;
 
         ELF * elf = get_next_elf(reinterpret_cast<char *>(argv));
 
-        if(! elf) {
+        if (! elf) {
             cout << "Domain " << i << " could not be loaded (invalid ELF). Exiting!" << endl;
             return -1;
         }
 
         domains[i] = create_domain(i, elf);
 
-        if(! domains[i]) {
+        if (! domains[i]) {
             cout << "Domain " << i << " could not be loaded. Exiting!" << endl;
             return -1;
         }
@@ -73,9 +73,13 @@ int main(int argc, char * argv[])
         cout << "Domain " << i << " loaded!" << endl;
     }
 
+    cout << "Starting domains" << endl;
+    for (unsigned int i = 1; i < NUM_OF_DOMAINS; i++) {
+        domains[i]->main()->resume();
+    }
+
     cout << "I will wait for all domains to finish!" << endl;
-    for (unsigned int i = 1; i < NUM_OF_DOMAINS; i++)
-    {
+    for (unsigned int i = 1; i < NUM_OF_DOMAINS; i++) {
         cout << "Waiting for Domain " << i << " to finish... " << endl;
         domains[i]->main()->join();
     }
@@ -141,6 +145,8 @@ Task * create_domain(unsigned int domain_number, ELF * elf)
     }
     inspect_elf(elf);
     cout << "Code segment loaded from ELF" << endl;
+    unsigned long code_log_addr = code;
+    MMU_Aux::set_as_read_only(code_log_addr, cs->size());
 
     cout << "Creating data segment: ";
     Segment * ds = new Segment(elf->segment_size(1));
@@ -219,7 +225,7 @@ Thread * create_vcpu(Task * domain_u, int (* guest_os_task) (), int pcpu, bool h
         db<void>(TRC) << "rt_vcpu_scheduling_criterion: " << rt_vcpu_scheduling_criterion << endl;
         db<void>(TRC) << "PEDF system object: " << reinterpret_cast<void *>(rt_vcpu_scheduling_criterion.__stub()->id().unit()) << endl;
 
-        Periodic_Thread::Configuration rt_vcpu_conf = Periodic_Thread::Configuration(period, iterations, Periodic_Thread::READY, rt_vcpu_scheduling_criterion, domain_u);
+        Periodic_Thread::Configuration rt_vcpu_conf = Periodic_Thread::Configuration(period, iterations, Periodic_Thread::SUSPENDED, rt_vcpu_scheduling_criterion, domain_u);
         db<void>(TRC) << "rt_vcpu_conf: " << rt_vcpu_conf << endl;
         db<void>(TRC) << "rt_vcpu_conf system object: " << reinterpret_cast<void *>(rt_vcpu_conf.__stub()->id().unit()) << endl;
 
@@ -233,7 +239,7 @@ Thread * create_vcpu(Task * domain_u, int (* guest_os_task) (), int pcpu, bool h
     } else {
         db<void>(WRN) << "creating BE vcpu...";
         ASM("bevcpu:");
-        Thread * be_vcpu = new Thread(Thread::Configuration(Thread::READY, PEDF(PEDF::APERIODIC, pcpu), domain_u), guest_os_task);
+        Thread * be_vcpu = new Thread(Thread::Configuration(Thread::SUSPENDED, PEDF(PEDF::APERIODIC, pcpu), domain_u), guest_os_task);
         db<void>(WRN) << "done" << endl;
         vcpu = be_vcpu;
     }

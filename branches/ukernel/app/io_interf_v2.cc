@@ -34,8 +34,25 @@
 
 using namespace EPOS;
 
+static TSC::Time_Stamp guest_task_1_begin = 0;
+static TSC::Time_Stamp guest_task_1_end = 0;
+
+static TSC::Time_Stamp guest_job_1_begin = 0;
+static TSC::Time_Stamp guest_job_1_end = 0;
+static TSC::Time_Stamp guest_job_1_total = 0;
 
 const int ITERATIONS = _SYS::Traits<Application>::GUEST_OS_TASK_ITERATIONS;
+
+const unsigned int WSS = 12 * 1024 * 1024; /* Work Set Size (in bytes).
+    * On Intel Core 2 Quad Q9550
+    * L2 is the last level cache (LLC) and it is shared among 2 cores.
+    * There are 4 cores, 2 processors of 2 core each and, 2 x L2
+    * (one for each processor).
+    * L2 size is 6 MB.
+    * Using an array that is twice than that to force cache misses.
+    * */
+unsigned int * work_set;
+unsigned int value;
 
 OStream cout;
 
@@ -45,16 +62,34 @@ int main()
     cout << "This is Domain 1" << endl;
     cout << "Task on Guest OS 1 (Domain 1) starting..." << endl;
 
+    work_set = new unsigned int[WSS];
+
+    guest_task_1_begin = TSC::time_stamp();
+
     for (unsigned int i = 0; i < ITERATIONS; i++) {
-        for(int j = 0; j < 79; j++) {
-            cout << "+";
+        guest_job_1_begin = TSC::time_stamp();
+
+        /* Read and write the work_set here. */
+        // Sequential reads. TODO: try other access patterns
+        for (unsigned int wsi = 0; wsi < WSS; wsi++) {
+            value = work_set[wsi];
         }
-        cout << "" << endl;
+
+        /* ---- */
+
+        guest_job_1_end = TSC::time_stamp();
+        guest_job_1_total += guest_job_1_end - guest_job_1_begin;
 
         Periodic_Thread::wait_next();
     }
 
+    guest_task_1_end = TSC::time_stamp();
+
+    cout << "Guest Task 1 total latency (cycles): " << guest_job_1_total << endl;
+    cout << "Guest Task 1 total execution (cycles): " << (guest_task_1_end - guest_task_1_begin) << endl;
     cout << "Task on Guest OS 1 (Domain 1) finishing..." << endl;
+
+    delete work_set;
 
     return 0;
 }

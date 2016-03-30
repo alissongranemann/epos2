@@ -69,6 +69,7 @@ public:
     static unsigned long physical_address(unsigned long log_addr, unsigned long * out_page_frame_present) { static_enter(); unsigned long res = Component::physical_address(log_addr, out_page_frame_present); static_leave(); return res; }
     static void dump_memory_mapping() { static_enter(); Component::dump_memory_mapping(); static_leave(); }
     static void check_memory_mapping() { static_enter(); Component::check_memory_mapping(); static_leave(); }
+    static void set_as_read_only(unsigned long log_addr, unsigned long size, bool user = 1) { static_enter(); Component::set_as_read_only(log_addr, size, user); static_leave(); }
 
     // Synchronization
     void lock() { enter(); Component::lock(); leave(); }
@@ -88,6 +89,8 @@ public:
     int frequency() { enter(); int res = Component::frequency(); leave(); return res; }
     int ticks() { enter(); int res = Component::ticks(); leave(); return res; }
     int read() { enter(); int res = Component::read(); leave(); return res; }
+
+    static TSC::Time_Stamp time_stamp() { static_enter(); TSC::Time_Stamp res = Component::time_stamp(); static_leave(); return res; }
 
     // Communication
     template<typename ... Tn>

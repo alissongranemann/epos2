@@ -38,7 +38,28 @@ public:
      * */
     static void dump_memory_mapping(unsigned long log_addr, unsigned long size, bool dump = true);
 
+    /// Checks the whole memory map of the current task
     static void check_memory_mapping();
+
+    /// Sets a memory region with the informed MMU flags
+    /*! Sets a memory region with the informed MMU flags.
+     * This method OR's all flags but R/W flag (it discard the current R/W bit
+     * and applies the new one).
+     * This method takes into account the current page directory of the CPU that
+     * executes this code.
+     * */
+    static void set_flags(unsigned long log_addr, unsigned long size, unsigned long flags);
+
+    /// Sets a memory region to be read only
+    /*! Sets a memory region to be read only.
+     * If **user** is set to one, this method will apply
+     * MMU::IA32_Flags::APP_CODE on the page frames specified by the range.
+     * Otherwise it will apply MMU::IA32_Flags::SYS_CODE
+     * This method is based on the **set_flags** method.
+     * This method takes into account the current page directory of the CPU that
+     * executes this code.
+     */
+    static void set_as_read_only(unsigned long log_addr, unsigned long size, bool user = 1);
 
 private:
     static void check_mapping(const char * component_name, unsigned long log_addr, unsigned long expected_phy_addr);

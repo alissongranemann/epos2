@@ -43,8 +43,11 @@ public:
             SYS  = (PRE | RW  | ACC),
             PCI  = (SYS | PCD | IO),
             APIC = (SYS | PCD),
+            IO_APIC = (SYS | PCD),
             VGA = (SYS | PCD),
             DMA  = (SYS | PCD | CT),
+            APP_CODE = (PRE | ACC | USR),
+            SYS_CODE = (PRE | ACC)
         };
 
     public:
@@ -416,6 +419,16 @@ public:
         Page_Directory * pd = current();
         Page_Table * pt = (*pd)[directory(addr)];
         return (*pt)[page(addr)] | offset(addr);
+    }
+
+    static Phy_Addr discard_flags(const Phy_Addr & page_frame)
+    {
+        return page_frame & 0xfffff000;
+    }
+
+    static Phy_Addr discard_page_offset(const Phy_Addr & page_frame)
+    {
+        return page_frame & 0xfffff000;
     }
 
     static void flush_tlb()

@@ -81,6 +81,14 @@ void E100::init(unsigned int unit)
 
     // Enable interrupts for device
     IC::enable(_devices[unit].interrupt);
+
+    // Assign IRQ to E100 interrupt on I/O APIC
+    IO_APIC::remap(Memory_Map<PC>::IO_APIC); // Already done by setup. Should not be needed here.
+    if (! Traits<Build>::RUNNING_ON_QEMU) { /* Assuming HP xw4600 Workstation (Intel Core 2 Quad Q9550) */
+        db<void>(TRC) << "IO_APIC::set_irq" << endl;
+        IO_APIC::set_irq(2, 0, 42); /*  42 is the E100 interrupt */
+    }
+
 }
 
 __END_SYS

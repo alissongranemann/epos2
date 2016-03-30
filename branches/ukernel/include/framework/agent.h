@@ -15,6 +15,7 @@
 #include <alarm.h>
 #include <chronometer.h>
 #include <communicator.h>
+#include <color.h>
 
 #include <architecture/ia32/mmu_aux.h>
 
@@ -53,7 +54,7 @@ public:
             }
         }
         else { // out-of-kernel (i.e. Dom0 or server) services
-                db<void>(WRN) << "out-of-kernel (i.e. Dom0 or server) services" << endl;
+                db<void>(WRN) << "out-of-kernel (i.e. Dom0 or server) services. Type: " << reinterpret_cast<void *>(id().type()) << endl;
 
                 Message msg(*this); // copy message from user space to kernel
                 msg.id(Id(IPC_COMMUNICATOR_ID, id().unit()));
@@ -69,7 +70,7 @@ public:
             db<Framework>(TRC) << "<=:" << *reinterpret_cast<Message *>(this) << endl;
 
         if (result() == UNDEFINED) {
-            db<Framework>(ERR) << "exec. Undefined method for Component = " << id().type() << ", method = " << method() << endl;
+            db<Framework>(ERR) << "exec. Undefined method for Component = " << reinterpret_cast<void *>(id().type()) << ", method = " << method() << endl;
         }
     }
 
@@ -101,6 +102,7 @@ private:
     void handle_periodic_thread_configuration();
     void handle_tcp_link();
     void handle_mmu_aux();
+    void handle_tsc();
 
 public:
     static void init();
@@ -302,17 +304,26 @@ void Agent::handle_address_space()
     case ADDRESS_SPACE_ATTACH1: {
         Segment * seg;
         in(seg);
+
+        db<Framework>(TRC) << Color::YELLOW() << "Address Space Agent, attach 1, seg = " << reinterpret_cast<void *>(seg) << Color::END_COLOR() << endl;
+
         res = as->attach(seg);
     } break;
     case ADDRESS_SPACE_ATTACH2: {
         Segment * seg;
         CPU::Log_Addr addr;
         in(seg, addr);
+
+        db<Framework>(TRC) << Color::YELLOW() << "Address Space Agent, attach 2, seg = " << reinterpret_cast<void *>(seg) << ", addr = " << addr << Color::END_COLOR() << endl;
+
         res = as->attach(seg, addr);
     } break;
     case ADDRESS_SPACE_DETACH: {
         Segment * seg;
         in(seg);
+
+        db<Framework>(TRC) << Color::YELLOW() << "Address Space Agent, detach, seg = " << reinterpret_cast<void *>(seg) << Color::END_COLOR() << endl;
+
         as->detach(seg);
     } break;
     case ADDRESS_PHYSICAL: {
@@ -358,15 +369,19 @@ void Agent::handle_segment()
         id(Id(SEGMENT_ID, reinterpret_cast<Id::Unit_Id>(new Adapter<Segment>(phy_addr, bytes, flags))));
     } break;
     case DESTROY: {
+        db<void>(WRN) << "DESTROY" << endl;
         delete seg;
     } break;
     case SEGMENT_SIZE: {
+        db<void>(TRC) << "SEGMENT_SIZE" << endl;
         res = seg->size();
     } break;
     case SEGMENT_PHY_ADDRESS: {
+        db<void>(TRC) << "SEGMENT_PHY_ADDRESS" << endl;
         res = seg->phy_address();
     } break;
     case SEGMENT_RESIZE: {
+        db<void>(TRC) << "SEGMENT_RESIZE" << endl;
         int amount;
         in(amount);
         res = seg->resize(amount);
@@ -384,16 +399,21 @@ void Agent::handle_segment()
     } break;
     case CREATE_HEAP_IN_PLACE: {
         db<void>(TRC) << "CREATE_HEAP_IN_PLACE" << endl;
+
         void * place;
         Segment * heap_segment;
         in(place, heap_segment);
+
+        Address_Space current_address_space = Address_Space(reinterpret_cast<MMU::Page_Directory *>(CPU::cr3()));
+
         db<void>(TRC) << "place: " << reinterpret_cast<void *>(place) << ", heap_segment: " << reinterpret_cast<void *>(heap_segment) << endl;
-        db<void>(TRC) << "current task is: " << Task::current() << endl;
-        db<void>(TRC) << "address space is: " << Task::current()->address_space() << endl;
-        db<void>(TRC) << "page directory is: " << Task::current()->address_space()->pd() << endl;
+        db<void>(TRC) << "current page directory is: " << current_address_space.pd() << endl;
         db<void>(TRC) << "segment size: " << heap_segment->size() << endl;
-        CPU::Log_Addr addr = Task::current()->address_space()->attach(heap_segment);
+
+        CPU::Log_Addr addr = current_address_space.attach(heap_segment);
+
         db<void>(TRC) << "segment attached to: " << addr << endl;
+
         new (place) Heap(addr, heap_segment->size());
         id(Id(SEGMENT_ID, reinterpret_cast<Id::Unit_Id>(place)));
     } break;
@@ -926,8 +946,44 @@ void Agent::handle_mmu_aux()
         Adapter<MMU_Aux>::check_memory_mapping();
 
     } break;
+    case MMU_AUX_SET_AS_READ_ONLY: {
+        unsigned long log_addr;
+        unsigned long size;
+        bool user;
+
+        in(log_addr, size, user);
+
+        db<Framework>(WRN) << Color::GREEN()
+            << "log_addr = " << reinterpret_cast<void *>(log_addr)
+            << ", size = " << size
+            << ", user = " << user
+            << Color::END_COLOR()
+            << endl;
+
+        Adapter<MMU_Aux>::set_as_read_only(log_addr, size, user);
+
+    } break;
     default: {
         db<Framework>(WRN) << "Undefined method for MMU_Aux agent. Method = " << method() << endl;
+        res = UNDEFINED;
+    }
+    }
+
+    result(res);
+}
+
+void Agent::handle_tsc()
+{
+    Result res = 0;
+
+    switch(method()) {
+    case TSC_TIME_STAMP: {
+        res = Adapter<TSC>::time_stamp();
+        db<Framework>(WRN) << "TSC_TIME_STAMP. res = " << res << endl;
+
+    } break;
+    default: {
+        db<Framework>(WRN) << "Undefined method for TSC agent. Method = " << method() << endl;
         res = UNDEFINED;
     }
     }

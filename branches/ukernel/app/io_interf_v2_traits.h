@@ -34,6 +34,8 @@ template<> struct Traits<Build>
 
     static const bool NO_LOADER = false;
     static const bool NO_DOMAIN_2 = false;
+
+    static const bool RUNNING_ON_QEMU = false;
 };
 
 

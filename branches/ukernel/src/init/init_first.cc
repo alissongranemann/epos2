@@ -10,6 +10,8 @@ extern "C" { void __epos_app_entry(); }
 
 __BEGIN_SYS
 
+volatile bool Task_Master_Ready = false;
+
 class Init_First
 {
 private:
@@ -60,6 +62,9 @@ public:
                 // Idle thread creation must succeed main, thus avoiding implicit rescheduling.
                 new (SYSTEM) Thread(Thread::Configuration(Thread::READY, Thread::IDLE), &Thread::idle);
 
+
+                Task_Master_Ready = true;
+
             } else {
                 /* A task for each core...
                 TODO:
@@ -73,6 +78,9 @@ public:
                 first = Thread::self();
                 */
                 // Only one task...
+
+                while (! Task_Master_Ready);
+
                 first = new (SYSTEM) Thread(Thread::Configuration(Thread::READY, Thread::IDLE), &Thread::idle);
             }
         } else {

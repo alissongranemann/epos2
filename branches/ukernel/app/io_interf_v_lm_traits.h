@@ -18,7 +18,7 @@ struct Traits
 template<> struct Traits<Build>
 {
     enum {LIBRARY, BUILTIN, KERNEL};
-    static const unsigned int MODE = KERNEL;
+    static const unsigned int MODE = LIBRARY;
 
     enum {IA32};
     static const unsigned int ARCHITECTURE = IA32;
@@ -30,12 +30,12 @@ template<> struct Traits<Build>
     static const unsigned int MODEL = Legacy;
 
     static const unsigned int CPUS = 3;
-    static const unsigned int NODES = 1; // > 1 => NETWORKING
+    static const unsigned int NODES = 2; // > 1 => NETWORKING
 
-    static const bool NO_LOADER = false;
-    static const bool NO_DOMAIN_2 = false;
+    static const bool NO_LOADER = true;
+    static const bool NO_DOMAIN_2 = true;
 
-    static const bool RUNNING_ON_QEMU = true;
+    static const bool RUNNING_ON_QEMU = false;
 };
 
 
@@ -112,8 +112,8 @@ template<> struct Traits<Application>: public Traits<void>
     static const unsigned int MAX_THREADS = Traits<Machine>::MAX_THREADS;
     static const unsigned long DOMAIN_PERIOD = 100000; // Microsecond
     static const unsigned long GUEST_OS_TASK_ITERATIONS = 3;
-    static const unsigned int NUM_OF_DOMAINS = 3;
-    static const bool IS_DOM_1_HRT = false;
+    static const unsigned int NUM_OF_DOMAINS = 1;
+    static const bool IS_DOM_1_HRT = true;
     static const bool IS_DOM_2_HRT = false;
 };
 
@@ -210,7 +210,8 @@ template<> struct Traits<IP>: public Traits<Network>
 template<> struct Traits<IP>::Config<0> //: public Traits<IP>::Default_Config
 {
     static const unsigned int  TYPE      = MAC;
-    static const unsigned long ADDRESS   = 0x0a000100;  // 10.0.1.x x=MAC[5]
+    static const unsigned long ADDRESS   = 0xc2a70100;  // 194.167.1.x x=MAC[5]
+    // static const unsigned long ADDRESS   = 0x0a000100;  // 10.0.1.x x=MAC[5]
     static const unsigned long NETMASK   = 0xffffff00;  // 255.255.255.0
     static const unsigned long GATEWAY   = 0;           // 10.0.1.1
 };

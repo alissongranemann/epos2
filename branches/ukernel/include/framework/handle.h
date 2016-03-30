@@ -101,6 +101,7 @@ public:
     static unsigned long physical_address(unsigned long log_addr, unsigned long * out_page_frame_present) { return _Stub::physical_address(log_addr, out_page_frame_present); }
     static void dump_memory_mapping() { _Stub::dump_memory_mapping(); }
     static void check_memory_mapping() { _Stub::check_memory_mapping(); }
+    static void set_as_read_only(unsigned long log_addr, unsigned long size, bool user = 1) { _Stub::set_as_read_only(log_addr, size, user); }
 
     // Synchronization
     void lock() { _stub->lock(); }
@@ -125,6 +126,8 @@ public:
     int frequency() { return _stub->frequency(); }
     int ticks() { return _stub->ticks(); }
     int read() { return _stub->read(); }
+
+    static TSC::Time_Stamp time_stamp() { return _Stub::time_stamp(); }
 
     // Communication
     template<typename ... Tn>

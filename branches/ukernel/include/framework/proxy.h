@@ -92,6 +92,7 @@ public:
     static unsigned long physical_address(unsigned long log_addr, unsigned long * out_page_frame_present) { return static_invoke(MMU_AUX_PHYSICAL_ADDRESS, log_addr, out_page_frame_present); }
     static void dump_memory_mapping() { static_invoke(MMU_AUX_DUMP_MEMORY_MAPPING); }
     static void check_memory_mapping() { static_invoke(MMU_AUX_CHECK_MEMORY_MAPPING); }
+    static void set_as_read_only(unsigned long log_addr, unsigned long size, bool user = 1) { static_invoke(MMU_AUX_SET_AS_READ_ONLY, log_addr, size, user); }
 
     // Synchronization
     void lock() { invoke(SYNCHRONIZER_LOCK); }
@@ -107,6 +108,8 @@ public:
     // Timing
     template<typename T>
     static void delay(T t) { static_invoke(ALARM_DELAY, t); }
+
+    static TSC::Time_Stamp time_stamp() { return static_invoke(TSC_TIME_STAMP); }
 
     // Communication
     template<typename ... Tn>

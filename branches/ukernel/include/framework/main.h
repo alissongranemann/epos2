@@ -80,6 +80,18 @@ EXPORT(Handler);
 EXPORT(Function_Handler);
 EXPORT(RTC);
 
+// BIND(TSC);
+class TSC: public SELECT(TSC)
+{
+private:
+    typedef SELECT(TSC) Base;
+    typedef _SYS::TSC Sys;
+
+public:
+    typedef Sys::Time_Stamp Time_Stamp; /* unsigned long long */
+
+};
+
 EXPORT(System);
 EXPORT(Application);
 

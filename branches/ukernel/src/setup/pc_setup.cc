@@ -8,6 +8,7 @@
 #include <utility/ostream.h>
 #include <utility/debug.h>
 #include <machine.h>
+#include <mmu_aux.h>
 
 
 volatile bool Serial_Display_Ready = false;
@@ -81,10 +82,13 @@ private:
     static const unsigned int MEM_TOP = Memory_Map<PC>::MEM_TOP;
     static const unsigned int APIC_PHY = APIC::LOCAL_APIC_PHY_ADDR;
     static const unsigned int APIC_SIZE = APIC::LOCAL_APIC_SIZE;
+    static const unsigned int IO_APIC_PHY = APIC::IO_APIC_PHY_ADDR;
+    static const unsigned int IO_APIC_SIZE = APIC::IO_APIC_SIZE;
     static const unsigned int VGA_PHY = Traits<PC_Display>::FRAME_BUFFER_ADDRESS;
     static const unsigned int VGA_SIZE = Traits<PC_Display>::FRAME_BUFFER_SIZE;
     ASSERT<VGA_SIZE == 65536> vga_size_is_64_KB;
     ASSERT<APIC_SIZE == 4096> apic_size_is_4_KB;
+    ASSERT<IO_APIC_SIZE == 4096> io_apic_size_is_4_KB;
     ASSERT<((Memory_Map<PC>::VGA + VGA_SIZE) <= Memory_Map<PC>::PCI)> vga_and_pci_do_not_overlap;
 
     // Logical memory map
@@ -145,6 +149,8 @@ private:
     void detect_pci(unsigned int * base, unsigned int * top);
     void calibrate_timers();
 
+    void set_code_pages_read_only();
+
     static void panic() { Machine::panic(); }
 
 private:
@@ -201,9 +207,6 @@ PC_Setup::PC_Setup(char * boot_image)
         setup_sys_pt();
         setup_sys_pd();
 
-        IO_APIC::remap(APIC::IO_APIC_PHY_ADDR);
-        IO_APIC::set_irq(2, 0, 42); /*  42 is the E100 interrupt */
-
         // Enable paging
         // We won't be able to print anything before the remap() bellow
         db<Setup>(INF) << "IP=" << CPU::ip() << endl;
@@ -218,12 +221,16 @@ PC_Setup::PC_Setup(char * boot_image)
         si = reinterpret_cast<System_Info<PC> *>(SYS_INFO);
         PC_Display::remap(Memory_Map<PC>::VGA); // Display can be Serial_Display, so PC_Display here!
         APIC::remap(Memory_Map<PC>::APIC);
+        IO_APIC::remap(Memory_Map<PC>::IO_APIC);
 
         // Configure a TSS for system calls and inter-level interrupt handling
         setup_tss0();
 
         // Load EPOS parts (e.g. INIT, SYSTEM, APP)
         load_parts();
+
+        set_code_pages_read_only();
+        CPU::cr0(CPU::cr0() | CPU::CR0_WP); /* inhibits supervisor-level procedures from writing into read-only pages */
 
         // Signalize other CPUs that paging is up
         Paging_Ready = true;
@@ -235,6 +242,8 @@ PC_Setup::PC_Setup(char * boot_image)
 
         // Enable paging
         enable_paging();
+
+        CPU::cr0(CPU::cr0() | CPU::CR0_WP); /* inhibits supervisor-level procedures from writing into read-only pages */
 
         setup_tss_i();
     }
@@ -254,6 +263,28 @@ PC_Setup::PC_Setup(char * boot_image)
     // SETUP is now part of the free memory and this point should never be
     // reached, but, just in case ... :-)
     panic();
+}
+
+//========================================================================
+
+void PC_Setup::set_code_pages_read_only()
+{
+    /* Assumes load_parts has loaded the ELFs in the correct region as specified
+     * by the load map (see build_lm). */
+
+    MMU_Aux::set_flags(si->lm.ini_code, si->lm.ini_code_size - sizeof(Page), MMU::IA32_Flags::APP_CODE); /* It shall be: ---DA--U- */
+    /* Letting the last code page of init to be read/write because that lies the
+        .bss data section where variables such as the local static
+        PC::smp_barrier(unsigned long)::ready are.
+        The .rodata section ends on the same page that .bss begins.
+        So the potential problem here is allowing for .rodata code to overwritten
+        (the same for .ctors and .dtors that are in between .rodata and .bss).
+        A better solution would be force .bss start in a new page.
+    */
+
+    MMU_Aux::set_flags(si->lm.sys_code, si->lm.sys_code_size, MMU::IA32_Flags::SYS_CODE); /* It shall be: ---DA---- */
+
+    MMU_Aux::set_flags(si->lm.app_code, si->lm.app_code_size, MMU::IA32_Flags::APP_CODE); /* It shall be: ---DA--U- */
 }
 
 //========================================================================
@@ -485,6 +516,7 @@ void PC_Setup::build_pmm()
     detect_pci(&si->pmm.io_base, &si->pmm.io_top);
     unsigned int io_size = MMU::pages(si->pmm.io_top - si->pmm.io_base);
     io_size += APIC_SIZE / sizeof(Page); // Add room for APIC (4 kB, 1 page)
+    io_size += IO_APIC_SIZE / sizeof(Page); // Add room for IO_APIC (4 kB, 1 page)
     io_size += VGA_SIZE / sizeof(Page); // Add room for VGA (64 kB, 16 pages)
     top_page -= (io_size + MMU::PT_ENTRIES - 1) / MMU::PT_ENTRIES;
     si->pmm.io_pts = top_page * sizeof(Page);
@@ -794,34 +826,43 @@ void PC_Setup::setup_sys_pd()
     // Calculate the number of page tables needed to map the IO address space
     unsigned int io_size = MMU::pages(si->pmm.io_top - si->pmm.io_base);
     io_size += APIC_SIZE / sizeof(Page); // Add room for APIC (4 kB, 1 page)
+    io_size += IO_APIC_SIZE / sizeof(Page); // Add room for IO_APIC (4 kB, 1 page)
     io_size += VGA_SIZE / sizeof(Page); // Add room for VGA (64 kB, 16 pages)
     n_pts = (io_size + MMU::PT_ENTRIES - 1) / MMU::PT_ENTRIES;
 
     // Map IO address space into the page tables pointed by io_pts
     pts = reinterpret_cast<PT_Entry *>((void *)si->pmm.io_pts);
+
     db<Setup>(TRC) << "APIC page tables" << endl;
     unsigned int i = 0;
     db<Setup>(TRC) << "pts + " << i << " == " << reinterpret_cast<void *>(pts + i) << endl;
-    for(; i < (APIC_SIZE / sizeof(Page)); i++) {
+    for (; i < (APIC_SIZE / sizeof(Page)); i++) {
         pts[i] = (APIC_PHY + i * sizeof(Page)) | Flags::APIC;
-        // db<Setup>(TRC) << "[" << i << "] = " << reinterpret_cast<void *>((APIC_PHY + i * sizeof(Page)) | Flags::APIC) << endl;
     }
+
+    db<Setup>(TRC) << "IO_APIC page tables" << endl;
+    db<Setup>(TRC) << "pts + " << i << " == " << reinterpret_cast<void *>(pts + i) << endl;
+    for (unsigned int j = 0; i < ((APIC_SIZE / sizeof(Page)) + (IO_APIC_SIZE / sizeof(Page))); i++, j++) {
+        pts[i] = (IO_APIC_PHY + j * sizeof(Page)) | Flags::IO_APIC;
+    }
+
     db<Setup>(TRC) << "VGA page tables" << endl;
     db<Setup>(TRC) << "pts + " << i << " == " << reinterpret_cast<void *>(pts + i) << endl;
-    for(unsigned int j = 0; i < ((APIC_SIZE / sizeof(Page)) + (VGA_SIZE / sizeof(Page))); i++, j++) {
+    for (unsigned int j = 0; i < ((APIC_SIZE / sizeof(Page)) + (IO_APIC_SIZE / sizeof(Page)) + (VGA_SIZE / sizeof(Page))); i++, j++) {
         pts[i] = (VGA_PHY + j * sizeof(Page)) | Flags::VGA;
     }
+
     db<Setup>(TRC) << "PCI page tables" << endl;
     db<Setup>(TRC) << "pts + " << i << " == " << reinterpret_cast<void *>(pts + i) << endl;
-    for(unsigned int j = 0; i < io_size; i++, j++) {
+    for (unsigned int j = 0; i < io_size; i++, j++) {
         pts[i] = (si->pmm.io_base + j * sizeof(Page)) | Flags::PCI;
     }
+
 
     // Attach devices' memory at Memory_Map<PC>::IO
     db<Setup>(TRC) << "Attaching devices' memory at Memory_Map<PC>::IO" << endl;
     for(int i = 0; i < n_pts; i++) {
         sys_pd[MMU::directory(Memory_Map<PC>::IO) + i] = (si->pmm.io_pts + i * sizeof(Page)) | Flags::PCI;
-        // db<Setup>(TRC) << "[" << (MMU::directory(Memory_Map<PC>::IO) + i) << "] = " << reinterpret_cast<void *>((si->pmm.io_pts + i * sizeof(Page)) | Flags::PCI) << endl;
     }
 
     // Map the system 4M logical address space at the top of the 4Gbytes
@@ -1176,19 +1217,22 @@ void _start()
         // further down in this code
         APIC::ipi_start(0x3000, si->bm.cpu_status);
 
-    if(si->bm.n_cpus > Traits<PC>::CPUS)
-        si->bm.n_cpus = Traits<PC>::CPUS;
+        if(si->bm.n_cpus > Traits<PC>::CPUS) {
+            si->bm.n_cpus = Traits<PC>::CPUS;
+        }
 
         // Check SETUP integrity and get information about its ELF structure
         ELF * elf = reinterpret_cast<ELF *>(&bi[si->bm.setup_offset]);
-        if(!elf->valid())
+        if(!elf->valid()) {
             Machine::panic();
+        }
         char * entry = reinterpret_cast<char *>(elf->entry());
 
         // Test if we can access the address for which SETUP has been compiled
         *entry = 'G';
-        if(*entry != 'G')
+        if(*entry != 'G') {
             Machine::panic();
+        }
 
         // Load SETUP considering the address in the ELF header
         // Be careful: by reloading SETUP, global variables have been reset to
@@ -1197,11 +1241,27 @@ void _start()
         char * addr = reinterpret_cast<char *>(elf->segment_address(0));
         int size = elf->segment_size(0);
 
-        if(addr <= &bi[si->bm.img_size])
+        if(addr <= &bi[si->bm.img_size]) {
             Machine::panic();
-        if(elf->load_segment(0) < 0)
+        }
+        if(elf->load_segment(0) < 0) {
             Machine::panic();
+        }
         APIC::remap(APIC::LOCAL_APIC_PHY_ADDR);
+
+        unsigned long long waiting_time_us = 12000000LL;
+        unsigned long long frequency_mhz = 2830LL; // Depens on the machine. It is hardcoded since we haven't called PC_Setup::calibrate_timers yet.
+        unsigned long long now = TSC::time_stamp();
+        unsigned long long t_end = now + (waiting_time_us * frequency_mhz);
+        while(now < t_end) {
+            now = TSC::time_stamp();
+        }
+
+        for (unsigned int n = 1; n < Traits<PC>::CPUS; n++) {
+            if(si->bm.cpu_status[n] == 1) {
+                CPU::finc(si->bm.cpu_status[n]);
+            }
+        }
 
         // Move the boot image to after SETUP, so there will be nothing else
         // below SETUP to be preserved
@@ -1213,24 +1273,21 @@ void _start()
         Stacks = dst;
         Stacks_Ready = true;
 
-        unsigned long long waiting_time_us = 6000000LL; // Constant (around 6 seconds)
-        unsigned long long frequency_mhz = 2830LL; // Depens on the machine. It is hardcoded since we haven't called PC_Setup::calibrate_timers yet.
-        unsigned long long now = TSC::time_stamp();
-        unsigned long long t_end = now + (waiting_time_us * frequency_mhz);
-
-        while(now < t_end)
-        {
-            now = TSC::time_stamp();
-        }
-
-
     } else { // Additional CPUs (APs)
-
-        // Inform BSP that this AP has been initialized
-        CPU::finc(si->bm.cpu_status[APIC::id()]);
 
         // Each AP increments the CPU counter
         CPU::finc(si->bm.n_cpus);
+
+        unsigned long long waiting_time_us = 3000000LL;
+        unsigned long long frequency_mhz = 2830LL; // Depens on the machine. It is hardcoded since we haven't called PC_Setup::calibrate_timers yet.
+        unsigned long long now = TSC::time_stamp();
+        unsigned long long t_end = now + (waiting_time_us * frequency_mhz);
+        while(now < t_end) {
+            now = TSC::time_stamp();
+        }
+
+        // Inform BSP that this AP has been initialized
+        CPU::finc(si->bm.cpu_status[APIC::id()]);
 
         // Wait for BSP's ACK
         while(si->bm.cpu_status[APIC::id()] != 2);

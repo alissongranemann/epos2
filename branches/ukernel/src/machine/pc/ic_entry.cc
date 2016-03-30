@@ -875,6 +875,12 @@ void PC_IC::exc_pf(Reg32 eip, Reg32 cs, Reg32 eflags, Reg32 error)
 void PC_IC::exc_gpf(Reg32 eip, Reg32 cs, Reg32 eflags, Reg32 error)
 {
     db<IC,Machine>(WRN) << "IC::exc_gpf(cs=" << hex << cs << ",ip=" << reinterpret_cast<void *>(eip) << ",fl=" << eflags << ")" << endl;
+
+    db<IC,Machine>(WRN) << "cr3 = " << reinterpret_cast<void *>(CPU::cr3())
+                            << ", tr = " << reinterpret_cast<void *>(CPU::tr())
+                            << ", esp (approximated) = " << reinterpret_cast<void *>(CPU::sp())
+                            << ", *eip = " << reinterpret_cast<void *>(*reinterpret_cast<Reg32 *>(eip)) << endl;
+
     db<IC,Machine>(WRN) << "The running thread will now be terminated!" << endl;
     _exit(-1);
 }

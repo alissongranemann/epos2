@@ -30,6 +30,8 @@ template<> struct Traits<Build>
 
     static const unsigned int CPUS = 4;
     static const unsigned int NODES = 1; // > 1 => NETWORKING
+
+    static const bool RUNNING_ON_QEMU = false;
 };
 
 
@@ -104,6 +106,8 @@ template<> struct Traits<Application>: public Traits<void>
     static const unsigned int STACK_SIZE = Traits<Machine>::STACK_SIZE;
     static const unsigned int HEAP_SIZE = Traits<Machine>::HEAP_SIZE;
     static const unsigned int MAX_THREADS = Traits<Machine>::MAX_THREADS;
+
+    static const unsigned int NUM_OF_DOMAINS = 1;
 };
 
 template<> struct Traits<System>: public Traits<void>

@@ -26,7 +26,8 @@ struct Memory_Map<PC>
         PHY_MEM =       Traits<PC>::PHY_MEM,
         IO =            Traits<PC>::IO_BASE,
         APIC =          IO,
-        VGA =           IO +  4 * 1024,
+        IO_APIC =       APIC    +  4 * 1024,
+        VGA =           IO_APIC +  4 * 1024,
         PCI =           VGA + Traits<PC_Display>::FRAME_BUFFER_SIZE,
 
         SYS =           Traits<PC>::SYS,
