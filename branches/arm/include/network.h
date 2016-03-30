@@ -4,6 +4,7 @@
 #define __network_h
 
 #include <ip.h>
+#include <tstp.h>
 
 __BEGIN_SYS
 

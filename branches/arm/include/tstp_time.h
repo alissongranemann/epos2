@@ -5,9 +5,9 @@ __BEGIN_SYS
 
 class PTP 
 {
-    friend class TSTP;    
+    friend class TSTP;
 
-    PTP(unsigned int unit) { }
+    PTP(unsigned int unit);
 
     TSTP * _tstp;
 
@@ -17,7 +17,8 @@ public:
     typedef int Time;
 
 private:
-    Time time_now() { return 0; } // TODO
+    Time time_now();
+    void interrupt(const Time & when){ } // TODO
 };
 
 __END_SYS

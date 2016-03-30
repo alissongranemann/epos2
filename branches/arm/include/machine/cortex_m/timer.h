@@ -8,6 +8,7 @@
 #include <rtc.h>
 #include <timer.h>
 #include <machine.h>
+#include <machine/cortex_m/emote3_gptm.h>
 #include __MODEL_H
 
 __BEGIN_SYS
@@ -158,15 +159,33 @@ public:
     Alarm_Timer(const Handler & handler): Cortex_M_Timer(FREQUENCY, handler, ALARM) {}
 };
 
-// TODO: replace with timers 0-3
-// Timer available for users
-class User_Timer: public Cortex_M_Timer
+class User_Timer_0: public eMote3_GPTM
 {
-private:
+    typedef RTC::Microsecond Microsecond;
+public:
+    User_Timer_0(Microsecond time_microseconds = 1) : eMote3_GPTM(0, time_microseconds) { }
+};
+
+class User_Timer_1: public eMote3_GPTM
+{
+    typedef RTC::Microsecond Microsecond;
+public:
+    User_Timer_1(Microsecond time_microseconds = 1) : eMote3_GPTM(1, time_microseconds) { }
+};
+
+class User_Timer_2: public eMote3_GPTM
+{
+    typedef RTC::Microsecond Microsecond;
+public:
+    User_Timer_2(Microsecond time_microseconds = 1) : eMote3_GPTM(2, time_microseconds) { }
+};
+
+class User_Timer_3: public eMote3_GPTM
+{
     typedef RTC::Microsecond Microsecond;
 
 public:
-    User_Timer(const Microsecond & quantum, const Handler & handler): Cortex_M_Timer(1000000 / quantum, handler, USER, true) {}
+    User_Timer_3(Microsecond time_microseconds = 1) : eMote3_GPTM(3, time_microseconds) { }
 };
 
 __END_SYS

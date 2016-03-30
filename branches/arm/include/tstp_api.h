@@ -104,19 +104,20 @@ public:
     // Generic Frame. Should be parsed and cast to a Message
     class Frame : public Header {
     public:
+        Header * header() { return this; }
         template<typename T>
-        T* data() { return 0; }
+        T* data() { return reinterpret_cast<T*>(_data); }
     private:
         unsigned char _data[MTU - sizeof(Header)];
     }__attribute__((packed));
 
     class Interest_Message : public Header {
     public:
-        static const MESSAGE_TYPE TYPE = MESSAGE_TYPE::REPORT;
+        static const MESSAGE_TYPE TYPE = MESSAGE_TYPE::INTEREST;
 
         Interest_Message() : Header(TYPE) { }
         Interest_Message(const Local_Address & origin, const Time & deadline, const Remote_Address & destination, 
-                const Time & t0, const Time & t_end, const Time & period, const Unit & unit, 
+                const Time & t0, const Time & t_end, const Time & period, const Unit unit, 
                 const RESPONSE_MODE & response_mode, const Error & max_error) : 
             Header(TYPE, origin, deadline), _destination(destination), _t0(t0), _t_end(t_end), 
             _period(period), _unit(unit),  _response_mode(response_mode), _error(max_error) { }
@@ -143,7 +144,8 @@ public:
         Alarm * _alarm;
     };
 
-    typedef _UTIL::Buffer<TSTP, Frame, Scheduled_Message> Buffer;
+    //typedef _UTIL::Buffer<TSTP, Frame, Scheduled_Message> Buffer;
+    typedef _UTIL::Buffer<TSTP, Frame> Buffer;
 
     static const unsigned int MAX_DATA_SIZE = MTU - sizeof(Header) - sizeof(Sec_MAC);
 

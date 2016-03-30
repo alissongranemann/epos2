@@ -35,8 +35,7 @@ public:
     void stop_listening() { }
     static TSTP_NIC * get(unsigned int unit = 0) { return 0; }
 
-    template<unsigned int UNIT = 0>
-    static void init(unsigned int unit = UNIT); 
+    static void init(unsigned int unit);
 private:
     Address _address;
     Statistics _statistics;

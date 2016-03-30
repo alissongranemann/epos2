@@ -216,11 +216,18 @@ class MAC_Timer
     typedef CPU::Reg8 Reg8;
     typedef CPU::Reg16 Reg16;
     typedef CPU::Reg32 Reg32;
+    typedef Reg32 Microsecond;
 
     const static unsigned int CLOCK = 32 * 1000 * 1000; // 32MHz
 
     public:
     static unsigned int frequency() { return CLOCK; }
+
+    class Timestamp;
+    static Timestamp us_to_ts(Microsecond us) { return us * (frequency() / 1000000); }
+    static Microsecond ts_to_us(Reg32 ts) { return ts / (frequency() / 1000000); }
+    static Microsecond read() { return ts_to_us(read_ts()); }
+    static void set(Microsecond time) { set_ts(us_to_ts(time)); }
 
     private:
     enum
@@ -296,8 +303,7 @@ public:
         operator Reg32() { return (overflow_count << 16) + timer_count; }
     } __attribute__((packed));
 
-    static Timestamp read()
-    {
+    static Timestamp read_ts() {
         Reg32 index = reg(MSEL);
         reg(MSEL) = (OVERFLOW_COUNTER * MSEL_MTMOVFSEL) | (TIMER_COUNTER * MSEL_MTMSEL);
 
@@ -311,8 +317,7 @@ public:
         return Timestamp(overflow_count, timer_count);
     }
 
-    static void set(const Timestamp & t)
-    {
+    static void set_ts(const Timestamp & t) {
         bool r = running();
         if(r) stop();
         Reg32 index = reg(MSEL);
@@ -329,8 +334,7 @@ public:
         if(r) start();
     }
 
-    static void config()
-    {
+    static void config() {
         reg(IRQM) = 0; // Disable interrupts
         stop();
         reg(CTRL) &= ~CTRL_SYNC; // We can't use the sync feature because we want to change
@@ -375,6 +379,21 @@ public:
         sfr(RFST) = ISFLUSHTX; // Clear TXFIFO
         sfr(RFST) = ISFLUSHRX; // Clear RXFIFO
 
+        // Disable automatic source address matching
+        xreg(SRCMATCH) &= ~SRC_MATCH_EN; // TODO: Traits
+
+        // Disable frame filtering
+        xreg(FRMFILT0) &= ~FRAME_FILTER_EN; // TODO: Traits
+
+        // Disable auto ACK
+        xreg(FRMCTRL0) &= ~AUTO_ACK; // TODO: Traits
+
+        // Enable auto-CRC
+        xreg(FRMCTRL0) |= AUTO_CRC; // TODO: Traits
+
+        // Do not enter receive mode after TX 
+	    xreg(FRMCTRL1) &= ~SET_RXENMASK_ON_TX; // TODO: Traits
+
         // Reset result of source matching (value undefined on reset)
         ffsm(SRCRESINDEX) = 0;
 
@@ -395,6 +414,10 @@ public:
 
         // Clear error flags
         sfr(RFERRF) = 0;
+
+        // Enable FIFOP (frame received) interrupt
+        xreg(RFIRQM0) = INT_FIFOP;
+        xreg(RFIRQM1) = INT_TXDONE; //TODO:remove
     }
 
     void off() { sfr(RFST) = ISRFOFF; }
@@ -405,6 +428,19 @@ public:
     void end_cca() { rx_mode(RX_MODE_NORMAL); }
     bool valid_frame() { return frame_in_rxfifo(); }
 
+    void setup_tx(char * f, unsigned int size) {
+        clear_txfifo();
+        sfr(RFDATA) = size;
+        for(auto i=0u; i < size; i++)
+            sfr(RFDATA) = f[i];
+    }
+    bool tx_ok() {
+        bool ret = (sfr(RFIRQF1) & INT_TXDONE);
+        if(ret) 
+            sfr(RFIRQF1) &= ~INT_TXDONE;
+        return ret;
+    }
+
 protected:
     bool tx_if_cca() { sfr(RFST) = ISTXONCCA; return (xreg(FSMSTAT1) & SAMPLED_CCA); }
     void rx_mode(RX_MODES m) {
@@ -414,6 +450,10 @@ protected:
     bool frame_in_rxfifo();
     void clear_rxfifo() { sfr(RFST) = ISFLUSHRX; }
     void frequency(unsigned int freq) { xreg(FREQCTRL) = freq; }
+    void clear_txfifo() { 
+        sfr(RFST) = ISFLUSHRX;
+        while(xreg(TXFIFOCNT) != 0);
+    }
 };
 
 __END_SYS

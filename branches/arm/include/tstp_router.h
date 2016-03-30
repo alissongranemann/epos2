@@ -27,6 +27,9 @@ public:
     } __attribute__((packed));
 
     class Remote_Address : public Sphere {
+    public:
+        Remote_Address() {}
+        Remote_Address(int x, int y, int z, int r) : Sphere(Point(x,y,z), r) {}
     } __attribute__((packed));
 
     class Hint {

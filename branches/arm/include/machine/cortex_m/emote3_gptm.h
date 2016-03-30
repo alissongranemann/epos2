@@ -165,47 +165,48 @@ class eMote3_GPTM : private CC2538_GPTIMER, private Cortex_M_Model
 public:
     const static unsigned int CLOCK = Traits<CPU>::CLOCK;
 
-    static void delay(unsigned int time_microseconds, unsigned int timer = 3)
-    {
+    static void delay(unsigned int time_microseconds, unsigned int timer = 3) {
         eMote3_GPTM g(timer, time_microseconds);
         g.enable();
         while(g.running());
     }
-
+    
     typedef CPU::Reg32 Reg32;
 
+    static Reg32 us_to_ts(Reg32 us) { return us * (CLOCK / 1000000); }
+    static Reg32 ts_to_us(Reg32 ts) { return ts / (CLOCK / 1000000); }
+
     eMote3_GPTM(unsigned int which_timer, unsigned int time_microseconds = 1):
-        _base(reinterpret_cast<volatile Reg32*>(GPTIMER0_BASE + 0x1000 * (which_timer < 4 ? which_timer : 0)))
-    {
+        _base(reinterpret_cast<volatile Reg32*>(GPTIMER0_BASE + 0x1000 * (which_timer < 4 ? which_timer : 0))) {
         disable();
         Cortex_M_Model::config_GPTM(which_timer);
         reg(CFG) = 0; // 32-bit timer
         reg(TAMR) = 1; // One-shot
         set(time_microseconds);
     }
-    ~eMote3_GPTM()
-    {
+    ~eMote3_GPTM() {
         disable();
     }
-    volatile Reg32 read() 
-    { 
-        return reg(TAV); 
+    volatile Reg32 read() {
+        return ts_to_us(read_ts());
     }
-    void set(unsigned int time_microseconds)
-    {
-        reg(TAILR) = time_microseconds * (CLOCK / 1000000);
+    volatile Reg32 read_ts() {
+        return reg(TAV);
     }
-    void disable()
-    {
+    void set(unsigned int time_microseconds) { 
+        set_ts(us_to_ts(time_microseconds)); 
+    }
+    void set_ts(unsigned int timestamp) {
+        reg(TAILR) = timestamp;
+    }
+    void disable() {
         reg(CTL) &= ~TAEN; // Disable timer A
     }
-    void enable()
-    {
+    void enable() {
         reg(CC2538_GPTIMER::ICR) = -1; // Clear interrupts
         reg(CTL) |= TAEN; // Enable timer A
     }
-    volatile bool running()
-    {
+    volatile bool running() {
         return !reg(Offset::RIS);
     }
 protected:

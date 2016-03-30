@@ -106,6 +106,11 @@ class CC2538_TSC;
 class CC2538_PHY;
 class MAC_Timer;
 
+class User_Timer_0;
+class User_Timer_1;
+class User_Timer_2;
+class User_Timer_3;
+
 class ATmega;
 class ATmega_IC;
 class ATmega_Timer;

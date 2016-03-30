@@ -150,12 +150,12 @@ template <> struct Traits<Cortex_M_Radio>: public Traits<Cortex_M_Common>
     static const unsigned int UNITS = NICS::Length;
 };
 
-template<> struct Traits<TSTP>::MAC_Config<0>: public Traits<TSTP>::Default_MAC_Config
+template<> struct Traits<TSTP>::MAC_Config<0>
 {
     typedef CC2538_PHY PHY_Layer;
-    typedef MAC_Timer Timer;
-    static const unsigned int SEND_BUFFERS = 16;
-    static const unsigned int RECEIVE_BUFFERS = 16;
+    typedef User_Timer_2 Timer;
+    static const unsigned int SEND_BUFFERS = 8;
+    static const unsigned int RECEIVE_BUFFERS = 8;
 };
 
 template <> struct Traits<eMote3_IEEE802_15_4>: public Traits<Cortex_M_Radio>

@@ -1,27 +1,18 @@
-#include <tstp_mac.h>
+#include <tstp.h>
 #include <ic.h>
 
 #include "../../../include/machine/cortex_m/cc2538_phy.h"
 
 __BEGIN_SYS
 
-TSTP_MAC::MACS TSTP_MAC::_macs[TSTP_MAC::UNITS];
+template <>
+void TSTP_MAC::send_frame<CC2538_PHY>(Buffer * buf) {
+    db<TSTP_MAC>(TRC) << "TSTP_MAC::send_frame(buf=" << buf << ", sz=" << buf->size() << ")" << endl;
 
-template<>
-TSTP_MAC::TSTP_MAC(CC2538_PHY * phy, unsigned int tx_bufs, unsigned int rx_bufs, DMA_Buffer * dma_buf) : _tx_bufs(tx_bufs), _rx_bufs(rx_bufs), _phy(phy) { // TODO: Polymorphic PHY
-    
-    assert(MTU <= CC2538_PHY::MTU);
-
-    auto log = dma_buf->log_address();
-
-    for (auto i = 0u; i < _tx_bufs; ++i) {
-        _tx_buffer[i] = new (log) Buffer(0);
-        log += sizeof(Buffer);
-    }
-    for (auto i = 0u; i < _rx_bufs; ++i) {
-        _rx_buffer[i] = new (log) Buffer(0);
-        log += sizeof(Buffer);
-    }
+    auto f = reinterpret_cast<char *>(buf->frame());
+    _phy->setup_tx(f, buf->size());
+    _phy->tx();
+    while(not _phy->tx_ok());
 }
 
 template <>
@@ -36,12 +27,12 @@ void TSTP_MAC::handle_int<CC2538_PHY>()
             Buffer * buf = 0;
 
             // NIC received a frame in the RXFIFO, so we need to find an unused buffer for it
-            for (auto i = 0u; (i < _rx_bufs) and not buf; ++i) {
+            for (auto i = 0u; (i < RX_BUFS) and not buf; ++i) {
                 if (_rx_buffer[_rx_cur]->lock()) {
                     db<TSTP_MAC>(INF) << "TSTP_MAC::handle_int: found buffer: " << _rx_cur << endl;
                     buf = _rx_buffer[_rx_cur]; // Found a good one
                 } else {
-                    ++_rx_cur %= _rx_bufs;
+                    ++_rx_cur %= RX_BUFS;
                 }
             }
 
@@ -80,39 +71,6 @@ void TSTP_MAC::handle_int<CC2538_PHY>()
     //if(irqrf1 & INT_RFIDLE) db<TSTP_MAC>(TRC) << "RFIDLE" << endl;
     //if(irqrf1 & INT_TXDONE) db<TSTP_MAC>(TRC) << "TXDONE" << endl;
     //if(irqrf1 & INT_TXACKDONE) db<TSTP_MAC>(TRC) << "TXACKDONE" << endl;
-}
-
-//template <>
-//void TSTP_MAC::send_mf<CC2538_PHY>()
-//{
-//}
-//
-//template <>
-//void TSTP_MAC::send_frame<CC2538_PHY>()
-//{
-//}
-
-template<>
-void TSTP_MAC::init<0, CC2538_PHY>(unsigned int unit)
-{
-    static const unsigned int TX_BUFS = Traits<TSTP>::MAC_Config<0>::SEND_BUFFERS;
-    static const unsigned int RX_BUFS = Traits<TSTP>::MAC_Config<0>::RECEIVE_BUFFERS;
-    static const unsigned int DMA_BUFFER_SIZE = RX_BUFS * sizeof(Buffer) + TX_BUFS * sizeof(Buffer);
-    IO_Irq irq = 26;
-    DMA_Buffer * dma_buf = new (SYSTEM) DMA_Buffer(DMA_BUFFER_SIZE);
-    CC2538_PHY * phy = new (SYSTEM) CC2538_PHY();
-    _macs[unit].interrupt = IC::irq2int(irq);
-    _macs[unit].mac = new (SYSTEM) TSTP_MAC(phy, TX_BUFS, RX_BUFS, dma_buf); // TODO: polymorphic PHY
-}
-
-template<>
-void TSTP_MAC::init<1, CC2538_PHY>(unsigned int unit)
-{
-}
-
-template<>
-void TSTP_MAC::init<2, CC2538_PHY>(unsigned int unit)
-{
 }
 
 __END_SYS
