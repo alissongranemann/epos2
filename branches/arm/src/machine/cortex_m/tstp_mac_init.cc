@@ -27,6 +27,8 @@ void TSTP_MAC::init<CC2538_PHY>(unsigned int unit)
     IO_Irq irq = 26;
     DMA_Buffer * dma_buf = new (SYSTEM) DMA_Buffer(DMA_BUFFER_SIZE);
     CC2538_PHY * phy = new (SYSTEM) CC2538_PHY();
+    // Enable SFD (Start of Frame reception) interrupt
+    phy->xreg(phy->RFIRQM0) |= phy->INT_SFD;
     _macs[unit].interrupt = IC::irq2int(irq);
     _macs[unit].mac = new (SYSTEM) TSTP_MAC(phy, dma_buf); // TODO: polymorphic PHY
 

@@ -1,73 +1,85 @@
 // EPOS cout Test Program
 
 #include <utility/ostream.h>
+#include <utility/random.h>
 #include <network.h>
 
 using namespace EPOS;
 
 OStream cout;
+TSTP * tstp;
 
-void hello(TSTP::Sensor * s) {
+template<unsigned int DEVICE>
+class Door_State : public TSTP::User_Unit<1000 + DEVICE, 1> { };
+template<unsigned int DEVICE>
+class RFID : public TSTP::User_Unit<2000 + DEVICE, 3> { };
+
+Door_State<1> door_1;
+Door_State<2> door_2;
+Door_State<3> door_3;
+Door_State<4> door_4;
+RFID<1> rfid_1;
+RFID<2> rfid_2;
+RFID<3> rfid_3;
+RFID<4> rfid_4;
+
+TSTP::Meter * m;
+
+void hello_sensor(TSTP::Sensor * s) 
+{
     cout << "Measuring!" << endl;
-    cout << s->tstp()->time() << endl;
+    auto val = Random::random();
+    cout << "measurement = " << val << endl;
+    (*m) = val;
+    cout << "now = " << s->tstp()->time() << endl;
 }
 
-/*
-void hello_timer(const unsigned int & int_n) {
-    cout << "hello_timer(" << int_n << ") : " << MAC_Timer::read() << endl;
+void hello_interest(TSTP::Interest * s) 
+{
+    cout << "Received update!" << endl;
+    cout << "Interest = " << *s << endl;
+    cout << "Value = " << *(s->data<unsigned int>()) << endl;
+    cout << "Time = " << s->last_update() << endl;
+    cout << "now = " << s->tstp()->time() << endl;
 }
-*/
 
-int main()
+void init()
 {
     int n = 25000;
     while(n--) {
         cout << n << endl;
     }
-    /*
-    MAC_Timer::config();
-    MAC_Timer::start();
-    auto a = MAC_Timer::read() + 2300000;
-    MAC_Timer::interrupt(MAC_Timer::read() + 2300000, hello_timer);
-    while(1);
-    */
-    //while(1);
-
     Network::init();
-    TSTP * tstp = TSTP::get_by_nic(0);
+    tstp = TSTP::get_by_nic(0);
     if(!tstp) {
         while(1) {
             cout << "Waaaahhh" << endl;
         }
     }
+}
 
-    TSTP::Meter m;
-    
-    TSTP::Sensor s(tstp, &m, 0, 0, 0, &hello);
+void sensor()
+{
+    m = new TSTP::Meter;
+    auto s = new TSTP::Sensor(tstp, m, 0, 0, 0, &hello_sensor);
+    cout << *reinterpret_cast<TSTP::Data_Message*>(s) << endl;
+}
 
-    cout << tstp->time() << endl;
+void interest()
+{
+    m = new TSTP::Meter;
     auto t0 = tstp->time();
-    /*
-    tstp->_time->interrupt(t0 + 2000000);
-    //Alarm::delay(3000000);
-    auto _t = tstp->time() / 1000000;
+    auto i = new TSTP::Interest(tstp, m, TSTP::Remote_Address(0, 0, 0, 0), t0 + 2000000, t0 + 100000000, 10000000, 1, TSTP::RESPONSE_MODE::SINGLE, &hello_interest);
 
-    while(1) {
-        auto t = tstp->time() / 1000000;
-        if(t > _t) {
-            cout << tstp->time() << endl;
-            _t = t;
-        }
-    }
-    */
+    cout << *i << endl;
+}
 
-    TSTP::Interest i(tstp, &m, TSTP::Remote_Address(0, 0, 0, 0), t0 + 2000000, t0 + 10000000, 1000000, 1, TSTP::RESPONSE_MODE::SINGLE);
-
-    cout << i << endl;
-
-    tstp->_mac->update(tstp->_mac->alloc(sizeof(TSTP_API::Interest_Message), reinterpret_cast<TSTP_API::Frame *>(&i)));
-
-    cout << "Interest sent" << endl;
+int main()
+{
+    init();
+    //sensor();
+    //while(true);
+    interest();
     while(true);
 
     return 0;

@@ -193,7 +193,7 @@ class Modbus_ASCII;
 class TSTP;
 class TSTP_NIC;
 class TSTP_MAC;
-class PTP;
+class PTS;
 class Geo_Greedy_Router;
 class TSTP_Security;
 

@@ -37,14 +37,13 @@ template<> struct Traits<Build>
     static const unsigned int NODES = 2; // > 1 => NETWORKING
 };
 
-
 // Utilities
 template<> struct Traits<Debug>
 {
     static const bool error   = true;
     static const bool warning = true;
-    static const bool info    = true;
-    static const bool trace   = true;
+    static const bool info    = false;
+    static const bool trace   = false;
 };
 
 template<> struct Traits<Lists>: public Traits<void>
@@ -141,14 +140,18 @@ template<> struct Traits<Network>: public Traits<void>
 
 template<> struct Traits<TSTP>: public Traits<Network>
 {
+    static const bool is_sink = false;
+
     template<unsigned int dummy = 0>
     struct MAC_Config {};
+    template<unsigned int dummy = 0>
+    struct Time_Config {};
 
     // {TSTP_MAC};
     typedef TSTP_MAC MAC;
     
-    // {PTP};
-    typedef PTP Time_Manager;
+    // {PTS};
+    typedef PTS Time_Manager;
 
     // {Geo_Greedy_Router};
     typedef Geo_Greedy_Router Router;

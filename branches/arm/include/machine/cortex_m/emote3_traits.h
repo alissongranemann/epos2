@@ -153,9 +153,14 @@ template <> struct Traits<Cortex_M_Radio>: public Traits<Cortex_M_Common>
 template<> struct Traits<TSTP>::MAC_Config<0>
 {
     typedef CC2538_PHY PHY_Layer;
-    typedef User_Timer_2 Timer;
     static const unsigned int SEND_BUFFERS = 8;
     static const unsigned int RECEIVE_BUFFERS = 8;
+};
+
+template<> struct Traits<TSTP>::Time_Config<0>
+{
+    typedef MAC_Timer Timer;
+    static const unsigned int TX_DELAY = 10;//TODO
 };
 
 template <> struct Traits<eMote3_IEEE802_15_4>: public Traits<Cortex_M_Radio>

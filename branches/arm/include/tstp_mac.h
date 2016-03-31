@@ -18,7 +18,6 @@ class TSTP_MAC : public TSTP_API
     friend class TSTP_NIC;
     typedef Traits<TSTP>::MAC_Config<> Config;
     typedef Config::PHY_Layer PHY_Layer; // TODO: Polymorphic PHY
-    typedef Config::Timer Timer; // TODO: Several/polymorphic timers
     typedef MMU::DMA_Buffer DMA_Buffer;
     typedef CPU::IO_Irq IO_Irq;
 
@@ -115,10 +114,11 @@ public: //TODO: remove "public"
     void send_frame(Buffer * b);
 
     // == TSTP -> TSTP_MAC interface ==
-public: //TODO: remove "public"
     Buffer * alloc(unsigned int size, Frame * f);
     void send(Buffer * b);
     void free(Buffer * b);
+
+    Time last_frame_time;
 
     PHY_Layer * _phy;
     TSTP * _tstp;

@@ -4,27 +4,20 @@
 
 __BEGIN_SYS
 
-PTP * PTP::_ptp;
+PTS * PTS::_pts;
 
-PTP::PTP(unsigned int unit) {
-    MAC_Timer::config();
-    MAC_Timer::start();
-    _ptp = this; // TODO
+void PTS::update_interest(char * header) {
+    _timer.set(reinterpret_cast<TSTP_API::Header*>(header)->last_hop_time() + TX_DELAY);
 }
 
-PTP::Time PTP::time_now() {
-    return MAC_Timer::read();
+void PTS::do_update_data(char * header) {
+    auto t0 = reinterpret_cast<TSTP_API::Header*>(header)->last_hop_time() + TX_DELAY;
+    _timer.set((t0 + _t1) / 2);
 }
 
-void PTP::int_handler(const unsigned int & interrupt) {
-    db<PTP>(TRC) << "PTP::int_handler(interrupt=" << interrupt << ")" << endl;
-    _ptp->_tstp->process_event();//TODO
-}
-
-void PTP::interrupt(const Time & when) {
-    db<PTP>(TRC) << "PTP::interrupt(when=" << when << ")" << endl;
-    db<PTP>(TRC) << "now=" << time_now() << endl;
-    MAC_Timer::interrupt(when, &int_handler);
+void PTS::int_handler(const unsigned int & interrupt) {
+    db<PTS>(TRC) << "PTS::int_handler(interrupt=" << interrupt << ")" << endl;
+    _pts->_tstp->process_event();//TODO: several instances if multiple TSTP networks
 }
 
 __END_SYS

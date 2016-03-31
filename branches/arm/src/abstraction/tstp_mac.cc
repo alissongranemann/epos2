@@ -8,10 +8,13 @@ TSTP::MAC::MACS TSTP::MAC::_macs[TSTP::MAC::UNITS];
 void TSTP::MAC::send(Buffer * buf) { // TODO
     send_frame<PHY_Layer>(buf);
     free(buf);
+    kout << "Sent header = " << *(buf->frame()->header()) << endl;
+    kout << "size = " << buf->size() << endl;
 }
 
 void TSTP::MAC::update(Buffer * buf) {
     auto t = buf->frame()->message_type();
+    kout << "Last frame time = " << last_frame_time << endl;
     switch(t) {
         case MESSAGE_TYPE::INTEREST:
             _tstp->update(buf->frame()->as<Interest_Message>());
@@ -22,6 +25,7 @@ void TSTP::MAC::update(Buffer * buf) {
         default:
             break;
     }
+    free(buf);
 }
 
 TSTP_MAC::Buffer * TSTP_MAC::alloc(unsigned int size, Frame * f) {

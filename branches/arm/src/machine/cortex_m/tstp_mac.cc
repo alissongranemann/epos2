@@ -9,6 +9,9 @@ template <>
 void TSTP_MAC::send_frame<CC2538_PHY>(Buffer * buf) {
     db<TSTP_MAC>(TRC) << "TSTP_MAC::send_frame(buf=" << buf << ", sz=" << buf->size() << ")" << endl;
 
+    auto t = _tstp->time();
+    buf->frame()->header()->last_hop_time(t);
+    buf->frame()->header()->origin_time(t);
     auto f = reinterpret_cast<char *>(buf->frame());
     _phy->setup_tx(f, buf->size());
     _phy->tx();
@@ -20,6 +23,11 @@ void TSTP_MAC::handle_int<CC2538_PHY>()
 {
     Reg32 irqrf0 = _phy->sfr(_phy->RFIRQF0);
     Reg32 irqrf1 = _phy->sfr(_phy->RFIRQF1);
+
+    if(irqrf0 & _phy->INT_SFD) { // Start of Frame
+        _tstp->_time->frame_reception();
+        _phy->sfr(_phy->RFIRQF0) &= ~_phy->INT_SFD;
+    }
 
     if(irqrf0 & _phy->INT_FIFOP) { // Frame received
         _phy->sfr(_phy->RFIRQF0) &= ~_phy->INT_FIFOP;

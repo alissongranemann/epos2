@@ -17,91 +17,46 @@ class TSTP : public TSTP_API
 {
     friend class Interest;
     friend class TSTP_MAC;
-    friend class PTP;
+    friend class PTS;
 
     template<typename T> class Rescheduler;
 
 public:
     typedef TSTP_API API;
-    typedef IEEE1451_0::UNIT_CODE UNIT_CODE;
 
-    /*
-    template<typename Data_Type>
-    class Timestamped_Data {
+    template<typename U>
+    class Data {
     public:
+        static const typename U::UNIT_CODE_T UNIT = U::UNIT_CODE;
+        static const unsigned int DATA_SIZE = U::DATA_SIZE;
+        template<typename T = char>
+        T * data() { return reinterpret_cast<T*>(&_data); }
         template<typename T>
-        virtual void set(const T & rhs, const Time & t) { _data = rhs; _last_update = t; }
-        Data_Type get(const Time & now) { now = _last_update; return _data; }
-        Data_Type get() { return _data; }
-    protected:
-        Data_Type _data;
-        Time _last_update;
-    };
-
-    template<typename Data_Type>
-    class Synchronous_Data : public Timestamped_Data<Data_Type> {
-    public:
-        Synchronous_Data() : _semaphore(0) { }
-
+        T & operator=(const T& rhs) { auto ptr = data<T>(); (*ptr) = rhs; return *ptr; }
         template<typename T>
-        virtual void set(const T & rhs, const Time & t) { 
-            _data = rhs; 
-            _last_update = t;
-            _semaphore.v(); 
-        }
-
-        Data_Type get() { 
-            _semaphore.p(); 
-            return _data; 
-        }
+        operator T&() { return *(data<T>()); }
     private:
-        Semaphore _semaphore;
+        char _data[DATA_SIZE];
     };
-        
-    template<typename Data_Type>
-    class Asynchronous_Data : public Timestamped_Data<Data_Type> {
+
+    template<unsigned long long UNIQUE_CODE, unsigned int SIZE_OF_DATA = 4, typename UNIT_CODE_TYPE = unsigned long long>
+    struct User_Unit {
     public:
-        typedef Function_Handler<Asynchronous_Data<Data_Type>> Handler;
+        typedef UNIT_CODE_TYPE UNIT_CODE_T;
+        static const UNIT_CODE_T UNIT = UNIQUE_CODE;
+        static const unsigned int DATA_SIZE = SIZE_OF_DATA;
 
-        Asynchronous_Data() : _semaphore(0) { }
-
+        template<typename T = char>
+        T * data() { return reinterpret_cast<T*>(&_data); }
         template<typename T>
-        void set(const T & rhs, const Time & t) {
-            _data = rhs; 
-            _last_update = t;
-            if(_handler)
-                _handler(*this);
-        }
-
-        Data_Type get() { return _data; }
-    };
-    
-    template<UNIT_CODE C, bool Synchronous>
-    class TSTP_Data : public IF<Synchronous, Synchronous_Data<Data_Type::C>, Asynchronous_Data<Data_Type::C>> {
-    public:
-        static const UNIT_CODE UNIT = C;
-    };
-
-    template<bool Synchronous = false>
-    class Watt : public TSTP_Data<CODE::WATT, Synchronous> { };
-    */
-
-    template<UNIT_CODE::UNIT_CODE_T C = UNIT_CODE::METER>
-    struct Data_Type_By_Code { typedef unsigned int Type; }; // TODO
-
-    template<UNIT_CODE::UNIT_CODE_T C>
-    class TSTP_Data {
-    public:
-        static const UNIT_CODE::UNIT_CODE_T UNIT = C;
-        typedef typename Data_Type_By_Code<C>::Type Data_Type;
-        template<typename T = Data_Type>
-        T * data() { return reinterpret_cast<T*>(_data); }
+        T & operator=(const T& rhs) { auto ptr = data<T>(); (*ptr) = rhs; return *ptr; }
+        template<typename T>
+        operator T&() { return *(data<T>()); }
     private:
-        Data_Type _data;
+        char _data[DATA_SIZE];
     };
 
-    typedef TSTP_Data<UNIT_CODE::METER> Meter;
-    typedef TSTP_Data<UNIT_CODE::WATT> Watt;
+    typedef Data<IEEE1451_0::UNITS::METER> Meter;
 
     class Interest : public Interest_Message {
         friend class TSTP;
@@ -134,10 +89,10 @@ public:
         TSTP * tstp() { return _tstp; }
 
         template<typename T> 
-        const T& data() { return reinterpret_cast<T>(_data); }
+        T* data() { return reinterpret_cast<T*>(_data); }
 
         template<typename T> 
-        const T& data(Time * last_update_time) { *last_update_time = _last_update; return reinterpret_cast<T>(_data); }
+        T* data(Time * last_update_time) { *last_update_time = _last_update; return reinterpret_cast<T*>(_data); }
 
         Time last_update() { return _last_update; }
 
@@ -161,7 +116,7 @@ public:
 
         Functor_Handler<Interest> * period_functor() { return _period_functor; }
 
-        Data_Type_By_Code<>::Type * _data; // TODO
+        char * _data;
         Time _last_update;
         Functor_Handler<Interest> * _update_functor;
         Functor_Handler<Interest> * _period_functor;
@@ -178,7 +133,7 @@ public:
 
         template<typename DATA>
         Sensor(TSTP * tstp, DATA * data, const Error & error, const Time & time_to_measure, const Time & time_between_measurements, Handler * measure = 0) : 
-            Data_Message(DATA::UNIT), _data(data->data()), _handler(0), 
+            Data_Message(DATA::UNIT), _data(data->data()), _size_of_data(DATA::DATA_SIZE), _handler(0), 
             _error(error), _time_to_measure(time_to_measure), 
             _cooldown(time_between_measurements), _last_measurement(0), _tstp(tstp) { 
             if(measure)
@@ -194,16 +149,17 @@ public:
         TSTP * tstp() { return _tstp; }
 
         template<typename T> 
-        const T* data() { return reinterpret_cast<T*>(_data); }
+        T* data() { return reinterpret_cast<T*>(_data); }
 
+        unsigned int size_of_data() const { return _size_of_data; }
         const Time & time_to_measure() const { return _time_to_measure; }
         const Time & cooldown() const { return _cooldown; }
         const Time & last_measurement() const { return _last_measurement; }
         Time period() const { return _time_to_measure + _cooldown; }
         const Error & error() const { return _error; }
 
-    private:
         unsigned int update() {
+            db<TSTP>(TRC) << "Sensor::update() => " << reinterpret_cast<void*>(this) << endl;
             if(_handler) {
                 auto now = _tstp->time();
                 if(now - _last_measurement < _cooldown) {
@@ -212,12 +168,14 @@ public:
                 (*_handler)();
                 _last_measurement = now;
             }
-            auto ret = sizeof(Data_Type_By_Code<>::Type); // TODO
+            auto ret = size_of_data();
             memcpy(Data_Message::_data, _data, ret); 
             return ret;
         }
 
-        Data_Type_By_Code<>::Type * _data; // TODO
+    private:
+        char * _data;
+        unsigned int _size_of_data;
         Functor_Handler<Sensor> * _handler;
         Error _error;
         Time _time_to_measure;
@@ -283,12 +241,14 @@ private:
         }
 
         void operator()() {
+            db<TSTP>(TRC) << "calling Rescheduler : " << reinterpret_cast<void*>(this) << endl;
             auto t = _object->tstp()->time();
             auto next = t + _object->period();
             bool ok = (next <= _object->t_end());
             if(ok) {
                 event = _object->tstp()->schedule(next, this); 
             }
+            db<TSTP>(TRC) << "Rescheduler: calling _object->period_functor()" << endl;
             if(_object->period_functor())
                 (*(_object->period_functor()))();
             if(not ok) {
@@ -319,9 +279,10 @@ private:
 
     private:
         static void handler(Subscribed_Sensor * s) {
+            db<TSTP>(TRC) << "Subscribed_Sensor::handler(s=" << reinterpret_cast<void*>(s) <<")"<< endl;
             if(s->_sensor) {
                 auto sz = s->_sensor->update();
-                s->_tstp->send(reinterpret_cast<Data_Message*>(s), sizeof(Data_Message) - MAX_DATA_SIZE + sz);
+                s->_tstp->send(reinterpret_cast<Data_Message*>(s->_sensor), sizeof(Data_Message) - MAX_DATA_SIZE + sz);
             }
             if(s->_tstp->time() + s->period() >= s->_t_end)
                 delete s;
@@ -406,7 +367,6 @@ private:
 
     TSTP();
 
-public://TODO: remove "public"
     MAC * _mac;
     Time_Manager * _time;
     Router * _router;
@@ -416,7 +376,8 @@ public://TODO: remove "public"
 
     // == TSTP_MAC -> TSTP interface ==
     void failed(Scheduled_Message * message);
-    void update(Interest_Message * interest) { // TODO
+    void update(Interest_Message * interest) {
+        _time->update_interest(reinterpret_cast<char *>(interest));
         db<TSTP>(TRC) << "TSTP::update: Interest " << (*interest) << endl;
         for(auto el = _sensors.search_key(interest->unit()); el; el = el->next()) {
             auto sensor = el->object();
@@ -426,13 +387,24 @@ public://TODO: remove "public"
             }
         }
     }
+    void update(Data_Message * data, unsigned int size) {
+        _time->update_data(reinterpret_cast<char *>(data));
+        db<TSTP>(TRC) << "TSTP::update: Data " << (*data) << ", sz= " << size << endl;
+        for(auto el = _interests.search_key(data->unit()); el; el = el->next()) {
+            auto interest = el->object();
+            if((interest->last_update() <= data->origin_time()) and (interest->destination().contains(data->origin_address()))) {
+                db<TSTP>(TRC) << "Found interest " << (*interest) << endl;
+                interest->update(data->data(), data->origin_time());
+            }
+        }
+   }
+
     void subscribe(Sensor * s, Interest_Message * i) {
         db<TSTP>(TRC) << "TSTP::subscribe(" << reinterpret_cast<void *>(s) << ", " << reinterpret_cast<void *>(i) << ")" << endl;
         db<TSTP>(TRC) << "t0 = " << i->t0() << endl;
-        schedule(i->t0(), new Rescheduler<Subscribed_Sensor>(new Subscribed_Sensor(s, i))); // TODO: grab event pointer
+        schedule(i->t0(), new Rescheduler<Subscribed_Sensor>(new Subscribed_Sensor(s, i))); // TODO: grab event pointer?
     }
-    void update(Data_Message * data, unsigned int size) { // TODO
-    }
+
 };
 
 __END_SYS

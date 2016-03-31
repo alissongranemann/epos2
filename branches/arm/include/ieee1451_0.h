@@ -82,11 +82,17 @@ public:
         };
     }__attribute__((packed));
 
-    class UNIT_CODE {
-    public:
-        typedef unsigned long long UNIT_CODE_T;
-        static const UNIT_CODE_T METER = 0xA000ull;
-        static const UNIT_CODE_T WATT = 0xAAAAull; // TODO
+    struct UNITS {
+        typedef unsigned long long UNIT_CODE_T; 
+
+        template<UNIT_CODE_T C>
+        struct CODE { 
+            typedef UNITS::UNIT_CODE_T UNIT_CODE_T;
+            static const UNIT_CODE_T UNIT_CODE = C;
+            static const unsigned int DATA_SIZE = 4;
+        };
+
+        struct METER : public CODE<0xA000ull> { };
     };
 };
 

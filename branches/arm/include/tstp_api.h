@@ -25,7 +25,7 @@ public:
     typedef Time_Manager::Time Time;
     typedef Security::MAC Sec_MAC;
 
-    typedef IEEE1451_0::UNIT_CODE::UNIT_CODE_T Unit;
+    typedef IEEE1451_0::UNITS::UNIT_CODE_T Unit;
     typedef unsigned char Error;
     //typedef RTC::Microsecond Microsecond;
     //typedef unsigned int Data;
@@ -55,44 +55,67 @@ public:
     {
     public:
         Header() { }
-        Header(const MESSAGE_TYPE & t) : _message_type(t) {}
-        Header(const MESSAGE_TYPE & t, const Local_Address & origin, const Time & deadline) : _message_type(t), _time_request(0), _spatial_scale(0), _temporal_scale(0), _last_hop_address(origin), _last_hop_time(0), _origin_address(origin), _origin_time(0), _deadline(deadline) { }
+        Header(const MESSAGE_TYPE & t) : _cfg(t << 5) {}
+        Header(const MESSAGE_TYPE & t, const Local_Address & origin, const Time & deadline) : _cfg((t << 5)), _last_hop_address(origin), _last_hop_time(0), _origin_address(origin), _origin_time(0), _deadline(deadline) { }
 
-        MESSAGE_TYPE message_type() { return static_cast<MESSAGE_TYPE>(_message_type); }
-        void message_type(const MESSAGE_TYPE & t) { _message_type = t; }
+        MESSAGE_TYPE message_type() const { return static_cast<MESSAGE_TYPE>(_cfg >> 5); }
+        void message_type(const MESSAGE_TYPE & t) {
+            unsigned char tmp = _cfg & ~(7 << 5);
+            _cfg = tmp | ((t & 7) << 5);
+        }
 
-        const Local_Address & last_hop_address() { return _last_hop_address; }
+        bool time_request() const { return _cfg & (1 << 4); }
+        void time_request(bool t) {
+            unsigned char tmp = _cfg & ~(1 << 4);
+            _cfg = tmp | (t << 4);
+        }
+
+        unsigned char spatial_scale() const { return (_cfg & (3 << 2)) >> 2; }
+        void spatial_scale(unsigned char s) {
+            unsigned char tmp = _cfg & ~(3 << 2);
+            _cfg = tmp | ((s & 3) << 2);
+        }
+
+        unsigned char temporal_scale() const { return _cfg & 3; }
+        void temporal_scale(unsigned char s) {
+            unsigned char tmp = _cfg & ~(3);
+            _cfg = tmp | (s & 3);
+        }
+
+        const Local_Address & last_hop_address() const { return _last_hop_address; }
         void last_hop_address(const Local_Address & _addr) { _last_hop_address = _addr; }
 
-        const Local_Address & origin_address() { return _origin_address; }
+        const Local_Address & origin_address() const { return _origin_address; }
         void origin_address(const Local_Address & _addr) { _origin_address = _addr; }
 
-        Time last_hop_time() { return _last_hop_time; }
+        Time last_hop_time() const { return _last_hop_time; }
         void last_hop_time(const Time & t) { _last_hop_time = t; }
 
-        Time origin_time() { return _origin_time; }
+        Time origin_time() const { return _origin_time; }
         void origin_time(const Time & t) { _origin_time = t; }
 
-        bool time_request() { return _time_request; }
-        void time_request(bool t) { _time_request = t; }
-
-        Time deadline() { return _deadline; }
+        Time deadline() const { return _deadline; }
         void deadline(const Time & t) { _deadline = t; }
 
         friend Debug & operator<<(Debug & db, const Header & h) {
-            db << "{type=" << h._message_type << ",tr=" << h._time_request << ",sscale=" << h._spatial_scale << ",tscale=" << h._temporal_scale << ",lconf=" << ",lhaddr=" << h._last_hop_address << ",lht=" << h._last_hop_time << ",oaddr=" << h._origin_address << ",ot=" << h._origin_time << ",de=" << h._deadline << "}" << endl;
+            db << "{type=" << h.message_type() << ",tr=" << h.time_request() << ",sscale=" << h.spatial_scale() << ",tscale=" << h.temporal_scale() << ",lconf=" << ",lhaddr=" << h._last_hop_address << ",lht=" << h._last_hop_time << ",oaddr=" << h._origin_address << ",ot=" << h._origin_time << ",de=" << h._deadline << "}" << endl;
             return db;
         }
         friend OStream & operator<<(OStream & os, const Header & h) {
-            os << "{type=" << h._message_type << ",tr=" << h._time_request << ",sscale=" << h._spatial_scale << ",tscale=" << h._temporal_scale << ",lhaddr=" << h._last_hop_address << ",lht=" << h._last_hop_time << ",oaddr=" << h._origin_address << ",ot=" << h._origin_time << ",de=" << h._deadline << "}" << "}" << endl;
+            os << "{type=" << h.message_type() << ",tr=" << h.time_request() << ",sscale=" << h.spatial_scale() << ",tscale=" << h.temporal_scale() << ",lconf=" << ",lhaddr=" << h._last_hop_address << ",lht=" << h._last_hop_time << ",oaddr=" << h._origin_address << ",ot=" << h._origin_time << ",de=" << h._deadline << "}" << endl;
             return os;
         }
 
     private:
-        unsigned _message_type : 3;
-        unsigned _time_request : 1;
-        unsigned _spatial_scale : 2;
-        unsigned _temporal_scale : 2;
+        union {
+            unsigned char _cfg;
+            struct {
+                unsigned char _message_type : 3;
+                unsigned char _time_request : 1;
+                unsigned char _spatial_scale : 2;
+                unsigned char _temporal_scale : 2;
+            }__attribute__((packed));
+        }__attribute__((packed));
         //unsigned _location_confidence : 8;
         Local_Address _last_hop_address;
         Time _last_hop_time;
@@ -135,6 +158,7 @@ public:
         Time period() { return _period; }
         Unit unit() { return _unit; }
         Error error() { return _error; }
+        const Remote_Address & destination() { return _destination; }
 
         friend Debug & operator<<(Debug & db, const Interest_Message & i) {
             db << *reinterpret_cast<const Header*>(&i) << ", dst=" << i._destination << ", t0=" << i._t0 << ", tend=" << i._t_end << ", p=" << i._period << ", u=" << i._unit << ", rm=" << i._response_mode << ", err=" << i._error;
@@ -171,10 +195,24 @@ public:
         friend class TSTP_Security;
     public:
         static const MESSAGE_TYPE TYPE = MESSAGE_TYPE::DATA;
+
+        friend Debug & operator<<(Debug & db, const Data_Message & d) {
+            db << *reinterpret_cast<const Header*>(&d) << ", mac=" << d._mac << ", u=" << d._unit << ", _data=" << reinterpret_cast<const void *>(d._data);
+            return db;
+        }
+        friend OStream & operator<<(OStream & os, const Data_Message & d) {
+            os << *reinterpret_cast<const Header*>(&d) << ", mac=" << d._mac << ", u=" << d._unit << ", _data=" << reinterpret_cast<const void *>(d._data);
+            return os;
+        }
+
         Data_Message() : Header(TYPE) { }
         Data_Message(Unit unit) : Header(TYPE), _unit(unit) { }
 
         Unit unit() { return _unit; }
+
+        template<typename T = unsigned int> // TODO
+        T* data() { return reinterpret_cast<T*>(_data); }
+
     protected:
         Sec_MAC _mac;
         Unit _unit;
