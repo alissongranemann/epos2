@@ -14,10 +14,10 @@ void TSTP::MAC::update(Buffer * buf) {
     auto t = buf->frame()->message_type();
     switch(t) {
         case MESSAGE_TYPE::INTEREST:
-            _tstp->update(buf->frame()->data<Interest_Message>());
+            _tstp->update(buf->frame()->as<Interest_Message>());
             break;
         case MESSAGE_TYPE::DATA:
-            _tstp->update(buf->frame()->data<Data_Message>(), buf->size());
+            _tstp->update(buf->frame()->as<Data_Message>(), buf->size());
             break;
         default:
             break;

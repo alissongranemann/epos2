@@ -50,6 +50,7 @@ private:
         // CRC is handled by the interrupt handler
     }__attribute__((packed));
 
+public: //TODO: remove "public"
     // Bridge between the hardware-dependent PHY layer and hardware-independent TSTP
     void update(Buffer * buf);
 
@@ -63,7 +64,7 @@ private:
     static void init(unsigned int unit);
 
     template<typename PHY = PHY_Layer>
-    TSTP_MAC(PHY * phy, unsigned int tx_bufs, unsigned int rx_bufs, DMA_Buffer * dma_buf);
+    TSTP_MAC(PHY * phy, DMA_Buffer * dma_buf);
 
     // Interrupt dispatching binding
     struct MACS {
@@ -114,6 +115,7 @@ private:
     void send_frame(Buffer * b);
 
     // == TSTP -> TSTP_MAC interface ==
+public: //TODO: remove "public"
     Buffer * alloc(unsigned int size, Frame * f);
     void send(Buffer * b);
     void free(Buffer * b);

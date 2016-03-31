@@ -286,13 +286,57 @@ class MAC_Timer
         TIMER_COMPARE1 = 0x03,
         TIMER_COMPARE2 = 0x04,
     };
+    enum {
+        INT_OVERFLOW_COMPARE2 = 1 << 5,
+        INT_OVERFLOW_COMPARE1 = 1 << 4,
+        INT_OVERFLOW_PER      = 1 << 3,
+        INT_COMPARE2          = 1 << 2,
+        INT_COMPARE1          = 1 << 1,
+        INT_PER               = 1 << 0
+    };
+
+
+public:
+    static void interrupt(const Microsecond & when, const IC::Interrupt_Handler & h) { interrupt_ts(us_to_ts(when), h); }
+
+    static void interrupt_ts(const Timestamp & when, const IC::Interrupt_Handler & h) {
+        reg(IRQM) = 0;//INT_OVERFLOW_COMPARE1;
+        _user_handler = h;
+        Timestamp now = read_ts();
+        reg(MSEL) = (OVERFLOW_COMPARE1 * MSEL_MTMOVFSEL) | (TIMER_COMPARE1 * MSEL_MTMSEL);
+        reg(M0) = when.timer_count;
+        reg(M1) = when.timer_count >> 8;
+        reg(MOVF0) = when.overflow_count;
+        reg(MOVF1) = when.overflow_count >> 8;
+        reg(MOVF2) = when.overflow_count >> 16;
+
+        reg(IRQF) = 0;
+        if(when.overflow_count >= now.overflow_count) {
+            reg(IRQM) = INT_OVERFLOW_COMPARE1;
+        } else {
+            reg(IRQM) = INT_COMPARE1;
+        }
+    }
+
+private:
+    static void interrupt_handler(const unsigned int & interrupt) {        
+        if(reg(IRQF) & INT_OVERFLOW_COMPARE1) {
+            reg(IRQF) = 0;
+            reg(IRQM) = INT_COMPARE1;
+        } else {
+            reg(IRQF) = 0;
+            reg(IRQM) = 0;
+            _user_handler(interrupt);
+        }
+    }
 
 protected:
+    static IC::Interrupt_Handler _user_handler;
+
     static volatile Reg32 & reg (unsigned int offset) { return *(reinterpret_cast<volatile Reg32*>(MAC_TIMER_BASE + offset)); }
 
 public:
-    struct Timestamp
-    {
+    struct Timestamp {
         Timestamp() : overflow_count(0), timer_count(0) {}
         Timestamp(unsigned int val) : overflow_count(val >> 16), timer_count(val) {}
         Timestamp(Reg32 of, Reg16 ti) : overflow_count(of), timer_count(ti) {}
@@ -304,15 +348,17 @@ public:
     } __attribute__((packed));
 
     static Timestamp read_ts() {
-        Reg32 index = reg(MSEL);
+        //Reg32 index = reg(MSEL);
         reg(MSEL) = (OVERFLOW_COUNTER * MSEL_MTMOVFSEL) | (TIMER_COUNTER * MSEL_MTMSEL);
 
         Reg16 timer_count = reg(M0); // M0 must be read first
         timer_count += reg(M1) << 8;
 
-        Reg32 overflow_count = (reg(MOVF2) << 16) + (reg(MOVF1) << 8) + reg(MOVF0);
+        Reg32 overflow_count = reg(MOVF2) << 16;
+        overflow_count += (reg(MOVF1) << 8);
+        overflow_count += reg(MOVF0);
 
-        reg(MSEL) = index;
+        //reg(MSEL) = index;
 
         return Timestamp(overflow_count, timer_count);
     }
@@ -320,7 +366,7 @@ public:
     static void set_ts(const Timestamp & t) {
         bool r = running();
         if(r) stop();
-        Reg32 index = reg(MSEL);
+        //Reg32 index = reg(MSEL);
         reg(MSEL) = (OVERFLOW_COUNTER * MSEL_MTMOVFSEL) | (TIMER_COUNTER * MSEL_MTMSEL);
 
         reg(MOVF0) = t.overflow_count;
@@ -330,16 +376,19 @@ public:
         reg(M0) = t.timer_count; // M0 must be written first
         reg(M1) = t.timer_count >> 8;
 
-        reg(MSEL) = index;
+        //reg(MSEL) = index;
         if(r) start();
     }
 
     static void config() {
-        reg(IRQM) = 0; // Disable interrupts
         stop();
+        reg(IRQM) = 0; // Disable interrupts
+        reg(IRQF) = 0; // Clear interrupts
         reg(CTRL) &= ~CTRL_SYNC; // We can't use the sync feature because we want to change
                                  // the count and overflow values when the timer is stopped
         reg(CTRL) |= CTRL_LATCH_MODE; // count and overflow will be latched at once
+        IC::int_vector(49, &interrupt_handler);
+        IC::enable(33);
     }
 
     static void start() { reg(CTRL) |= CTRL_RUN; }
@@ -417,7 +466,7 @@ public:
 
         // Enable FIFOP (frame received) interrupt
         xreg(RFIRQM0) = INT_FIFOP;
-        xreg(RFIRQM1) = INT_TXDONE; //TODO:remove
+        xreg(RFIRQM1) = 0;
     }
 
     void off() { sfr(RFST) = ISRFOFF; }
@@ -430,12 +479,12 @@ public:
 
     void setup_tx(char * f, unsigned int size) {
         clear_txfifo();
-        sfr(RFDATA) = size;
+        sfr(RFDATA) = size + sizeof(CRC);
         for(auto i=0u; i < size; i++)
             sfr(RFDATA) = f[i];
     }
-    bool tx_ok() {
-        bool ret = (sfr(RFIRQF1) & INT_TXDONE);
+    volatile bool tx_ok() {
+        volatile bool ret = (sfr(RFIRQF1) & INT_TXDONE);
         if(ret) 
             sfr(RFIRQF1) &= ~INT_TXDONE;
         return ret;
@@ -451,7 +500,7 @@ protected:
     void clear_rxfifo() { sfr(RFST) = ISFLUSHRX; }
     void frequency(unsigned int freq) { xreg(FREQCTRL) = freq; }
     void clear_txfifo() { 
-        sfr(RFST) = ISFLUSHRX;
+        sfr(RFST) = ISFLUSHTX;
         while(xreg(TXFIFOCNT) != 0);
     }
 };

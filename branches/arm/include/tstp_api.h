@@ -79,14 +79,14 @@ public:
         Time deadline() { return _deadline; }
         void deadline(const Time & t) { _deadline = t; }
 
-        //friend Debug & operator<<(Debug & db, const Header & h) {
-        //    db << "{type=" << h._message_type << ",tr=" << h._time_request << ",sscale=" << h._spatial_scale << ",tscale=" << h._temporal_scale << ",lconf=" << h._location_confidence << ",lhaddr=" << h._last_hop_address << ",lht=" << h._last_hop_time << ",oaddr=" << h._origin_address << ",ot=" << h._origin_time << "}" << endl;
-        //    return db;
-        //}
-        //friend OStream & operator<<(OStream & os, const Header & h) {
-        //    os << "{type=" << h._message_type << ",tr=" << h._time_request << ",sscale=" << h._spatial_scale << ",tscale=" << h._temporal_scale << ",lconf=" << h._location_confidence << ",lhaddr=" << h._last_hop_address << ",lht=" << h._last_hop_time << ",oaddr=" << h._origin_address << ",ot=" << h._origin_time << "}" << endl;
-        //    return os;
-        //}
+        friend Debug & operator<<(Debug & db, const Header & h) {
+            db << "{type=" << h._message_type << ",tr=" << h._time_request << ",sscale=" << h._spatial_scale << ",tscale=" << h._temporal_scale << ",lconf=" << ",lhaddr=" << h._last_hop_address << ",lht=" << h._last_hop_time << ",oaddr=" << h._origin_address << ",ot=" << h._origin_time << ",de=" << h._deadline << "}" << endl;
+            return db;
+        }
+        friend OStream & operator<<(OStream & os, const Header & h) {
+            os << "{type=" << h._message_type << ",tr=" << h._time_request << ",sscale=" << h._spatial_scale << ",tscale=" << h._temporal_scale << ",lhaddr=" << h._last_hop_address << ",lht=" << h._last_hop_time << ",oaddr=" << h._origin_address << ",ot=" << h._origin_time << ",de=" << h._deadline << "}" << "}" << endl;
+            return os;
+        }
 
     private:
         unsigned _message_type : 3;
@@ -104,9 +104,17 @@ public:
     // Generic Frame. Should be parsed and cast to a Message
     class Frame : public Header {
     public:
+        friend Debug & operator<<(Debug & db, const Frame & f) {
+            db << *reinterpret_cast<const Header*>(&f);
+            return db;
+        }
+        friend OStream & operator<<(OStream & os, const Frame & f) {
+            os << *reinterpret_cast<const Header*>(&f);
+            return os;
+        }
         Header * header() { return this; }
         template<typename T>
-        T* data() { return reinterpret_cast<T*>(_data); }
+        T* as() { return reinterpret_cast<T*>(this); }
     private:
         unsigned char _data[MTU - sizeof(Header)];
     }__attribute__((packed));
@@ -125,7 +133,17 @@ public:
         Time t0() { return _t0; }
         Time t_end() { return _t_end; }
         Time period() { return _period; }
+        Unit unit() { return _unit; }
+        Error error() { return _error; }
 
+        friend Debug & operator<<(Debug & db, const Interest_Message & i) {
+            db << *reinterpret_cast<const Header*>(&i) << ", dst=" << i._destination << ", t0=" << i._t0 << ", tend=" << i._t_end << ", p=" << i._period << ", u=" << i._unit << ", rm=" << i._response_mode << ", err=" << i._error;
+            return db;
+        }
+        friend OStream & operator<<(OStream & os, const Interest_Message & i) {
+            os << *reinterpret_cast<const Header*>(&i) << ", dst=" << i._destination << ", t0=" << i._t0 << ", tend=" << i._t_end << ", p=" << i._period << ", u=" << i._unit << ", rm=" << i._response_mode << ", err=" << i._error;
+            return os;
+        }
     private:
         Remote_Address _destination;
         Time _t0;
@@ -155,6 +173,8 @@ public:
         static const MESSAGE_TYPE TYPE = MESSAGE_TYPE::DATA;
         Data_Message() : Header(TYPE) { }
         Data_Message(Unit unit) : Header(TYPE), _unit(unit) { }
+
+        Unit unit() { return _unit; }
     protected:
         Sec_MAC _mac;
         Unit _unit;

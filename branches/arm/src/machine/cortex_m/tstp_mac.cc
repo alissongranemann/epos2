@@ -23,7 +23,7 @@ void TSTP_MAC::handle_int<CC2538_PHY>()
 
     if(irqrf0 & _phy->INT_FIFOP) { // Frame received
         _phy->sfr(_phy->RFIRQF0) &= ~_phy->INT_FIFOP;
-        if(_phy->frame_in_rxfifo()) {
+        if(_phy->frame_in_rxfifo()) { // Checks CRC
             Buffer * buf = 0;
 
             // NIC received a frame in the RXFIFO, so we need to find an unused buffer for it
@@ -43,11 +43,11 @@ void TSTP_MAC::handle_int<CC2538_PHY>()
             } else {
                 // We have a buffer, so we fetch a packet from the fifo
                 auto sz = _phy->copy_from_rxfifo(reinterpret_cast<unsigned char *>(buf->frame()));
-                buf->size(sz);
+                buf->size(sz - sizeof(CRC));
 
                 auto * frame = buf->frame();
 
-                db<TSTP_MAC>(TRC) << "TSTP_MAC::int:receive(d=" << frame->data<void>() << ",s=" << buf->size() << ")" << endl;
+                db<TSTP_MAC>(TRC) << "TSTP_MAC::int:receive(d=" << frame->as<void>() << ",s=" << buf->size() << ")" << endl;
 
                 db<TSTP_MAC>(INF) << "TSTP_MAC::handle_int[" << _rx_cur << "]" << endl;
 

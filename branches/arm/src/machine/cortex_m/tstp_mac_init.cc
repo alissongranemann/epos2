@@ -4,7 +4,7 @@
 __BEGIN_SYS
 
 template<>
-TSTP_MAC::TSTP_MAC(CC2538_PHY * phy, unsigned int tx_bufs, unsigned int rx_bufs, DMA_Buffer * dma_buf) : _rx_cur(0), _tx_cur(0), _phy(phy) { // TODO: Polymorphic PHY
+TSTP_MAC::TSTP_MAC(CC2538_PHY * phy, DMA_Buffer * dma_buf) : _rx_cur(0), _tx_cur(0), _phy(phy) { // TODO: Polymorphic PHY
     assert(MTU <= CC2538_PHY::MTU);
 
     auto log = dma_buf->log_address();

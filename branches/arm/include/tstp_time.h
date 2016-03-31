@@ -16,9 +16,12 @@ class PTP
 public:
     typedef int Time;
 
-private:
+//private: TODO:remove comment
+    static PTP * _ptp; // TODO
     Time time_now();
-    void interrupt(const Time & when){ } // TODO
+    void interrupt(const Time & when);
+    void handle(unsigned int interrupt);
+    static void int_handler(const unsigned int & interrupt);
 };
 
 __END_SYS
