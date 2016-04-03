@@ -19,6 +19,8 @@
 #define __RTC_H                     __HEADER_MACH(rtc)
 #define __COMPONENT_CONTROLLER_H    __HEADER_MACH(component_controller)
 #define __PCAP_H                    __HEADER_MACH(pcap)
+#define __TRAFFIC_GEN_H             __HEADER_MACH(traffic_gen)
+#define __AXI_PERF_MON_H            __HEADER_MACH(axi_perf_mon)
 
 __BEGIN_SYS
 
@@ -36,6 +38,8 @@ typedef Zynq_NIC                    NIC;
 typedef Zynq_RTC                    RTC;
 typedef Zynq_Component_Controller   Component_Controller;
 typedef Zynq_PCAP                   PCAP;
+typedef Zynq_Traffic_Gen            Traffic_Gen;
+typedef Zynq_AXI_Perf_Mon           AXI_Perf_Mon;
 typedef Zynq_Scratchpad             Scratchpad;
 
 __END_SYS

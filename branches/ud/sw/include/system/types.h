@@ -120,6 +120,8 @@ class Zynq_Display;
 class Zynq_Scratchpad;
 class Zynq_Component_Controller;
 class Zynq_PCAP;
+class Zynq_Traffic_Gen;
+class Zynq_AXI_Perf_Mon;
 
 class PCNet32;
 class C905;
