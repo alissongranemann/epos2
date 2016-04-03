@@ -3,10 +3,12 @@
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 BASE_INI="$DIR"/base_xmd.ini
 INI="$DIR"/xmd.ini
-TMP="$DIR"/tmp
+EMPTY=empty
 
 APP=$1
 GDB=$2
+BIT=$3
+PBIN=$4
 
 # Check if xmd is on $PATH
 hash xmd > /dev/null 2>/dev/null
@@ -21,16 +23,29 @@ fi
 # Running xmd -tcl will execute the commands and exit immediately closing the
 # connection with GDB that's why we rely on the xmd.ini file. xmd.ini doesn't
 # support arguments so we use sed to insert the arguments in it.
-sed 's:APP:'"$APP"':g' $BASE_INI > $TMP
+sed 's:APP:'"$APP"':g' $BASE_INI > $INI
+
+# Only substitute BIT and PBIN if the environment variables are set
+if [ ! -z "$BIT" ]
+    then sed -i 's:BIT:'"$BIT"':g' $INI
+else
+    sed -i 's:BIT:'"$EMPTY"':g' $INI
+fi
+
+if [ ! -z "$PBIN" ]
+    then sed -i 's:PBIN:'"$PBIN"':g' $INI
+else
+    sed -i 's:PBIN:'"$EMPTY"':g' $INI
+fi
 
 # Check if $GDB is set
 if [ "$GDB" = "1" ]
-    then sed 's:GDB:'1':g' $TMP > $INI
+    then sed -i 's:GDB:'1':g' $INI
 else 
-    sed 's:GDB:'0':g' $TMP > $INI
+    sed -i 's:GDB:'0':g' $INI
 fi
 
 cd $DIR
 xmd
 
-rm $INI $TMP
+rm $INI
