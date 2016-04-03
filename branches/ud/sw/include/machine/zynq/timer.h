@@ -16,6 +16,7 @@ private:
     typedef TSC::Hertz Hertz;
     typedef TSC::Time_Stamp Time_Stamp;
     typedef CPU::Log_Addr Log_Addr;
+    typedef CPU::Reg32 Reg32;
     typedef CPU::Reg32 Count;
 
     enum {
@@ -30,7 +31,7 @@ private:
         GTISR   = 0x0C  // Interrupt Status
     };
 
-    static Log_Addr & global_timer(unsigned int o) { return reinterpret_cast<Log_Addr *>(GLOBAL_TIMER_BASE)[o / sizeof(Log_Addr)]; }
+    static volatile Reg32 & global_timer(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(GLOBAL_TIMER_BASE)[o / sizeof(Reg32)]; }
 
 public:
     static const Hertz CLOCK = Traits<CPU>::CLOCK/2;

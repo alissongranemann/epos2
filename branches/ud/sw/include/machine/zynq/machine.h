@@ -15,7 +15,7 @@ class Zynq: public Machine_Common
 private:
     friend class Init_System;
 
-    typedef CPU_Common::Log_Addr Log_Addr;
+    typedef CPU_Common::Reg32 Reg32;
 
     enum {
         SLCR_BASE = 0xF8000000
@@ -72,7 +72,7 @@ public:
 private:
     static void init();
 
-    static Log_Addr & slcr(unsigned int o) { return reinterpret_cast<Log_Addr *>(SLCR_BASE)[o / sizeof(Log_Addr)]; }
+    static volatile Reg32 & slcr(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(SLCR_BASE)[o / sizeof(Reg32)]; }
 
 private:
     static const bool smp = Traits<System>::multicore;

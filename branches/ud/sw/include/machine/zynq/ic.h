@@ -40,7 +40,7 @@ protected:
     }
 
 protected:
-    typedef CPU::Log_Addr Log_Addr;
+    typedef CPU::Reg32 Reg32;
 
     // Base address for memory-mapped registers
     enum {
@@ -73,8 +73,8 @@ protected:
 
     static const unsigned int INT_ID_MASK = 0x3FF;
 
-    static Log_Addr & cpu_itf(unsigned int o) { return reinterpret_cast<Log_Addr *>(CPU_ITF_BASE)[o / sizeof(Log_Addr)]; }
-    static Log_Addr & dist(unsigned int o) { return reinterpret_cast<Log_Addr *>(DIST_BASE)[o / sizeof(Log_Addr)]; }
+    static volatile Reg32 & cpu_itf(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(CPU_ITF_BASE)[o / sizeof(Reg32)]; }
+    static volatile Reg32 & dist(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(DIST_BASE)[o / sizeof(Reg32)]; }
 };
 
 class Zynq_IC: private IC_Common, private GIC_PL390
