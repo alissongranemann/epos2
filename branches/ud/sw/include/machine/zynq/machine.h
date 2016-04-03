@@ -17,13 +17,23 @@ private:
 
     typedef CPU_Common::Reg32 Reg32;
 
+    static const unsigned int IO_PLL_CLOCK = 1000000000;
+
+    static const unsigned int DIV_MAX = 63;
+
     enum {
         SLCR_BASE = 0xF8000000
     };
 
     // SLCR Registers offsets
     enum {
-        PSS_RST_CTRL = 0x200
+        FPGA0_CLK_CTRL  = 0x170,
+        PSS_RST_CTRL    = 0x200,
+        FPGA_RST_CTRL   = 0x240
+    };
+    enum FPGAN_CLK_CTRL {
+        DIVISOR0    = 1 << 8,
+        DIVISOR1    = 1 << 20
     };
 
 public:
@@ -44,8 +54,7 @@ public:
         // FIXME: The line bellow will mess with qemu but seems to be working on
         // real hardware, possibly a bug in qemu. Note that the asserting reset
         // will clear the RAM where the application is stored.
-        //slcr(PSS_RST_CTRL) = 1;
-        while(1);
+        slcr(PSS_RST_CTRL) = 1;
     }
 
     static void poweroff() {}
@@ -68,6 +77,44 @@ public:
         }
     }
     static void smp_init(unsigned int n_cpus) {};
+
+    // Returns the frequency set, -1 if frequency can't be set
+    static int fpga0_clk_freq(unsigned int freq) {
+        const unsigned int tol = 20;
+        unsigned int div0 = 0, div1 = 0;
+        Reg32 tmp;
+
+        while(++div1 <= DIV_MAX) {
+            div0 = 1;
+            while(++div0 <= DIV_MAX)
+                if((IO_PLL_CLOCK/(div0*div1) < (freq + freq/tol)) &&
+                        (IO_PLL_CLOCK/(div0*div1) > (freq - freq/tol)))
+                    goto set_clk_ctrl;
+        }
+
+        return -1;
+
+        set_clk_ctrl:
+        tmp = slcr(FPGA0_CLK_CTRL);
+        tmp &= ~((DIVISOR0 * 0x3f) | (DIVISOR1 * 0x3f));
+        slcr(FPGA0_CLK_CTRL) = tmp | (DIVISOR0 * div0) | (DIVISOR1 * div1);
+
+        return IO_PLL_CLOCK/(div0*div1);
+    }
+
+    // PL logic connecting to the PS must not be reset when active transactions
+    // exist, since uncompleted transactions could be left pending in the PS.
+    // n = { 0, 1, 2, 3 }.
+    static void fpga_reset(int n) {
+        slcr(FPGA_RST_CTRL) |= 1 << n;
+        // FPGA peripherals will reset on the rising/falling edge of their
+        // clocks if reset is asserted. This "rough" 1 us delay will ensure all
+        // peripherals operating on clocks higher than 1 MHz will be correctly
+        // reseted.
+        for(unsigned int i = 0; i < Traits<CPU>::CLOCK/1000000; i++)
+            ASM("nop");
+        slcr(FPGA_RST_CTRL) &= ~(1 << n);
+    }
 
 private:
     static void init();
