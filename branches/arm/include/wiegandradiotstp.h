@@ -3,17 +3,31 @@
 
 #include <system/config.h>
 #include <gpio.h>
+#include <tstp.h>
 #include <utility/string.h>
 #include <machine/cortex_m/emote3_gptm.h>
 
-
-
 using namespace EPOS;
+
+class ID_Code_Msg {
+    public:
+    unsigned char facility_data;
+    unsigned short user_data;
+}__attribute__((packed));
 
 OStream cout;
 GPIO * led;
 GPIO * relay[6]; 
 
+typedef TSTP::User_Unit<1001, 1> Door_State_1;
+typedef TSTP::User_Unit<1002, 1> Door_State_2;
+typedef TSTP::User_Unit<1003, 1> Door_State_3;
+typedef TSTP::User_Unit<1004, 1> Door_State_4;
+
+typedef TSTP::User_Unit<2001, 4> RFID_1;
+typedef TSTP::User_Unit<2002, 4> RFID_2;
+typedef TSTP::User_Unit<2003, 4> RFID_3;
+typedef TSTP::User_Unit<2004, 4> RFID_4;
 
 class Wiegand {
 	private:
@@ -55,7 +69,7 @@ class Wiegand {
     static const unsigned int BRIDGE_ADDRESS = 12;
     static const unsigned int WIEGAND_ADDRESS = 13;
 	
-	TSTP::ID_Code id;
+	static RFID_1 id;//TODO: unit
 };
 
 Wiegand::Wiegand(unsigned int num, GPIO * relay) {
@@ -78,6 +92,7 @@ void Wiegand::receiveBit(int bit) {
 
 
 char Wiegand::messagemountwiegand(char device, unsigned int element, char cmd, char* wiemsg){
+    /*
     char msg[Wiegand::MAX_MSG_SIZE];
     memset(msg, 0, Wiegand::MAX_MSG_SIZE);
     msg[0] = ':';
@@ -94,6 +109,7 @@ char Wiegand::messagemountwiegand(char device, unsigned int element, char cmd, c
         NIC nic;
         for(int i = 50; i-- and (nic.send(BRIDGE_ADDRESS, Wiegand::PROTOCOL_ID, msg, idx) < idx););
     }
+    */
 
 	//function that mounts the messages on the following format ":DCV", where:
 	//cout << ":" << device << element << cmd << wiemsg << endl;
@@ -141,8 +157,8 @@ void Wiegand::wiegandprocess() {
 			//cout<<"[14..25]";
 		    if ((parity & 0x1) != (packageValue & 0x1)){
 		    } else {
-                NIC nic;
-                for(int i = 10; i-- and (nic.send(BRIDGE_ADDRESS, Wiegand::PROTOCOL_ID, ":PERR\n", sizeof(":PERR\n")) < sizeof(":PERR\n")););
+                //NIC nic;
+                //for(int i = 10; i-- and (nic.send(BRIDGE_ADDRESS, Wiegand::PROTOCOL_ID, ":PERR\n", sizeof(":PERR\n")) < sizeof(":PERR\n")););
                 
 		         //cout<<":PERR"; //parity error on the second half
 		    }
@@ -160,11 +176,13 @@ void Wiegand::wiegandprocess() {
 			strcat (wiegandmsg,":");
 			strcat (wiegandmsg, reinterpret_cast<const char*>(serialstr));
 
-			id = (facility << 16) + (serial);
-			messagemountwiegand('W', num_wiegand, 'R', wiegandmsg);
-
-
 			checkpermission(serial);
+
+            id = (facility << 16) + serial;
+            TSTP::get_by_nic(0)->event(id);
+			//messagemountwiegand('W', num_wiegand, 'R', wiegandmsg);
+
+
 
 			//cout << ":W" <<  facility << ":" << serial << endl; //this cout it's the only one that is necessary to ScadaBR, besides of the Error cout. It uses the following format:
 			  // :WFacilityCodeUserCode.

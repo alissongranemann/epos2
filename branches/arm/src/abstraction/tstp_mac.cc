@@ -5,31 +5,36 @@ __BEGIN_SYS
 
 TSTP::MAC::MACS TSTP::MAC::_macs[TSTP::MAC::UNITS];
 
-void TSTP::MAC::send(Buffer * buf) { // TODO
+void One_Hop_MAC::send(Buffer * buf) { // TODO
+    buf->frame()->header()->last_hop_address(_tstp->address());
     send_frame<PHY_Layer>(buf);
     free(buf);
-    kout << "Sent header = " << *(buf->frame()->header()) << endl;
-    kout << "size = " << buf->size() << endl;
+    db<One_Hop_MAC>(TRC) << "One_Hop_MAC::send() : Sent header = " << *(buf->frame()->header()) << endl;
+    db<One_Hop_MAC>(TRC) << "size = " << buf->size() << endl;
 }
 
-void TSTP::MAC::update(Buffer * buf) {
+void One_Hop_MAC::update(Buffer * buf) {
+    db<One_Hop_MAC>(TRC) << "One_Hop_MAC::update(buf=" << buf << ")" << endl;
     auto t = buf->frame()->message_type();
-    kout << "Last frame time = " << last_frame_time << endl;
-    switch(t) {
-        case MESSAGE_TYPE::INTEREST:
-            _tstp->update(buf->frame()->as<Interest_Message>());
-            break;
-        case MESSAGE_TYPE::DATA:
+    db<One_Hop_MAC>(TRC) << "Message type = " << t << endl;
+    if(t == MESSAGE_TYPE::INTEREST) {
+        if(!Traits<TSTP>::is_sink) {
+            auto msg = buf->frame()->as<Interest_Message>();
+            db<One_Hop_MAC>(TRC) << "Interest_Message = " << *msg << endl;
+            if(_tstp->_router->accept(msg->destination())) {
+                _tstp->update(msg);
+            }
+        }
+    } else if (t == MESSAGE_TYPE::DATA) {
+        if(Traits<TSTP>::is_sink) {
             _tstp->update(buf->frame()->as<Data_Message>(), buf->size());
-            break;
-        default:
-            break;
+        }
     }
     free(buf);
 }
 
-TSTP_MAC::Buffer * TSTP_MAC::alloc(unsigned int size, Frame * f) {
-    db<TSTP_MAC>(TRC) << "TSTP_MAC::alloc(size=" << size << ")" << endl;
+One_Hop_MAC::Buffer * One_Hop_MAC::alloc(unsigned int size, Frame * f) {
+    db<One_Hop_MAC>(TRC) << "One_Hop_MAC::alloc(size=" << size << ")" << endl;
 
     // Wait for the next buffer to become free and seize it
     unsigned int i = 1;
@@ -37,7 +42,7 @@ TSTP_MAC::Buffer * TSTP_MAC::alloc(unsigned int size, Frame * f) {
         locked = _tx_buffer[_tx_cur]->lock();
         if(!locked) ++_tx_cur %= TX_BUFS;
         if(i >= 2*TX_BUFS) {
-            db<TSTP_MAC>(WRN) << "TSTP_MAC::alloc: No buffer available! Dropping packet" << endl;
+            db<One_Hop_MAC>(WRN) << "One_Hop_MAC::alloc: No buffer available! Dropping packet" << endl;
             return 0; // No buffer found
         }
     }
@@ -45,14 +50,14 @@ TSTP_MAC::Buffer * TSTP_MAC::alloc(unsigned int size, Frame * f) {
 
     new (buf) Buffer(_tstp, size, *f);
 
-    db<TSTP_MAC>(INF) << "TSTP_MAC::alloc[" << _tx_cur << "]" << endl;
+    db<One_Hop_MAC>(INF) << "One_Hop_MAC::alloc[" << _tx_cur << "]" << endl;
 
     ++_tx_cur %= TX_BUFS;
 
     return buf;
 }
 
-void TSTP_MAC::free(Buffer * b) {
+void One_Hop_MAC::free(Buffer * b) {
     b->unlock();
 }
 

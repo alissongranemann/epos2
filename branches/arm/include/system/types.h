@@ -190,11 +190,16 @@ class Secure_NIC;
 class AES;
 class Modbus_ASCII;
 
+// TSTP Components
 class TSTP;
 class TSTP_NIC;
-class TSTP_MAC;
+//// MAC Algorithms
+class One_Hop_MAC;
+//// Timing Algorithms
 class PTS;
-class Geo_Greedy_Router;
+//// Routing Algorithms
+class SGGR;
+//// Security Algorithms
 class TSTP_Security;
 
 template<typename Channel, bool connectionless = Channel::connectionless>

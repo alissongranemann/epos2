@@ -6,11 +6,16 @@
 
 __BEGIN_SYS
 
-class Geo_Greedy_Router 
+// Static Geographic Greedy Router
+class SGGR 
 {
     friend class TSTP;
 
-    Geo_Greedy_Router(unsigned int unit) { }
+    SGGR(unsigned int unit) : _my_address(
+            EQUAL<Traits<TSTP>::Router, SGGR>::Result ? Traits<TSTP>::Router_Config<>::ADDRESS_X : 0,
+            EQUAL<Traits<TSTP>::Router, SGGR>::Result ? Traits<TSTP>::Router_Config<>::ADDRESS_Y : 0,
+            EQUAL<Traits<TSTP>::Router, SGGR>::Result ? Traits<TSTP>::Router_Config<>::ADDRESS_Z : 0)
+    { }
 
     TSTP * _tstp;
 
@@ -23,13 +28,13 @@ public:
     typedef _UTIL::Sphere<Point> Sphere;
 
     class Local_Address : public Point {
-        unsigned char _confidence : 7;
+    public:
+        Local_Address(int x = 0, int y = 0, int z = 0) : Point(x,y,z) {}
     } __attribute__((packed));
 
     class Remote_Address : public Sphere {
     public:
-        Remote_Address() {}
-        Remote_Address(int x, int y, int z, int r) : Sphere(Point(x,y,z), r) {}
+        Remote_Address(int x = 0, int y = 0, int z = 0, int r = 0) : Sphere(Point(x,y,z), r) {}
     } __attribute__((packed));
 
     class Hint {
@@ -40,10 +45,12 @@ public:
     Time backoff(const Remote_Address & dst);
     bool hint(bool & all_listen, Hint & hint, const Remote_Address & dst);
     bool update(const Remote_Address & dst, const Local_Address & last_hop_addr);
-    Local_Address & my_address() { return _my_address; }
+    const Local_Address & my_address() { return _my_address; }
+    bool accept(const Remote_Address & dst) { return accept(dst, _my_address); }
+    bool accept(const Remote_Address & dst, const Local_Address & src) { return dst.contains(src); }
 
 private:
-    Local_Address _my_address;
+    const Local_Address _my_address;
 };
 
 __END_SYS

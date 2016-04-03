@@ -12,7 +12,7 @@ template<>
 void TSTP::init(unsigned int unit)
 {
     db<Init, TSTP>(TRC) << "TSTP::init()" << endl;
-    auto mac = TSTP_MAC::get_by_unit(unit);
+    auto mac = TSTP::MAC::get_by_unit(unit);
     auto time = new (SYSTEM) TSTP::Time_Manager(unit);
     auto router = new (SYSTEM) TSTP::Router(unit);
     auto security = new (SYSTEM) TSTP::Security(unit);

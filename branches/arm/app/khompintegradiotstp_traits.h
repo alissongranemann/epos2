@@ -149,9 +149,9 @@ template<> struct Traits<TSTP>: public Traits<Network>
 
     template<unsigned int dummy = 0>
     struct Router_Config {
-        static const int ADDRESS_X = is_sink ? 0 : 10;
-        static const int ADDRESS_Y = is_sink ? 0 : 20;
-        static const int ADDRESS_Z = is_sink ? 0 : 30;
+        static const int ADDRESS_X = is_sink ? 0 : 611;
+        static const int ADDRESS_Y = is_sink ? 0 : -545;
+        static const int ADDRESS_Z = is_sink ? 0 : 52;
     };
 
     // {One_Hop_MAC};

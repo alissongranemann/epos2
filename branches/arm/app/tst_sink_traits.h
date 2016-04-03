@@ -140,7 +140,7 @@ template<> struct Traits<Network>: public Traits<void>
 
 template<> struct Traits<TSTP>: public Traits<Network>
 {
-    static const bool is_sink = false;
+    static const bool is_sink = true;
 
     template<unsigned int dummy = 0>
     struct MAC_Config {};

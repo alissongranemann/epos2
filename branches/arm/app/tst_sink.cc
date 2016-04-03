@@ -23,16 +23,14 @@ RFID<2> rfid_2;
 RFID<3> rfid_3;
 RFID<4> rfid_4;
 
-TSTP::Meter m;
-
-unsigned int val = 0;
+TSTP::Meter * m;
 
 void hello_sensor(TSTP::Sensor * s)
 {
     cout << "Measuring!" << endl;
+    unsigned int val = Random::random();
     cout << "measurement = " << val << endl;
-    m = val++;
-    cout << "m = " << (unsigned int)m << endl;
+    (*m) = val;
     cout << "now = " << s->tstp()->time() << endl;
 }
 
@@ -62,18 +60,26 @@ void init()
 
 void sensor()
 {
-    auto s = new TSTP::Sensor(tstp, &m, 0, 0, 0, &hello_sensor);
+    m = new TSTP::Meter;
+    auto s = new TSTP::Sensor(tstp, m, 0, 0, 0, &hello_sensor);
     cout << *reinterpret_cast<TSTP::Data_Message*>(s) << endl;
-    User_Timer_0::delay(50000000);
-    m = 1337;
-    cout << "Eveeeeeeeent!" << endl;
-    tstp->event(m);
+}
+
+void interest()
+{
+    m = new TSTP::Meter;
+    auto t0 = tstp->time();
+    auto i = new TSTP::Interest(tstp, m, TSTP::Remote_Address(10, 20, 30, 20), t0 + 2000000, t0 + 60000000, 10000000, 1, TSTP::RESPONSE_MODE::SINGLE_EVENT_DRIVEN, &hello_interest);
+
+    cout << "Created interest: " << *i << endl;
 }
 
 int main()
 {
     init();
-    sensor();
+    //sensor();
+    //while(true);
+    interest();
     while(true);
 
     return 0;

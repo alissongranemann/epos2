@@ -4,7 +4,7 @@
 __BEGIN_SYS
 
 template<>
-TSTP_MAC::TSTP_MAC(CC2538_PHY * phy, DMA_Buffer * dma_buf) : _rx_cur(0), _tx_cur(0), _phy(phy) { // TODO: Polymorphic PHY
+One_Hop_MAC::One_Hop_MAC(CC2538_PHY * phy, DMA_Buffer * dma_buf) : _rx_cur(0), _tx_cur(0), _phy(phy) { // TODO: Polymorphic PHY
     assert(MTU <= CC2538_PHY::MTU);
 
     auto log = dma_buf->log_address();
@@ -22,15 +22,13 @@ TSTP_MAC::TSTP_MAC(CC2538_PHY * phy, DMA_Buffer * dma_buf) : _rx_cur(0), _tx_cur
 }
 
 template<>
-void TSTP_MAC::init<CC2538_PHY>(unsigned int unit)
+void TSTP::MAC::init<CC2538_PHY>(unsigned int unit)
 {
     IO_Irq irq = 26;
     DMA_Buffer * dma_buf = new (SYSTEM) DMA_Buffer(DMA_BUFFER_SIZE);
     CC2538_PHY * phy = new (SYSTEM) CC2538_PHY();
-    // Enable SFD (Start of Frame reception) interrupt
-    phy->xreg(phy->RFIRQM0) |= phy->INT_SFD;
     _macs[unit].interrupt = IC::irq2int(irq);
-    _macs[unit].mac = new (SYSTEM) TSTP_MAC(phy, dma_buf); // TODO: polymorphic PHY
+    _macs[unit].mac = new (SYSTEM) TSTP::MAC(phy, dma_buf); // TODO: polymorphic PHY
 
     // Install interrupt handler
     IC::int_vector(_macs[unit].interrupt, &int_handler<CC2538_PHY>);

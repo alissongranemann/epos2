@@ -10,7 +10,7 @@
 
 __BEGIN_SYS
 
-class TSTP_MAC : public TSTP_API
+class One_Hop_MAC : public TSTP_API
 {
     typedef CPU::Reg32 Reg32;
 
@@ -63,11 +63,11 @@ public: //TODO: remove "public"
     static void init(unsigned int unit);
 
     template<typename PHY = PHY_Layer>
-    TSTP_MAC(PHY * phy, DMA_Buffer * dma_buf);
+    One_Hop_MAC(PHY * phy, DMA_Buffer * dma_buf);
 
     // Interrupt dispatching binding
     struct MACS {
-        TSTP_MAC * mac;
+        One_Hop_MAC * mac;
         unsigned int interrupt;
     };
 
@@ -75,15 +75,15 @@ public: //TODO: remove "public"
 
     static MACS _macs[UNITS];
 
-    static TSTP_MAC * get_by_unit(unsigned int unit) {
+    static One_Hop_MAC * get_by_unit(unsigned int unit) {
         if(unit >= UNITS) {
-            db<TSTP_MAC>(WRN) << "TSTP_MAC::get: requested unit (" << unit << ") does not exist!" << endl;
+            db<One_Hop_MAC>(WRN) << "One_Hop_MAC::get: requested unit (" << unit << ") does not exist!" << endl;
             return 0;
         } else
             return _macs[unit].mac;
     }
 
-    static TSTP_MAC * get_by_interrupt(unsigned int interrupt) {
+    static One_Hop_MAC * get_by_interrupt(unsigned int interrupt) {
         for(unsigned int i = 0; i < UNITS; i++) {
             if(_macs[i].interrupt == interrupt) {
                 return _macs[i].mac;
@@ -94,12 +94,12 @@ public: //TODO: remove "public"
 
     template <typename PHY = typename Config::PHY_Layer>
     static void int_handler(const IC::Interrupt_Id & interrupt) {
-        TSTP_MAC * mac = get_by_interrupt(interrupt);
+        One_Hop_MAC * mac = get_by_interrupt(interrupt);
 
-        db<TSTP_MAC>(TRC) << "TSTP_MAC::int_handler(int=" << interrupt << ",mac=" << mac << ")" << endl;
+        db<One_Hop_MAC>(TRC) << "One_Hop_MAC::int_handler(int=" << interrupt << ",mac=" << mac << ")" << endl;
 
         if(!mac)
-            db<TSTP_MAC>(WRN) << "TSTP_MAC::int_handler: handler not assigned!" << endl;
+            db<One_Hop_MAC>(WRN) << "One_Hop_MAC::int_handler: handler not assigned!" << endl;
         else
             mac->handle_int<PHY>();
     }
@@ -113,12 +113,10 @@ public: //TODO: remove "public"
     template <typename PHY = PHY_Layer>
     void send_frame(Buffer * b);
 
-    // == TSTP -> TSTP_MAC interface ==
+    // == TSTP -> One_Hop_MAC interface ==
     Buffer * alloc(unsigned int size, Frame * f);
     void send(Buffer * b);
     void free(Buffer * b);
-
-    Time last_frame_time;
 
     PHY_Layer * _phy;
     TSTP * _tstp;

@@ -11,7 +11,7 @@ __BEGIN_SYS
 // CC2538 IEEE 802.15.4 RF Transceiver
 class CC2538RF
 {
-    friend class TSTP_MAC;
+    friend class One_Hop_MAC;
 protected:
     typedef CPU::Reg8 Reg8;
     typedef CPU::Reg16 Reg16;
@@ -300,9 +300,8 @@ public:
     static void interrupt(const Microsecond & when, const IC::Interrupt_Handler & h) { interrupt_ts(us_to_ts(when), h); }
 
     static void interrupt_ts(const Timestamp & when, const IC::Interrupt_Handler & h) {
-        reg(IRQM) = 0;//INT_OVERFLOW_COMPARE1;
+        int_disable();
         _user_handler = h;
-        Timestamp now = read_ts();
         reg(MSEL) = (OVERFLOW_COMPARE1 * MSEL_MTMOVFSEL) | (TIMER_COMPARE1 * MSEL_MTMSEL);
         reg(M0) = when.timer_count;
         reg(M1) = when.timer_count >> 8;
@@ -310,22 +309,35 @@ public:
         reg(MOVF1) = when.overflow_count >> 8;
         reg(MOVF2) = when.overflow_count >> 16;
 
-        reg(IRQF) = 0;
-        if(when.overflow_count >= now.overflow_count) {
-            reg(IRQM) = INT_OVERFLOW_COMPARE1;
+        int_clear();
+        Timestamp now = read_ts();
+        if(when.overflow_count > now.overflow_count) {
+            int_enable(INT_OVERFLOW_COMPARE1);
+        } else if(when.timer_count > now.timer_count) {
+            int_enable(INT_COMPARE1);
         } else {
-            reg(IRQM) = INT_COMPARE1;
+            _user_handler(49);
         }
+    }
+
+    static void int_clear() {
+        reg(IRQF) = 0;
+    }
+    static void int_disable() {
+        reg(IRQM) = 0;
+    }
+    static void int_enable(const Reg32 & interrupt) {
+        reg(IRQM) = interrupt;
     }
 
 private:
     static void interrupt_handler(const unsigned int & interrupt) {        
         if(reg(IRQF) & INT_OVERFLOW_COMPARE1) {
-            reg(IRQF) = 0;
-            reg(IRQM) = INT_COMPARE1;
+            int_clear();
+            int_enable(INT_COMPARE1);
         } else {
-            reg(IRQF) = 0;
-            reg(IRQM) = 0;
+            int_disable();
+            int_clear();
             _user_handler(interrupt);
         }
     }
@@ -382,8 +394,8 @@ public:
 
     static void config() {
         stop();
-        reg(IRQM) = 0; // Disable interrupts
-        reg(IRQF) = 0; // Clear interrupts
+        int_disable();
+        int_clear();        
         reg(CTRL) &= ~CTRL_SYNC; // We can't use the sync feature because we want to change
                                  // the count and overflow values when the timer is stopped
         reg(CTRL) |= CTRL_LATCH_MODE; // count and overflow will be latched at once
@@ -400,7 +412,7 @@ public:
 // Standalone IEEE 802.15.4 PHY mediator
 class CC2538_PHY : protected CC2538RF, public IEEE802_15_4_PHY
 {
-    friend class TSTP_MAC;
+    friend class One_Hop_MAC;
 
 protected:
     typedef CPU::IO_Irq IO_Irq;
@@ -470,8 +482,8 @@ public:
     }
 
     void off() { sfr(RFST) = ISRFOFF; }
-    void rx() { sfr(RFST) = ISRXON; }
-    void tx() { sfr(RFST) = ISTXON; }
+    void rx() { sfr(RFIRQM0) |= INT_SFD; sfr(RFST) = ISRXON; }
+    void tx() { sfr(RFIRQM0) &= ~INT_SFD; sfr(RFST) = ISTXON; }
     bool cca();//TODO
     void start_cca() { rx_mode(RX_MODE_NO_SYMBOL_SEARCH); rx(); }
     void end_cca() { rx_mode(RX_MODE_NORMAL); }

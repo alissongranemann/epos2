@@ -9,6 +9,7 @@ class PTS
     friend class TSTP;
     typedef Traits<TSTP>::Time_Config<> Config;
     typedef Config::Timer Timer;
+    static const unsigned int TX_DELAY = Config::TX_DELAY;
 
     PTS(unsigned int unit) : _timer() {
         _timer.config();
@@ -32,6 +33,10 @@ private:
     Time time_now() { return _timer.read(); }
 
     static void int_handler(const unsigned int & interrupt);
+
+    void cancel_interrupt() {
+        _timer.int_disable();
+    }
 
     void interrupt(const Time & when) {
         db<PTS>(TRC) << "PTS::interrupt(when=" << when << ")" << endl;

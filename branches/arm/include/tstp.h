@@ -16,19 +16,29 @@ __BEGIN_SYS
 class TSTP : public TSTP_API
 {
     friend class Interest;
-    friend class TSTP_MAC;
+    friend class One_Hop_MAC;
     friend class PTS;
 
-    template<typename T> class Rescheduler;
+public:
+    class Interest;
+    class Sensor;
+    class Event;
+
+private:
+    class Subscribed_Sensor;
+
+    typedef Hash<Interest, Traits<TSTP>::MAX_INTERESTS, unsigned long long> Interests;
+    typedef Hash<Sensor, Traits<TSTP>::MAX_SENSORS, unsigned long long> Sensors;
+    typedef Hash<Subscribed_Sensor, Traits<TSTP>::MAX_INTERESTS, int> Subscribed_Sensors;
 
 public:
     typedef TSTP_API API;
 
     template<typename U>
-    class Data {
+    class Datum {
     public:
         static const typename U::UNIT_CODE_T UNIT = U::UNIT_CODE;
-        static const unsigned int DATA_SIZE = U::DATA_SIZE;
+        static const unsigned int DATUM_SIZE = U::DATUM_SIZE;
         template<typename T = char>
         T * data() { return reinterpret_cast<T*>(&_data); }
         template<typename T>
@@ -36,15 +46,15 @@ public:
         template<typename T>
         operator T&() { return *(data<T>()); }
     private:
-        char _data[DATA_SIZE];
+        char _data[DATUM_SIZE];
     };
 
-    template<unsigned long long UNIQUE_CODE, unsigned int SIZE_OF_DATA = 4, typename UNIT_CODE_TYPE = unsigned long long>
+    template<unsigned long long UNIQUE_CODE, unsigned int SIZE_OF_DATUM = sizeof(unsigned int)>
     struct User_Unit {
     public:
-        typedef UNIT_CODE_TYPE UNIT_CODE_T;
-        static const UNIT_CODE_T UNIT = UNIQUE_CODE;
-        static const unsigned int DATA_SIZE = SIZE_OF_DATA;
+        typedef unsigned long long UNIT_CODE_T;
+        static const UNIT_CODE_T UNIT = (UNIQUE_CODE | (1ull << 39ull));
+        static const unsigned int DATUM_SIZE = SIZE_OF_DATUM;
 
         template<typename T = char>
         T * data() { return reinterpret_cast<T*>(&_data); }
@@ -53,37 +63,27 @@ public:
         template<typename T>
         operator T&() { return *(data<T>()); }
     private:
-        char _data[DATA_SIZE];
+        char _data[DATUM_SIZE];
     };
 
-    typedef Data<IEEE1451_0::UNITS::METER> Meter;
+    typedef Datum<IEEE1451_0::UNITS::METER> Meter;
 
     class Interest : public Interest_Message {
         friend class TSTP;
-        friend class TSTP::Rescheduler<Interest>;
     public:
         typedef void (Handler)(Interest *);
 
-        template<typename DATA>
-        Interest(TSTP * tstp, DATA * data, const Remote_Address & destination, const Time & t0, const Time & t_end,
+        template<typename DATUM>
+        Interest(TSTP * tstp, DATUM * data, const Remote_Address & destination, const Time & t0, const Time & t_end,
                 const Time & period, const Error & max_error, const RESPONSE_MODE & response_mode, const Handler * update_handler = 0, const Handler * period_handler = 0) :
-            Interest_Message(tstp->_router->my_address(), t0, destination, t0, t_end, period, 
-                    DATA::UNIT, response_mode, max_error),
-            _tstp(tstp), _data(data->data()), 
-            _last_update(0), _update_functor(0), _period_functor(0), _period_handler(period_handler), _rescheduler(0)
+            Interest_Message(tstp->_router->my_address(), t0, destination, t0, t_end, period, DATUM::UNIT, response_mode, max_error),
+            _tstp(tstp), _data(data->data()), _last_update(0), _update_handler(update_handler), _period_handler(period_handler), _period_functor(period_handler, this), _link(this, DATUM::UNIT), _event(0)
         {
-            if(update_handler)
-                _update_functor = new Functor_Handler<Interest>(update_handler, this);
-            if(period_handler)
-                _period_functor = new Functor_Handler<Interest>(period_handler, this);
             _tstp->add_interest(this);
         }
 
         ~Interest() {
             _tstp->remove_interest(this);
-            if(_update_functor) delete _update_functor;
-            if(_period_functor) delete _period_functor;
-            if(_rescheduler) delete _rescheduler;
         }
 
         TSTP * tstp() { return _tstp; }
@@ -97,32 +97,31 @@ public:
         Time last_update() { return _last_update; }
 
         friend Debug & operator<<(Debug & db, const Interest & i) {
-            db << *reinterpret_cast<const Interest_Message*>(&i) << ", _dt=" << reinterpret_cast<void*>(i._data) << ", _lup=" << i._last_update << ", _upf=" << reinterpret_cast<void*>(i._update_functor) << ", _pef=" << reinterpret_cast<void*>(i._period_functor) << ", _peh=" << reinterpret_cast<void*>(i._period_handler) << ", _tstp=" << reinterpret_cast<void*>(i._tstp) << ", _resc=" << reinterpret_cast<void*>(i._rescheduler);
+            db << *reinterpret_cast<const Interest_Message*>(&i) << ", _dt=" << reinterpret_cast<void*>(i._data) << ", _lup=" << i._last_update << ", _uph=" << reinterpret_cast<void*>(i._update_handler) << ", _peh=" << reinterpret_cast<void*>(i._period_handler) << ", _tstp=" << reinterpret_cast<void*>(i._tstp) << ", _link=" << reinterpret_cast<const void*>(&(i._link)) << ", _evt = " << reinterpret_cast<void*>(i._event);
             return db;
         }
         friend OStream & operator<<(OStream & os, const Interest & i) {
-            os << *reinterpret_cast<const Interest_Message*>(&i) << ", _dt=" << reinterpret_cast<void*>(i._data) << ", _lup=" << i._last_update << ", _upf=" << reinterpret_cast<void*>(i._update_functor) << ", _pef=" << reinterpret_cast<void*>(i._period_functor) << ", _peh=" << reinterpret_cast<void*>(i._period_handler) << ", _tstp=" << reinterpret_cast<void*>(i._tstp) << ", _resc=" << reinterpret_cast<void*>(i._rescheduler);
+            os << *reinterpret_cast<const Interest_Message*>(&i) << ", _dt=" << reinterpret_cast<void*>(i._data) << ", _lup=" << i._last_update << ", _uph=" << reinterpret_cast<void*>(i._update_handler) << ", _peh=" << reinterpret_cast<void*>(i._period_handler) << ", _tstp=" << reinterpret_cast<void*>(i._tstp) << ", _link=" << reinterpret_cast<const void*>(&(i._link)) << ", _evt = " << reinterpret_cast<void*>(i._event);
             return os;
         }
 
     private:
         template<typename T>
-        void update(T * data, const Time & time) {
-            *_data = *data;
+        void update(T * data, unsigned int size, const Time & time) {
+            memcpy(_data, data, size);
             _last_update = time;
-            if(_update_functor)
-                (*_update_functor)();
+            if(_update_handler)
+                (*_update_handler)(this);
         }
-
-        Functor_Handler<Interest> * period_functor() { return _period_functor; }
 
         char * _data;
         Time _last_update;
-        Functor_Handler<Interest> * _update_functor;
-        Functor_Handler<Interest> * _period_functor;
-        Handler * _period_handler;
+        Handler * _update_handler;
+        const bool _period_handler;
+        Functor_Handler<Interest> _period_functor;
         TSTP * _tstp;
-        Rescheduler<Interest> * _rescheduler;
+        Interests::Element _link;
+        Event * _event;
     };
 
     class Sensor : public Data_Message {
@@ -131,19 +130,15 @@ public:
 
         typedef void (Handler)(Sensor *);
 
-        template<typename DATA>
-        Sensor(TSTP * tstp, DATA * data, const Error & error, const Time & time_to_measure, const Time & time_between_measurements, Handler * measure = 0) : 
-            Data_Message(DATA::UNIT), _data(data->data()), _size_of_data(DATA::DATA_SIZE), _handler(0), 
-            _error(error), _time_to_measure(time_to_measure), 
-            _cooldown(time_between_measurements), _last_measurement(0), _tstp(tstp) { 
-            if(measure)
-                _handler = new Functor_Handler<Sensor>(measure, this);
+        template<typename DATUM>
+        Sensor(TSTP * tstp, DATUM * data, const Error & error, const Time & time_to_measure, const Time & time_between_measurements, Handler * measure = 0) :
+            Data_Message(DATUM::UNIT), _data(data->data()), _size_of_data(DATUM::DATUM_SIZE), _handler(measure), _error(error), _time_to_measure(time_to_measure), 
+            _cooldown(time_between_measurements), _last_measurement(0), _tstp(tstp), _link(this, DATUM::UNIT) {
             _tstp->add_sensor(this);
         }
 
-        ~Sensor() { 
-            if(_handler) delete _handler;
-            _tstp->remove_sensor(this); 
+        ~Sensor() {
+            _tstp->remove_sensor(this);
         }
 
         TSTP * tstp() { return _tstp; }
@@ -158,30 +153,39 @@ public:
         Time period() const { return _time_to_measure + _cooldown; }
         const Error & error() const { return _error; }
 
-        unsigned int update() {
-            db<TSTP>(TRC) << "Sensor::update() => " << reinterpret_cast<void*>(this) << endl;
+    private:
+        unsigned int periodic_update() {
+            db<TSTP>(TRC) << "Sensor::periodic_update() => " << reinterpret_cast<void*>(this) << endl;
             if(_handler) {
                 auto now = _tstp->time();
                 if(now - _last_measurement < _cooldown) {
                     return 0;
                 }
-                (*_handler)();
+                (*_handler)(this);
                 _last_measurement = now;
             }
             auto ret = size_of_data();
-            memcpy(Data_Message::_data, _data, ret); 
+            memcpy(Data_Message::_data, _data, ret);
             return ret;
         }
 
-    private:
+        unsigned int event(const Time & when) {
+            db<TSTP>(TRC) << "Sensor::event(t = "<< when << ") => " << reinterpret_cast<void*>(this) << endl;
+            _last_measurement = when;
+            auto ret = size_of_data();
+            memcpy(Data_Message::_data, _data, ret);
+            return ret;
+        }
+
         char * _data;
         unsigned int _size_of_data;
-        Functor_Handler<Sensor> * _handler;
+        Handler * _handler;
         Error _error;
         Time _time_to_measure;
         Time _cooldown;
         Time _last_measurement;
         TSTP * _tstp;
+        Sensors::Element _link;
     };
 
 private:
@@ -194,6 +198,22 @@ private:
 
 public:
     Time time() { return _time->time_now(); }
+    const Local_Address & address() { return _router->my_address(); }
+
+    template<typename T>
+    void event(T& data) {
+        db<TSTP>(TRC) << "TSTP::event(data = " << reinterpret_cast<const void*>(&data) << ") => " << reinterpret_cast<void*>(this) << endl;
+        db<TSTP>(TRC) << "key = " << reinterpret_cast<int>(data.data()) << endl;
+
+        auto t = time();
+        auto k = reinterpret_cast<int>(data.data());
+        for(auto el = _subscribed_sensors.search_key(k); el; el = el->next()) {
+            if(el->key() == k) {
+                db<TSTP>(TRC) << "found subscribed sensor = " << el << endl;
+                el->object()->event(t);
+            }
+        }
+    }
 
     static TSTP * get_by_nic(unsigned int unit) {
         if(unit >= Traits<NIC>::UNITS) {
@@ -207,157 +227,218 @@ public:
     static void init(unsigned int unit = UNIT);
 
 private:
-    class Event;
     typedef Simple_Ordered_List<Event, Time> Event_Schedule;
 
     Event_Schedule _event_schedule;
 
+public:
     class Event {
+        friend class TSTP;
     public:
         typedef Event_Schedule::Element Element;
 
-        Event(TSTP * tstp, const Time & when, Handler * h) : link(this, when), handle(h) { 
+        Event(const Time & when, Handler * h) : 
+            period(0), end(0), _handle(h), _link(this, when) {
+            db<TSTP>(TRC) << "Event() => " << reinterpret_cast<void*>(this) << endl;
+        }
+        Event(const Time & when, Handler * h, const Time & _period, const Time & until) : 
+            period(_period), end(until), _handle(h), _link(this, when) {
             db<TSTP>(TRC) << "Event() => " << reinterpret_cast<void*>(this) << endl;
         }
         ~Event() {
             db<TSTP>(TRC) << "~Event() => " << reinterpret_cast<void*>(this) << endl;
         }
 
-        void operator()() { (*handle)(); }
+        void operator()() { (*_handle)(); }
 
-        Element link;
-        Handler * handle;
-    };
-
-    template<typename T>
-    class Rescheduler : public Handler {
     public:
-        Rescheduler(T * o) : _object(o) { 
-            _object->_rescheduler = this; 
-            db<TSTP>(TRC) << "Rescheduler() => " << reinterpret_cast<void*>(this) << endl;
-        }
-        ~Rescheduler() {
-            db<TSTP>(TRC) << "~Rescheduler() => " << reinterpret_cast<void*>(this) << endl;
-        }
+        const Time period;
+        const Time end;
 
-        void operator()() {
-            db<TSTP>(TRC) << "calling Rescheduler : " << reinterpret_cast<void*>(this) << endl;
-            auto t = _object->tstp()->time();
-            auto next = t + _object->period();
-            bool ok = (next <= _object->t_end());
-            if(ok) {
-                event = _object->tstp()->schedule(next, this); 
-            }
-            db<TSTP>(TRC) << "Rescheduler: calling _object->period_functor()" << endl;
-            if(_object->period_functor())
-                (*(_object->period_functor()))();
-            if(not ok) {
-                _object->_rescheduler = 0;
-                delete this;
-            }
-        }
-        Event * event;
     private:
-        T * _object;
+        Handler * _handle;
+        Element _link;
     };
 
-    class Subscribed_Sensor {
-        friend class TSTP::Rescheduler<Subscribed_Sensor>;
+private:
+    class Subscribed_Sensor : public Handler {
     public:
-        Subscribed_Sensor(Sensor * s, Interest_Message * i) : _sensor(s), _tstp(s->tstp()), _period(i->period()), _t_end(i->t_end()), _period_functor(&handler, this) { 
+        Subscribed_Sensor(Sensor * s, Interest_Message * i) : _sensor(s), _period(i->period()), _t_end(i->t_end()), _last_send(0), _event(0), _event_driven(i->event_driven()), _link(this, reinterpret_cast<int>(s->data<char>())) {
             db<TSTP>(TRC) << "Subscribed_Sensor() => " << reinterpret_cast<void*>(this) << endl;
+            db<TSTP>(TRC) << "key = " << reinterpret_cast<int>(s->data<char>()) << endl;
         }
 
         ~Subscribed_Sensor() {
             db<TSTP>(TRC) << "~Subscribed_Sensor() => " << reinterpret_cast<void*>(this) << endl;
         }
 
-        Functor_Handler<Subscribed_Sensor> * period_functor() { return &_period_functor; }
-        Time t_end() { return _t_end; }
-        Time period() { return _period; }
-        TSTP * tstp() { return _tstp; }
+        Time t_end() const { return _t_end; }
+        Time period() const { return _period; }
+        TSTP * tstp() const { return _sensor->tstp(); }
 
-    private:
-        static void handler(Subscribed_Sensor * s) {
-            db<TSTP>(TRC) << "Subscribed_Sensor::handler(s=" << reinterpret_cast<void*>(s) <<")"<< endl;
-            if(s->_sensor) {
-                auto sz = s->_sensor->update();
-                s->_tstp->send(reinterpret_cast<Data_Message*>(s->_sensor), sizeof(Data_Message) - MAX_DATA_SIZE + sz);
+        void operator()() {
+            db<TSTP>(TRC) << "Subscribed_Sensor::handler(s=" << reinterpret_cast<void*>(this) <<")"<< endl;
+            const auto t = tstp()->time();
+            db<TSTP>(TRC) << "t=" << t << endl;
+            db<TSTP>(TRC) << "_last_send=" << _last_send << endl;
+            db<TSTP>(TRC) << "period()=" << period() << endl;
+            if(t - _last_send >= period()) {
+                auto sz = _sensor->periodic_update();
+                db<TSTP>(TRC) << "sz=" << sz << endl;
+                if(sz > 0) {
+                    _sensor->deadline(t + _period);
+                    tstp()->send(reinterpret_cast<Data_Message*>(_sensor), sizeof(Data_Message) - MAX_DATA_SIZE + sz);
+                    _last_send = t;
+                }
+                if(t + period() >= t_end()) {
+                    delete this;
+                }
             }
-            if(s->_tstp->time() + s->period() >= s->_t_end)
-                delete s;
         }
 
-        Rescheduler<Subscribed_Sensor> * _rescheduler;
-        Sensor * _sensor;
-        TSTP * _tstp;
-        Time _period;
-        Time _t_end;
-        Functor_Handler<Subscribed_Sensor> _period_functor;
-    };
+        void event(const Time & when) {
+            db<TSTP>(TRC) << "Subscribed_Sensor::event(when" << when <<")"<< endl;
+            db<TSTP>(TRC) << "_event_driven = " << _event_driven << endl;
+            if(_event_driven) {
+                auto sz = _sensor->event(when);
+                if(when < _t_end) {
+                    if(sz > 0) {
+                        _sensor->deadline(when + _period);
+                        tstp()->send(reinterpret_cast<Data_Message*>(_sensor), sizeof(Data_Message) - MAX_DATA_SIZE + sz);
+                        _last_send = when;
+                    }
+                }
+                if(_event)
+                    tstp()->reschedule(_event, tstp()->time() + _period);
+            }
+        }
 
-    typedef Hash<Interest, Traits<TSTP>::MAX_INTERESTS> Interests;
-    typedef Hash<Sensor, Traits<TSTP>::MAX_SENSORS> Sensors;
+        Sensor * _sensor;
+        const Time _period;
+        const Time _t_end;
+        Time _last_send;
+        Event * _event;
+        const bool _event_driven;
+        Subscribed_Sensors::Element _link;
+    };
 
     Interests _interests;
     Sensors _sensors;
-
-    void add_interest(Interest * i) {
-        if(i->_period_functor) {
-            auto resc = new Rescheduler<Interest>(i);
-            auto evt = schedule(i->t0() + i->period(), resc);
-            resc->event = evt; 
-        }
-        _interests.insert(new Interests::Element(i, i->unit()));
-        send(reinterpret_cast<Interest_Message*>(i));
-    }
+    Subscribed_Sensors _subscribed_sensors;
 
     template<typename T>
     void send(T * t, unsigned int sz = sizeof(T)) {
+        t->origin_address(address());
         auto buf = _mac->alloc(sz, reinterpret_cast<Frame *>(t));
         if(buf) {
             _mac->send(buf);
         }
     }
 
-    // Should only be called via Interest's destructor
+    void add_interest(Interest * in) {
+        _interests.insert(&(in->_link));
+        if(in->_period_handler) {
+            in->_event = schedule(in->t0() + in->period(), &(in->_period_functor), in->period(), in->t_end());
+        }
+        send(reinterpret_cast<Interest_Message*>(in)); // TODO: should this be done here/now?
+    }
     void remove_interest(Interest * in) {
-        auto el = _interests.remove(in);
-        if(el) delete el;
-        if(in->_rescheduler and in->_rescheduler->event)
-            _event_schedule.remove(in->_rescheduler->event);
+        _interests.remove(&(in->_link));
+        if(in->_event) unschedule(in->_event);
     }
     void add_sensor(Sensor * s) {
-        kout << "Sensor unit = " << s->unit() << endl;
-        _sensors.insert(new Sensors::Element(s, s->unit())); 
+        _sensors.insert(&(s->_link));
     }
     void remove_sensor(Sensor * s) {
-        auto el = _sensors.remove(s);
-        if(el) delete el;
+        _sensors.remove(s);
+        auto k = reinterpret_cast<int>(s->data<char>());
+        auto el = _subscribed_sensors.search_key(k);
+        Subscribed_Sensors::Element * next;
+        for(; el; el = next) {
+            next = el->next();
+            if(el->key() == k) {
+                _subscribed_sensors.remove(el);
+                if(el->object()->_event) unschedule(el->object()->_event);
+                delete el->object();
+            }
+        }
     }
 
+public:
     Event * schedule(const Time & when, Handler * what) {
         db<TSTP>(TRC) << "TSTP::schedule(when=" << when << ", what= " << reinterpret_cast<void *>(what) << ")" << endl;
-        auto event = new Event(this, when, what);
-        db<TSTP>(TRC) << "event = " << event << endl;
-        auto el = _event_schedule.head();
-        _event_schedule.insert(&(event->link));
-        auto el2 = _event_schedule.head();
-        if(el != el2) {
-            _next_event = el2->object();
-            _time->interrupt(el2->rank());
-        }
+        auto event = new Event(when, what);
+        schedule(event);
         return event;
+    }
+    Event * schedule(const Time & when, Handler * what, const Time & period, const Time & until) {
+        db<TSTP>(TRC) << "TSTP::schedule(when=" << when << ", what= " << reinterpret_cast<void *>(what) << ", period = " << period << " , until = " << until << ")" << endl;
+        auto event = new Event(when, what, period, until);
+        schedule(event);
+        return event;
+    }
+    bool unschedule(Event * e) {
+        auto old_head = _event_schedule.head();
+        auto ret = _event_schedule.remove(&(e->_link));
+        if(ret) {
+            auto new_head = _event_schedule.head();
+            if(!new_head) {
+                _time->cancel_interrupt();
+                _next_event = 0;
+            } else if(old_head != new_head) {
+                _next_event = new_head->object();
+                _time->interrupt(new_head->rank());
+            }
+            delete e;
+        }
+        return ret;
+    }
+    bool reschedule(Event * e, const Time & when) {
+        auto old_head = _event_schedule.head();
+        auto ret = _event_schedule.remove(&(e->_link));
+        if(ret) {
+            ret->rank(when);
+            _event_schedule.insert(ret);
+            auto new_head = _event_schedule.head();
+            if((old_head == ret) or (new_head != old_head)) {
+                _next_event = new_head->object();
+                _time->interrupt(new_head->rank());
+            }
+        }
+        return ret;
+    }
+
+private:
+    void schedule(Event * event) {
+        db<TSTP>(TRC) << "TSTP::schedule_event(event = " << event << ")" << endl;
+        auto old_head = _event_schedule.head();
+        _event_schedule.insert(&(event->_link));
+        auto new_head = _event_schedule.head();
+        if(old_head != new_head) {
+            _next_event = new_head->object();
+            _time->interrupt(new_head->rank());
+        }
     }
 
     Event * _next_event;
 
+    // Called by time manager interrupt
     void process_event() {
         db<TSTP>(TRC) << "TSTP::process_event() : " << reinterpret_cast<void *>(_next_event) << endl;
-        auto el = _event_schedule.remove(&_next_event->link);
+        auto t = time();
+        auto el = _event_schedule.remove(&_next_event->_link);
         (*_next_event)();
         db<TSTP>(TRC) << "TSTP::process_event : el=" << reinterpret_cast<void *>(el) << endl;
-        if(el) { delete el->object(); }
+        if(el) {
+            auto next_t = t + el->object()->period;
+            if(next_t >= el->object()->end) {
+                delete el->object();
+            }
+            else {
+                el->rank(next_t);
+                _event_schedule.insert(el);
+            }
+        }
         el = _event_schedule.head();
         if(el) {
             _next_event = el->object();
@@ -375,36 +456,47 @@ private:
     static TSTP * _network[Traits<NIC>::UNITS];
 
     // == TSTP_MAC -> TSTP interface ==
-    void failed(Scheduled_Message * message);
+    void failed(Buffer * b);
     void update(Interest_Message * interest) {
         _time->update_interest(reinterpret_cast<char *>(interest));
         db<TSTP>(TRC) << "TSTP::update: Interest " << (*interest) << endl;
-        for(auto el = _sensors.search_key(interest->unit()); el; el = el->next()) {
-            auto sensor = el->object();
-            if((sensor->period() <= interest->period()) and (sensor->error() <= interest->error())) {
-                db<TSTP>(TRC) << "Found sensor " << reinterpret_cast<void *>(sensor) << endl;
-                subscribe(sensor, interest);
+        auto k = interest->unit();
+        for(auto el = _sensors.search_key(k); el; el = el->next()) {
+            if(el->key() == k) {
+                auto sensor = el->object();
+                if((sensor->period() < interest->period()) and (sensor->error() <= interest->error())) {
+                    db<TSTP>(TRC) << "Found sensor " << reinterpret_cast<void *>(sensor) << endl;
+                    subscribe(sensor, interest);
+                }
             }
         }
     }
     void update(Data_Message * data, unsigned int size) {
         _time->update_data(reinterpret_cast<char *>(data));
         db<TSTP>(TRC) << "TSTP::update: Data " << (*data) << ", sz= " << size << endl;
-        for(auto el = _interests.search_key(data->unit()); el; el = el->next()) {
-            auto interest = el->object();
-            if((interest->last_update() <= data->origin_time()) and (interest->destination().contains(data->origin_address()))) {
-                db<TSTP>(TRC) << "Found interest " << (*interest) << endl;
-                interest->update(data->data(), data->origin_time());
+        auto k = data->unit();
+        for(auto el = _interests.search_key(k); el; el = el->next()) {
+            if(el->key() == k) {
+                auto interest = el->object();
+                if((interest->last_update() < data->origin_time()) and (_router->accept(interest->destination(), data->origin_address()))) {
+                    db<TSTP>(TRC) << "Found interest " << (*interest) << endl;
+                    interest->update(data->data(), size - (sizeof(Data_Message) - MAX_DATA_SIZE), data->origin_time());
+                }
             }
         }
-   }
-
+    }
     void subscribe(Sensor * s, Interest_Message * i) {
         db<TSTP>(TRC) << "TSTP::subscribe(" << reinterpret_cast<void *>(s) << ", " << reinterpret_cast<void *>(i) << ")" << endl;
         db<TSTP>(TRC) << "t0 = " << i->t0() << endl;
-        schedule(i->t0(), new Rescheduler<Subscribed_Sensor>(new Subscribed_Sensor(s, i))); // TODO: grab event pointer?
+        auto ss = new Subscribed_Sensor(s, i);
+        _subscribed_sensors.insert(&(ss->_link));
+        ss->_event = schedule(i->t0(), ss, i->period(), i->t_end());
     }
-
+    void unsubscribe(Subscribed_Sensor * s) {
+        _subscribed_sensors.remove(&(s->_link));
+        if(auto evt = s->_event)
+            unschedule(evt);
+    }
 };
 
 __END_SYS

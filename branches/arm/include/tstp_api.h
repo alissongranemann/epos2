@@ -47,16 +47,19 @@ public:
     };
 
     enum RESPONSE_MODE {
-        SINGLE = 0,
-        ALL = 1,
+        SINGLE_TIME_TRIGGERED = 0,
+        ALL_TIME_TRIGGERED = 1,
+        SINGLE_EVENT_DRIVEN = 2,
+        ALL_EVENT_DRIVEN = 3,
     };
 
     class Header
     {
+        static const unsigned char DEFAULT_CFG = (3 << 2) | (3);
     public:
-        Header() { }
-        Header(const MESSAGE_TYPE & t) : _cfg(t << 5) {}
-        Header(const MESSAGE_TYPE & t, const Local_Address & origin, const Time & deadline) : _cfg((t << 5)), _last_hop_address(origin), _last_hop_time(0), _origin_address(origin), _origin_time(0), _deadline(deadline) { }
+        Header() : _cfg(DEFAULT_CFG) { }
+        Header(const MESSAGE_TYPE & t) : _cfg((t << 5) | (DEFAULT_CFG)) {}
+        Header(const MESSAGE_TYPE & t, const Local_Address & origin, const Time & deadline) : _cfg((t << 5) | (DEFAULT_CFG)), _last_hop_address(origin), _last_hop_time(0), _origin_address(origin), _origin_time(0), _deadline(deadline) { }
 
         MESSAGE_TYPE message_type() const { return static_cast<MESSAGE_TYPE>(_cfg >> 5); }
         void message_type(const MESSAGE_TYPE & t) {
@@ -107,15 +110,11 @@ public:
         }
 
     private:
-        union {
-            unsigned char _cfg;
-            struct {
-                unsigned char _message_type : 3;
-                unsigned char _time_request : 1;
-                unsigned char _spatial_scale : 2;
-                unsigned char _temporal_scale : 2;
-            }__attribute__((packed));
-        }__attribute__((packed));
+        unsigned char _cfg;
+            //unsigned char _message_type : 3;
+            //unsigned char _time_request : 1;
+            //unsigned char _spatial_scale : 2;
+            //unsigned char _temporal_scale : 2;
         //unsigned _location_confidence : 8;
         Local_Address _last_hop_address;
         Time _last_hop_time;
@@ -151,21 +150,25 @@ public:
                 const Time & t0, const Time & t_end, const Time & period, const Unit unit, 
                 const RESPONSE_MODE & response_mode, const Error & max_error) : 
             Header(TYPE, origin, deadline), _destination(destination), _t0(t0), _t_end(t_end), 
-            _period(period), _unit(unit),  _response_mode(response_mode), _error(max_error) { }
+            _period(period), _unit(unit),  _rm_err((response_mode & 3) + ((max_error << 2) & 0xff)) { }
 
-        Time t0() { return _t0; }
-        Time t_end() { return _t_end; }
-        Time period() { return _period; }
-        Unit unit() { return _unit; }
-        Error error() { return _error; }
+        Time t0() const { return _t0; }
+        Time t_end() const { return _t_end; }
+        Time period() const { return _period; }
+        Unit unit() const { return _unit; }
+        Error error() const { return (_rm_err >> 2); }
+        RESPONSE_MODE response_mode() const { return static_cast<RESPONSE_MODE>(_rm_err & 3); }
         const Remote_Address & destination() { return _destination; }
 
+        bool time_triggered() { auto r = response_mode(); return (r == ALL_TIME_TRIGGERED) or (r == SINGLE_TIME_TRIGGERED); }
+        bool event_driven() { return not time_triggered(); }
+
         friend Debug & operator<<(Debug & db, const Interest_Message & i) {
-            db << *reinterpret_cast<const Header*>(&i) << ", dst=" << i._destination << ", t0=" << i._t0 << ", tend=" << i._t_end << ", p=" << i._period << ", u=" << i._unit << ", rm=" << i._response_mode << ", err=" << i._error;
+            db << *reinterpret_cast<const Header*>(&i) << ", dst=" << i._destination << ", t0=" << i._t0 << ", tend=" << i._t_end << ", p=" << i._period << ", u=" << i._unit << ", rm_err=" << i._rm_err;
             return db;
         }
         friend OStream & operator<<(OStream & os, const Interest_Message & i) {
-            os << *reinterpret_cast<const Header*>(&i) << ", dst=" << i._destination << ", t0=" << i._t0 << ", tend=" << i._t_end << ", p=" << i._period << ", u=" << i._unit << ", rm=" << i._response_mode << ", err=" << i._error;
+            os << *reinterpret_cast<const Header*>(&i) << ", dst=" << i._destination << ", t0=" << i._t0 << ", tend=" << i._t_end << ", p=" << i._period << ", u=" << i._unit << ", rm_err=" << i._rm_err;
             return os;
         }
     private:
@@ -174,17 +177,8 @@ public:
         Time _t_end;
         Time _period;
         Unit _unit;
-        unsigned _response_mode : 1;
-        unsigned _error : 7;
+        unsigned char _rm_err; // error : 6; response_mode : 2;
     }__attribute__((packed));
-
-    class Buffer;
-    class Scheduled_Message {
-        Message_ID _id;
-        Frame * _frame;
-        Buffer * _buffer;
-        Alarm * _alarm;
-    };
 
     //typedef _UTIL::Buffer<TSTP, Frame, Scheduled_Message> Buffer;
     typedef _UTIL::Buffer<TSTP, Frame> Buffer;

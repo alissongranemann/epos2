@@ -11,14 +11,17 @@
 
 using namespace EPOS;
 
+TSTP * tstp;
+RFID_1 Wiegand::id; // TODO: unit
+
 //OStream cout;
 
 //GPIO * led;
 
-//GPIO * relay[6];
-GPIO * input[6];
+//GPIO * relay[7];
+GPIO * input[7];
 
-Wiegand * wie[3];
+Wiegand * wie[4];
 
 GPIO wiegand0d0('a',4,GPIO::INPUT);
 GPIO wiegand0d1('a',6,GPIO::INPUT);
@@ -29,13 +32,12 @@ GPIO wiegand2d1('c',6,GPIO::INPUT);
 GPIO wiegand3d0('b',1,GPIO::INPUT);
 GPIO wiegand3d1('b',3,GPIO::INPUT);
 
-char lastmessage[5];
+char lastmessage[6];
 
-
-
-TSTP::Door_State ds1;
-TSTP::ID_Code id;
-
+Door_State_1 door_1;
+Door_State_2 door_2;
+Door_State_3 door_3;
+Door_State_4 door_4;
 
 void handlerwiegand0d0(GPIO * pin) //handler for the zeroes from the wiegand0.
 {
@@ -91,7 +93,9 @@ void handlerinput0(GPIO * pin) //handler for the input0
 void handlerinput1(GPIO * pin) //handler for the input1
 {
     led->set(true);
-    ds1 = pin->read();
+    bool val = pin->read();
+    door_1 = val;
+    tstp->event(door_1);
     eMote3_GPTM::delay(500000);
     led->set(false);
 }
@@ -99,47 +103,47 @@ void handlerinput1(GPIO * pin) //handler for the input1
 void handlerinput2(GPIO * pin) //handler for the input2
 {
     relay[3]->set(true);
-    messagemount('R', 3, 'W', 1);
+    //messagemount('R', 3, 'W', 1);
     eMote3_GPTM::delay(500000);
     relay[3]->set(false);
-    messagemount('R', 3, 'W', 0);
+    //messagemount('R', 3, 'W', 0);
 }
 
 void handlerinput3(GPIO * pin) //handler for the input3
 {
     relay[4]->set(true);
-    messagemount('R', 4, 'W', 1);
+    //messagemount('R', 4, 'W', 1);
     eMote3_GPTM::delay(500000);
     relay[4]->set(false);
-    messagemount('R', 4, 'W', 0);
+    //messagemount('R', 4, 'W', 0);
 }
 
 void handlerinput4(GPIO * pin) //handler for the input4
 {
     relay[5]->set(true);
-    messagemount('R', 5, 'W', 1);
+    //messagemount('R', 5, 'W', 1);
     eMote3_GPTM::delay(500000);
     relay[5]->set(false);
-    messagemount('R', 5, 'W', 0);
+    //messagemount('R', 5, 'W', 0);
 }
 
 void handlerinput5(GPIO * pin) //handler for the input5
 {
     relay[6]->set(true);
-    messagemount('R', 6, 'W', 1);
+    //messagemount('R', 6, 'W', 1);
     eMote3_GPTM::delay(500000);
     relay[6]->set(false);
-    messagemount('R', 6, 'W', 0);
+    //messagemount('R', 6, 'W', 0);
 }
 
 
 void handlerinput6(GPIO * pin) //handler for the input6
 {
     relay[7]->set(true);
-    messagemount('R', '7', 'W', 1);
+    //messagemount('R', '7', 'W', 1);
     eMote3_GPTM::delay(500000);
     relay[7]->set(false);
-    messagemount('R', '7', 'W', 0);
+    //messagemount('R', '7', 'W', 0);
 }
 
 void create_interrupts()
@@ -197,6 +201,14 @@ void create_interrupts()
 }*/
 
 int main () {
+    Network::init();
+    tstp = TSTP::get_by_nic(0);
+    if(!tstp) {
+        while(1) {
+            cout << "Waaaahhh" << endl;
+        }
+    }
+
     led = new GPIO('c',3, GPIO::OUTPUT);
     //begin at [1] because of khomp standards
 
@@ -228,10 +240,7 @@ int main () {
     for (int j=0; j<7;j++)
         input[j]->clear();
 
-    Network::init();
-    TSTP * tstp = TSTP::get_by_nic(0);
-
-    TSTP::Sensor s1(tstp, &ds1, 0, 0, 0);
+    TSTP::Sensor s1(tstp, &door_1, 0, 0, 0);
     TSTP::Sensor s2(tstp, &wie[0]->id, 0, 0, 0);
     TSTP::Sensor s3(tstp, &wie[1]->id, 0, 0, 0);
     TSTP::Sensor s4(tstp, &wie[2]->id, 0, 0, 0);

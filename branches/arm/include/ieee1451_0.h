@@ -89,7 +89,7 @@ public:
         struct CODE { 
             typedef UNITS::UNIT_CODE_T UNIT_CODE_T;
             static const UNIT_CODE_T UNIT_CODE = C;
-            static const unsigned int DATA_SIZE = 4;
+            static const unsigned int DATUM_SIZE = 4;
         };
 
         struct METER : public CODE<0xA000ull> { };
