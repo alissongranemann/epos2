@@ -3,25 +3,21 @@
 #include <utility/ostream.h>
 #include <utility/random.h>
 #include <network.h>
+#include <wiegand.h>
 
 using namespace EPOS;
 
 OStream cout;
 TSTP * tstp;
 
-template<unsigned int DEVICE>
-class Door_State : public TSTP::User_Unit<1000 + DEVICE, 1> { };
-template<unsigned int DEVICE>
-class RFID : public TSTP::User_Unit<2000 + DEVICE, 3> { };
-
-Door_State<1> door_1;
-Door_State<2> door_2;
-Door_State<3> door_3;
-Door_State<4> door_4;
-RFID<1> rfid_1;
-RFID<2> rfid_2;
-RFID<3> rfid_3;
-RFID<4> rfid_4;
+Wiegand::Door_State_1 door_1;
+Wiegand::Door_State_2 door_2;
+Wiegand::Door_State_3 door_3;
+Wiegand::Door_State_4 door_4;
+Wiegand::RFID_1 rfid_1;
+Wiegand::RFID_2 rfid_2;
+Wiegand::RFID_3 rfid_3;
+Wiegand::RFID_4 rfid_4;
 
 TSTP::Meter m;
 
@@ -31,8 +27,7 @@ void hello_sensor(TSTP::Sensor * s)
 {
     cout << "Measuring!" << endl;
     cout << "measurement = " << val << endl;
-    m = val++;
-    cout << "m = " << (unsigned int)m << endl;
+    cout << "m = " << *(m.data<unsigned int>()) << endl;
     cout << "now = " << s->tstp()->time() << endl;
 }
 
@@ -62,12 +57,26 @@ void init()
 
 void sensor()
 {
-    auto s = new TSTP::Sensor(tstp, &m, 0, 0, 0, &hello_sensor);
-    cout << *reinterpret_cast<TSTP::Data_Message*>(s) << endl;
-    User_Timer_0::delay(50000000);
-    m = 1337;
-    cout << "Eveeeeeeeent!" << endl;
-    tstp->event(m);
+    auto id1 = new TSTP::Sensor(tstp, &rfid_1, 0, 0, 0);
+    auto ds1 = new TSTP::Sensor(tstp, &door_1, 0, 0, 0);
+    for(int i = 0; ; i++) {
+        Alarm::delay(2000000);
+        auto d = rfid_1.data<Wiegand::ID_Code_Msg>();
+        d->facility = i++;
+        d->serial = i++;
+        auto val = door_1.data<bool>();
+        *val = !(*val);
+
+        cout << "Event!" << endl; 
+        cout << "facility = " << d->facility << endl;
+        cout << "serial = " << d->serial << endl;
+        cout << "door_1 = " << *val << endl;
+        cout << "time = " << tstp->time() << endl;
+
+        tstp->event(rfid_1);
+
+        tstp->event(door_1);
+    }
 }
 
 int main()

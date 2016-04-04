@@ -16,6 +16,8 @@ __BEGIN_SYS
 eMote3_IEEE802_15_4::Device eMote3_IEEE802_15_4::_devices[UNITS];
 
 IC::Interrupt_Handler MAC_Timer::_user_handler;
+CPU::Reg32 MAC_Timer::_overflow_count_overflow;
+CPU::Reg32 MAC_Timer::_int_overflow_count_overflow;
 
 // Methods
 eMote3_IEEE802_15_4::~eMote3_IEEE802_15_4()

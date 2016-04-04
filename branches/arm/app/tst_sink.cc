@@ -3,42 +3,40 @@
 #include <utility/ostream.h>
 #include <utility/random.h>
 #include <network.h>
+#include <wiegand.h>
 
 using namespace EPOS;
 
 OStream cout;
 TSTP * tstp;
 
-template<unsigned int DEVICE>
-class Door_State : public TSTP::User_Unit<1000 + DEVICE, 1> { };
-template<unsigned int DEVICE>
-class RFID : public TSTP::User_Unit<2000 + DEVICE, 3> { };
-
-Door_State<1> door_1;
-Door_State<2> door_2;
-Door_State<3> door_3;
-Door_State<4> door_4;
-RFID<1> rfid_1;
-RFID<2> rfid_2;
-RFID<3> rfid_3;
-RFID<4> rfid_4;
+Wiegand::Door_State_1 door_1;
+Wiegand::Door_State_2 door_2;
+Wiegand::Door_State_3 door_3;
+Wiegand::Door_State_4 door_4;
+Wiegand::RFID_1 rfid_1;
+Wiegand::RFID_2 rfid_2;
+Wiegand::RFID_3 rfid_3;
+Wiegand::RFID_4 rfid_4;
 
 TSTP::Meter * m;
 
-void hello_sensor(TSTP::Sensor * s)
+void hello_door_state(TSTP::Interest * s)
 {
-    cout << "Measuring!" << endl;
-    unsigned int val = Random::random();
-    cout << "measurement = " << val << endl;
-    (*m) = val;
+    cout << "Received door state update!" << endl;
+//    cout << "Interest = " << *s << endl;
+    cout << "Value = " << *(s->data<bool>()) << endl;
+    cout << "Time = " << s->last_update() << endl;
     cout << "now = " << s->tstp()->time() << endl;
 }
 
-void hello_interest(TSTP::Interest * s)
+void hello_rfid(TSTP::Interest * s)
 {
-    cout << "Received update!" << endl;
+    cout << "Received rfid update!" << endl;
     cout << "Interest = " << *s << endl;
-    cout << "Value = " << *(s->data<unsigned int>()) << endl;
+    auto v = s->data<Wiegand::ID_Code_Msg>();
+    cout << "Serial = " << v->serial << endl;
+    cout << "Facility = " << v->facility << endl;
     cout << "Time = " << s->last_update() << endl;
     cout << "now = " << s->tstp()->time() << endl;
 }
@@ -58,27 +56,24 @@ void init()
     }
 }
 
-void sensor()
-{
-    m = new TSTP::Meter;
-    auto s = new TSTP::Sensor(tstp, m, 0, 0, 0, &hello_sensor);
-    cout << *reinterpret_cast<TSTP::Data_Message*>(s) << endl;
-}
-
 void interest()
 {
-    m = new TSTP::Meter;
-    auto t0 = tstp->time();
-    auto i = new TSTP::Interest(tstp, m, TSTP::Remote_Address(10, 20, 30, 20), t0 + 2000000, t0 + 60000000, 10000000, 1, TSTP::RESPONSE_MODE::SINGLE_EVENT_DRIVEN, &hello_interest);
+    while(true) {
+        auto t0 = tstp->time();
+        //auto i = new TSTP::Interest(tstp, m, TSTP::Remote_Address(10, 20, 30, 20), t0 + 2000000, t0 + 60000000, 10000000, 1, TSTP::RESPONSE_MODE::SINGLE_EVENT_DRIVEN, &hello_interest);
+        TSTP::Interest ids1(tstp, &door_1, TSTP::Remote_Address(10, 20, 30, 20), t0 + 2000000, t0 + 30000000, 3000000, 1, TSTP::RESPONSE_MODE::SINGLE_EVENT_DRIVEN, &hello_door_state);
+        TSTP::Interest irfid1(tstp, &rfid_1, TSTP::Remote_Address(10, 20, 30, 20), t0 + 2000000, t0 + 30000000, 3000000, 1, TSTP::RESPONSE_MODE::SINGLE_EVENT_DRIVEN, &hello_rfid);
 
-    cout << "Created interest: " << *i << endl;
+        cout << "Created interest: " << ids1 << endl;
+        cout << "Created interest: " << irfid1 << endl;
+        Alarm::delay(60000000);
+    }
+    while(true);
 }
 
 int main()
 {
     init();
-    //sensor();
-    //while(true);
     interest();
     while(true);
 

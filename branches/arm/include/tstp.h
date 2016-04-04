@@ -27,9 +27,10 @@ public:
 private:
     class Subscribed_Sensor;
 
-    typedef Hash<Interest, Traits<TSTP>::MAX_INTERESTS, unsigned long long> Interests;
-    typedef Hash<Sensor, Traits<TSTP>::MAX_SENSORS, unsigned long long> Sensors;
-    typedef Hash<Subscribed_Sensor, Traits<TSTP>::MAX_INTERESTS, int> Subscribed_Sensors;
+
+    typedef Simple_List<Interest> Interests;
+    typedef Simple_List<Sensor> Sensors;
+    typedef Simple_List<Subscribed_Sensor> Subscribed_Sensors;
 
 public:
     typedef TSTP_API API;
@@ -40,11 +41,7 @@ public:
         static const typename U::UNIT_CODE_T UNIT = U::UNIT_CODE;
         static const unsigned int DATUM_SIZE = U::DATUM_SIZE;
         template<typename T = char>
-        T * data() { return reinterpret_cast<T*>(&_data); }
-        template<typename T>
-        T & operator=(const T& rhs) { auto ptr = data<T>(); (*ptr) = rhs; return *ptr; }
-        template<typename T>
-        operator T&() { return *(data<T>()); }
+        volatile T * data() { return reinterpret_cast<volatile T*>(&_data); }
     private:
         char _data[DATUM_SIZE];
     };
@@ -57,11 +54,7 @@ public:
         static const unsigned int DATUM_SIZE = SIZE_OF_DATUM;
 
         template<typename T = char>
-        T * data() { return reinterpret_cast<T*>(&_data); }
-        template<typename T>
-        T & operator=(const T& rhs) { auto ptr = data<T>(); (*ptr) = rhs; return *ptr; }
-        template<typename T>
-        operator T&() { return *(data<T>()); }
+        volatile T * data() { return reinterpret_cast<volatile T*>(&_data); }
     private:
         char _data[DATUM_SIZE];
     };
@@ -77,7 +70,7 @@ public:
         Interest(TSTP * tstp, DATUM * data, const Remote_Address & destination, const Time & t0, const Time & t_end,
                 const Time & period, const Error & max_error, const RESPONSE_MODE & response_mode, const Handler * update_handler = 0, const Handler * period_handler = 0) :
             Interest_Message(tstp->_router->my_address(), t0, destination, t0, t_end, period, DATUM::UNIT, response_mode, max_error),
-            _tstp(tstp), _data(data->data()), _last_update(0), _update_handler(update_handler), _period_handler(period_handler), _period_functor(period_handler, this), _link(this, DATUM::UNIT), _event(0)
+            _tstp(tstp), _data(const_cast<char*>(data->data())), _last_update(0), _update_handler(update_handler), _period_handler(period_handler), _period_functor(period_handler, this), _link(this), _event(0)
         {
             _tstp->add_interest(this);
         }
@@ -132,8 +125,8 @@ public:
 
         template<typename DATUM>
         Sensor(TSTP * tstp, DATUM * data, const Error & error, const Time & time_to_measure, const Time & time_between_measurements, Handler * measure = 0) :
-            Data_Message(DATUM::UNIT), _data(data->data()), _size_of_data(DATUM::DATUM_SIZE), _handler(measure), _error(error), _time_to_measure(time_to_measure), 
-            _cooldown(time_between_measurements), _last_measurement(0), _tstp(tstp), _link(this, DATUM::UNIT) {
+            Data_Message(DATUM::UNIT), _data(const_cast<char*>(data->data())), _size_of_data(DATUM::DATUM_SIZE), _handler(measure), _error(error), _time_to_measure(time_to_measure), 
+            _cooldown(time_between_measurements), _last_measurement(0), _tstp(tstp), _link(this) {
             _tstp->add_sensor(this);
         }
 
@@ -143,8 +136,8 @@ public:
 
         TSTP * tstp() { return _tstp; }
 
-        template<typename T> 
-        T* data() { return reinterpret_cast<T*>(_data); }
+        template<typename T = char> 
+        volatile T* data() { return reinterpret_cast<volatile T*>(_data); }
 
         unsigned int size_of_data() const { return _size_of_data; }
         const Time & time_to_measure() const { return _time_to_measure; }
@@ -206,11 +199,12 @@ public:
         db<TSTP>(TRC) << "key = " << reinterpret_cast<int>(data.data()) << endl;
 
         auto t = time();
-        auto k = reinterpret_cast<int>(data.data());
-        for(auto el = _subscribed_sensors.search_key(k); el; el = el->next()) {
-            if(el->key() == k) {
+        auto k = data.data();
+        for(auto el = _subscribed_sensors.begin(); el != _subscribed_sensors.end(); el++) {
+            auto ss = el->object();
+            if(ss->_sensor->data<>() == k) {
                 db<TSTP>(TRC) << "found subscribed sensor = " << el << endl;
-                el->object()->event(t);
+                ss->event(t);
             }
         }
     }
@@ -263,7 +257,7 @@ public:
 private:
     class Subscribed_Sensor : public Handler {
     public:
-        Subscribed_Sensor(Sensor * s, Interest_Message * i) : _sensor(s), _period(i->period()), _t_end(i->t_end()), _last_send(0), _event(0), _event_driven(i->event_driven()), _link(this, reinterpret_cast<int>(s->data<char>())) {
+        Subscribed_Sensor(Sensor * s, Interest_Message * i) : _sensor(s), _period(i->period()), _t_end(i->t_end()), _last_send(0), _event(0), _event_driven(i->event_driven()), _link(this) {
             db<TSTP>(TRC) << "Subscribed_Sensor() => " << reinterpret_cast<void*>(this) << endl;
             db<TSTP>(TRC) << "key = " << reinterpret_cast<int>(s->data<char>()) << endl;
         }
@@ -282,34 +276,40 @@ private:
             db<TSTP>(TRC) << "t=" << t << endl;
             db<TSTP>(TRC) << "_last_send=" << _last_send << endl;
             db<TSTP>(TRC) << "period()=" << period() << endl;
-            if(t - _last_send >= period()) {
+            if((t - _last_send >= period()) and (t - _sensor->last_measurement() >= _sensor->cooldown())) {
                 auto sz = _sensor->periodic_update();
                 db<TSTP>(TRC) << "sz=" << sz << endl;
                 if(sz > 0) {
+                    const auto t = tstp()->time();
                     _sensor->deadline(t + _period);
                     tstp()->send(reinterpret_cast<Data_Message*>(_sensor), sizeof(Data_Message) - MAX_DATA_SIZE + sz);
                     _last_send = t;
                 }
                 if(t + period() >= t_end()) {
+                    tstp()->unsubscribe(this);
                     delete this;
                 }
             }
         }
 
         void event(const Time & when) {
-            db<TSTP>(TRC) << "Subscribed_Sensor::event(when" << when <<")"<< endl;
+            db<TSTP>(TRC) << "Subscribed_Sensor::event(when = " << when <<")"<< endl;
             db<TSTP>(TRC) << "_event_driven = " << _event_driven << endl;
             if(_event_driven) {
-                auto sz = _sensor->event(when);
-                if(when < _t_end) {
+                if(when >= _t_end) {
+                    tstp()->unsubscribe(this);
+                    delete this;
+                } else {
+                    auto sz = _sensor->event(when);
                     if(sz > 0) {
                         _sensor->deadline(when + _period);
                         tstp()->send(reinterpret_cast<Data_Message*>(_sensor), sizeof(Data_Message) - MAX_DATA_SIZE + sz);
                         _last_send = when;
                     }
+                    if(_event) {
+                        tstp()->reschedule(_event, tstp()->time() + _period);
+                    }
                 }
-                if(_event)
-                    tstp()->reschedule(_event, tstp()->time() + _period);
             }
         }
 
@@ -351,12 +351,11 @@ private:
     }
     void remove_sensor(Sensor * s) {
         _sensors.remove(s);
-        auto k = reinterpret_cast<int>(s->data<char>());
-        auto el = _subscribed_sensors.search_key(k);
+        auto el = _subscribed_sensors.head();
         Subscribed_Sensors::Element * next;
         for(; el; el = next) {
             next = el->next();
-            if(el->key() == k) {
+            if(el->object()->_sensor == s) {
                 _subscribed_sensors.remove(el);
                 if(el->object()->_event) unschedule(el->object()->_event);
                 delete el->object();
@@ -377,35 +376,29 @@ public:
         schedule(event);
         return event;
     }
-    bool unschedule(Event * e) {
+    void unschedule(Event * e) {
         auto old_head = _event_schedule.head();
-        auto ret = _event_schedule.remove(&(e->_link));
-        if(ret) {
-            auto new_head = _event_schedule.head();
-            if(!new_head) {
-                _time->cancel_interrupt();
-                _next_event = 0;
-            } else if(old_head != new_head) {
-                _next_event = new_head->object();
-                _time->interrupt(new_head->rank());
-            }
-            delete e;
+        _event_schedule.remove(&(e->_link));
+        auto new_head = _event_schedule.head();
+        if(!new_head) {
+            _time->cancel_interrupt();
+        } else if(old_head != new_head) {
+            _time->interrupt(new_head->rank());
         }
-        return ret;
+        delete e;
     }
-    bool reschedule(Event * e, const Time & when) {
+    void reschedule(Event * e, const Time & when) {
         auto old_head = _event_schedule.head();
-        auto ret = _event_schedule.remove(&(e->_link));
-        if(ret) {
-            ret->rank(when);
-            _event_schedule.insert(ret);
-            auto new_head = _event_schedule.head();
-            if((old_head == ret) or (new_head != old_head)) {
-                _next_event = new_head->object();
-                _time->interrupt(new_head->rank());
-            }
+        auto link = &(e->_link);
+        _event_schedule.remove(link);        
+        link->rank(when);
+        _event_schedule.insert(link);
+        auto new_head = _event_schedule.head();
+        if((old_head == link) or (new_head != old_head)) {
+            _time->interrupt(new_head->rank());
+            db<TSTP>(TRC) << "new head!" << endl;
         }
-        return ret;
+        db<TSTP>(TRC) << "TSTP::reschedule(event = " << e << ",when = " << when << ")" << endl;
     }
 
 private:
@@ -415,24 +408,25 @@ private:
         _event_schedule.insert(&(event->_link));
         auto new_head = _event_schedule.head();
         if(old_head != new_head) {
-            _next_event = new_head->object();
             _time->interrupt(new_head->rank());
         }
     }
 
-    Event * _next_event;
-
     // Called by time manager interrupt
     void process_event() {
-        db<TSTP>(TRC) << "TSTP::process_event() : " << reinterpret_cast<void *>(_next_event) << endl;
+        db<TSTP>(TRC) << "TSTP::process_event()" << endl;
         auto t = time();
-        auto el = _event_schedule.remove(&_next_event->_link);
-        (*_next_event)();
+        auto el = _event_schedule.remove_head();
+        if(not el) {
+            return;
+        }
+        auto event = el->object();
+        (*event)();
         db<TSTP>(TRC) << "TSTP::process_event : el=" << reinterpret_cast<void *>(el) << endl;
         if(el) {
-            auto next_t = t + el->object()->period;
-            if(next_t >= el->object()->end) {
-                delete el->object();
+            auto next_t = t + event->period;
+            if(next_t >= event->end) {
+                delete event;
             }
             else {
                 el->rank(next_t);
@@ -441,7 +435,6 @@ private:
         }
         el = _event_schedule.head();
         if(el) {
-            _next_event = el->object();
             _time->interrupt(el->rank());
         }
     }
@@ -461,9 +454,9 @@ private:
         _time->update_interest(reinterpret_cast<char *>(interest));
         db<TSTP>(TRC) << "TSTP::update: Interest " << (*interest) << endl;
         auto k = interest->unit();
-        for(auto el = _sensors.search_key(k); el; el = el->next()) {
-            if(el->key() == k) {
-                auto sensor = el->object();
+        for(auto el = _sensors.begin(); el != _sensors.end(); el++) {
+            auto sensor = el->object();
+            if(sensor->unit() == k) {
                 if((sensor->period() < interest->period()) and (sensor->error() <= interest->error())) {
                     db<TSTP>(TRC) << "Found sensor " << reinterpret_cast<void *>(sensor) << endl;
                     subscribe(sensor, interest);
@@ -475,12 +468,19 @@ private:
         _time->update_data(reinterpret_cast<char *>(data));
         db<TSTP>(TRC) << "TSTP::update: Data " << (*data) << ", sz= " << size << endl;
         auto k = data->unit();
-        for(auto el = _interests.search_key(k); el; el = el->next()) {
-            if(el->key() == k) {
-                auto interest = el->object();
-                if((interest->last_update() < data->origin_time()) and (_router->accept(interest->destination(), data->origin_address()))) {
-                    db<TSTP>(TRC) << "Found interest " << (*interest) << endl;
-                    interest->update(data->data(), size - (sizeof(Data_Message) - MAX_DATA_SIZE), data->origin_time());
+        db<TSTP>(TRC) << "TSTP::update: unit = " << k << endl;
+        for(auto el = _interests.begin(); el != _interests.end(); el++) {
+            auto interest = el->object();
+            db<TSTP>(TRC) << "key = " << interest->unit() << endl;
+            if(interest->unit() == k) {
+                db<TSTP>(TRC) << "TSTP::update: key is equal" << endl;
+                db<TSTP>(TRC) << "Interest: " << (*interest) << endl;
+                if((interest->last_update() < data->origin_time())) {
+                    db<TSTP>(TRC) << "last_update < origin_time " << endl;
+                    if (_router->accept(interest->destination(), data->origin_address())) {
+                        db<TSTP>(TRC) << "Found valid interest " << (*interest) << endl;
+                        interest->update(data->data(), size - (sizeof(Data_Message) - MAX_DATA_SIZE), data->origin_time());
+                    }
                 }
             }
         }

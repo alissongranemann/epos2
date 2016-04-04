@@ -61,7 +61,7 @@ public:
         Header(const MESSAGE_TYPE & t) : _cfg((t << 5) | (DEFAULT_CFG)) {}
         Header(const MESSAGE_TYPE & t, const Local_Address & origin, const Time & deadline) : _cfg((t << 5) | (DEFAULT_CFG)), _last_hop_address(origin), _last_hop_time(0), _origin_address(origin), _origin_time(0), _deadline(deadline) { }
 
-        MESSAGE_TYPE message_type() const { return static_cast<MESSAGE_TYPE>(_cfg >> 5); }
+        unsigned char message_type() const { return _cfg >> 5; }
         void message_type(const MESSAGE_TYPE & t) {
             unsigned char tmp = _cfg & ~(7 << 5);
             _cfg = tmp | ((t & 7) << 5);

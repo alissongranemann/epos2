@@ -5,6 +5,7 @@ __BEGIN_SYS
 
 template<>
 One_Hop_MAC::One_Hop_MAC(CC2538_PHY * phy, DMA_Buffer * dma_buf) : _rx_cur(0), _tx_cur(0), _phy(phy) { // TODO: Polymorphic PHY
+    db<One_Hop_MAC>(TRC) << "One_Hop_MAC::One_Hop_MAC(phy = " << phy << ", dma = " << dma_buf << ")" << endl;
     assert(MTU <= CC2538_PHY::MTU);
 
     auto log = dma_buf->log_address();
@@ -24,6 +25,7 @@ One_Hop_MAC::One_Hop_MAC(CC2538_PHY * phy, DMA_Buffer * dma_buf) : _rx_cur(0), _
 template<>
 void TSTP::MAC::init<CC2538_PHY>(unsigned int unit)
 {
+    db<TSTP::MAC>(TRC) << "TSTP::MAC::init<CC2538_PHY>(unit = " << unit << ")" << endl;
     IO_Irq irq = 26;
     DMA_Buffer * dma_buf = new (SYSTEM) DMA_Buffer(DMA_BUFFER_SIZE);
     CC2538_PHY * phy = new (SYSTEM) CC2538_PHY();

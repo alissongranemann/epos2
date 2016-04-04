@@ -22,7 +22,7 @@ class PTS
     bool bootstrap();
 
 public:
-    typedef int Time;
+    typedef long long Time;
 
     void frame_reception() { _t1 = time_now(); }
 
@@ -45,7 +45,7 @@ private:
     }
 
     void update_interest(char * header);
-    void update_data(char * header) { 
+    void update_data(char * header) {
         if(not Traits<TSTP>::is_sink) {
             do_update_data(header); 
         }

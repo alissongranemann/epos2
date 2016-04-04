@@ -2,6 +2,7 @@
 #define __cortex_m_gpio_h_
 
 #include <machine.h>
+#include <utility/handler.h>
 
 __BEGIN_SYS
 
@@ -21,8 +22,6 @@ public:
         INPUT = 0,
         OUTPUT,
     };
-
-    typedef void (*GPIO_Handler)(Cortex_M_GPIO * pin);
 
     Cortex_M_GPIO(char port_letter, int pin_number, Direction dir) :
         _pin_bit(1 << pin_number),
@@ -62,21 +61,21 @@ public:
     void pull_down() { GPIO_pull_down(_port, _pin_number); }
 
     // Disable interrupts for this pin
-    void disable_interrupt();
+    void disable_interrupt() { gpio(_port, IM) &= ~_pin_bit; }
 
     // Enable interrupts for this pin
-    void enable_interrupt(Edge e, GPIO_Handler h, bool power_up = false, Edge power_up_edge = RISING_EDGE);
+    void enable_interrupt(Edge e, Handler * h, bool power_up = false, Edge power_up_edge = RISING_EDGE);
 
-    //void enable_interrupt(Level l, GPIO_Handler * h); // TODO
+    //void enable_interrupt(Level l, Handler * h); // TODO
 
 private:
-    GPIO_Handler _user_handler;
+    Handler * _user_handler;
 
     static Cortex_M_GPIO * requester_pin[GPIO_PORTS][8];
     static void gpio_int_handler(const unsigned int & int_number);
     
     // Cleared automatically by the handler
-    void clear_interrupt() { 
+    void clear_interrupt() {
         gpio(_port, ICR) = _pin_bit; 
         gpio(_port, IRQ_DETECT_ACK) &= ~(_pin_bit << (8*_port));
     }

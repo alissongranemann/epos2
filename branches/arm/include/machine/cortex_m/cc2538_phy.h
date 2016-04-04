@@ -216,22 +216,22 @@ class MAC_Timer
     typedef CPU::Reg8 Reg8;
     typedef CPU::Reg16 Reg16;
     typedef CPU::Reg32 Reg32;
-    typedef Reg32 Microsecond;
 
     const static unsigned int CLOCK = 32 * 1000 * 1000; // 32MHz
 
     public:
     static unsigned int frequency() { return CLOCK; }
 
-    class Timestamp;
-    static Timestamp us_to_ts(Microsecond us) { return us * (frequency() / 1000000); }
-    static Microsecond ts_to_us(Reg32 ts) { return ts / (frequency() / 1000000); }
+    typedef long long Timestamp;
+    typedef Timestamp Microsecond;
+
+    static Timestamp us_to_ts(Microsecond us) { return us * static_cast<Timestamp>(frequency() / 1000000); }
+    static Microsecond ts_to_us(Timestamp ts) { return ts / static_cast<Timestamp>((frequency() / 1000000)); }
     static Microsecond read() { return ts_to_us(read_ts()); }
     static void set(Microsecond time) { set_ts(us_to_ts(time)); }
 
     private:
-    enum
-    {
+    enum {
         MAC_TIMER_BASE = 0x40088800,
     };
 
@@ -303,20 +303,22 @@ public:
         int_disable();
         _user_handler = h;
         reg(MSEL) = (OVERFLOW_COMPARE1 * MSEL_MTMOVFSEL) | (TIMER_COMPARE1 * MSEL_MTMSEL);
-        reg(M0) = when.timer_count;
-        reg(M1) = when.timer_count >> 8;
-        reg(MOVF0) = when.overflow_count;
-        reg(MOVF1) = when.overflow_count >> 8;
-        reg(MOVF2) = when.overflow_count >> 16;
+        reg(M0) = when;
+        reg(M1) = when >> 8;
+        reg(MOVF0) = when >> 16;
+        reg(MOVF1) = when >> 24;
+        reg(MOVF2) = when >> 32;
+        _int_overflow_count_overflow = when >> 40ll;
 
         int_clear();
+        int_enable(INT_OVERFLOW_PER);
         Timestamp now = read_ts();
-        if(when.overflow_count > now.overflow_count) {
-            int_enable(INT_OVERFLOW_COMPARE1);
-        } else if(when.timer_count > now.timer_count) {
-            int_enable(INT_COMPARE1);
-        } else {
+        if(when <= now) {
             _user_handler(49);
+        } else if((when >> 16ll) > (now >> 16ll)) {
+            int_enable(INT_OVERFLOW_COMPARE1);
+        } else if(when > now) {
+            int_enable(INT_COMPARE1);
         }
     }
 
@@ -327,17 +329,28 @@ public:
         reg(IRQM) = 0;
     }
     static void int_enable(const Reg32 & interrupt) {
+        reg(IRQM) |= interrupt;
+    }
+    static void int_set(const Reg32 & interrupt) {
         reg(IRQM) = interrupt;
     }
 
 private:
-    static void interrupt_handler(const unsigned int & interrupt) {        
-        if(reg(IRQF) & INT_OVERFLOW_COMPARE1) {
-            int_clear();
+    static void interrupt_handler(const unsigned int & interrupt) {
+        Reg32 ints = reg(IRQF);
+        int_clear();
+        if(ints & INT_OVERFLOW_PER) {
+            _overflow_count_overflow++;
+            if(_int_overflow_count_overflow == _overflow_count_overflow) {
+                int_enable(INT_OVERFLOW_COMPARE1);
+            }
+        }
+        if(ints & INT_OVERFLOW_COMPARE1) {
             int_enable(INT_COMPARE1);
-        } else {
-            int_disable();
-            int_clear();
+            kout << "MAC_Timer::interrupt_handler 0" << endl;
+        } else if(ints & INT_COMPARE1) {
+            int_set(INT_OVERFLOW_COMPARE1);
+            kout << "MAC_Timer::interrupt_handler 1" << endl;
             _user_handler(interrupt);
         }
     }
@@ -346,33 +359,25 @@ protected:
     static IC::Interrupt_Handler _user_handler;
 
     static volatile Reg32 & reg (unsigned int offset) { return *(reinterpret_cast<volatile Reg32*>(MAC_TIMER_BASE + offset)); }
+    
+    static Reg32 _overflow_count_overflow;
+    static Reg32 _int_overflow_count_overflow;
 
 public:
-    struct Timestamp {
-        Timestamp() : overflow_count(0), timer_count(0) {}
-        Timestamp(unsigned int val) : overflow_count(val >> 16), timer_count(val) {}
-        Timestamp(Reg32 of, Reg16 ti) : overflow_count(of), timer_count(ti) {}
-
-        Reg32 overflow_count;
-        Reg16 timer_count;
-
-        operator Reg32() { return (overflow_count << 16) + timer_count; }
-    } __attribute__((packed));
 
     static Timestamp read_ts() {
         //Reg32 index = reg(MSEL);
         reg(MSEL) = (OVERFLOW_COUNTER * MSEL_MTMOVFSEL) | (TIMER_COUNTER * MSEL_MTMSEL);
 
-        Reg16 timer_count = reg(M0); // M0 must be read first
-        timer_count += reg(M1) << 8;
-
-        Reg32 overflow_count = reg(MOVF2) << 16;
-        overflow_count += (reg(MOVF1) << 8);
-        overflow_count += reg(MOVF0);
+        Timestamp ts = reg(M0); // M0 must be read first
+        ts += reg(M1) << 8;
+        ts += static_cast<long long>(reg(MOVF2)) << 32ll;
+        ts += static_cast<long long>(reg(MOVF1)) << 24ll;
+        ts += static_cast<long long>(reg(MOVF0)) << 16ll;
+        ts += static_cast<long long>(_overflow_count_overflow) << 40ll;
 
         //reg(MSEL) = index;
-
-        return Timestamp(overflow_count, timer_count);
+        return ts;
     }
 
     static void set_ts(const Timestamp & t) {
@@ -381,12 +386,13 @@ public:
         //Reg32 index = reg(MSEL);
         reg(MSEL) = (OVERFLOW_COUNTER * MSEL_MTMOVFSEL) | (TIMER_COUNTER * MSEL_MTMSEL);
 
-        reg(MOVF0) = t.overflow_count;
-        reg(MOVF1) = t.overflow_count >> 8;
-        reg(MOVF2) = t.overflow_count >> 16; // MOVF2 must be written last
+        reg(MOVF0) = t >> 16ll;
+        reg(MOVF1) = t >> 24ll;
+        reg(MOVF2) = t >> 32ll; // MOVF2 must be written last
+        _overflow_count_overflow = t >> 40ll;
 
-        reg(M0) = t.timer_count; // M0 must be written first
-        reg(M1) = t.timer_count >> 8;
+        reg(M0) = t; // M0 must be written first
+        reg(M1) = t >> 8ll;
 
         //reg(MSEL) = index;
         if(r) start();
@@ -401,6 +407,7 @@ public:
         reg(CTRL) |= CTRL_LATCH_MODE; // count and overflow will be latched at once
         IC::int_vector(49, &interrupt_handler);
         IC::enable(33);
+        int_enable(INT_OVERFLOW_PER);
     }
 
     static void start() { reg(CTRL) |= CTRL_RUN; }
