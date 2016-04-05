@@ -42,8 +42,8 @@ template<> struct Traits<Debug>
 {
     static const bool error   = true;
     static const bool warning = true;
-    static const bool info    = true;
-    static const bool trace   = true;
+    static const bool info    = false;
+    static const bool trace   = false;
 };
 
 template<> struct Traits<Lists>: public Traits<void>
@@ -149,9 +149,9 @@ template<> struct Traits<TSTP>: public Traits<Network>
 
     template<unsigned int dummy = 0>
     struct Router_Config {
-        static const int ADDRESS_X = is_sink ? 0 : 611;
-        static const int ADDRESS_Y = is_sink ? 0 : -545;
-        static const int ADDRESS_Z = is_sink ? 0 : 52;
+        static const int ADDRESS_X = is_sink ? 0 : 200;//611;
+        static const int ADDRESS_Y = is_sink ? 0 : 100;//-545;
+        static const int ADDRESS_Z = is_sink ? 0 : 10;//52;
     };
 
     // {One_Hop_MAC};

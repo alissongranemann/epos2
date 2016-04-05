@@ -57,8 +57,10 @@ void init()
 
 void sensor()
 {
-    auto id1 = new TSTP::Sensor(tstp, &rfid_1, 0, 0, 0);
-    auto ds1 = new TSTP::Sensor(tstp, &door_1, 0, 0, 0);
+    TSTP::Sensor id1(tstp, &rfid_1, 0, 0, 0);
+    TSTP::Sensor ds1(tstp, &door_1, 0, 0, 0);
+    while(true);
+    /*
     for(int i = 0; ; i++) {
         Alarm::delay(2000000);
         auto d = rfid_1.data<Wiegand::ID_Code_Msg>();
@@ -77,6 +79,7 @@ void sensor()
 
         tstp->event(door_1);
     }
+    */
 }
 
 int main()

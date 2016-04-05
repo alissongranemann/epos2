@@ -347,10 +347,8 @@ private:
         }
         if(ints & INT_OVERFLOW_COMPARE1) {
             int_enable(INT_COMPARE1);
-            kout << "MAC_Timer::interrupt_handler 0" << endl;
         } else if(ints & INT_COMPARE1) {
             int_set(INT_OVERFLOW_COMPARE1);
-            kout << "MAC_Timer::interrupt_handler 1" << endl;
             _user_handler(interrupt);
         }
     }

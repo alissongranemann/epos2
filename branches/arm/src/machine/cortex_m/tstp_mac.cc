@@ -1,5 +1,6 @@
 #include <tstp.h>
 #include <ic.h>
+#include <timer.h>
 
 #include "../../../include/machine/cortex_m/cc2538_phy.h"
 
@@ -9,6 +10,7 @@ template <>
 void TSTP::MAC::send_frame<CC2538_PHY>(Buffer * buf) {
     db<TSTP::MAC>(TRC) << "TSTP::MAC::send_frame(buf=" << buf << ", sz=" << buf->size() << ")" << endl;
 
+    User_Timer_3::delay(50000); // TODO: replace with proper MAC
     auto t = _tstp->time();
     buf->frame()->header()->last_hop_time(t);
     buf->frame()->header()->origin_time(t);

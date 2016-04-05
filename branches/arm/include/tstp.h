@@ -87,7 +87,7 @@ public:
         template<typename T> 
         T* data(Time * last_update_time) { *last_update_time = _last_update; return reinterpret_cast<T*>(_data); }
 
-        Time last_update() { return _last_update; }
+        volatile Time last_update() { return _last_update; }
 
         friend Debug & operator<<(Debug & db, const Interest & i) {
             db << *reinterpret_cast<const Interest_Message*>(&i) << ", _dt=" << reinterpret_cast<void*>(i._data) << ", _lup=" << i._last_update << ", _uph=" << reinterpret_cast<void*>(i._update_handler) << ", _peh=" << reinterpret_cast<void*>(i._period_handler) << ", _tstp=" << reinterpret_cast<void*>(i._tstp) << ", _link=" << reinterpret_cast<const void*>(&(i._link)) << ", _evt = " << reinterpret_cast<void*>(i._event);
@@ -108,7 +108,7 @@ public:
         }
 
         char * _data;
-        Time _last_update;
+        volatile Time _last_update;
         Handler * _update_handler;
         const bool _period_handler;
         Functor_Handler<Interest> _period_functor;
@@ -142,7 +142,7 @@ public:
         unsigned int size_of_data() const { return _size_of_data; }
         const Time & time_to_measure() const { return _time_to_measure; }
         const Time & cooldown() const { return _cooldown; }
-        const Time & last_measurement() const { return _last_measurement; }
+        const volatile Time & last_measurement() const { return _last_measurement; }
         Time period() const { return _time_to_measure + _cooldown; }
         const Error & error() const { return _error; }
 
@@ -176,7 +176,7 @@ public:
         Error _error;
         Time _time_to_measure;
         Time _cooldown;
-        Time _last_measurement;
+        volatile Time _last_measurement;
         TSTP * _tstp;
         Sensors::Element _link;
     };
@@ -280,7 +280,6 @@ private:
                 auto sz = _sensor->periodic_update();
                 db<TSTP>(TRC) << "sz=" << sz << endl;
                 if(sz > 0) {
-                    const auto t = tstp()->time();
                     _sensor->deadline(t + _period);
                     tstp()->send(reinterpret_cast<Data_Message*>(_sensor), sizeof(Data_Message) - MAX_DATA_SIZE + sz);
                     _last_send = t;
@@ -316,7 +315,7 @@ private:
         Sensor * _sensor;
         const Time _period;
         const Time _t_end;
-        Time _last_send;
+        volatile Time _last_send;
         Event * _event;
         const bool _event_driven;
         Subscribed_Sensors::Element _link;
