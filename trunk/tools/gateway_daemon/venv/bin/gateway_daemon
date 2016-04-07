@@ -1,0 +1,10 @@
+#!/home/thiago/gateway_daemon/venv/bin/python
+# EASY-INSTALL-ENTRY-SCRIPT: 'gateway-daemon==0.1','console_scripts','gateway_daemon'
+__requires__ = 'gateway-daemon==0.1'
+import sys
+from pkg_resources import load_entry_point
+
+if __name__ == '__main__':
+    sys.exit(
+        load_entry_point('gateway-daemon==0.1', 'console_scripts', 'gateway_daemon')()
+    )
