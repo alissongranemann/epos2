@@ -12,7 +12,7 @@ void PTS::update_interest(char * header) {
 
 void PTS::do_update_data(char * header) {
     auto t0 = reinterpret_cast<TSTP_API::Header*>(header)->last_hop_time() + TX_DELAY;
-    _timer.set((t0 + _t1) / 2);
+    _timer.set((t0 + last_sfd()) / 2);
 }
 
 void PTS::int_handler(const unsigned int & interrupt) {

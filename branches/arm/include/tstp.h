@@ -295,7 +295,7 @@ private:
         Sensor * _sensor;
         const Time _period;
         const Time _t_end;
-        volatile Time _last_send;
+        Time _last_send;
         Event _event;
         const bool _event_driven;
         Subscribed_Sensors::Element _link;
@@ -455,7 +455,7 @@ private:
         }
     }
     void update(Data_Message * data, unsigned int size, bool is_for_me = true) {
-        //_time->update_data(reinterpret_cast<char *>(data));
+        _time->update_data(reinterpret_cast<char *>(data));
         if(is_for_me) {
             db<TSTP>(TRC) << "TSTP::update: Data " << data << ", sz= " << size << endl;
             auto k = data->unit();
@@ -467,13 +467,13 @@ private:
                     db<TSTP>(TRC) << "TSTP::update: key is equal" << endl;
                     db<TSTP>(TRC) << "data->origin_time() = " << data->origin_time() << endl;
                     db<TSTP>(TRC) << "interest->last_update() = " << interest->last_update() << endl;
-                    //if((interest->last_update() < data->origin_time())) {
+                    if((interest->last_update() < data->origin_time())) {
                         db<TSTP>(TRC) << "last_update < origin_time " << endl;
                         if (_router->accept(interest->destination(), data->origin_address())) {
                             db<TSTP>(TRC) << "Found valid interest " << interest << endl;
                             interest->update(data->data(), size - (sizeof(Data_Message) - MAX_DATA_SIZE), data->origin_time(), data->origin_address());
                         }
-                    //}
+                    }
                 }
             }
         }

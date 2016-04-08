@@ -153,13 +153,13 @@ void TSTP_MAC::prepare_tx_mf() {
             db<TSTP_MAC>(TRC) << "TSTP_MAC::prepare_tx_mf() : interest message" << endl;
             _acking = is_ack(_tx_pending);
             new (_sending_microframe->frame()->as<Microframe>()) Microframe(true, _tx_pending->object()->id(), Config::N_MICROFRAMES);
-            _tx.schedule(time + period, period, time + ((2 * Config::N_MICROFRAMES + 500) * period)); // More time than necessary. Will unschedule itself in tx() when done
+            _tx.schedule(time + period, period, time + ((2 * Config::N_MICROFRAMES + 10) * period)); // More time than necessary. Will unschedule itself in tx() when done
         }
         else if(t == MESSAGE_TYPE::DATA) {
             db<TSTP_MAC>(TRC) << "TSTP_MAC::prepare_tx_mf() : data message" << endl;
             _acking = is_ack(_tx_pending);
             new (_sending_microframe->frame()->as<Microframe>()) Microframe(false, _tx_pending->object()->id(), Config::N_MICROFRAMES, tstp()->_router->hint(tstp()->_router->sink_address()));
-            _tx.schedule(time + period, period, time + ((2 * Config::N_MICROFRAMES + 500) * period)); // More time than necessary. Will unschedule itself in tx() when done
+            _tx.schedule(time + period, period, time + ((2 * Config::N_MICROFRAMES + 10) * period)); // More time than necessary. Will unschedule itself in tx() when done
         } // TODO: BOOTSTRAP messages
         else {
             db<TSTP_MAC>(TRC) << "TSTP_MAC::prepare_tx_mf() : can't recognize frame type " << t << endl;
@@ -193,9 +193,9 @@ void TSTP_MAC::tx() {
         if(_acking) {
             free(_tx_pending->object());
         } else {
-            auto deadline = _tx_pending->rank();
+            auto deadline = _tx_pending->object()->frame()->header()->deadline();
             Time adjust;
-            if((deadline > t) and ((adjust = (deadline - t) / 2) > Config::PERIOD)) {
+            if((t < deadline) and ((adjust = ((deadline - t) / 2)) > Config::PERIOD)) {
                 _tx_pending->rank(t + adjust);
                 _tx_later_schedule.insert(_tx_pending);
             } else {

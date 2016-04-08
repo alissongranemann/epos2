@@ -10,7 +10,7 @@ template<typename T>
 struct Traits
 {
     static const bool enabled = true;
-    static const bool debugged = true;
+    static const bool debugged = false;
     static const bool hysterically_debugged = false;
     typedef TLIST<> ASPECTS;
 };
@@ -158,8 +158,8 @@ template<> struct Traits<TSTP>: public Traits<Network>
     // Default configurations that apply to all MACs
     template<typename MAC>
     struct MAC_Config_App {
-        static const unsigned int SEND_BUFFERS = 32;
-        static const unsigned int RECEIVE_BUFFERS = 32;
+        static const unsigned int RECEIVE_BUFFERS = 4;
+        static const unsigned int SEND_BUFFERS = 64 - RECEIVE_BUFFERS;
     };
     // Machine- and unit-dependent MAC configurations, definable in machine traits 
     template<unsigned int unit = 0, typename MAC = Traits<TSTP>::MAC>
@@ -192,7 +192,7 @@ template<> struct Traits<SGGR> : public Traits<TSTP>, public Traits<TSTP>::Route
     struct Node_Address_3 { static const int X = 0;   static const int Y = -740; static const int Z = -148; };
     struct Node_Address_4 { static const int X = 611; static const int Y = -545; static const int Z = 52; };
 
-    typedef IF<is_sink, Node_Address_0, Node_Address_4>::Result Address;
+    typedef IF<is_sink, Node_Address_0, Node_Address_1>::Result Address;
 };
 
 template<> struct Traits<PTS> : public Traits<TSTP>, public Traits<TSTP>::Time_Config_App<void> {};

@@ -11,7 +11,7 @@ class PTS
     typedef Config::Timer Timer;
     static const unsigned int TX_DELAY = Config::TX_DELAY;
 
-    PTS(unsigned int unit) : _t1(0), _timer() {
+    PTS(unsigned int unit) : _timer() {
         _timer.config();
         _timer.start();
         _pts = this; // TODO: several units if more than 1 NIC
@@ -27,8 +27,6 @@ public:
     Time last_sfd() { return _timer.last_sfd(); }
 
 private:
-    Time _t1;
-
     static PTS * _pts; // TODO: several units if more than 1 NIC
     Time time_now() { return _timer.read(); }
 

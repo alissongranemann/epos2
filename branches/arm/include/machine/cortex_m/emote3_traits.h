@@ -1,4 +1,4 @@
-// EPOS EPOSMoteIII (Cortex-M4) MCU Metainfo and Configuration
+// EPOS EPOSMoteIII (Cortex-M3) MCU Metainfo and Configuration
 
 #ifndef __emote3_traits_h
 #define __emote3_traits_h
@@ -117,7 +117,7 @@ template <> struct Traits<Cortex_M_UART>: public Traits<Cortex_M_Common>
 template<> struct Traits<Cortex_M_Display>: public Traits<Cortex_M_Common>
 {
     enum Engine {null, uart, usb};
-    static const Engine ENGINE = usb;
+    static const Engine ENGINE = uart;
 
     static const int COLUMNS = 80;
     static const int LINES = 25;
@@ -160,7 +160,7 @@ template<> struct Traits<TSTP_MAC> : public Traits<TSTP>, public Traits<TSTP>::M
     static const unsigned int Ts = 676 - Tu; // Time to send a single microframe (including PHY headers)
     static const unsigned int MICROFRAME_TIME = Ts;
     static const unsigned int MIN_Ti = 2*Tu; // Minimum time between consecutive microframes
-    static const unsigned int RADIO_RADIUS = 10 * 100; //TODO
+    static const unsigned int RADIO_RADIUS = 17 * 100; //TODO
     static const unsigned int TX_UNTIL_PROCESS_DATA_DELAY = 0;//5100; //TODO
     static const unsigned int DATA_SKIP_TIME = Tu + 2032;
 
