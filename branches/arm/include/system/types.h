@@ -194,6 +194,7 @@ class Modbus_ASCII;
 class TSTP;
 class TSTP_NIC;
 //// MAC Algorithms
+class TSTP_MAC;
 class One_Hop_MAC;
 //// Timing Algorithms
 class PTS;

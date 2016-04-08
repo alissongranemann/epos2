@@ -384,7 +384,7 @@ int Thread::idle()
     while(_thread_count > Machine::n_cpus()) { // someone else besides idles
         if(Traits<Thread>::trace_idle)
             db<Thread>(TRC) << "Thread::idle(CPU=" << Machine::cpu_id() << ",this=" << running() << ")" << endl;
-
+        
         CPU::int_enable();
         CPU::halt();
         if(_scheduler.schedulables() > 0) // A thread might have been woken up by another CPU

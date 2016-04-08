@@ -17,6 +17,7 @@ void PTS::do_update_data(char * header) {
 
 void PTS::int_handler(const unsigned int & interrupt) {
     db<PTS>(TRC) << "PTS::int_handler(interrupt=" << interrupt << ")" << endl;
+    db<PTS>(TRC) << "now=" << _pts->time_now() << endl;
     _pts->_tstp->process_event();//TODO: several instances if multiple TSTP networks
 }
 

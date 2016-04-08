@@ -7,8 +7,34 @@
 __BEGIN_SYS
 
 template <>
-void TSTP::MAC::send_frame<CC2538_PHY>(Buffer * buf) {
-    db<TSTP::MAC>(TRC) << "TSTP::MAC::send_frame(buf=" << buf << ", sz=" << buf->size() << ")" << endl;
+void TSTP_MAC::send_mf<CC2538_PHY>(Buffer * buf) {
+    //db<TSTP_MAC>(TRC) << "TSTP_MAC::send_mf(buf=" << buf << ", sz=" << buf->size() << ")" << endl;
+
+    auto f = reinterpret_cast<char *>(buf->frame());
+    _phy->setup_tx(f, buf->size());
+    _tx_pin.set();
+    _phy->tx();
+    while(not _phy->tx_ok());
+    _tx_pin.clear();
+}
+
+template <>
+void TSTP_MAC::send_frame<CC2538_PHY>(Buffer * buf) {
+    db<TSTP_MAC>(TRC) << "TSTP_MAC::send_frame(buf=" << buf << ", sz=" << buf->size() << ")" << endl;
+
+    buf->frame()->header()->last_hop_address(tstp()->address());
+    buf->frame()->header()->last_hop_time(tstp()->time());
+    auto f = reinterpret_cast<char *>(buf->frame());
+    _phy->setup_tx(f, buf->size());
+    _tx_pin.set();
+    _phy->tx();
+    while(not _phy->tx_ok());
+    _tx_pin.clear();
+}
+
+template <>
+void One_Hop_MAC::send_frame<CC2538_PHY>(Buffer * buf) {
+    db<One_Hop_MAC>(TRC) << "One_Hop_MAC::send_frame(buf=" << buf << ", sz=" << buf->size() << ")" << endl;
 
     User_Timer_3::delay(50000); // TODO: replace with proper MAC
     auto t = _tstp->time();
@@ -26,10 +52,12 @@ void TSTP::MAC::handle_int<CC2538_PHY>()
     Reg32 irqrf0 = _phy->sfr(_phy->RFIRQF0);
     Reg32 irqrf1 = _phy->sfr(_phy->RFIRQF1);
 
+    /*
     if(irqrf0 & _phy->INT_SFD) { // Start of Frame
-        _tstp->_time->frame_reception();
+        _last_sfd_time = _tstp->_time->frame_reception();
         _phy->sfr(_phy->RFIRQF0) &= ~_phy->INT_SFD;
     }
+    */
 
     if(irqrf0 & _phy->INT_FIFOP) { // Frame received
         _phy->sfr(_phy->RFIRQF0) &= ~_phy->INT_FIFOP;

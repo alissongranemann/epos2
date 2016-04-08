@@ -12,6 +12,7 @@ __BEGIN_SYS
 class CC2538RF
 {
     friend class One_Hop_MAC;
+    friend class TSTP_MAC;
 protected:
     typedef CPU::Reg8 Reg8;
     typedef CPU::Reg16 Reg16;
@@ -300,7 +301,7 @@ public:
     static void interrupt(const Microsecond & when, const IC::Interrupt_Handler & h) { interrupt_ts(us_to_ts(when), h); }
 
     static void interrupt_ts(const Timestamp & when, const IC::Interrupt_Handler & h) {
-        int_disable();
+        int_set(0);
         _user_handler = h;
         reg(MSEL) = (OVERFLOW_COMPARE1 * MSEL_MTMOVFSEL) | (TIMER_COMPARE1 * MSEL_MTMSEL);
         reg(M0) = when;
@@ -311,26 +312,39 @@ public:
         _int_overflow_count_overflow = when >> 40ll;
 
         int_clear();
-        int_enable(INT_OVERFLOW_PER);
         Timestamp now = read_ts();
         if(when <= now) {
+            int_enable(INT_OVERFLOW_PER);
             _user_handler(49);
         } else if((when >> 16ll) > (now >> 16ll)) {
-            int_enable(INT_OVERFLOW_COMPARE1);
+            int_enable(INT_OVERFLOW_COMPARE1 | INT_OVERFLOW_PER);
         } else if(when > now) {
-            int_enable(INT_COMPARE1);
+            int_enable(INT_COMPARE1 | INT_OVERFLOW_PER);
         }
     }
 
+    static Timestamp last_sfd() {
+        reg(MSEL) = (TIMER_CAPTURE * MSEL_MTMSEL);
+
+        Timestamp ts = reg(M0); // M0 must be read first
+        ts += reg(M1) << 8;
+        ts += static_cast<long long>(reg(MOVF2)) << 32ll;
+        ts += static_cast<long long>(reg(MOVF1)) << 24ll;
+        ts += static_cast<long long>(reg(MOVF0)) << 16ll;
+        ts += static_cast<long long>(_overflow_count_overflow) << 40ll;
+
+        return ts_to_us(ts);
+    }
     static void int_clear() {
         reg(IRQF) = 0;
     }
     static void int_disable() {
-        reg(IRQM) = 0;
+        reg(IRQM) = INT_OVERFLOW_PER;
     }
     static void int_enable(const Reg32 & interrupt) {
         reg(IRQM) |= interrupt;
     }
+private:
     static void int_set(const Reg32 & interrupt) {
         reg(IRQM) = interrupt;
     }
@@ -346,9 +360,9 @@ private:
             }
         }
         if(ints & INT_OVERFLOW_COMPARE1) {
-            int_enable(INT_COMPARE1);
+            int_set(INT_COMPARE1 | INT_OVERFLOW_PER);
         } else if(ints & INT_COMPARE1) {
-            int_set(INT_OVERFLOW_COMPARE1);
+            int_disable();
             _user_handler(interrupt);
         }
     }
@@ -398,7 +412,7 @@ public:
 
     static void config() {
         stop();
-        int_disable();
+        int_set(0);
         int_clear();        
         reg(CTRL) &= ~CTRL_SYNC; // We can't use the sync feature because we want to change
                                  // the count and overflow values when the timer is stopped
@@ -418,6 +432,7 @@ public:
 class CC2538_PHY : protected CC2538RF, public IEEE802_15_4_PHY
 {
     friend class One_Hop_MAC;
+    friend class TSTP_MAC;
 
 protected:
     typedef CPU::IO_Irq IO_Irq;
@@ -486,10 +501,11 @@ public:
         xreg(RFIRQM1) = 0;
     }
 
-    void off() { sfr(RFST) = ISRFOFF; }
-    void rx() { sfr(RFIRQM0) |= INT_SFD; sfr(RFST) = ISRXON; }
-    void tx() { sfr(RFIRQM0) &= ~INT_SFD; sfr(RFST) = ISTXON; }
-    bool cca();//TODO
+    void off() { sfr(RFST) = ISRFOFF; clear_rxfifo(); sfr(RFIRQF0) = 0; }
+    void rx() { sfr(RFST) = ISRXON; }
+    void tx() { sfr(RFST) = ISTXON; }
+    volatile bool cca() { return xreg(FSMSTAT1) & CCA; }
+    volatile bool cca_valid() { return xreg(RSSISTAT) & RSSI_VALID; }
     void start_cca() { rx_mode(RX_MODE_NO_SYMBOL_SEARCH); rx(); }
     void end_cca() { rx_mode(RX_MODE_NORMAL); }
     bool valid_frame() { return frame_in_rxfifo(); }
@@ -505,6 +521,24 @@ public:
         if(ret) 
             sfr(RFIRQF1) &= ~INT_TXDONE;
         return ret;
+    }
+
+    void channel(unsigned int c) { 
+        if((c > 10) and (c < 27)) {
+            /*
+               The carrier frequency is set by programming the 7-bit frequency word in the FREQ[6:0] bits of the
+               FREQCTRL register. Changes take effect after the next recalibration. Carrier frequencies in the range
+               from 2394 to 2507 MHz are supported. The carrier frequency f C , in MHz, is given by
+               f C = (2394 + FREQCTRL.FREQ[6:0]) MHz, and is programmable in 1-MHz steps.
+               IEEE 802.15.4-2006 specifies 16 channels within the 2.4-GHz band. These channels are numbered 11
+               through 26 and are 5 MHz apart. The RF frequency of channel k is given by Equation 1.
+               f c = 2405 + 5(k –11) [MHz] k [11, 26]
+               (1)
+               For operation in channel k, the FREQCTRL.FREQ register should therefore be set to
+               FREQCTRL.FREQ = 11 + 5 (k – 11).
+               */
+            frequency(11+5*(c-11));
+        }
     }
 
 protected:

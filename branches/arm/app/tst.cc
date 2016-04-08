@@ -48,6 +48,7 @@ void init()
     }
     Network::init();
     tstp = TSTP::get_by_nic(0);
+    tstp->bootstrap();
     if(!tstp) {
         while(1) {
             cout << "Waaaahhh" << endl;
@@ -59,8 +60,6 @@ void sensor()
 {
     TSTP::Sensor id1(tstp, &rfid_1, 0, 0, 0);
     TSTP::Sensor ds1(tstp, &door_1, 0, 0, 0);
-    while(true);
-    /*
     for(int i = 0; ; i++) {
         Alarm::delay(2000000);
         auto d = rfid_1.data<Wiegand::ID_Code_Msg>();
@@ -79,7 +78,6 @@ void sensor()
 
         tstp->event(door_1);
     }
-    */
 }
 
 int main()

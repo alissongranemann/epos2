@@ -11,7 +11,7 @@ class PTS
     typedef Config::Timer Timer;
     static const unsigned int TX_DELAY = Config::TX_DELAY;
 
-    PTS(unsigned int unit) : _timer() {
+    PTS(unsigned int unit) : _t1(0), _timer() {
         _timer.config();
         _timer.start();
         _pts = this; // TODO: several units if more than 1 NIC
@@ -24,7 +24,7 @@ class PTS
 public:
     typedef long long Time;
 
-    void frame_reception() { _t1 = time_now(); }
+    Time last_sfd() { return _timer.last_sfd(); }
 
 private:
     Time _t1;
@@ -39,8 +39,8 @@ private:
     }
 
     void interrupt(const Time & when) {
-        db<PTS>(TRC) << "PTS::interrupt(when=" << when << ")" << endl;
-        db<PTS>(TRC) << "now=" << time_now() << endl;
+        //db<PTS>(TRC) << "PTS::interrupt(when=" << when << ")" << endl;
+        //db<PTS>(TRC) << "now=" << time_now() << endl;
         _timer.interrupt(when, &int_handler);
     }
 

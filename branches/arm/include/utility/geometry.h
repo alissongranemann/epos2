@@ -27,8 +27,8 @@ struct Point {
         return Math::abs(xx) + Math::abs(yy) + Math::abs(zz);
     }
 
-    bool operator==(const Point& rhs) { return x == rhs.x and y == rhs.y and z == rhs.z; }
-    bool operator!=(const Point& rhs){ return !operator==(*this,rhs); }
+    bool operator==(const Point& rhs) const { return x == rhs.x and y == rhs.y and z == rhs.z; }
+    bool operator!=(const Point& rhs) const { return !operator==(*this,rhs); }
 };
 
 template<>
@@ -57,8 +57,8 @@ struct Point<2, int> {
         return Math::abs(xx) + Math::abs(yy);
     }
 
-    bool operator==(const Point<2, T>& rhs) { return x == rhs.x and y == rhs.y; }
-    bool operator!=(const Point<2, T>& rhs){ return !(*this == rhs); }
+    bool operator==(const Point<2, T>& rhs) const { return x == rhs.x and y == rhs.y; }
+    bool operator!=(const Point<2, T>& rhs) const { return !(*this == rhs); }
 };
 
 template<typename C = Point<>, typename R = typename C::Distance>

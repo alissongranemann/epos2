@@ -123,7 +123,7 @@ public:
         GPIO led('c',3, GPIO::OUTPUT);  
         _relay->set(true);
         led.set(true);
-        User_Timer_3::delay(500000);
+        //User_Timer_3::delay(500000);
         _relay->set(false);
         led.set(false);
     }

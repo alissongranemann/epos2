@@ -47,24 +47,8 @@ public:
 
     void listen();
     void stop_listening();
-    void channel(unsigned int channel) { 
-        if((channel < 11) or (channel > 26)) return;
-        /*
-           The carrier frequency is set by programming the 7-bit frequency word in the FREQ[6:0] bits of the
-           FREQCTRL register. Changes take effect after the next recalibration. Carrier frequencies in the range
-           from 2394 to 2507 MHz are supported. The carrier frequency f C , in MHz, is given by
-           f C = (2394 + FREQCTRL.FREQ[6:0]) MHz, and is programmable in 1-MHz steps.
-           IEEE 802.15.4-2006 specifies 16 channels within the 2.4-GHz band. These channels are numbered 11
-           through 26 and are 5 MHz apart. The RF frequency of channel k is given by Equation 1.
-           f c = 2405 + 5(k –11) [MHz] k [11, 26]
-           (1)
-           For operation in channel k, the FREQCTRL.FREQ register should therefore be set to
-           FREQCTRL.FREQ = 11 + 5 (k – 11).
-           */
-        _channel = channel;
-        frequency(11+5*(_channel-11));
-    }
     unsigned int channel() { return _channel; }
+    void channel(unsigned int c) { if((c > 10) and (c < 27)) { _channel = c; CC2538_PHY::channel(_channel); } }
 
     ~eMote3_IEEE802_15_4();
 

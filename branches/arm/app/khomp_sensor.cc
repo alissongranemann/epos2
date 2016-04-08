@@ -31,7 +31,7 @@ struct Handler_Input0 : public Handler {
     void operator()() { 
         relay[1]->set(true);
         led->set(true);
-        User_Timer_3::delay(500000);
+        //User_Timer_3::delay(500000);
         relay[1]->set(false);
         led->set(false);
     }
@@ -43,7 +43,7 @@ struct Handler_Input1 : public Handler {
         auto val = door_1.data<bool>();
         *val = pin->read();
         tstp->event(door_1);
-        User_Timer_3::delay(500000);
+        //User_Timer_3::delay(500000);
         led->set(false);
     }
     GPIO * pin;
@@ -53,7 +53,7 @@ struct Handler_Input2 : public Handler {
     void operator()() { 
         relay[3]->set(true);
         //messagemount('R', 3, 'W', 1);
-        User_Timer_3::delay(500000);
+        //User_Timer_3::delay(500000);
         relay[3]->set(false);
         //messagemount('R', 3, 'W', 0);
     }
@@ -63,7 +63,7 @@ struct Handler_Input3 : public Handler {
     void operator()() { 
         relay[4]->set(true);
         //messagemount('R', 4, 'W', 1);
-        User_Timer_3::delay(500000);
+        //User_Timer_3::delay(500000);
         relay[4]->set(false);
         //messagemount('R', 4, 'W', 0);
     }
@@ -73,7 +73,7 @@ struct Handler_Input4 : public Handler {
     void operator()() { 
         relay[5]->set(true);
         //messagemount('R', 5, 'W', 1);
-        User_Timer_3::delay(500000);
+        //User_Timer_3::delay(500000);
         relay[5]->set(false);
         //messagemount('R', 5, 'W', 0);
     }
@@ -83,7 +83,7 @@ struct Handler_Input5 : public Handler {
     void operator()() { 
         relay[6]->set(true);
         //messagemount('R', 6, 'W', 1);
-        User_Timer_3::delay(500000);
+        //User_Timer_3::delay(500000);
         relay[6]->set(false);
         //messagemount('R', 6, 'W', 0);
     }
@@ -94,7 +94,7 @@ struct Handler_Input6 : public Handler {
     void operator()() { 
         relay[7]->set(true);
         //messagemount('R', '7', 'W', 1);
-        User_Timer_3::delay(500000);
+        //User_Timer_3::delay(500000);
         relay[7]->set(false);
         //messagemount('R', '7', 'W', 0);
     }
@@ -107,6 +107,26 @@ int main () {
     }
     Network::init();
     tstp = TSTP::get_by_nic(0);
+    tstp->bootstrap();
+
+    /*
+    {
+        Wiegand::RFID_1 id_1;
+        Wiegand::RFID_2 id_2;
+        Wiegand::RFID_3 id_3;
+        Wiegand::RFID_4 id_4;
+        TSTP::Sensor sd1(tstp, &door_1, 0, 0, 0);
+        TSTP::Sensor sd2(tstp, &door_2, 0, 0, 0);
+        TSTP::Sensor sd3(tstp, &door_3, 0, 0, 0);
+        TSTP::Sensor sd4(tstp, &door_4, 0, 0, 0);
+        TSTP::Sensor s2(tstp, &id_1, 0, 0, 0);
+        TSTP::Sensor s3(tstp, &id_2, 0, 0, 0);
+        TSTP::Sensor s4(tstp, &id_3, 0, 0, 0);
+        TSTP::Sensor s5(tstp, &id_4, 0, 0, 0);
+
+        while(true);
+    }
+    */
 
     led = new GPIO('c',3, GPIO::OUTPUT);
 
@@ -120,8 +140,8 @@ int main () {
     relay[6] = new GPIO('b',2,GPIO::OUTPUT);
     relay[7] = new GPIO('b',4,GPIO::OUTPUT);
 
-    for (int i=0; i<7;i++)
-        relay[i]->clear();
+    //for (int i=0; i<7;i++)
+    //    relay[i]->clear();
 
     Wiegand::RFID_1 id_1;
     Wiegand::RFID_2 id_2;

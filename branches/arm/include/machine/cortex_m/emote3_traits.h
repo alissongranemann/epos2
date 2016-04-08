@@ -150,14 +150,46 @@ template <> struct Traits<Cortex_M_Radio>: public Traits<Cortex_M_Common>
     static const unsigned int UNITS = NICS::Length;
 };
 
-template<> struct Traits<TSTP>::MAC_Config<0>
-{
+template<> struct Traits<TSTP_MAC> : public Traits<TSTP>, public Traits<TSTP>::MAC_Config_App<TSTP_MAC> {
+    // == Network / machine characteristics ==
     typedef CC2538_PHY PHY_Layer;
-    static const unsigned int SEND_BUFFERS = 8;
-    static const unsigned int RECEIVE_BUFFERS = 8;
+    static const unsigned int DEFAULT_CHANNEL = 15; // From 11 to 26
+    static const unsigned int Tu = 192; // IEEE 802.15.4 TX Turnaround Time
+    //static const unsigned int G = 320; // Tu + 8 / symbol_rate
+    //static const unsigned int Ts = 480; // Time to send a single microframe (including PHY headers)
+    static const unsigned int Ts = 676 - Tu; // Time to send a single microframe (including PHY headers)
+    static const unsigned int MICROFRAME_TIME = Ts;
+    static const unsigned int MIN_Ti = 2*Tu; // Minimum time between consecutive microframes
+    static const unsigned int RADIO_RADIUS = 10 * 100; //TODO
+    static const unsigned int TX_UNTIL_PROCESS_DATA_DELAY = 0;//5100; //TODO
+    static const unsigned int DATA_SKIP_TIME = Tu + 2032;
+
+    // == Calculated parameters ==
+    static const unsigned int N_MICROFRAMES = ((PERIOD / (MIN_Ti + Ts)) > 255) ? 255 : (PERIOD / (MIN_Ti + Ts));
+    //static const unsigned int N_MICROFRAMES = 20;
+    static const unsigned int Ti = (PERIOD / N_MICROFRAMES) - Ts;
+    static const unsigned int TIME_BETWEEN_MICROFRAMES = Ti;
+    static const unsigned int DATA_LISTEN_MARGIN = TIME_BETWEEN_MICROFRAMES; // Subtract this amount when calculating time until data transmission
+    static const unsigned int RX_MF_TIMEOUT = 2*Ts + 2*TIME_BETWEEN_MICROFRAMES;
+    static const unsigned int SLEEP_PERIOD = PERIOD - RX_MF_TIMEOUT;
+    static const unsigned int DUTY_CYCLE = (RX_MF_TIMEOUT * 100000) / PERIOD; //ppm
+
+    static const unsigned int RX_DATA_TIMEOUT = DATA_SKIP_TIME + DATA_LISTEN_MARGIN + 4 * (MICROFRAME_TIME + TIME_BETWEEN_MICROFRAMES);
+    static const unsigned int G = Tu + 128; // Tu + 8 / symbol_rate
+    static const unsigned int CCA_TIME = (2 * MICROFRAME_TIME + TIME_BETWEEN_MICROFRAMES) > 256 ? (2 * MICROFRAME_TIME + TIME_BETWEEN_MICROFRAMES) : 256;
 };
 
-template<> struct Traits<TSTP>::Time_Config<0>
+template<> struct Traits<TSTP>::MAC_Config<0, TSTP_MAC> : public Traits<TSTP_MAC> { };
+
+template<> struct Traits<One_Hop_MAC> : public Traits<TSTP>, public Traits<TSTP>::MAC_Config_App<One_Hop_MAC>
+{
+    typedef CC2538_PHY PHY_Layer;
+    static const unsigned int DEFAULT_CHANNEL = 15; // From 11 to 26
+};
+
+template<> struct Traits<TSTP>::MAC_Config<0, One_Hop_MAC> : public Traits<One_Hop_MAC> { };
+
+template<> struct Traits<TSTP>::Time_Config<0, PTS> : public Traits<PTS>
 {
     typedef MAC_Timer Timer;
     static const unsigned int TX_DELAY = 10;//TODO

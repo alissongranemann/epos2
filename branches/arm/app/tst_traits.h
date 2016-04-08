@@ -155,7 +155,7 @@ template<> struct Traits<TSTP>: public Traits<Network>
     };
 
     // {One_Hop_MAC};
-    typedef One_Hop_MAC MAC;
+    typedef TSTP_MAC MAC;
     
     // {PTS};
     typedef PTS Time_Manager;
@@ -167,8 +167,6 @@ template<> struct Traits<TSTP>: public Traits<Network>
     typedef TSTP_Security Security;
 
     static const unsigned int PROTOCOL_ID = 84;
-    static const unsigned int MAX_INTERESTS = 8;
-    static const unsigned int MAX_SENSORS = 8;
 };
 
 __END_SYS

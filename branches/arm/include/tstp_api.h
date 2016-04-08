@@ -57,9 +57,9 @@ public:
     {
         static const unsigned char DEFAULT_CFG = (3 << 2) | (3);
     public:
-        Header() : _cfg(DEFAULT_CFG) { }
-        Header(const MESSAGE_TYPE & t) : _cfg((t << 5) | (DEFAULT_CFG)) {}
-        Header(const MESSAGE_TYPE & t, const Local_Address & origin, const Time & deadline) : _cfg((t << 5) | (DEFAULT_CFG)), _last_hop_address(origin), _last_hop_time(0), _origin_address(origin), _origin_time(0), _deadline(deadline) { }
+        Header() : _cfg(DEFAULT_CFG), _origin_time(0) { }
+        Header(const MESSAGE_TYPE & t) : _cfg((t << 5) | (DEFAULT_CFG)), _origin_time(0) {}
+        Header(const MESSAGE_TYPE & t, const Local_Address & origin, const Time & origin_time, const Time & deadline) : _cfg((t << 5) | (DEFAULT_CFG)), _last_hop_address(origin), _last_hop_time(0), _origin_address(origin), _origin_time(origin_time), _deadline(deadline) { }
 
         unsigned char message_type() const { return _cfg >> 5; }
         void message_type(const MESSAGE_TYPE & t) {
@@ -100,14 +100,16 @@ public:
         Time deadline() const { return _deadline; }
         void deadline(const Time & t) { _deadline = t; }
 
-        friend Debug & operator<<(Debug & db, const Header & h) {
-            db << "{type=" << h.message_type() << ",tr=" << h.time_request() << ",sscale=" << h.spatial_scale() << ",tscale=" << h.temporal_scale() << ",lconf=" << ",lhaddr=" << h._last_hop_address << ",lht=" << h._last_hop_time << ",oaddr=" << h._origin_address << ",ot=" << h._origin_time << ",de=" << h._deadline << "}" << endl;
+        /*
+        friend Debug & operator<<(Debug & db, const Header * h) {
+            db << "{type=" << h->message_type() << ",tr=" << h->time_request() << ",sscale=" << h->spatial_scale() << ",tscale=" << h->temporal_scale() << ",lconf=" << ",lhaddr=" << h->_last_hop_address << ",lht=" << h->_last_hop_time << ",oaddr=" << h->_origin_address << ",ot=" << h->_origin_time << ",de=" << h->_deadline << "}" << endl;
             return db;
         }
-        friend OStream & operator<<(OStream & os, const Header & h) {
-            os << "{type=" << h.message_type() << ",tr=" << h.time_request() << ",sscale=" << h.spatial_scale() << ",tscale=" << h.temporal_scale() << ",lconf=" << ",lhaddr=" << h._last_hop_address << ",lht=" << h._last_hop_time << ",oaddr=" << h._origin_address << ",ot=" << h._origin_time << ",de=" << h._deadline << "}" << endl;
+        friend OStream & operator<<(OStream & os, const Header * h) {
+            os << "{type=" << h->message_type() << ",tr=" << h->time_request() << ",sscale=" << h->spatial_scale() << ",tscale=" << h->temporal_scale() << ",lconf=" << ",lhaddr=" << h->_last_hop_address << ",lht=" << h->_last_hop_time << ",oaddr=" << h->_origin_address << ",ot=" << h->_origin_time << ",de=" << h->_deadline << "}" << endl;
             return os;
         }
+        */
 
     private:
         unsigned char _cfg;
@@ -126,14 +128,16 @@ public:
     // Generic Frame. Should be parsed and cast to a Message
     class Frame : public Header {
     public:
-        friend Debug & operator<<(Debug & db, const Frame & f) {
-            db << *reinterpret_cast<const Header*>(&f);
+        /*
+        friend Debug & operator<<(Debug & db, const Frame * f) {
+            db << *reinterpret_cast<const Header*>(f);
             return db;
         }
-        friend OStream & operator<<(OStream & os, const Frame & f) {
-            os << *reinterpret_cast<const Header*>(&f);
+        friend OStream & operator<<(OStream & os, const Frame * f) {
+            os << reinterpret_cast<const Header*>(f);
             return os;
         }
+        */
         Header * header() { return this; }
         template<typename T>
         T* as() { return reinterpret_cast<T*>(this); }
@@ -146,10 +150,10 @@ public:
         static const MESSAGE_TYPE TYPE = MESSAGE_TYPE::INTEREST;
 
         Interest_Message() : Header(TYPE) { }
-        Interest_Message(const Local_Address & origin, const Time & deadline, const Remote_Address & destination, 
+        Interest_Message(const Local_Address & origin, const Time & origin_time, const Time & deadline, const Remote_Address & destination, 
                 const Time & t0, const Time & t_end, const Time & period, const Unit unit, 
                 const RESPONSE_MODE & response_mode, const Error & max_error) : 
-            Header(TYPE, origin, deadline), _destination(destination), _t0(t0), _t_end(t_end), 
+            Header(TYPE, origin, origin_time, deadline), _destination(destination), _t0(t0), _t_end(t_end), 
             _period(period), _unit(unit),  _rm_err((response_mode & 3) + ((max_error << 2) & 0xff)) { }
 
         Time t0() const { return _t0; }
@@ -163,14 +167,16 @@ public:
         bool time_triggered() { auto r = response_mode(); return (r == ALL_TIME_TRIGGERED) or (r == SINGLE_TIME_TRIGGERED); }
         bool event_driven() { return not time_triggered(); }
 
+        /*
         friend Debug & operator<<(Debug & db, const Interest_Message & i) {
             db << *reinterpret_cast<const Header*>(&i) << ", dst=" << i._destination << ", t0=" << i._t0 << ", tend=" << i._t_end << ", p=" << i._period << ", u=" << i._unit << ", rm_err=" << i._rm_err;
             return db;
         }
-        friend OStream & operator<<(OStream & os, const Interest_Message & i) {
+        friend OStream & operator<<(OStream & os, const Interest_Message * i) {
             os << *reinterpret_cast<const Header*>(&i) << ", dst=" << i._destination << ", t0=" << i._t0 << ", tend=" << i._t_end << ", p=" << i._period << ", u=" << i._unit << ", rm_err=" << i._rm_err;
             return os;
         }
+        */
     private:
         Remote_Address _destination;
         Time _t0;
@@ -180,9 +186,6 @@ public:
         unsigned char _rm_err; // error : 6; response_mode : 2;
     }__attribute__((packed));
 
-    //typedef _UTIL::Buffer<TSTP, Frame, Scheduled_Message> Buffer;
-    typedef _UTIL::Buffer<TSTP, Frame> Buffer;
-
     static const unsigned int MAX_DATA_SIZE = MTU - sizeof(Header) - sizeof(Sec_MAC);
 
     class Data_Message : public Header {
@@ -190,14 +193,16 @@ public:
     public:
         static const MESSAGE_TYPE TYPE = MESSAGE_TYPE::DATA;
 
-        friend Debug & operator<<(Debug & db, const Data_Message & d) {
-            db << *reinterpret_cast<const Header*>(&d) << ", mac=" << d._mac << ", u=" << d._unit << ", _data=" << reinterpret_cast<const void *>(d._data);
+        /*
+        friend Debug & operator<<(Debug & db, const Data_Message * d) {
+            db << reinterpret_cast<const Header*>(d) << ", mac=" << d->_mac << ", u=" << d->_unit << ", _data=" << reinterpret_cast<const void *>(d->_data);
             return db;
         }
-        friend OStream & operator<<(OStream & os, const Data_Message & d) {
-            os << *reinterpret_cast<const Header*>(&d) << ", mac=" << d._mac << ", u=" << d._unit << ", _data=" << reinterpret_cast<const void *>(d._data);
+        friend OStream & operator<<(OStream & os, const Data_Message * d) {
+            os << reinterpret_cast<const Header*>(d) << ", mac=" << d->_mac << ", u=" << d->_unit << ", _data=" << reinterpret_cast<const void *>(d->_data);
             return os;
         }
+        */
 
         Data_Message() : Header(TYPE) { }
         Data_Message(Unit unit) : Header(TYPE), _unit(unit) { }
@@ -222,6 +227,41 @@ public:
         Unit _unit;
         unsigned char _data[MAX_DATA_SIZE];
     }__attribute__((packed));
+
+    class Event;
+    typedef Simple_Ordered_List<Event, Time> Event_Schedule;
+
+    class Event {
+        friend class TSTP;
+    public:
+        typedef Event_Schedule::Element Element;
+
+        Event() : period(0), end(0), _link(this) {}
+
+        Event(const Time & when, Handler * h) : 
+            period(0), end(0), _handle(h), _link(this, when) {
+            db<TSTP>(TRC) << "Event() => " << reinterpret_cast<void*>(this) << endl;
+        }
+        Event(const Time & when, Handler * h, const Time & _period, const Time & until) : 
+            period(_period), end(until), _handle(h), _link(this, when) {
+            db<TSTP>(TRC) << "Event() => " << reinterpret_cast<void*>(this) << endl;
+        }
+        ~Event() {
+            db<TSTP>(TRC) << "~Event() => " << reinterpret_cast<void*>(this) << endl;
+        }
+
+        void operator()() { (*_handle)(); }
+
+    public:
+        Time period;
+        Time end;
+
+    private:
+        Handler * _handle;
+        Element _link;
+    };
+
+
 };
 
 __END_SYS

@@ -154,8 +154,8 @@ template<> struct Traits<TSTP>: public Traits<Network>
         static const int ADDRESS_Z = is_sink ? 0 : 30;
     };
 
-    // {One_Hop_MAC};
-    typedef One_Hop_MAC MAC;
+    // {TSTP_MAC, One_Hop_MAC};
+    typedef TSTP_MAC MAC;
     
     // {PTS};
     typedef PTS Time_Manager;
@@ -170,6 +170,20 @@ template<> struct Traits<TSTP>: public Traits<Network>
     static const unsigned int MAX_INTERESTS = 8;
     static const unsigned int MAX_SENSORS = 8;
 };
+
+template<> struct Traits<TSTP_MAC> : public Traits<TSTP>
+{
+};
+template<> struct Traits<SGGR> : public Traits<TSTP>
+{
+};
+template<> struct Traits<PTS> : public Traits<TSTP>
+{
+};
+template<> struct Traits<TSTP_Security> : public Traits<TSTP>
+{
+};
+
 
 __END_SYS
 
@@ -241,6 +255,7 @@ template<> struct Traits<Segment>: public Traits<void>
 
 template<> struct Traits<Alarm>: public Traits<void>
 {
+    static const bool debugged = true;
     static const bool visible = hysterically_debugged;
 };
 
