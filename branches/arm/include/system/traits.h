@@ -10,7 +10,7 @@ template<typename T>
 struct Traits
 {
     static const bool enabled = true;
-    static const bool debugged = true;
+    static const bool debugged = false;
     static const bool hysterically_debugged = false;
     typedef TLIST<> ASPECTS;
 };
@@ -27,16 +27,15 @@ template<> struct Traits<Build>
     static const unsigned int MACHINE = Cortex_M;
 
     enum {Legacy, eMote3, LM3S811};
-    static const unsigned int MODEL = LM3S811;
+    static const unsigned int MODEL = eMote3;
 
     static const unsigned int ID_SIZE = 2;
     // Default value initialized at init_system.cc. The application can overwrite it.
     static const char ID[ID_SIZE];
 
     static const unsigned int CPUS = 1;
-    static const unsigned int NODES = 1; // > 1 => NETWORKING
+    static const unsigned int NODES = 2; // > 1 => NETWORKING
 };
-
 
 // Utilities
 template<> struct Traits<Debug>
@@ -136,34 +135,67 @@ template<> struct Traits<Network>: public Traits<void>
     static const unsigned int TIMEOUT = 10; // s
 
     // This list is positional, with one network for each NIC in traits<NIC>::NICS
-    typedef LIST<IP> NETWORKS;
+    typedef LIST<TSTP> NETWORKS;
 };
 
 template<> struct Traits<TSTP>: public Traits<Network>
 {
-    struct Default_MAC_Config {
-        typedef void PHY_Layer;
-    };
+    static const bool is_sink = false;
 
-    template<unsigned int UNIT>
-    struct MAC_Config : public Default_MAC_Config {};
-
-    // {TSTP_MAC};
+    // MAC component selection. Possible values = {TSTP_MAC, One_Hop_MAC};
     typedef TSTP_MAC MAC;
     
-    // {PTP};
-    typedef PTP Time_Manager;
+    // Time management component selection. Possible values = {PTS};
+    typedef PTS Time_Manager;
 
-    // {Geo_Greedy_Router};
-    typedef Geo_Greedy_Router Router;
+    // Router component selection. Possible values = {SGGR};
+    typedef SGGR Router;
 
-    // {TSTP_Security};
+    // Security component selection. Possible values = {TSTP_Security};
     typedef TSTP_Security Security;
 
-    static const unsigned int PROTOCOL_ID = 84;
-    static const unsigned int MAX_INTERESTS = 8;
-    static const unsigned int MAX_SENSORS = 8;
+
+    // Default configurations that apply to all MACs
+    template<typename MAC>
+    struct MAC_Config_App {
+        static const unsigned int SEND_BUFFERS = 32;
+        static const unsigned int RECEIVE_BUFFERS = 32;
+    };
+    // Machine- and unit-dependent MAC configurations, definable in machine traits 
+    template<unsigned int unit = 0, typename MAC = Traits<TSTP>::MAC>
+    struct MAC_Config : public Traits<MAC> {};
+
+    // Default configurations that apply to all routers
+    template<typename ROUTER>
+    struct Router_Config_App {};
+    // Machine- and unit-dependent router configurations, definable in machine traits 
+    template<unsigned int unit = 0, typename ROUTER = Traits<TSTP>::Router>
+    struct Router_Config : public Traits<ROUTER> {};
+
+    // Default configurations that apply to all time managers
+    template<typename TIME_MANAGER>
+    struct Time_Config_App {};
+    // Machine- and unit-dependent time manager configurations, definable in machine traits 
+    template<unsigned int unit = 0, typename TIME_MANAGER = Traits<TSTP>::Time_Manager>
+    struct Time_Config : public Traits<TIME_MANAGER> {};
 };
+
+// Default TSTP_MAC configurations that apply to all machines and units
+template<> struct Traits<TSTP>::MAC_Config_App<TSTP_MAC> : public Traits<TSTP>::MAC_Config_App<void> {
+    static const unsigned int PERIOD = 225000;
+};
+
+template<> struct Traits<SGGR> : public Traits<TSTP>, public Traits<TSTP>::Router_Config_App<void> {
+    struct Node_Address_0 { static const int X = 0;   static const int Y = 0;    static const int Z = 0; };
+    struct Node_Address_1 { static const int X = 120; static const int Y = -380; static const int Z = -48; };
+    struct Node_Address_2 { static const int X = 611; static const int Y = 0;    static const int Z = -148; };
+    struct Node_Address_3 { static const int X = 0;   static const int Y = -740; static const int Z = -148; };
+    struct Node_Address_4 { static const int X = 611; static const int Y = -545; static const int Z = 52; };
+
+    typedef IF<is_sink, Node_Address_0, Node_Address_1>::Result Address;
+};
+
+template<> struct Traits<PTS> : public Traits<TSTP>, public Traits<TSTP>::Time_Config_App<void> {};
 
 __END_SYS
 

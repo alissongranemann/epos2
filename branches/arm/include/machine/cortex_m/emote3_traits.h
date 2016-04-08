@@ -117,7 +117,7 @@ template <> struct Traits<Cortex_M_UART>: public Traits<Cortex_M_Common>
 template<> struct Traits<Cortex_M_Display>: public Traits<Cortex_M_Common>
 {
     enum Engine {null, uart, usb};
-    static const Engine ENGINE = uart;
+    static const Engine ENGINE = usb;
 
     static const int COLUMNS = 80;
     static const int LINES = 25;
@@ -145,7 +145,7 @@ template <> struct Traits<Cortex_M_Radio>: public Traits<Cortex_M_Common>
     static const bool enabled = (Traits<Build>::NODES > 1);
 
     // {TSTP_NIC, eMote3_IEEE802_15_4};
-    typedef LIST<TSTP_NIC> NICS;
+    typedef LIST<eMote3_IEEE802_15_4> NICS;
 
     static const unsigned int UNITS = NICS::Length;
 };
