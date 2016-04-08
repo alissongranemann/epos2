@@ -62,6 +62,12 @@ def parse(message):
 
     data = message[7:-2]
 
+    coordinates = message[15:]
+
+    mac_hash = message[55:]
+
+    scale = message[65:]
+
     byte_list = [int(byte, 16) for byte in string_chunks(data, 2)]
     data = b''.join(struct.pack('B', byte) for byte in byte_list)
 
@@ -76,7 +82,7 @@ def parse(message):
         raise ValueError('Modbus message lrc does not match: {} != {}'
                          .format(hex(expected_lrc), hex(lrc)))
 
-    return address, command, data
+    return address, command, data, coordinates, mac_hash, scale
 
 
 def build(address, command, byte_list):

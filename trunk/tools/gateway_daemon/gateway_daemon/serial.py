@@ -3,7 +3,6 @@ import struct
 import requests
 import traceback
 import sys
-import time
 import json
 
 from gateway_daemon.mote import Mote
@@ -23,9 +22,8 @@ def clean_data(data):
 
 def free_data(data):
     try:
-        register, cmd, bytes = parse(data)
+        register, cmd, bytes, coordinates, mac_hash, scale = parse(data)
         command = MODBUS_FUNCTIONS[cmd]
-        #print(register, command, bytes, data)
     except ValueError:
         raise
     except KeyError:
@@ -33,21 +31,31 @@ def free_data(data):
     try:
         offset = int.from_bytes(bytes[:2], byteorder='big')
         value = int.from_bytes(bytes[2:], byteorder='big')
+        timestamp = int.from_bytes(bytes[5:], byteorder='big')
+        tstp_si = int.frombytes(bytes[15:], byteorder='big')
     except struct.error:
         raise
     return (hex(register).split('x')[1].upper(), command, str(offset),
-str(value))
-
+str(value), timestamp, coordinates, tstp_si, str(mac_hash), scale)
 
 def mount_request(data):
     try:
-        register, command, offset, value = free_data(data)
-        #print(register, command, offset, value)
-        post=[]
-        post_this={register+command+offset:value}
-        post_kairos={ "name": str(register+command+offset), "value": float(value), "timestamp": int(time.time()*1000), "tags": { "project": "smarthome" }}
-        post.append(post_this)
-        post.append(post_kairos)
+        register, command, offset, value, timestamp, coordinates, tstp_si, mac_hash, scale = free_data(data)
+        post = {
+            "name": str(register+command+offset),
+            "value": float(value),
+            "timestamp": int(timestamp),
+            "tags": {
+                "coordinate_x": coordinates[0],
+                "coordinate_y": coordinates[1],
+                "coordinate_z": coordinates[2],
+                "coordinate_t": coordinates[3],
+                "tstp_si": tstp_si,
+                "mac_hash": mac_hash,
+                "spatial_scale": scale[0],
+                "temporal_scale": scale[1] 
+            }
+        }
         return post
     except KeyError:
         raise
@@ -60,27 +68,12 @@ def make_request(data):
     data = clean_data(data)
     try:
         post = mount_request(data)
-        to_post = post[0]
-        to_post_kairos = post[1]
-        #done_post = requests.post('http://sv13.lisha.ufsc.br:8080/ScadaBR/httpds', params = to_post)
-        #done_post = requests.post('http://localhost:8080/ScadaBR/httpds', params = to_post)
-        #done_post = requests.post('http://150.162.142.42:8080/ScadaBR/httpds', params = to_post)
-        #done_post = requests.post('http://150.162.62.12:8080/ScadaBR/httpds', params = to_post)
-        done_post = requests.post('http://ap2.lisha.ufsc.br:8080/ScadaBR/httpds', params = to_post)
-        done_kairos_lehder = requests.post('http://iot.lisha.ufsc.br:5000/convert/', data = json.dumps(to_post_kairos))
+        done_post = requests.post('http://your_kairosdb_server:8080/api/v1/datapoints', data = json.dumps(post))
     except (KeyboardInterrupt, SystemExit):
         raise
     except:
         print("Error in message", data, file=sys.stderr)
         traceback.print_exc()
-    #except KeyError:
-    #    pass
-    #except ValueError:
-    #    pass
-    #except requests.exceptions.ConnectTimeout:
-    #    pass
-    #except struct.error:
-    #    pass
 
 def run_serial():
     serial_connection = serial.Serial('/dev/ttyS2', 115200, timeout=None)
