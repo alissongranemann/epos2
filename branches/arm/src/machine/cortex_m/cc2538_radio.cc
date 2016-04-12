@@ -352,7 +352,6 @@ bool CC2538_PHY::frame_in_rxfifo()
         auto rxfifo = reinterpret_cast<volatile unsigned int*>(RXFIFO);
         unsigned char mac_frame_size = rxfifo[0];
         if (mac_frame_size > 127) {
-            db<CC2538_PHY>(WRN) << "CC2538_PHY::frame_in_rxfifo(): Wrong frame size, dropping RXFIFO contents!" << endl;
             clear_rxfifo();
             ret = false;
         }
@@ -363,7 +362,6 @@ bool CC2538_PHY::frame_in_rxfifo()
             ret = rxfifo[mac_frame_size] & AUTO_CRC_OK;
             
             if(not ret) {
-                db<CC2538_PHY>(WRN) << "CC2538_PHY::frame_in_rxfifo(): Wrong CRC, dropping RXFIFO contents!" << endl;
                 clear_rxfifo();
             }
         }

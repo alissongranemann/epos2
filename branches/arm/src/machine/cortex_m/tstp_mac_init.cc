@@ -24,7 +24,7 @@ One_Hop_MAC::One_Hop_MAC(CC2538_PHY * phy, DMA_Buffer * dma_buf) : _rx_cur(0), _
 
 template<>
 TSTP_MAC::TSTP_MAC(CC2538_PHY * phy, DMA_Buffer * dma_buf) : _tx_pin('c',2,GPIO::OUTPUT), _rx_pin('c',3,GPIO::OUTPUT), 
-    _check_tx_schedule(this), _rx_mf(this), _rx_data(this), _tx(this), _cca(this), _rx_cur(0), _tx_cur(0),  _phy(phy), _receiving_data_id(0), _tx_pending(0), _sending_microframe(0), _last_fwd_id(0xffff), _last_backoff(0) { // TODO: Polymorphic PHY
+    _check_tx_schedule(this), _rx_mf(this), _rx_data(this), _tx(this), _cca(this), _rx_cur(0), _tx_cur(0),  _phy(phy), _receiving_data_id(0), _tx_pending(0), _sending_microframe(0), _last_fwd_id(0xffff), _last_backoff(0), _channel_silent(false) { // TODO: Polymorphic PHY
     db<TSTP_MAC>(TRC) << "TSTP_MAC::TSTP_MAC(phy = " << phy << ", dma = " << dma_buf << ")" << endl;
     assert(MTU <= CC2538_PHY::MTU);
 

@@ -91,16 +91,25 @@ void TSTP_MAC::check_tx_schedule()
     _tx_pin.clear();
     _phy->off();
     auto t = _tstp->time();
+    bool new_ready_frame = false;
     for(auto head = _tx_later_schedule.head(); head and (head->rank() <= t); head = _tx_later_schedule.head()) {
         _tx_later_schedule.remove_head();
         auto deadline = head->object()->frame()->deadline();
         if((deadline > t) and ((deadline - t) > Config::PERIOD)) {
+            new_ready_frame = true;
             head->rank(head->object()->frame()->deadline());
             _tx_ready_schedule.insert(head);
         } else {
             free(head->object());
         }
     }
+    // Channel was silent in the last round, this means that no one is trying to forward my message. Retransmit.
+    if(not new_ready_frame and _channel_silent and _tx_later_schedule.head()) {
+        auto head = _tx_later_schedule.remove_head();
+        head->rank(head->object()->frame()->deadline());
+        _tx_ready_schedule.insert(head);
+    }
+    _channel_silent = false;
     auto head = _tx_ready_schedule.head();
     for(; head and (head->rank() != 0) and ((head->rank() <= t) or ((head->rank() - t) <= Config::PERIOD)); _tx_ready_schedule.remove_head(), free(head->object()), head = _tx_ready_schedule.head());
     _tx_pending = head;
@@ -152,7 +161,7 @@ void TSTP_MAC::prepare_tx_mf() {
         if(t == MESSAGE_TYPE::INTEREST) {
             db<TSTP_MAC>(TRC) << "TSTP_MAC::prepare_tx_mf() : interest message" << endl;
             _acking = is_ack(_tx_pending);
-            new (_sending_microframe->frame()->as<Microframe>()) Microframe(true, _tx_pending->object()->id(), Config::N_MICROFRAMES);
+            new (_sending_microframe->frame()->as<Microframe>()) Microframe(!_acking, _tx_pending->object()->id(), Config::N_MICROFRAMES, 0);
             _tx.schedule(time + period, period, time + ((2 * Config::N_MICROFRAMES + 10) * period)); // More time than necessary. Will unschedule itself in tx() when done
         }
         else if(t == MESSAGE_TYPE::DATA) {
@@ -177,7 +186,9 @@ void TSTP_MAC::prepare_tx_mf() {
 
 void TSTP_MAC::tx() {
     auto old_count = _sending_microframe->frame()->as<Microframe>()->dec_count();
-    //db<TSTP_MAC>(TRC) << "TSTP_MAC::tx() : " << old_count << endl;
+    if(Traits<TSTP_MAC>::hysterically_debugged) {
+        db<TSTP_MAC>(TRC) << "TSTP_MAC::tx() : " << old_count << endl;
+    }
     if(old_count >= 1) {
         send_mf(_sending_microframe);
     } else {
@@ -208,15 +219,20 @@ void TSTP_MAC::tx() {
 }
 
 void TSTP_MAC::rx_mf() {
-    db<TSTP_MAC>(TRC) << "TSTP_MAC::rx_mf()" << endl;
+    if(Traits<TSTP_MAC>::hysterically_debugged) {
+        db<TSTP_MAC>(TRC) << "TSTP_MAC::rx_mf()" << endl;
+    }
     _rx_state = RX_MF; 
+    _channel_silent = true;
     _check_tx_schedule.schedule(tstp()->time() + Config::RX_MF_TIMEOUT);
     _rx_pin.set();
     _phy->rx(); 
 }
 
 void TSTP_MAC::rx_data() {
-    //db<TSTP_MAC>(TRC) << "TSTP_MAC::rx_data()" << endl;
+    if(Traits<TSTP_MAC>::hysterically_debugged) {
+        db<TSTP_MAC>(TRC) << "TSTP_MAC::rx_data()" << endl;
+    }
     _rx_state = RX_DATA; 
     _check_tx_schedule.schedule(tstp()->time() + Config::RX_DATA_TIMEOUT);
     _rx_pin.set();
@@ -225,7 +241,9 @@ void TSTP_MAC::rx_data() {
 
 void TSTP_MAC::update(Buffer * buf)
 {
-    //db<TSTP_MAC>(TRC) << "TSTP_MAC::update()" << endl;
+    if(Traits<TSTP_MAC>::hysterically_debugged) {
+        db<TSTP_MAC>(TRC) << "TSTP_MAC::update()" << endl;
+    }
     if(_rx_state == RX_MF) {
         process_mf(buf);
     } else if(_rx_state == RX_DATA) {
@@ -235,51 +253,39 @@ void TSTP_MAC::update(Buffer * buf)
 
 void TSTP_MAC::process_mf(Buffer * buf)
 {
-    if(buf->size() == sizeof(Microframe)) {
-        db<TSTP_MAC>(TRC) << "TSTP_MAC::process_mf()" << endl;
+    if(buf->size() == sizeof(Microframe)) {        
         _rx_pin.clear();
         _tx_pin.clear();
         _phy->off();
         _check_tx_schedule.unschedule();
+        _channel_silent = false;
+        db<TSTP_MAC>(TRC) << "TSTP_MAC::process_mf()" << endl;
         auto mf = buf->frame()->as<Microframe>();
 
         auto data_time = tstp()->_time->last_sfd() + (mf->count() + 1) * (Config::TIME_BETWEEN_MICROFRAMES + Config::MICROFRAME_TIME);
-
-        db<TSTP_MAC>(TRC) << "case 2" << endl;
-        bool removed = false;
 
         TX_Schedule::Element * next;
         for(auto el = _tx_ready_schedule.head(); el; el = next) {
             next = el->next();
             if(el->object()->id() == mf->id()) {
-                removed = true;
                 _tx_ready_schedule.remove(el);
                 free(el->object());
-                //break; // TODO: is it relevant to search for more frames?
             }
         }
         for(auto el = _tx_later_schedule.head(); el; el = next) {
             next = el->next();
             if(el->object()->id() == mf->id()) {
-                removed = true;
                 _tx_later_schedule.remove(el);
                 free(el->object());
-                //break; // TODO: is it relevant to search for more frames?
             }
         }
-        //db<TSTP_MAC>(TRC) << "removed = " << removed << endl;
-        //db<TSTP_MAC>(TRC) << "all_listen = " << mf->all_listen() << endl;
-        //db<TSTP_MAC>(TRC) << "hint = " << mf->hint() << endl;
-        if((not removed) and (mf->all_listen() or tstp()->_router->relevant(mf->hint()))) {
-            db<TSTP_MAC>(TRC) << "case 2.1" << endl;
+
+        if(mf->all_listen() or tstp()->_router->relevant(mf->hint())) {
             _receiving_data_id = mf->id();
             _rx_data.schedule(data_time - Config::DATA_LISTEN_MARGIN);
         } else {
-            db<TSTP_MAC>(TRC) << "case 2.2" << endl;
             _check_tx_schedule.schedule(data_time + Config::SLEEP_PERIOD);
         }
-    } else {
-        db<TSTP_MAC>(TRC) << "case 3" << endl;
     }
     free(buf);
 }
@@ -344,27 +350,18 @@ void TSTP_MAC::process_data(Buffer * buf)
             auto tx_buf = alloc(buf->size(), reinterpret_cast<Frame*>(data));
             if(tx_buf) {
                 tx_buf->id(buf->id());
-                //tx_buf->tx_link()->rank(tx_buf->frame()->as<TSTP_API::Header>()->deadline()); // forwardings / acks have priority
                 tx_buf->tx_link()->rank(0); // forwardings / acks have priority
                 _tx_ready_schedule.insert(tx_buf->tx_link());
             }
         }
         _tstp->update(data, buf->size(), for_me);
     }
-    /*
-    else if(buf->size() == sizeof(Microframe)) {
-        kout << "Got Microframe!" << endl;
-    }
-    */
 
     free(buf);
 
     if(success) {
         check_tx_schedule();
-    }/* else {
-        kout << "Dropped data!" << endl;
     }
-    */
 }
 
 // One_Hop_MAC definitions

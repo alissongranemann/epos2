@@ -236,9 +236,10 @@ private:
     Frame_ID _receiving_data_id;
     TX_Schedule::Element * _tx_pending;
     Buffer * _sending_microframe;
-    bool _acking;
     Frame_ID _last_fwd_id;
     Time _last_backoff;
+    bool _acking;
+    bool _channel_silent;
 };
 
 class One_Hop_MAC : public TSTP_API
