@@ -275,6 +275,31 @@ typedef Link<TCP, false> TCP_Link;
 template<> struct Type<TCP_Link> { static const Type_Id ID = TCP_LINK_ID; };
 
 
+/// typedef Link<Ether_Channel, true> Ether_Channel_Link;
+class Ether_Channel_Link {
+public:
+    int read(void * data, unsigned int size)
+    {
+        return 0;
+    }
+};
+
+#if 0
+class Ether_Channel_Link: public Semaphore_Observer<NIC::Buffer>
+{
+public:
+    int read(void * data, unsigned int size)
+    {
+        Buffer * buf = updated();
+        return Channel::receive(buf, data, size);
+    }
+};
+#endif
+
+template<> struct Type<Ether_Channel_Link> { static const Type_Id ID = ETHER_CHANNEL_LINK_ID; };
+
+
+
 __END_SYS
 
 #endif

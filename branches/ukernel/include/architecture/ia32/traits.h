@@ -13,6 +13,7 @@ template<> struct Traits<IA32>: public Traits<void>
     static const unsigned int WORD_SIZE         = 32;
     static const unsigned int CLOCK             = 2000000000;
     static const bool unaligned_memory_access   = true;
+    static const bool CACHE_DISABLED = false;
 };
 
 template<> struct Traits<IA32_TSC>: public Traits<void>

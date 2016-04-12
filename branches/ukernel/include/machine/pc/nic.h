@@ -34,6 +34,14 @@ public:
     int send(Buffer * buf) { return _dev->send(buf); }
     void free(Buffer * buf) { _dev->free(buf); }
 
+
+public:
+    int nic_receive(void * data, unsigned int size) {
+        Address src;
+        Protocol prot;
+        return _receive(&src, &prot, data, size);
+    }
+
 private:
     int _send(const Address & dst, const Protocol & prot, const void * data, unsigned int size) {
         return _dev->_send(dst, prot, data, size);

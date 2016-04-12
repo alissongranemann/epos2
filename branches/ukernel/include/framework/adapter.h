@@ -92,6 +92,18 @@ public:
 
     static TSC::Time_Stamp time_stamp() { static_enter(); TSC::Time_Stamp res = Component::time_stamp(); static_leave(); return res; }
 
+    static Chronometer_Aux::Nanosecond elapsed_nano(TSC::Time_Stamp start, TSC::Time_Stamp stop) { static_enter(); Chronometer_Aux::Nanosecond res = Component::elapsed_nano(start, stop); static_leave(); return res; }
+
+    static Chronometer_Aux::Microsecond elapsed_micro(TSC::Time_Stamp start, TSC::Time_Stamp stop) { static_enter(); Chronometer_Aux::Microsecond res = Component::elapsed_micro(start, stop); static_leave(); return res; }
+
+    static Chronometer_Aux::Second elapsed_sec(TSC::Time_Stamp start, TSC::Time_Stamp stop) { static_enter(); Chronometer_Aux::Second res = Component::elapsed_sec(start, stop); static_leave(); return res; }
+
+    static Chronometer_Aux::Nanosecond nano(TSC::Time_Stamp ticks) { static_enter(); Chronometer_Aux::Nanosecond res = Component::nano(ticks); static_leave(); return res; }
+
+    static Chronometer_Aux::Microsecond micro(TSC::Time_Stamp ticks) { static_enter(); Chronometer_Aux::Microsecond res = Component::micro(ticks); static_leave(); return res; }
+
+    static Chronometer_Aux::Second sec(TSC::Time_Stamp ticks) { static_enter(); Chronometer_Aux::Second res = Component::sec(ticks); static_leave(); return res; }
+
     // Communication
     template<typename ... Tn>
     int send(Tn ... an)
@@ -118,12 +130,16 @@ public:
 
     int tcp_link_read(void * data, unsigned int size) { enter(); int res = Component::read(data, size); leave(); return res; }
 
+    int ether_channel_link_read(void * data, unsigned int size) { enter(); int res = Component::read(data, size); leave(); return res; }
+
     // Network
     static void init_network() { static_enter(); Component::init(); static_leave(); }
 
     // NIC
     NIC::Statistics * statistics() { enter(); NIC::Statistics * res = Component::statistics_prt(); leave(); return res; }
     NIC::Address * nic_address() { enter(); NIC::Address * res = &(const_cast<NIC::Address &>(Component::address())); leave(); return res; }
+    unsigned int nic_mtu() { enter(); unsigned int res = Component::mtu(); leave(); return res; }
+    int nic_receive(NIC::Address * src, NIC::Protocol * prot, void * data, unsigned int size) { enter(); int res = Component::nic_receive(data, size); leave(); return res; }
 
     // NIC::Statistics
     unsigned int get_rx_packets() { enter(); unsigned int res = Component::rx_packets; leave(); return res; }

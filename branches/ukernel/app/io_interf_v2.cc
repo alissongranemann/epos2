@@ -1,95 +1,113 @@
-/* Specification:
- * There are three domains
- *
- * Domain 0.
- * The VCPU of Domain 0 runs on PCPU (core) 0.
- * It receives interrupts from NIC because of TCP/IP packets that come from
- * the network.
- *
- * Domain 1.
- * The VCPU of Domain 1 runs on PCPU 1 and executes a hard real-time task.
- *
- * Domain 2
- * The VCPU of Domain 2 runs on PCPU 2 and executes an software real-time /
- * best-effort task printing data from the received TCP/IP packets.
- *
- * Assumed that
- * Task on Guest OS == VCPU == EPOS Thread at private task
- *
- * Variations from the specification:
- * For now, Domain 0 and Domain 2 are kind of mixed together since Domain 2 is
- * getting its packets using the kernel and not communicating with Domain 0
- * (through IPC) and Domain 0 is doing nothing.
- *
- * Implementation notes:
- * This file implements Domain 1.
- * Assuming Domain 0 is implemented in pc_loader.cc
- * Assuming Domain 2 is implemented in io_interf_v2_domain_2.cc
- *
- * */
-
 #include <utility/ostream.h>
 #include <scheduler.h>
 #include <periodic_thread.h>
 
 using namespace EPOS;
 
-static TSC::Time_Stamp guest_task_1_begin = 0;
-static TSC::Time_Stamp guest_task_1_end = 0;
+typedef _SYS::Domain_1 Domain_1;
+typedef RTC::Microsecond Microsecond;
+typedef Scheduling_Criteria::PEDF PEDF;
 
-static TSC::Time_Stamp guest_job_1_begin = 0;
-static TSC::Time_Stamp guest_job_1_end = 0;
-static TSC::Time_Stamp guest_job_1_total = 0;
+static const unsigned int NUM_OF_PCPUS = _SYS::Traits<Application>::NUM_OF_PCPUS_ON_DOMAIN_1;
+static const unsigned int FIRST_PCPU = 0;
+static const int ITERATIONS = _SYS::Traits<Application>::GUEST_OS_1_TASK_ITERATIONS;
+static const unsigned int WSS = (_SYS::Traits<Application>::WSS / 4); /* Work Set Size (in bytes). */
+static const Microsecond PERIOD = _SYS::Traits<Application>::DOMAIN_PERIOD;
+static const Microsecond DEADLINE = PERIOD;
+static const Microsecond CAPACITY = PEDF::UNKNOWN;
 
-const int ITERATIONS = _SYS::Traits<Application>::GUEST_OS_TASK_ITERATIONS;
 
-const unsigned int WSS = 12 * 1024 * 1024; /* Work Set Size (in bytes).
-    * On Intel Core 2 Quad Q9550
-    * L2 is the last level cache (LLC) and it is shared among 2 cores.
-    * There are 4 cores, 2 processors of 2 core each and, 2 x L2
-    * (one for each processor).
-    * L2 size is 6 MB.
-    * Using an array that is twice than that to force cache misses.
-    * */
-unsigned int * work_set;
-unsigned int value;
+static TSC::Time_Stamp guest_task_1_begin[NUM_OF_PCPUS];
+static TSC::Time_Stamp guest_task_1_end[NUM_OF_PCPUS];
 
-OStream cout;
+static TSC::Time_Stamp guest_job_1_begin[NUM_OF_PCPUS];
+static TSC::Time_Stamp guest_job_1_end[NUM_OF_PCPUS];
+static TSC::Time_Stamp guest_job_1_total[NUM_OF_PCPUS];
 
-int main()
+static unsigned int * work_set[NUM_OF_PCPUS];
+
+static Periodic_Thread * guest_tasks[NUM_OF_PCPUS];
+
+int jobs(unsigned int pcpu)
 {
-    cout << "I/O interference - Version 2" << endl;
-    cout << "This is Domain 1" << endl;
-    cout << "Task on Guest OS 1 (Domain 1) starting..." << endl;
+    if (_SYS::Traits<Domain_1>::DBLV1) {
+        db<Domain_1>(WRN) << "jobs pcpu " << pcpu << " starting" << endl;
+    }
 
-    work_set = new unsigned int[WSS];
+    unsigned int value;
+    unsigned int i;
 
-    guest_task_1_begin = TSC::time_stamp();
+    work_set[pcpu] = new unsigned int[WSS];
 
-    for (unsigned int i = 0; i < ITERATIONS; i++) {
-        guest_job_1_begin = TSC::time_stamp();
+    guest_task_1_begin[pcpu] = TSC::time_stamp();
+
+    for (i = 0; i < ITERATIONS; i++) {
+        guest_job_1_begin[pcpu] = TSC::time_stamp();
+        ASM("job_begin:\n");
 
         /* Read and write the work_set here. */
-        // Sequential reads. TODO: try other access patterns
-        for (unsigned int wsi = 0; wsi < WSS; wsi++) {
-            value = work_set[wsi];
+        for (unsigned int tms = 0; tms < 1; tms++) {
+            for (unsigned int wsi = 0; wsi < WSS; wsi++) {
+                value = work_set[pcpu][wsi];
+            }
+
+            for (unsigned int wsi = 0; wsi < WSS; wsi++) {
+                work_set[pcpu][wsi] = i;
+            }
         }
 
+        ASM("job_end:\n");
         /* ---- */
 
-        guest_job_1_end = TSC::time_stamp();
-        guest_job_1_total += guest_job_1_end - guest_job_1_begin;
+        guest_job_1_end[pcpu] = TSC::time_stamp();
+        guest_job_1_total[pcpu] += (guest_job_1_end[pcpu] - guest_job_1_begin[pcpu]);
 
         Periodic_Thread::wait_next();
     }
 
-    guest_task_1_end = TSC::time_stamp();
+    guest_task_1_end[pcpu] = TSC::time_stamp();
 
-    cout << "Guest Task 1 total latency (cycles): " << guest_job_1_total << endl;
-    cout << "Guest Task 1 total execution (cycles): " << (guest_task_1_end - guest_task_1_begin) << endl;
-    cout << "Task on Guest OS 1 (Domain 1) finishing..." << endl;
+    delete work_set[pcpu];
 
-    delete work_set;
+    return 0;
+}
+
+
+int main()
+{
+    db<Domain_1>(WRN) << "# I/O interference - Version 2" << endl;
+    db<Domain_1>(WRN) << "# This is Domain 1" << endl;
+    db<Domain_1>(WRN) << "# Guest OS 1 (Domain 1) starting..." << endl;
+    db<Domain_1>(WRN) << "WSS = " << sizeof(unsigned int) * WSS << endl;
+    db<Domain_1>(WRN) << "NUM_OF_PCPUS = " << NUM_OF_PCPUS << endl;
+    db<Domain_1>(WRN) << "ITERATIONS = " << ITERATIONS << endl;
+    db<Domain_1>(WRN) << "Networking = " << (_SYS::Traits<Network>::enabled ? "enabled" : "disabled") << endl;
+
+    Task * domain_u = Task::self();
+
+    for (unsigned int pcpu = FIRST_PCPU; pcpu < NUM_OF_PCPUS; pcpu++) {
+        PEDF criterion = PEDF(DEADLINE, PERIOD, CAPACITY, pcpu);
+        Periodic_Thread::Configuration conf = Periodic_Thread::Configuration(PERIOD, ITERATIONS, Periodic_Thread::SUSPENDED, criterion, domain_u);
+        guest_tasks[pcpu] = new Periodic_Thread(conf, &jobs, pcpu);
+    }
+
+    for (unsigned int pcpu = FIRST_PCPU; pcpu < NUM_OF_PCPUS; pcpu++) {
+        guest_tasks[pcpu]->resume();
+    }
+
+    for (unsigned int pcpu = FIRST_PCPU; pcpu < NUM_OF_PCPUS; pcpu++) {
+        guest_tasks[pcpu]->join();
+    }
+
+    for (unsigned int pcpu = FIRST_PCPU; pcpu < NUM_OF_PCPUS; pcpu++) {
+        db<Domain_1>(WRN) << "total_latency_cycles_" << pcpu << " = " << guest_job_1_total[pcpu] << endl;
+        db<Domain_1>(WRN) << "total_execution_cycles_" << pcpu << " = " << (guest_task_1_end[pcpu] - guest_task_1_begin[pcpu]) << endl;
+        db<Domain_1>(WRN) << "total_latency_us_" << pcpu << " = " << Chronometer_Aux::micro(guest_job_1_total[pcpu]) << endl;
+        db<Domain_1>(WRN) << "total_execution_us_" << pcpu << " = " << Chronometer_Aux::elapsed_micro(guest_task_1_begin[pcpu], guest_task_1_end[pcpu]) << endl;
+        delete guest_tasks[pcpu];
+    }
+
+    db<Domain_1>(WRN) << "# Guest OS 1 (Domain 1) finishing..." << endl;
 
     return 0;
 }

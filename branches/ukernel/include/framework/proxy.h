@@ -111,6 +111,36 @@ public:
 
     static TSC::Time_Stamp time_stamp() { return static_invoke(TSC_TIME_STAMP); }
 
+    static Chronometer_Aux::Nanosecond elapsed_nano(TSC::Time_Stamp start, TSC::Time_Stamp stop)
+    {
+        return static_invoke(CHRONO_ELAPSED_NANO, start, stop);
+    }
+
+    static Chronometer_Aux::Microsecond elapsed_micro(TSC::Time_Stamp start, TSC::Time_Stamp stop)
+    {
+        return static_invoke(CHRONO_ELAPSED_MICRO, start, stop);
+    }
+
+    static Chronometer_Aux::Second elapsed_sec(TSC::Time_Stamp start, TSC::Time_Stamp stop)
+    {
+        return static_invoke(CHRONO_ELAPSED_SEC, start, stop);
+    }
+
+    static Chronometer_Aux::Nanosecond nano(TSC::Time_Stamp ticks)
+    {
+        return static_invoke(CHRONO_NANO, ticks);
+    }
+
+    static Chronometer_Aux::Microsecond micro(TSC::Time_Stamp ticks)
+    {
+        return static_invoke(CHRONO_MICRO, ticks);
+    }
+
+    static Chronometer_Aux::Second sec(TSC::Time_Stamp ticks)
+    {
+        return static_invoke(CHRONO_SEC, ticks);
+    }
+
     // Communication
     template<typename ... Tn>
     int send(Tn ... an) { return invoke(IPC_SEND, an ...); }
@@ -124,12 +154,16 @@ public:
 
     int tcp_link_read(void * data, unsigned int size) { return invoke(TCP_LINK_READ, data, size); }
 
+    int ether_channel_link_read(void * data, unsigned int size) { return invoke(ETHER_CHANNEL_LINK_READ, data, size); }
+
     // Network
     static void init_network() { static_invoke(NETWORK_INIT); }
 
     // NIC
     Proxy<NIC::Statistics> * statistics() { return new (reinterpret_cast<Adapter<NIC::Statistics> *>(invoke(NIC_STATISTICS))) Proxied<NIC::Statistics>; }
     Proxy<NIC::Address> * nic_address() { return new (reinterpret_cast<Adapter<NIC::Address> *>(invoke(NIC_ADDRESS))) Proxied<NIC::Address>; }
+    unsigned int nic_mtu() { return invoke(NIC_MTU); }
+    int nic_receive(NIC::Address * src, NIC::Protocol * prot, void * data, unsigned int size) { return invoke(NIC_RECEIVE, src, prot, data, size); }
 
     // IP
     Proxy<NIC> * nic() { return new (reinterpret_cast<Adapter<NIC> *>(invoke(IP_NIC))) Proxied<NIC>; }

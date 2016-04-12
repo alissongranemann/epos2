@@ -95,6 +95,8 @@ class Active;
 class Periodic_Thread;
 class RT_Thread;
 class Task;
+class Domain_1;
+class Domain_2;
 
 template<typename> class Scheduler;
 namespace Scheduling_Criteria
@@ -122,6 +124,7 @@ class Condition;
 
 class Clock;
 class Chronometer;
+class Chronometer_Aux;
 class Alarm;
 class Delay;
 
@@ -133,6 +136,7 @@ class ICMP;
 class UDP;
 class TCP;
 class DHCP;
+class Ether_Channel;
 
 
 class IPC;
@@ -186,6 +190,7 @@ enum
     CLOCK_ID,
     ALARM_ID,
     CHRONOMETER_ID,
+    CHRONOMETER_AUX_ID,
     IPC_COMMUNICATOR_ID,
     UTILITY_ID,
     MACHINE_ID,
@@ -195,11 +200,13 @@ enum
     NETWORK_ID,
     NIC_ID,
     NIC_STATISTICS_ID,
+    ETHER_CHANNEL_LINK_ID,
 
     ICMP_ID,
     UDP_ID,
     TCP_ID,
     DHCP_ID,
+    ETHER_CHANNEL_ID,
 
     LINK_ID,
     PORT_ID,
@@ -248,6 +255,7 @@ template<> struct Type<Condition> { static const Type_Id ID = CONDITION_ID; };
 
 template<> struct Type<Clock> { static const Type_Id ID = CLOCK_ID; };
 template<> struct Type<Chronometer> { static const Type_Id ID = CHRONOMETER_ID; };
+template<> struct Type<Chronometer_Aux> { static const Type_Id ID = CHRONOMETER_AUX_ID; };
 template<> struct Type<Alarm> { static const Type_Id ID = ALARM_ID; };
 template<> struct Type<Delay> { static const Type_Id ID = ALARM_ID; };
 
@@ -255,6 +263,7 @@ template<> struct Type<IP> { static const Type_Id ID = IP_ID; };
 template<> struct Type<ICMP> { static const Type_Id ID = ICMP_ID; };
 template<> struct Type<UDP> { static const Type_Id ID = UDP_ID; };
 template<> struct Type<TCP> { static const Type_Id ID = TCP_ID; };
+template<> struct Type<Ether_Channel> { static const Type_Id ID = ETHER_CHANNEL_ID; };
 template<> struct Type<DHCP> { static const Type_Id ID = DHCP_ID; };
 template<> struct Type<Network> { static const Type_Id ID = NETWORK_ID; };
 

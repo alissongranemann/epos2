@@ -48,7 +48,7 @@ template<> struct Traits<PC>: public Traits<PC_Common>
 
     // Default Sizes and Quantities
     static const unsigned int STACK_SIZE = 16 * 1024;
-    static const unsigned int HEAP_SIZE = 16 * 1024 * 1024;
+    static const unsigned int HEAP_SIZE = 50 * 1024 * 1024;
     static const unsigned int MAX_THREADS = 16;
 
     // Maximum Sizes and Quantities - must be in accordance with memory map

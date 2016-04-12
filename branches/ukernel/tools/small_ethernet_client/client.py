@@ -4,24 +4,32 @@ import sys
 import array
 import time
 
-PILSENER = "194.167.1.151" # c2.a7.1.97 (pilsener)
-DUNKEL = "127.0.0.1" # dunkel local host
-global REMOTE_HOST
+E100_PILSENER = '\x00\x90\x27\x9a\x3b\x97'
+E100_DUNKEL = '\x00\x90\x27\x57\x1F\xF1'
+ETHER_TYPE = '\x88\x88'
+HEADER_SIZE = 14
 
-REMOTE_PORT = 8000
-MAX_BUFFER_SIZE = 1024
-MAX_CONN = 1
-PDU = 500
+PDU = 1500
 
-def fixed(socket_client, time_between_segments, iterations): # Same behavior as EPOS ping.cc application (tcp_test).
-    print('Using TBS = ' + str(time_between_segments))
+def fixed(socket_client, time_between_frames, iterations): # Same behavior as EPOS ping.cc application (tcp_test).
+    print('Using TBF = ' + str(time_between_frames))
     print('Iterations = ' + str(iterations))
     assert iterations
 
+    src = E100_DUNKEL
+    dst = E100_PILSENER
+    ether_type = ETHER_TYPE
+
     data = array.array('c', ['0'] * PDU)
 
+    itera = 0
+    if iterations == 'INFINITE':
+        shall_iterate = True
+    else:
+        shall_iterate = itera < iterations
+
     i = 0
-    for itera in range(iterations):
+    while shall_iterate:
         if i > 255 - ord('0'):
             i = 0
 
@@ -55,47 +63,35 @@ def fixed(socket_client, time_between_segments, iterations): # Same behavior as 
         data[len(data) - 2] = '\n'
         data[len(data) - 1] = '\0'
 
-        time.sleep(time_between_segments)
-        sent = socket_client.send(data.tostring())
+        time.sleep(time_between_frames)
+        sent = socket_client.send(dst + src + ether_type + data.tostring())
 
         #if sent == len(data):
         #    print("  Data: ", data.tostring())
         #else:
         #    print("  Data was not correctly sent. It was ", len(data), " bytes long, but only ", sent, "bytes were sent!")
-        if sent != len(data):
+        if sent != len(data) + HEADER_SIZE:
             print("  Data was not correctly sent. It was ", len(data), " bytes long, but only ", sent, "bytes were sent!")
 
         i += 1
 
-
-    if REMOTE_HOST == DUNKEL:
-        socket_client.send("quit")
-
-
-
-def interactive(socket_client):
-    print('Connected. Type data to be send.')
-
-    while True:
-        msg = str(raw_input(">"))
-        socket_client.send(msg)
-        if msg == "quit":
-            break
-        print("sent: " + msg)
+        if iterations == 'INFINITE':
+            shall_iterate = True
+        else:
+            itera += 1
+            shall_iterate = itera < iterations
 
 
 def main(argv):
-    global REMOTE_HOST
-    REMOTE_HOST = DUNKEL
-
     time_between_segments = 1.0
     iterations = 0
 
+    print('Ethernet client')
     print('Client argv:')
     print(argv)
 
     if '-DONTRUN' in argv:
-        print('Will not run the TCP client')
+        print('Will not run the Ethernet client')
         print('Bye!')
         return
 
@@ -104,25 +100,26 @@ def main(argv):
         print('exiting...')
         return
     else:
-        iterations = int(argv[argv.index('-iterations') + 2])
+        i = argv[argv.index('-iterations') + 2]
+        if i != 'INFINITE':
+            iterations = int(i)
+        else:
+            iterations = i
 
     if '-tbs' in argv:
         time_between_segments = float(argv[argv.index('-tbs') + 2])
     else:
         print('tbs not informed. Default to = ' + str(time_between_segments))
 
-    if '-pilsener' in argv:
-        REMOTE_HOST = PILSENER
+    socket_client = socket.socket(socket.AF_PACKET, socket.SOCK_RAW)
 
-    socket_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    interface = 'eth1'
+    socket_client.bind((interface, 0))
+    print('Binded to interface: ' + str(interface))
 
-    print('Trying to connect to: ' + str(REMOTE_HOST) + ' ' + str(REMOTE_PORT))
-    socket_client.connect((REMOTE_HOST,REMOTE_PORT))
 
-    if '-fixed' in argv:
-        fixed(socket_client, time_between_segments, iterations)
-    else:
-        interactive(socket_client)
+    fixed(socket_client, time_between_segments, iterations)
+
 
     socket_client.close()
 

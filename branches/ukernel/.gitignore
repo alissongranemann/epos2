@@ -18,7 +18,11 @@ app/domain_u
 app/fork
 app/io_interf_v1
 app/io_interf_v2
+app/io_interf_v3
+app/io_interf_v3
 app/io_interf_v2_domain_2
+app/io_interf_v3_domain_2
+app/io_interf_v4_domain_2
 app/io_interf_v1d5
 app/io_interf_v1d7
 app/multi_domain_as_and_bs
@@ -39,7 +43,11 @@ img/io_interf_v1
 img/io_interf_v1d5
 img/io_interf_v1d7
 img/io_interf_v2
+img/io_interf_v3
+img/io_interf_v4
 img/io_interf_v2_domain_2
+img/io_interf_v3_domain_2
+img/io_interf_v4_domain_2
 img/multi_domain_as_and_bs
 img/parallel_philosophers_dinner
 img/pc_boot

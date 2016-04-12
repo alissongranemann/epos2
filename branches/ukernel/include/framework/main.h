@@ -44,6 +44,7 @@ __END_SYS
 #include <periodic_thread.h>
 #include <ip.h>
 #include <tcp.h>
+#include <chronometer.h>
 
 #include "handle.h"
 #include "proxy.h"
@@ -123,6 +124,12 @@ public:
     )
     {
     }
+
+    static Task * volatile self()
+    {
+        return reinterpret_cast<Task *>(Base::self());
+    }
+
 };
 
 BIND(Address_Space);
@@ -134,6 +141,7 @@ BIND(Condition);
 
 BIND(Clock);
 BIND(Chronometer);
+BIND(Chronometer_Aux);
 BIND(Alarm);
 BIND(Delay);
 
@@ -382,6 +390,9 @@ private:
     typedef _SYS::NIC Sys;
 
 public:
+    typedef Sys::Protocol Protocol;
+
+public:
     class Statistics: SELECT(NIC::Statistics)
     {
     public:
@@ -497,6 +508,21 @@ public:
     NIC::Statistics & statistics() { return *(reinterpret_cast<NIC::Statistics*>(Base::statistics())); }
 
     NIC::Address & address() { return *(reinterpret_cast<NIC::Address *>(Base::nic_address())); }
+
+    unsigned int mtu() { return Base::nic_mtu(); }
+
+#if 0
+    int receive(Address * src, Protocol * prot, void * data, unsigned int size)
+    {
+        return Base::nic_receive(reinterpret_cast<Sys::Address>(src->__stub()->id().unit()),
+                                    prot,
+                                    data,
+                                    size);
+    }
+#endif
+
+    int receive(void * data, unsigned int size) { return Base::nic_receive(0, 0, data, size); }
+
 };
 
 // BIND(IP);
@@ -638,6 +664,22 @@ public:
         return Base::tcp_link_read(data, size);
     }
 };
+
+
+class Ether_Channel_Link: public SELECT(Ether_Channel_Link)
+{
+private:
+    typedef SELECT(Ether_Channel_Link) Base;
+
+public:
+    Ether_Channel_Link(): Base() {};
+
+    int read(void * data, unsigned int size)
+    {
+        return Base::ether_channel_link_read(data, size);
+    }
+};
+
 
 template<typename Channel, bool connectionless = Channel::connectionless>
 class Link: public _SYS::IF<(_SYS::Traits<_SYS::Link<Channel, connectionless> >::ASPECTS::Length || (_SYS::Traits<_SYS::Build>::MODE == _SYS::Traits<_SYS::Build>::KERNEL)), _SYS::Handle<_SYS::Link<Channel, connectionless> >, _SYS::Link<Channel, connectionless> >::Result

@@ -24,6 +24,7 @@ protected:
 
 public:
     // The time (as defined by God Chronos)
+    typedef unsigned long long Nanosecond;
     typedef Time_Base Microsecond;
     typedef Time_Base Second;
 
@@ -35,10 +36,10 @@ public:
     public:
         Date() {}
         Date(unsigned int Y, unsigned int M, unsigned int D,
-             unsigned int h, unsigned int m, unsigned int s) 
+             unsigned int h, unsigned int m, unsigned int s)
             : _Y(Y), _M(M), _D(D), _h(h), _m(m), _s(s) {}
         Date(const Second & seconds, unsigned long epoch_days = 0);
- 
+
         operator Second() const { return to_offset(); }
         Second to_offset(unsigned long epoch_days = 0) const;
 

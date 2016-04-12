@@ -42,8 +42,10 @@ void Agent::init()
     _handlers[THREAD_CONFIGURATION_ID]              =       &Agent::handle_thread_configuration;
     _handlers[PERIODIC_THREAD_CONFIGURATION_ID]     =       &Agent::handle_periodic_thread_configuration;
     _handlers[TCP_LINK_ID]                          =       &Agent::handle_tcp_link;
+    _handlers[ETHER_CHANNEL_LINK_ID]                =       &Agent::handle_ether_channel_link;
     _handlers[MMU_AUX_ID]                           =       &Agent::handle_mmu_aux;
     _handlers[TSC_ID]                               =       &Agent::handle_tsc;
+    _handlers[CHRONOMETER_AUX_ID]                   =       &Agent::handle_chronometer_aux;
 }
 
 

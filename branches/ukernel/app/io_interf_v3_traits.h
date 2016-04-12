@@ -29,11 +29,11 @@ template<> struct Traits<Build>
     enum {Legacy};
     static const unsigned int MODEL = Legacy;
 
-    static const unsigned int CPUS = 4;
+    static const unsigned int CPUS = 3;
     static const unsigned int NODES = 2; // > 1 => NETWORKING
 
     static const bool NO_LOADER = false;
-    static const bool NO_DOMAIN_2 = true;
+    static const bool NO_DOMAIN_2 = false;
 
     static const bool RUNNING_ON_QEMU = false;
 };
@@ -42,7 +42,7 @@ template<> struct Traits<Domain_1>
 {
     static const bool debugged = true;
     static const bool DBLV0 = true;
-    static const bool DBLV1 = false;
+    static const bool DBLV1 = true;
     static const bool DBLV2 = false;
 };
 
@@ -50,7 +50,7 @@ template<> struct Traits<Domain_2>
 {
     static const bool debugged = true;
     static const bool DBLV0 = true;
-    static const bool DBLV1 = false;
+    static const bool DBLV1 = true;
     static const bool DBLV2 = false;
 };
 
@@ -126,8 +126,7 @@ template<> struct Traits<Application>: public Traits<void>
     static const unsigned int STACK_SIZE = Traits<Machine>::STACK_SIZE;
     static const unsigned int HEAP_SIZE = Traits<Machine>::HEAP_SIZE;
     static const unsigned int MAX_THREADS = Traits<Machine>::MAX_THREADS;
-    static const unsigned long DOMAIN_PERIOD = 50 * 1000;
-    static const unsigned int WSS = 12 * 1024 * 1024; /*! Bytes */
+    static const unsigned long DOMAIN_PERIOD = 5 * 1000 * 1000; // seconds
 
     static const unsigned long MAX_INTERF = 1000 * 1;   // 1 ms
     static const unsigned long MED_INTERF = 1000 * 10;  // 10 ms
@@ -140,12 +139,12 @@ template<> struct Traits<Application>: public Traits<void>
     static const unsigned long GUEST_OS_1_TASK_ITERATIONS = 3;
     static const unsigned long GUEST_OS_TASK_ITERATIONS = GUEST_OS_1_TASK_ITERATIONS;
     static const unsigned long GUEST_OS_2_TASK_ITERATIONS = (GUEST_OS_1_TASK_ITERATIONS * DOMAIN_PERIOD) / TIME_BETWEEN_SEGMENTS;
-    static const unsigned int NUM_OF_DOMAINS = 2;
+    static const unsigned int NUM_OF_DOMAINS = 3;
     static const bool IS_DOM_1_HRT = true;
     static const bool IS_DOM_2_HRT = false;
 
-    static const unsigned int NUM_OF_PCPUS_ON_DOMAIN_1 = Traits<Build>::CPUS;
-    static const bool DONT_RUN_GUEST_OS_2_TASK = true;
+    // static const bool DONT_RUN_GUEST_OS_2_TASK = Traits<Build>::NODES <= 1;
+    static const bool DONT_RUN_GUEST_OS_2_TASK = false;
 };
 
 template<> struct Traits<System>: public Traits<void>

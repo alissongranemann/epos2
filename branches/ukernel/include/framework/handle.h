@@ -129,6 +129,37 @@ public:
 
     static TSC::Time_Stamp time_stamp() { return _Stub::time_stamp(); }
 
+    static Chronometer_Aux::Nanosecond elapsed_nano(TSC::Time_Stamp start, TSC::Time_Stamp stop)
+    {
+        return _Stub::elapsed_nano(start, stop);
+    }
+
+    static Chronometer_Aux::Microsecond elapsed_micro(TSC::Time_Stamp start, TSC::Time_Stamp stop)
+    {
+        return _Stub::elapsed_micro(start, stop);
+    }
+
+    static Chronometer_Aux::Second elapsed_sec(TSC::Time_Stamp start, TSC::Time_Stamp stop)
+    {
+        return _Stub::elapsed_sec(start, stop);
+    }
+
+    static Chronometer_Aux::Nanosecond nano(TSC::Time_Stamp ticks)
+    {
+        return _Stub::nano(ticks);
+    }
+
+    static Chronometer_Aux::Microsecond micro(TSC::Time_Stamp ticks)
+    {
+        return _Stub::micro(ticks);
+    }
+
+    static Chronometer_Aux::Second sec(TSC::Time_Stamp ticks)
+    {
+        return _Stub::sec(ticks);
+    }
+
+
     // Communication
     template<typename ... Tn>
     int send(Tn ... an) { return _stub->send(an ...); }
@@ -142,12 +173,16 @@ public:
 
     int tcp_link_read(void * data, unsigned int size) { return _stub->tcp_link_read(data, size); }
 
+    int ether_channel_link_read(void * data, unsigned int size) { return _stub->ether_channel_link_read(data, size); }
+
     // Network
     static void init_network() { _Stub::init_network(); }
 
     // NIC
     Handle<NIC::Statistics> * statistics() { return new (_stub->statistics()) Handled<NIC::Statistics>; }
     Handle<NIC::Address> * nic_address() { return (new (_stub->address()) Handled<NIC::Address>); }
+    unsigned int nic_mtu() { return _stub->nic_mtu(); }
+    int nic_receive(NIC::Address * src, NIC::Protocol * prot, void * data, unsigned int size) { return _stub->nic_receive(src, prot, data, size); }
 
     // IP
     Handle<NIC> * nic() { return new (_stub->nic()) Handled<NIC>; }

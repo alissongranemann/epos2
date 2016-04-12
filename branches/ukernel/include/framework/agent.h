@@ -101,8 +101,10 @@ private:
     void handle_thread_configuration();
     void handle_periodic_thread_configuration();
     void handle_tcp_link();
+    void handle_ether_channel_link();
     void handle_mmu_aux();
     void handle_tsc();
+    void handle_chronometer_aux();
 
 public:
     static void init();
@@ -121,13 +123,13 @@ void Agent::handle_thread()
 
     switch(method()) {
     case CREATE1: {
-        db<Framework>(WRN) << "Thread Agent, CREATE1" << endl;
+        db<Framework>(TRC) << "Thread Agent, CREATE1" << endl;
         int (*entry)();
         in(entry);
         id(Id(THREAD_ID, reinterpret_cast<Id::Unit_Id>(new Adapter<Thread>(Thread::Configuration(Thread::READY, Thread::NORMAL, 0, 0), entry))));
     } break;
     case CREATE2: {
-        db<Framework>(WRN) << "Thread Agent, CREATE2" << endl;
+        db<Framework>(TRC) << "Thread Agent, CREATE2" << endl;
         Thread::Configuration * conf;
         int (*entry)();
         in(conf, entry);
@@ -184,11 +186,12 @@ void Agent::handle_periodic_thread()
 {
     db<Framework>(TRC) << "Agent::handle_periodic_thread, method = " << method() << endl;
 
+    Adapter<Periodic_Thread> * thread = reinterpret_cast<Adapter<Periodic_Thread> *>(id().unit());
     Result res = 0;
 
     switch(method()) {
     case CREATE2: {
-        db<Framework>(WRN) << "Agent::handle_periodic_thread, CREATE2" << endl;
+        db<Framework>(TRC) << "Agent::handle_periodic_thread, CREATE2" << endl;
         Periodic_Thread::Configuration * conf;
         int (* entry)();
         in(conf, entry);
@@ -201,9 +204,40 @@ void Agent::handle_periodic_thread()
         db<Framework>(TRC) << "created = " << reinterpret_cast<void *>(id().unit()) << endl;
 
     } break;
+    case CREATE3: {
+        db<Framework>(TRC) << "Agent::handle_periodic_thread, CREATE3" << endl;
+        Periodic_Thread::Configuration * conf;
+        int (* entry)(unsigned int);
+        unsigned int a1;
+
+        in(conf, entry, a1);
+
+        db<Framework>(TRC) << "conf (obj) = " << conf << endl;
+        db<Framework>(TRC) << "conf = " << *conf << endl;
+
+        id(Id(PERIODIC_THREAD_ID, reinterpret_cast<Id::Unit_Id>(new Adapter<Periodic_Thread>(*conf, entry, a1))));
+
+        db<Framework>(TRC) << "created = " << reinterpret_cast<void *>(id().unit()) << endl;
+
+    } break;
+    case DESTROY: {
+        delete thread;
+    } break;
     case PERIODIC_THREAD_WAIT_NEXT: {
         bool times = Adapter<Periodic_Thread>::wait_next();
         res = times;
+    } break;
+    case THREAD_JOIN: {
+        res = thread->join();
+    } break;
+    case THREAD_PASS: {
+        thread->pass();
+    } break;
+    case THREAD_SUSPEND: {
+        thread->suspend();
+    } break;
+    case THREAD_RESUME: {
+        thread->resume();
     } break;
     default: {
         db<Framework>(WRN) << "Undefined method for Periodic_Thread agent. Method = " << method() << endl;
@@ -222,14 +256,14 @@ void Agent::handle_task()
 
     switch(method()) {
     case CREATE3: {
-        db<Framework>(WRN) << "Task Agent, CREATE3" << endl;
+        db<Framework>(TRC) << "Task Agent, CREATE3" << endl;
         Segment * cs, * ds;
         int (*entry)();
         in(cs, ds, entry);
         id(Id(TASK_ID, reinterpret_cast<Id::Unit_Id>(new Adapter<Task>(cs, ds, entry))));
     } break;
     case CREATE4: {
-        db<Framework>(WRN) << "Task Agent, CREATE4" << endl;
+        db<Framework>(TRC) << "Task Agent, CREATE4" << endl;
         Thread * thread;
         Segment * cs, * ds;
         int (*entry)();
@@ -292,7 +326,7 @@ void Agent::handle_address_space()
 
     switch(method()) {
     case CREATE: {
-        db<Framework>(WRN) << "Address Space Agent, CREATE" << endl;
+        db<Framework>(TRC) << "Address Space Agent, CREATE" << endl;
         id(Id(ADDRESS_SPACE_ID, reinterpret_cast<Id::Unit_Id>(new Adapter<Address_Space>())));
     } break;
     case DESTROY: {
@@ -348,20 +382,20 @@ void Agent::handle_segment()
 
     switch(method()) {
     case CREATE1: {
-        db<Framework>(WRN) << "Segment Agent, CREATE1" << endl;
+        db<Framework>(TRC) << "Segment Agent, CREATE1" << endl;
         unsigned int bytes;
         in(bytes);
         id(Id(SEGMENT_ID, reinterpret_cast<Id::Unit_Id>(new Adapter<Segment>(bytes))));
     } break;
     case CREATE2: { // *** indistinguishable ***
-        db<Framework>(WRN) << "Segment Agent, CREATE2" << endl;
+        db<Framework>(TRC) << "Segment Agent, CREATE2" << endl;
         unsigned int bytes;
         Segment::Flags flags;
         in(bytes, flags);
         id(Id(SEGMENT_ID, reinterpret_cast<Id::Unit_Id>(new Adapter<Segment>(bytes, flags))));
     } break;
     case CREATE3: { // *** indistinguishable ***
-        db<Framework>(WRN) << "Segment Agent, CREATE3" << endl;
+        db<Framework>(TRC) << "Segment Agent, CREATE3" << endl;
         Segment::Phy_Addr phy_addr;
         unsigned int bytes;
         Segment::Flags flags;
@@ -369,7 +403,7 @@ void Agent::handle_segment()
         id(Id(SEGMENT_ID, reinterpret_cast<Id::Unit_Id>(new Adapter<Segment>(phy_addr, bytes, flags))));
     } break;
     case DESTROY: {
-        db<void>(WRN) << "DESTROY" << endl;
+        db<void>(TRC) << "DESTROY" << endl;
         delete seg;
     } break;
     case SEGMENT_SIZE: {
@@ -462,7 +496,7 @@ void Agent::handle_alarm()
 
     switch(method()) {
     case CREATE3: {
-        db<Framework>(WRN) << "Alarm Agent, CREATE3" << endl;
+        db<Framework>(TRC) << "Alarm Agent, CREATE3" << endl;
         Alarm::Microsecond time;
         Handler * handler;
         int times;
@@ -500,7 +534,7 @@ void Agent::handle_ipc()
 
     switch(method()) {
     case CREATE1: {
-        db<Framework>(WRN) << "IPC Agent, CREATE1" << endl;
+        db<Framework>(TRC) << "IPC Agent, CREATE1" << endl;
         Port<IPC>::Local_Address local;
         in(local);
         id(Id(IPC_COMMUNICATOR_ID, reinterpret_cast<Id::Unit_Id>(new Adapter<Port<IPC>>(local))));
@@ -589,6 +623,16 @@ void Agent::handle_nic()
     Result res = 0;
 
     switch (method()) {
+    case CREATE: {
+        db<Framework>(TRC) << "NIC Agent, CREATE" << endl;
+
+        id(Id(NIC_ID, reinterpret_cast<Id::Unit_Id>(new Adapter<NIC>())));
+
+    } break;
+    case DESTROY: {
+        // delete nic;
+
+    } break;
     case NIC_STATISTICS: {
         res = reinterpret_cast<Result>(nic->statistics());
     } break;
@@ -600,6 +644,23 @@ void Agent::handle_nic()
         NIC::Address * addr;
         in(addr);
         db<void>(WRN) << " " << *addr << endl;
+    } break;
+    case NIC_MTU: {
+        res = nic->nic_mtu();
+
+    } break;
+    case NIC_RECEIVE: {
+        NIC::Address * src;
+        NIC::Protocol * prot;
+        void * data;
+        unsigned int size;
+
+        in(src, prot, data, size);
+
+        db<Framework>(TRC) << "NIC Agent, NIC_RECEIVE, src = " << src << ", prot = " << prot << ", data = " << data << ", size = " << size  << endl;
+
+        res = nic->nic_receive(src, prot, data, size);
+
     } break;
     default: {
         db<Framework>(WRN) << "Undefined method for NIC agent. Method = " << method() << endl;
@@ -694,7 +755,7 @@ void Agent::handle_ip_address()
         res = ip_address[i];
     } break;
     case DESTROY: {
-        db<Framework>(WRN) << "IP::Address Agent, DESTROY: " << reinterpret_cast<void *>(ip_address) << endl;
+        db<Framework>(TRC) << "IP::Address Agent, DESTROY: " << reinterpret_cast<void *>(ip_address) << endl;
 
         // delete ip_address; /* XXX: the deletion of ip_address is causing a page fault. Investigate that. */
         db<Framework>(TRC) << "IP::Address destroyed" << endl;
@@ -740,30 +801,30 @@ void Agent::handle_pedf()
 
     switch(method()) {
     case CREATE1: {
-        db<Framework>(WRN) << "PEDF Agent, CREATE1" << endl;
+        db<Framework>(TRC) << "PEDF Agent, CREATE1" << endl;
         id(Id(PEDF_ID, reinterpret_cast<Id::Unit_Id>(new Adapter<Scheduling_Criteria::PEDF>()))); // Scheduling_Criteria::PEDF::APERIODIC
-        db<Framework>(WRN) << "PEDF created: " << reinterpret_cast<void *>(id().unit()) << endl;
+        db<Framework>(TRC) << "PEDF created: " << reinterpret_cast<void *>(id().unit()) << endl;
     } break;
     case CREATE2: {
-        db<Framework>(WRN) << "PEDF Agent, CREATE2" << endl;
+        db<Framework>(TRC) << "PEDF Agent, CREATE2" << endl;
         int priority;
         int cpu;
         in(priority, cpu);
         id(Id(PEDF_ID, reinterpret_cast<Id::Unit_Id>(new Adapter<Scheduling_Criteria::PEDF>(priority, cpu))));
-        db<Framework>(WRN) << "PEDF created: " << reinterpret_cast<void *>(id().unit()) << endl;
+        db<Framework>(TRC) << "PEDF created: " << reinterpret_cast<void *>(id().unit()) << endl;
     } break;
     case CREATE4: {
-        db<Framework>(WRN) << "PEDF Agent, CREATE4" << endl;
+        db<Framework>(TRC) << "PEDF Agent, CREATE4" << endl;
         RTC::Microsecond deadline;
         RTC::Microsecond period;
         RTC::Microsecond capacity;
         int pcpu;
         in(deadline, period, capacity, pcpu);
         id(Id(PEDF_ID, reinterpret_cast<Id::Unit_Id>(new Adapter<Scheduling_Criteria::PEDF>(deadline, period, capacity, pcpu))));
-        db<Framework>(WRN) << "PEDF created: " << reinterpret_cast<void *>(id().unit()) << endl;
+        db<Framework>(TRC) << "PEDF created: " << reinterpret_cast<void *>(id().unit()) << endl;
     } break;
     case DESTROY: {
-        db<Framework>(WRN) << "PEDF Agent, DESTROY" << endl;
+        db<Framework>(TRC) << "PEDF Agent, DESTROY" << endl;
         delete pedf;
     } break;
     case PRINT: {
@@ -794,8 +855,8 @@ void Agent::handle_thread_configuration()
         Task * task;
         unsigned int stack_size;
         in(task, state, stack_size, criterion);
-        db<Framework>(WRN) << "Thread::Configuration Agent, CREATE4" << endl;
-        db<Framework>(WRN) << ", state = " << state
+        db<Framework>(TRC) << "Thread::Configuration Agent, CREATE4" << endl;
+        db<Framework>(TRC) << ", state = " << state
                             << ", criterion = " << *criterion
                             << ", task = " << reinterpret_cast<void *>(task)
                             // << ", stack_size = " << stack_size
@@ -811,7 +872,7 @@ void Agent::handle_thread_configuration()
 
     } break;
     case DESTROY: {
-        db<Framework>(WRN) << "Thread::Configuration Agent, DESTROY" << endl;
+        db<Framework>(TRC) << "Thread::Configuration Agent, DESTROY" << endl;
         delete conf;
     } break;
     default: {
@@ -837,7 +898,7 @@ void Agent::handle_periodic_thread_configuration()
         Task * task;
         unsigned int stack_size;
         in(task, period, times, state, stack_size, criterion);
-        db<Framework>(WRN) << "Periodic_Thread::Configuration Agent, CREATE6" << endl;
+        db<Framework>(TRC) << "Periodic_Thread::Configuration Agent, CREATE6" << endl;
         db<Framework>(TRC) << "period = " << period
                             << ", times = " << times
                             << ", state = " << state
@@ -858,7 +919,7 @@ void Agent::handle_periodic_thread_configuration()
 
     } break;
     case DESTROY: {
-        db<Framework>(WRN) << "Periodic_Thread::Configuration Agent, DESTROY" << endl;
+        db<Framework>(TRC) << "Periodic_Thread::Configuration Agent, DESTROY" << endl;
         delete conf;
     } break;
     case PRINT: {
@@ -888,7 +949,7 @@ void Agent::handle_tcp_link()
         TCP::Port local;
         in(local);
 
-        db<Framework>(WRN) << "Agent: Creating TCP Link. local = " << local << endl;
+        db<Framework>(TRC) << "Agent: Creating TCP Link. local = " << local << endl;
 
         id(Id(TCP_LINK_ID, reinterpret_cast<Id::Unit_Id>(new Adapter<TCP_Link>(local))));
 
@@ -902,12 +963,47 @@ void Agent::handle_tcp_link()
 
         in(data, size);
 
-        db<Framework>(WRN) << "Agent: TCP_Link read. data = " << data << ", size = " << size << endl;
+        db<Framework>(TRC) << "Agent: TCP_Link read. data = " << data << ", size = " << size << endl;
 
         res = link->tcp_link_read(data, size);
     } break;
     default: {
         db<Framework>(WRN) << "Undefined method for TCP Link agent. Method = " << method() << endl;
+        res = UNDEFINED;
+    }
+    }
+
+    result(res);
+}
+
+void Agent::handle_ether_channel_link()
+{
+    Adapter<Ether_Channel_Link> * link = reinterpret_cast<Adapter<Ether_Channel_Link> *>(id().unit());
+
+    Result res = 0;
+
+    switch(method()) {
+    case CREATE1: {
+        db<Framework>(TRC) << "Agent: Creating Ether_Channel Link. " << endl;
+
+        id(Id(ETHER_CHANNEL_LINK_ID, reinterpret_cast<Id::Unit_Id>(new Adapter<Ether_Channel_Link>())));
+
+    } break;
+    case DESTROY: {
+        delete link;
+    } break;
+    case ETHER_CHANNEL_LINK_READ: {
+        void * data;
+        unsigned int size;
+
+        in(data, size);
+
+        db<Framework>(TRC) << "Agent: Ether_Channel_Link read. data = " << data << ", size = " << size << endl;
+
+        res = link->ether_channel_link_read(data, size);
+    } break;
+    default: {
+        db<Framework>(WRN) << "Undefined method for Ether_Channel Link agent. Method = " << method() << endl;
         res = UNDEFINED;
     }
     }
@@ -953,7 +1049,7 @@ void Agent::handle_mmu_aux()
 
         in(log_addr, size, user);
 
-        db<Framework>(WRN) << Color::GREEN()
+        db<Framework>(TRC) << Color::GREEN()
             << "log_addr = " << reinterpret_cast<void *>(log_addr)
             << ", size = " << size
             << ", user = " << user
@@ -979,11 +1075,86 @@ void Agent::handle_tsc()
     switch(method()) {
     case TSC_TIME_STAMP: {
         res = Adapter<TSC>::time_stamp();
-        db<Framework>(WRN) << "TSC_TIME_STAMP. res = " << res << endl;
+
+        if (res < 0) {
+            db<Framework>(WRN) << "TSC_TIME_STAMP. res = " << res << endl;
+            db<Framework>(ERR) << "Error Time_Stamp overflow!" << endl;
+        }
 
     } break;
     default: {
         db<Framework>(WRN) << "Undefined method for TSC agent. Method = " << method() << endl;
+        res = UNDEFINED;
+    }
+    }
+
+    result(res);
+}
+
+void Agent::handle_chronometer_aux()
+{
+    Result res = 0;
+
+    switch(method()) {
+    case CHRONO_ELAPSED_NANO: {
+        TSC::Time_Stamp start;
+        TSC::Time_Stamp stop;
+        in(start, stop);
+
+        res = Adapter<Chronometer_Aux>::elapsed_nano(start, stop);
+
+        db<Framework>(TRC) << "CHRONO_ELAPSED_NANO, start = " << start << ", stop = " << stop << ", res = " << res << endl;
+
+    } break;
+    case CHRONO_ELAPSED_MICRO: {
+        TSC::Time_Stamp start;
+        TSC::Time_Stamp stop;
+        in(start, stop);
+
+        res = Adapter<Chronometer_Aux>::elapsed_micro(start, stop);
+
+        db<Framework>(TRC) << "CHRONO_ELAPSED_MICRO, start = " << start << ", stop = " << stop << ", res = " << res << endl;
+
+    } break;
+    case CHRONO_ELAPSED_SEC: {
+        TSC::Time_Stamp start;
+        TSC::Time_Stamp stop;
+        in(start, stop);
+
+        res = Adapter<Chronometer_Aux>::elapsed_sec(start, stop);
+
+        db<Framework>(TRC) << "CHRONO_ELAPSED_SEC, start = " << start << ", stop = " << stop << ", res = " << res << endl;
+
+    } break;
+    case CHRONO_NANO: {
+        TSC::Time_Stamp ticks;
+        in(ticks);
+
+        res = Adapter<Chronometer_Aux>::nano(ticks);
+
+        db<Framework>(TRC) << "CHRONO_NANO, ticks = " << ticks << ", res = " << res << endl;
+
+    } break;
+    case CHRONO_MICRO: {
+        TSC::Time_Stamp ticks;
+        in(ticks);
+
+        res = Adapter<Chronometer_Aux>::micro(ticks);
+
+        db<Framework>(TRC) << "CHRONO_MICRO, ticks = " << ticks << ", res = " << res << endl;
+
+    } break;
+    case CHRONO_SEC: {
+        TSC::Time_Stamp ticks;
+        in(ticks);
+
+        res = Adapter<Chronometer_Aux>::sec(ticks);
+
+        db<Framework>(TRC) << "CHRONO_SEC, ticks = " << ticks << ", res = " << res << endl;
+
+    } break;
+    default: {
+        db<Framework>(WRN) << "Undefined method for Chronometer_Aux agent. Method = " << method() << endl;
         res = UNDEFINED;
     }
     }

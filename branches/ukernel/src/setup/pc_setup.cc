@@ -232,6 +232,10 @@ PC_Setup::PC_Setup(char * boot_image)
         set_code_pages_read_only();
         CPU::cr0(CPU::cr0() | CPU::CR0_WP); /* inhibits supervisor-level procedures from writing into read-only pages */
 
+        if (Traits<IA32>::CACHE_DISABLED) {
+            CPU::cr0(CPU::cr0() | CPU::CR0_CD); /* Disables Cache */
+        }
+
         // Signalize other CPUs that paging is up
         Paging_Ready = true;
 
@@ -244,6 +248,10 @@ PC_Setup::PC_Setup(char * boot_image)
         enable_paging();
 
         CPU::cr0(CPU::cr0() | CPU::CR0_WP); /* inhibits supervisor-level procedures from writing into read-only pages */
+
+        if (Traits<IA32>::CACHE_DISABLED) {
+            CPU::cr0(CPU::cr0() | CPU::CR0_CD); /* Disables Cache */
+        }
 
         setup_tss_i();
     }

@@ -7,5 +7,6 @@
 #include <network.h>
 #include <udp.h>
 #include <tcp.h>
+#include <ether_channel.h>
 
 #endif

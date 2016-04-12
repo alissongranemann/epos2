@@ -45,9 +45,11 @@ void Task::setup()
 
         db<void>(WRN) << "Task::setup" << endl;
 
-        IP * ip = IP::get_by_nic(0); /* Assuming there is one NIC */
-        if (ip->nic()) {
-            ip->nic()->remap();
+        if (Traits<Network>::enabled) {
+            IP * ip = IP::get_by_nic(0); /* Assuming there is one NIC */
+            if (ip->nic()) {
+                ip->nic()->remap();
+            }
         }
     }
 }

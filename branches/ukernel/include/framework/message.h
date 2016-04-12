@@ -81,6 +81,8 @@ public:
         NIC_STATISTICS = COMPONENT,
         NIC_ADDRESS,
         NIC_ADDRESS_PRINT,
+        NIC_MTU,
+        NIC_RECEIVE,
 
         NIC_STATISTICS_TX_PACKETS = COMPONENT,
         NIC_STATISTICS_TX_BYTES,
@@ -96,6 +98,8 @@ public:
         IP_ADDRESS_ARRAY_SUBSCRIPT_CONST,
 
         TCP_LINK_READ = COMPONENT,
+
+        ETHER_CHANNEL_LINK_READ = COMPONENT,
 
         PRINT = COMPONENT,
 
@@ -114,9 +118,16 @@ public:
 
         TSC_TIME_STAMP = COMPONENT,
 
+        CHRONO_ELAPSED_NANO = COMPONENT,
+        CHRONO_ELAPSED_MICRO,
+        CHRONO_ELAPSED_SEC,
+        CHRONO_NANO,
+        CHRONO_MICRO,
+        CHRONO_SEC,
+
         UNDEFINED = -1
     };
-    typedef int Method;
+    typedef long long Method;
     typedef Method Result;
 
     typedef Simple_List<Message> List;
