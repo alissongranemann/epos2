@@ -141,7 +141,8 @@ PC_Setup::PC_Setup(char * boot_image)
     bi = reinterpret_cast<char *>(boot_image);
     si = reinterpret_cast<System_Info<PC> *>(bi);
 
-    Display::init();
+    PC_Display::init(PC_Display::FB_PHY_ADDR);
+    Serial_Display::init();
 
     // Multicore conditional start up
     int cpu_id = Machine::cpu_id();
