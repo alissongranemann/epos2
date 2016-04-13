@@ -216,10 +216,11 @@ public:
 
         void activate() const { IA32::pdp(reinterpret_cast<IA32::Reg32>(_pd)); }
 
-        Log_Addr attach(const Chunk & chunk) {
-            for(unsigned int i = 0; i < PD_ENTRIES; i++)
-        	if(attach(i, chunk.pt(), chunk.pts(), chunk.flags()))
-        	    return i << DIRECTORY_SHIFT;
+        Log_Addr attach(const Chunk & chunk, unsigned int from = 0) {
+            for(unsigned int i = from; i < PD_ENTRIES; i++)
+                if(attach(i, chunk.pt(), chunk.pts(), chunk.flags()))
+        	        return i << DIRECTORY_SHIFT;
+
             return false;
         }
 
@@ -284,7 +285,7 @@ public:
     public:
         DMA_Buffer(unsigned int s) : Chunk(s, IA32_Flags::DMA) {
             Directory dir(current());
-            _log_addr = dir.attach(*this);
+            _log_addr = dir.attach(*this, MMU::directory(Memory_Map<PC>::SYS_HEAP));
             db<IA32_MMU>(TRC) << "IA32_MMU::DMA_Buffer() => " << *this << endl;
         }
 
