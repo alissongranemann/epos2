@@ -23,8 +23,8 @@ STATIC_SRCS	+= $(addprefix ../../../mach/common/comp_manager/, $(SRCS))
 include ../../../mach/common/amba_wishbone/hw.srcs
 STATIC_SRCS	+= $(addprefix ../../../mach/common/amba_wishbone/, $(SRCS))
 
-include ../../../components/catapult/adder/hw.srcs
-STATIC_SRCS	+= $(addprefix ../../../components/catapult/adder/, $(SRCS))
+include ../../../components/vivado_hls/adder/hw.srcs
+STATIC_SRCS	+= $(addprefix ../../../components/vivado_hls/adder/, $(SRCS))
 
 HLS_COMPONENTS	:= adder	
 

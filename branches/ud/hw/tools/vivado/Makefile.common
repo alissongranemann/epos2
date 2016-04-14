@@ -51,7 +51,7 @@ route:	$(ROUTE_RECFG) $(ROUTE_STATIC)
 synth:	$(SYNTH_RECFG_COMP) $(SYNTH_STATIC)
 
 hls:
-	make all --directory=$(BASE_DIR)/hw/components/catapult
+	make all --directory=$(BASE_DIR)/hw/components/vivado_hls
 
 prog:	bit
 	@vivado $(VIVADO_OPTS) -source $(TOOLS_DIR)/prog.tcl -tclargs $(BIT_STATIC)
@@ -86,7 +86,7 @@ $(BIT_DIR) $(LOG_DIR) $(SYNTH_DIR) $(ROUTE_DIR):
 	mkdir -p $@
 
 hls_clean:
-	make clean --directory=$(BASE_DIR)/hw/components/catapult
+	make clean --directory=$(BASE_DIR)/hw/components/vivado_hls
 
 veryclean:	clean hls_clean
 

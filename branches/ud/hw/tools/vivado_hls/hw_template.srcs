@@ -1,0 +1,2 @@
+SRCS = \
+../../../mach/common/rtsnoc_router/ap2rtsnoc.vhd \

@@ -1,3 +1,0 @@
-SRCS = \
-adder.v \
-../../../mach/common/rtsnoc_router/rtsnoc_to_achannel.v
