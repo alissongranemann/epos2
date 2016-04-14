@@ -90,6 +90,8 @@ public:
     }
 
 private:
+    // pack() and unpack() are workarounds: Vivado HLS doesn't seem to able to
+    // pack elements from structs used as arguments in the top level function
     void pack(u80 &u, Packet &msg) {
         msg.payload = u.range(31, 0);
         msg.header.type = u.range(39, 32);
