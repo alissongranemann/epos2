@@ -99,7 +99,7 @@ private:
         msg.header.type_id = u.range(55, 48);
         msg.addr._x = u.range(63, 56);
         msg.addr._y = u.range(71, 64);
-        msg.addr._local = u.range(79, 72);
+        msg.addr._h = u.range(79, 72);
     }
 
     void unpack(u80 &u, Packet &msg) {
@@ -109,7 +109,7 @@ private:
         u(55, 48) = msg.header.type_id;
         u(63, 56) = msg.addr._x;
         u(71, 64) = msg.addr._y;
-        u(79, 72) = msg.addr._local;
+        u(79, 72) = msg.addr._h;
     }
 
 private:

@@ -38,7 +38,7 @@ public:
     struct Address {
         unsigned char _x;
         unsigned char _y;
-        unsigned char _local;
+        unsigned char _h;
     };
 
     // Packet has the following organization:

@@ -57,8 +57,8 @@ public:
         ~Buffer() { free_buf(this); }
 
         friend Debug & operator << (Debug & db, const Buffer & b) {
-            db << "{x=" << b._addr.x() << ",y=" << b._addr.y() << ",local="
-                << b._addr.local() << ",type=" << b._type << ",unit=" << b._unit
+            db << "{x=" << b._addr._x << ",y=" << b._addr._y << ",local="
+                << b._addr._h << ",type=" << b._type << ",unit=" << b._unit
                 << ",disp_addr=" << reinterpret_cast<void *>(b._info.disp_addr)
                 << ",obj_addr=" << reinterpret_cast<void *>(b._info.obj_addr)
                 << "}";

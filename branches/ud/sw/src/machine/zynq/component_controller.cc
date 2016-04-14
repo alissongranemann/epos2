@@ -16,9 +16,9 @@ bool Zynq_Component_Controller::alloc_proxy(Buffer * buf)
 
     if((buf->_id = ctrl(RESULT)) != CMD_RESULT_ERR) {
         // Configure Buffer registers
-        buf->reg(ADDR_X) = buf->_addr.x();
-        buf->reg(ADDR_Y) = buf->_addr.y();
-        buf->reg(ADDR_LOCAL) = buf->_addr.local();
+        buf->reg(ADDR_X) = buf->_addr._x;
+        buf->reg(ADDR_Y) = buf->_addr._y;
+        buf->reg(ADDR_LOCAL) = buf->_addr._h;
         buf->reg(TYPE) = buf->_type;
         buf->reg(UNIT) = buf->_unit;
     }
