@@ -35,28 +35,17 @@ public:
 
     // Source address for received messages, destination address for transmitted
     // messages
-    class Address
-    {
-    public:
-        Address() {}
-        Address(unsigned char x, unsigned char y, unsigned char local): _x(x),
-            _y(y), _local(local) {}
-
-        const unsigned char & x() const { return _x; }
-        const unsigned char & y() const { return _y; }
-        const unsigned char & local() const { return _local; }
-
-    private:
+    struct Address {
         unsigned char _x;
         unsigned char _y;
         unsigned char _local;
     };
 
     // Packet has the following organization:
-    // 79...72 71...64 63...56 55...48 47...49 39...32 31...0
+    // 79...72 71...64 63...56 55...48 47...40 39...32 31...0
     // local   y       x       type_id inst_id type    payload
     struct Packet {
-        unsigned long payload;
+        unsigned int payload;
         Header header;
         Address addr;
     };

@@ -3,11 +3,11 @@
 
 #include <system/config.h>
 
-// This file is included by both g++ in EPOS compilation and Catapult in UD
+// This file is included by both g++ in EPOS compilation and Vivado HLS in UD
 // components synthesis. We use only C++ standard integer types in order to keep
-// it portable. Remember that for Catapult, char has 8 bits, int has 16 bits and
-// long has 32 bits; in g++, the standard states that they have AT LEAST this
-// width.
+// it portable. Remember that for Vivado HLS, char has 8 bits, short has 16 bits
+// and int has 32 bits. in g++, the standard states that they have AT LEAST this
+// width except for int that has at least 16 bits.
 
 __BEGIN_SYS
 
