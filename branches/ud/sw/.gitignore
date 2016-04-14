@@ -1,0 +1,13 @@
+*.o
+*.s
+app/*
+!app/*.cc
+!app/*.h
+bin
+etc
+!etc/makefile
+img
+!img/makefile
+lib
+tools/eposmkbi/eposmkbi
+tools/zynq/xmd.ini
