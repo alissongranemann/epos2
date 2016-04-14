@@ -1,0 +1,3 @@
+COMP	:= Adder
+
+include ../makedefs
