@@ -45,19 +45,19 @@ architecture structural of top is
     constant NET_DATA_WIDTH     : integer := 56;
     constant NET_BUS_SIZE       : integer := NET_DATA_WIDTH+(2*NET_SIZE_X_LOG2)+(2*NET_SIZE_Y_LOG2)+6;
 
-    constant ROUTER_N_PORTS : integer := 8;
-    constant ROUTER_NN      : integer := 0;
-    constant ROUTER_NE      : integer := 1;
-    constant ROUTER_EE      : integer := 2;
-    constant ROUTER_SE      : integer := 3;
-    constant ROUTER_SS      : integer := 4;
-    constant ROUTER_SW      : integer := 5;
-    constant ROUTER_WW      : integer := 6;
-    constant ROUTER_NW      : integer := 7;
+    constant RTSNOC_N_PORTS : integer := 8;
+    constant RTSNOC_NN      : integer := 0;
+    constant RTSNOC_NE      : integer := 1;
+    constant RTSNOC_EE      : integer := 2;
+    constant RTSNOC_SE      : integer := 3;
+    constant RTSNOC_SS      : integer := 4;
+    constant RTSNOC_SW      : integer := 5;
+    constant RTSNOC_WW      : integer := 6;
+    constant RTSNOC_NW      : integer := 7;
 
     -- TODO: These array types are ugly, get rid of them
-    type noc_array_of_stdlogic is array(0 to ROUTER_N_PORTS-1) of std_logic;
-    type noc_array_of_stdvec38 is array(0 to ROUTER_N_PORTS-1) of std_logic_vector(NET_BUS_SIZE-1 downto 0);
+    type noc_array_of_stdlogic is array(0 to RTSNOC_N_PORTS-1) of std_logic;
+    type noc_array_of_stdvec38 is array(0 to RTSNOC_N_PORTS-1) of std_logic_vector(NET_BUS_SIZE-1 downto 0);
 
     -- m_axi_gp0 range goes from 0x43C00000 up to 0x43C0FFFF
     component ps is
@@ -419,7 +419,7 @@ begin
     -- Base address: 0x43C00000
     u_comp_manager_axi4lite : comp_manager_axi4lite
     generic map (
-        NOC_LOCAL_ADR       => ROUTER_NN,
+        NOC_LOCAL_ADR       => RTSNOC_NN,
         NOC_X               => 0,
         NOC_Y               => 0,
         SOC_SIZE_X          => NET_SIZE_X_LOG2,
@@ -449,12 +449,12 @@ begin
         axi_rresp_o         => s_axi_rresp_s,
         axi_rvalid_o        => s_axi_rvalid_s(0),
         axi_rready_i        => s_axi_rready_s(0),
-        noc_din_o           => noc_din_s(ROUTER_NN),
-        noc_dout_i          => noc_dout_s(ROUTER_NN),
-        noc_wr_o            => noc_wr_s(ROUTER_NN),
-        noc_rd_o            => noc_rd_s(ROUTER_NN),
-        noc_wait_i          => noc_wait_s(ROUTER_NN),
-        noc_nd_i            => noc_nd_s(ROUTER_NN),
+        noc_din_o           => noc_din_s(RTSNOC_NN),
+        noc_dout_i          => noc_dout_s(RTSNOC_NN),
+        noc_wr_o            => noc_wr_s(RTSNOC_NN),
+        noc_rd_o            => noc_rd_s(RTSNOC_NN),
+        noc_wait_i          => noc_wait_s(RTSNOC_NN),
+        noc_nd_i            => noc_nd_s(RTSNOC_NN),
         noc_int_o           => irq_f2p_s(0)
     );
 
@@ -470,54 +470,54 @@ begin
         o_teste     => open,
         i_clk       => fclk_clk0_s,
         i_rst       => noc_rst_s,
-        i_din_nn    => noc_din_s(ROUTER_NN),
-        o_dout_nn   => noc_dout_s(ROUTER_NN),
-        i_wr_nn     => noc_wr_s(ROUTER_NN),
-        i_rd_nn     => noc_rd_s(ROUTER_NN),
-        o_wait_nn   => noc_wait_s(ROUTER_NN),
-        o_nd_nn     => noc_nd_s(ROUTER_NN),
-        i_din_ne    => noc_din_s(ROUTER_NE),
-        o_dout_ne   => noc_dout_s(ROUTER_NE),
-        i_wr_ne     => noc_wr_s(ROUTER_NE),
-        i_rd_ne     => noc_rd_s(ROUTER_NE),
-        o_wait_ne   => noc_wait_s(ROUTER_NE),
-        o_nd_ne     => noc_nd_s(ROUTER_NE),
-        i_din_ee    => noc_din_s(ROUTER_EE),
-        o_dout_ee   => noc_dout_s(ROUTER_EE),
-        i_wr_ee     => noc_wr_s(ROUTER_EE),
-        i_rd_ee     => noc_rd_s(ROUTER_EE),
-        o_wait_ee   => noc_wait_s(ROUTER_EE),
-        o_nd_ee     => noc_nd_s(ROUTER_EE),
-        i_din_se    => noc_din_s(ROUTER_SE),
-        o_dout_se   => noc_dout_s(ROUTER_SE),
-        i_wr_se     => noc_wr_s(ROUTER_SE),
-        i_rd_se     => noc_rd_s(ROUTER_SE),
-        o_wait_se   => noc_wait_s(ROUTER_SE),
-        o_nd_se     => noc_nd_s(ROUTER_SE),
-        i_din_ss    => noc_din_s(ROUTER_SS),
-        o_dout_ss   => noc_dout_s(ROUTER_SS),
-        i_wr_ss     => noc_wr_s(ROUTER_SS),
-        i_rd_ss     => noc_rd_s(ROUTER_SS),
-        o_wait_ss   => noc_wait_s(ROUTER_SS),
-        o_nd_ss     => noc_nd_s(ROUTER_SS),
-        i_din_sw    => noc_din_s(ROUTER_SW),
-        o_dout_sw   => noc_dout_s(ROUTER_SW),
-        i_wr_sw     => noc_wr_s(ROUTER_SW),
-        i_rd_sw     => noc_rd_s(ROUTER_SW),
-        o_wait_sw   => noc_wait_s(ROUTER_SW),
-        o_nd_sw     => noc_nd_s(ROUTER_SW),
-        i_din_ww    => noc_din_s(ROUTER_WW),
-        o_dout_ww   => noc_dout_s(ROUTER_WW),
-        i_wr_ww     => noc_wr_s(ROUTER_WW),
-        i_rd_ww     => noc_rd_s(ROUTER_WW),
-        o_wait_ww   => noc_wait_s(ROUTER_WW),
-        o_nd_ww     => noc_nd_s(ROUTER_WW),
-        i_din_nw    => noc_din_s(ROUTER_NW),
-        o_dout_nw   => noc_dout_s(ROUTER_NW),
-        i_wr_nw     => noc_wr_s(ROUTER_NW),
-        i_rd_nw     => noc_rd_s(ROUTER_NW),
-        o_wait_nw   => noc_wait_s(ROUTER_NW),
-        o_nd_nw     => noc_nd_s(ROUTER_NW)
+        i_din_nn    => noc_din_s(RTSNOC_NN),
+        o_dout_nn   => noc_dout_s(RTSNOC_NN),
+        i_wr_nn     => noc_wr_s(RTSNOC_NN),
+        i_rd_nn     => noc_rd_s(RTSNOC_NN),
+        o_wait_nn   => noc_wait_s(RTSNOC_NN),
+        o_nd_nn     => noc_nd_s(RTSNOC_NN),
+        i_din_ne    => noc_din_s(RTSNOC_NE),
+        o_dout_ne   => noc_dout_s(RTSNOC_NE),
+        i_wr_ne     => noc_wr_s(RTSNOC_NE),
+        i_rd_ne     => noc_rd_s(RTSNOC_NE),
+        o_wait_ne   => noc_wait_s(RTSNOC_NE),
+        o_nd_ne     => noc_nd_s(RTSNOC_NE),
+        i_din_ee    => noc_din_s(RTSNOC_EE),
+        o_dout_ee   => noc_dout_s(RTSNOC_EE),
+        i_wr_ee     => noc_wr_s(RTSNOC_EE),
+        i_rd_ee     => noc_rd_s(RTSNOC_EE),
+        o_wait_ee   => noc_wait_s(RTSNOC_EE),
+        o_nd_ee     => noc_nd_s(RTSNOC_EE),
+        i_din_se    => noc_din_s(RTSNOC_SE),
+        o_dout_se   => noc_dout_s(RTSNOC_SE),
+        i_wr_se     => noc_wr_s(RTSNOC_SE),
+        i_rd_se     => noc_rd_s(RTSNOC_SE),
+        o_wait_se   => noc_wait_s(RTSNOC_SE),
+        o_nd_se     => noc_nd_s(RTSNOC_SE),
+        i_din_ss    => noc_din_s(RTSNOC_SS),
+        o_dout_ss   => noc_dout_s(RTSNOC_SS),
+        i_wr_ss     => noc_wr_s(RTSNOC_SS),
+        i_rd_ss     => noc_rd_s(RTSNOC_SS),
+        o_wait_ss   => noc_wait_s(RTSNOC_SS),
+        o_nd_ss     => noc_nd_s(RTSNOC_SS),
+        i_din_sw    => noc_din_s(RTSNOC_SW),
+        o_dout_sw   => noc_dout_s(RTSNOC_SW),
+        i_wr_sw     => noc_wr_s(RTSNOC_SW),
+        i_rd_sw     => noc_rd_s(RTSNOC_SW),
+        o_wait_sw   => noc_wait_s(RTSNOC_SW),
+        o_nd_sw     => noc_nd_s(RTSNOC_SW),
+        i_din_ww    => noc_din_s(RTSNOC_WW),
+        o_dout_ww   => noc_dout_s(RTSNOC_WW),
+        i_wr_ww     => noc_wr_s(RTSNOC_WW),
+        i_rd_ww     => noc_rd_s(RTSNOC_WW),
+        o_wait_ww   => noc_wait_s(RTSNOC_WW),
+        o_nd_ww     => noc_nd_s(RTSNOC_WW),
+        i_din_nw    => noc_din_s(RTSNOC_NW),
+        o_dout_nw   => noc_dout_s(RTSNOC_NW),
+        i_wr_nw     => noc_wr_s(RTSNOC_NW),
+        i_rd_nw     => noc_rd_s(RTSNOC_NW),
+        o_wait_nw   => noc_wait_s(RTSNOC_NW),
+        o_nd_nw     => noc_nd_s(RTSNOC_NW)
     );
 
     u_adder_0 : adder
@@ -531,17 +531,17 @@ begin
         RMI_H_WIDTH             => 8
     )
     port map (
-        clk              => fclk_clk0_s,
-        rst_n            => noc_rst_s,
-        rtsnoc_din       => noc_din_s(ROUTER_NE),
-        rtsnoc_rd        => noc_rd_s(ROUTER_NE),
-        rtsnoc_nd        => noc_nd_s(ROUTER_NE),
-        rtsnoc_dout      => noc_dout_s(ROUTER_NE),
-        rtsnoc_wr        => noc_wr_s(ROUTER_NE),
-        rtsnoc_wait      => noc_wait_s(ROUTER_NE),
-        x_ori            => "0",
-        y_ori            => "0",
-        h_ori            => std_logic_vector(to_unsigned(ROUTER_NE, 3))
+        clk                     => fclk_clk0_s,
+        rst_n                   => rst_n_s,
+        rtsnoc_din              => noc_din_s(RTSNOC_NE),
+        rtsnoc_rd               => noc_rd_s(RTSNOC_NE),
+        rtsnoc_nd               => noc_nd_s(RTSNOC_NE),
+        rtsnoc_dout             => noc_dout_s(RTSNOC_NE),
+        rtsnoc_wr               => noc_wr_s(RTSNOC_NE),
+        rtsnoc_wait             => noc_wait_s(RTSNOC_NE),
+        x_ori                   => "0",
+        y_ori                   => "0",
+        h_ori                   => std_logic_vector(to_unsigned(RTSNOC_NE, 3))
     );
 
     led         <= gpio_0_tri_o_s(7 downto 0);
