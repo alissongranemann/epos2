@@ -5,9 +5,9 @@
 
 __USING_SYS
 
-void <<name>>_top(Message::Channel & rx_ch, Message::Channel & tx_ch) {
-    Agent<<<Name>>> agent(rx_ch, tx_ch);
-    //static Agent<XXTOPXX> agent(rx_ch, tx_ch);
+void <<name>>_top(Message::Channel & rx, Message::Channel & tx) {
+    Agent<<<Name>>> agent(rx, tx);
+    //static Agent<XXTOPXX> agent(rx, tx);
 
     agent.exec();
 }
