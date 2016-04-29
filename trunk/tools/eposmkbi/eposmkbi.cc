@@ -41,6 +41,7 @@ struct Configuration
     unsigned int  boot_length_max;
     short         node_id;   // node id in SAN (-1 => get from net)
     short         n_nodes;   // nodes in SAN (-1 => dynamic)
+    bool          no_loader;
 };
 
 // System_Info
@@ -181,8 +182,7 @@ int main(int argc, char **argv)
 
     // Add LOADER (if multiple applications) or the single application otherwise
     si.bm.application_offset = image_size - boot_size;
-//    if((argc == 4) && strcmp(CONFIG.mode, "kernel")) { // Add Single APP
-    if(argc == 4) { // Add Single APP
+    if((argc == 4) && (strcmp(CONFIG.mode, "kernel") || CONFIG.no_loader)) { // Add Single APP
         printf("    Adding application \"%s\":", argv[3]);
         image_size += put_file(fd_img, argv[3]);
         si.bm.extras_offset = -1;
@@ -199,6 +199,8 @@ int main(int argc, char **argv)
             stat(argv[i], &file_stat);
             image_size += put_number(fd_img, file_stat.st_size);
             image_size += put_file(fd_img, argv[i]);
+
+            printf("        Added application \"%s\": (size: %d)\n", argv[i], file_stat.st_size);
         }
         // Signalize last application by setting its size to 0
         image_size += put_number(fd_img, 0);
@@ -345,6 +347,19 @@ bool parse_config(FILE * cfg_file, Configuration * cfg)
         cfg->boot_length_max=atoi(token);
     else
         cfg->boot_length_max=0;
+
+    // Whether uses an application loader while in KERNEL mode
+    fgets(line, 256, cfg_file);
+    token = strtok(line, "=");
+    if(!strcmp(token, "NO_LOADER") && (token = strtok(NULL, "\n"))) {
+        if(strcmp(token, "true") == 0)
+            cfg->no_loader = true;
+        else
+            cfg->no_loader = false;
+    }
+    else {
+        cfg->no_loader = false;
+    }
 
     // Node Id
     fgets(line, 256, cfg_file);

@@ -227,7 +227,7 @@ enum
 
     UTILITY_ID,
 
-    LAST_TYPE_ID,
+    LAST_TYPE_ID = 0xff,
 
     UNKNOWN_TYPE_ID = 0xffff
 };

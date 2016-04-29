@@ -53,9 +53,11 @@ int main()
 
     cout << "Both threads are now done and have suspended themselves. I'll now wait for 1 second and then wake them up so they can exit ..." << endl;
 
-    Alarm::delay(1000000);
+    // Alarm::delay(1000000);
 
     a->resume();
+
+    Thread::yield();
     b->resume();
 
     int status_a = a->join();

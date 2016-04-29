@@ -6,6 +6,8 @@
 #include <address_space.h>
 #include <segment.h>
 
+extern "C" { void _agent_init(); }
+
 __BEGIN_SYS
 
 class Init_System
@@ -74,6 +76,11 @@ public:
             if(!Traits<TSC>::enabled && !Traits<NIC>::enabled)
                 db<Init>(WRN) << "Due to lack of entropy, Random is a pseudo random numbers generator!" << endl;
             db<Init>(INF) << "done!" << endl;
+        }
+
+        // Init Agent
+        if(Traits<Build>::MODE == Traits<Build>::KERNEL) {
+            _agent_init();
         }
 
         // Initialization continues at init_first

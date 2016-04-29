@@ -41,6 +41,7 @@ eposmkbi.conf:	FORCE
 		@echo "MEM_TOP=$(MEM_TOP)" >> $@
 		@echo "BOOT_LENGTH_MIN=$(BOOT_LENGTH_MIN)" >> $@
 		@echo "BOOT_LENGTH_MAX=$(BOOT_LENGTH_MAX)" >> $@
+		@echo "NO_LOADER=$(NO_LOADER)" >> $@
 
 clean: $(APP)/$(APPLICATION)_traits.h
 		sed -e 's/^#define MODE.*$$/#define MODE xxx/' -i $(INCLUDE)/system/config.h

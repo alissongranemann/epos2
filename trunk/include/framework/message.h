@@ -13,7 +13,7 @@ __BEGIN_SYS
 
 class Message
 {
-private:
+public:
     static const unsigned int MAX_PARAMETERS_SIZE = 20;
 
 public:
@@ -60,6 +60,8 @@ public:
         SEGMENT_SIZE = COMPONENT,
         SEGMENT_PHY_ADDRESS,
         SEGMENT_RESIZE,
+        CREATE_SEGMENT_IN_PLACE,
+        CREATE_HEAP_IN_PLACE,
 
         SYNCHRONIZER_LOCK = COMPONENT,
         SYNCHRONIZER_UNLOCK,
