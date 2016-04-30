@@ -50,7 +50,6 @@ MACH            = $(call TOLOWER,$(call GETTK,MACHINE,$(TRAITS)))
 MMOD            = $(call TOLOWER,$(call GETTK,MODEL,$(TRAITS)))
 CPUS		= $(call GETTK,CPUS,$(TRAITS))
 NODES		= $(call GETTK,NODES,$(TRAITS))
-NO_LOADER	= $(call GETTK,NO_LOADER,$(TRAITS))
 LIBARCH		= $(LIB)/lib$(LARCHNAME)_$(ARCH).a
 LIBMACH		= $(LIB)/lib$(LMACHNAME)_$(ARCH).a
 LIBSYS		= $(LIB)/lib$(LSYSNAME)_$(ARCH).a
