@@ -28,7 +28,8 @@ public:
         IP     = 0x0800,
         ARP    = 0x0806,
         RARP   = 0x8035,
-        ELP    = 0x8888,
+        TSTP   = 0x8401,
+        ELP    = 0x8402,
         PTP    = 0x88F7
     };
 

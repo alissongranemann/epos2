@@ -13,7 +13,7 @@ __BEGIN_SYS
 
 class Message
 {
-public:
+private:
     static const unsigned int MAX_PARAMETERS_SIZE = 20;
 
 public:

@@ -60,7 +60,6 @@ public:
     static const unsigned int FB_PHY_ADDR = Traits<PC_Display>::FRAME_BUFFER_ADDRESS;
     static const unsigned int FB_LOG_ADDR = Memory_Map<PC>::VGA;
 
-private:
     static const int LINES = Traits<PC_Display>::LINES;
     static const int COLUMNS = Traits<PC_Display>::COLUMNS;
     static const int TAB_SIZE = Traits<PC_Display>::TAB_SIZE;
@@ -78,10 +77,6 @@ public:
 
 public:
     PC_Display() {}
-
-    static void remap(unsigned int fb) {
-        _frame_buffer = reinterpret_cast<Frame_Buffer>(fb);
-    }
 
     static void putc(char c) {
         unsigned int pos = MC6845::position();
@@ -150,7 +145,7 @@ private:
     }
 
     static void init(unsigned int fb = FB_LOG_ADDR) {
-        remap(fb);
+        _frame_buffer = reinterpret_cast<Frame_Buffer>(fb);
     }
 
 private:

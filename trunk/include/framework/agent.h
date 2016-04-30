@@ -62,9 +62,6 @@ private:
     void handle_ipc();
     void handle_utility();
 
-public:
-    static void init();
-
 private:
     static Member _handlers[LAST_TYPE_ID];
 };
@@ -257,37 +254,6 @@ void Agent::handle_segment()
         int amount;
         in(amount);
         res = seg->resize(amount);
-    } break;
-    case CREATE_SEGMENT_IN_PLACE: {
-        db<void>(TRC) << "CREATE_SEGMENT_IN_PLACE" << endl;
-        void * place;
-        unsigned int size;
-        unsigned int mmu_flags;
-        in(place, size, mmu_flags);
-        db<void>(TRC) << "place: " << reinterpret_cast<void *>(place) << ", size: " << size << ", mmu_flags: " << reinterpret_cast<void *>(mmu_flags) << endl;
-        new (place) Segment(size, mmu_flags);
-        id(Id(SEGMENT_ID, reinterpret_cast<Id::Unit_Id>(place)));
-
-    } break;
-    case CREATE_HEAP_IN_PLACE: {
-        db<void>(TRC) << "CREATE_HEAP_IN_PLACE" << endl;
-
-        void * place;
-        Segment * heap_segment;
-        in(place, heap_segment);
-
-        Address_Space current_address_space = Address_Space(reinterpret_cast<MMU::Page_Directory *>(CPU::cr3()));
-
-        db<void>(TRC) << "place: " << reinterpret_cast<void *>(place) << ", heap_segment: " << reinterpret_cast<void *>(heap_segment) << endl;
-        db<void>(TRC) << "current page directory is: " << current_address_space.pd() << endl;
-        db<void>(TRC) << "segment size: " << heap_segment->size() << endl;
-
-        CPU::Log_Addr addr = current_address_space.attach(heap_segment);
-
-        db<void>(TRC) << "segment attached to: " << addr << endl;
-
-        new (place) Heap(addr, heap_segment->size());
-        id(Id(SEGMENT_ID, reinterpret_cast<Id::Unit_Id>(place)));
     } break;
     default:
         res = UNDEFINED;
