@@ -140,13 +140,12 @@ PC_Setup::PC_Setup(char * boot_image)
     // Get boot image loaded by the bootstrap
     bi = reinterpret_cast<char *>(boot_image);
     si = reinterpret_cast<System_Info<PC> *>(bi);
+    
+    Display::init();
+    PC_Display::init(VGA_PHY); // Display can be Serial_Display, so PC_Display here!
 
-    PC_Display::init(PC_Display::FB_PHY_ADDR);
-    Serial_Display::init();
-
-    if(si->bm.n_cpus > Traits<PC>::CPUS) {
-        si->bm.n_cpus = Traits<PC>::CPUS;
-    }
+    if(si->bm.n_cpus > Traits<PC>::CPUS)
+ 	si->bm.n_cpus = Traits<PC>::CPUS;
 
     // Multicore conditional start up
     int cpu_id = Machine::cpu_id();
@@ -195,7 +194,7 @@ PC_Setup::PC_Setup(char * boot_image)
         // Adjust pointers that will still be used to their logical addresses
         bi = reinterpret_cast<char *>(unsigned(bi) | PHY_MEM);
         si = reinterpret_cast<System_Info<PC> *>(SYS_INFO);
-        PC_Display::remap(Memory_Map<PC>::VGA); // Display can be Serial_Display, so PC_Display here!
+        PC_Display::init(Memory_Map<PC>::VGA); // Display can be Serial_Display, so PC_Display here!
  	APIC::remap(Memory_Map<PC>::APIC);
 
         // Configure a TSS for system calls and inter-level interrupt handling
@@ -1055,16 +1054,14 @@ void _start()
     if(APIC::id() == 0) { // Boot strap CPU (BSP)
         // Check SETUP integrity and get information about its ELF structure
         ELF * elf = reinterpret_cast<ELF *>(&bi[si->bm.setup_offset]);
-        if(!elf->valid()) {
+        if(!elf->valid())
             Machine::panic();
-        }
         char * entry = reinterpret_cast<char *>(elf->entry());
 
         // Test if we can access the address for which SETUP has been compiled
         *entry = 'G';
-        if(*entry != 'G') {
+        if(*entry != 'G')
             Machine::panic();
-        }
 
         // Load SETUP considering the address in the ELF header
         // Be careful: by reloading SETUP, global variables have been reset to
@@ -1073,12 +1070,10 @@ void _start()
         char * addr = reinterpret_cast<char *>(elf->segment_address(0));
         int size = elf->segment_size(0);
 
-        if(addr <= &bi[si->bm.img_size]) {
+        if(addr <= &bi[si->bm.img_size])
             Machine::panic();
-        }
-        if(elf->load_segment(0) < 0) {
+        if(elf->load_segment(0) < 0)
             Machine::panic();
-        }
         APIC::remap(APIC::LOCAL_APIC_PHY_ADDR);
 
         // Move the boot image to after SETUP, so there will be nothing else
@@ -1089,21 +1084,21 @@ void _start()
 
         // Passes a pointer to the just allocated stack pool to other CPUs
         Stacks = dst;
-
+        
         // Initialize shared CPU counter
         si->bm.n_cpus = 1;
 
         // Broadcast INIT IPI to all APs excluding self
         APIC::ipi_init(si->bm.cpu_status);
-
+        
         // Broadcast STARTUP IPI to all APs excluding self
         // Non-boot CPUs will run a simplified boot strap just to
         // trampoline them into protected mode
         // PC_BOOT arranged for this code and stored it at 0x3000
         // ipi_start() waits for cpu_status to be incremented by the finc
         // further down in this code
-        APIC::ipi_start(0x3000, si->bm.cpu_status);
-
+ 	APIC::ipi_start(0x3000, si->bm.cpu_status);
+        
         Stacks_Ready = true;
         
     } else { // Additional CPUs (APs)

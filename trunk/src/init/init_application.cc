@@ -5,9 +5,7 @@
 #include <machine.h>
 #include <application.h>
 
-
-extern "C" { void * _create_segment_in_place(void * place, unsigned int size, unsigned int mmu_flags); }
-extern "C" { void * _create_heap_in_place(void * place, void * heap_segment); }
+extern "C" { char _end; } // defined by GCC
 
 __BEGIN_SYS
 
@@ -30,20 +28,11 @@ public:
 
         // Initialize Application's heap
         db<Init>(INF) << "Initializing application's heap: " << endl;
-        if(Traits<System>::multiheap) {
-
-            db<Init>(TRC) << "_heap_segment: " << Application::_heap_segment
-                            << ", place to create segment: " << reinterpret_cast<void *>(&Application::_preheap[0])
-                            << ", place to create heap: " << reinterpret_cast<void *>(&Application::_preheap[sizeof(Segment)])
-                            << ", mmu flags: " << reinterpret_cast<void *>(Segment::Flags::APP)
-                            << endl;
-
-            Application::_heap_segment = reinterpret_cast<Segment *>(_create_segment_in_place(&Application::_preheap[0], HEAP_SIZE, Segment::Flags::APP));
-
-            db<Init>(TRC) << "_heap_segment: " << Application::_heap_segment << endl;
-
-            Application::_heap = reinterpret_cast<Heap *>(_create_heap_in_place(&Application::_preheap[sizeof(Segment)], Application::_heap_segment));
-
+        if(Traits<System>::multiheap) { // heap in data segment arranged by SETUP
+            char * heap = MMU::align_page(&_end);
+            if(Traits<Build>::MODE != Traits<Build>::KERNEL) // if not a kernel, then use the stack allocated by SETUP, otherwise make that part of the heap
+                heap += MMU::align_page(Traits<Application>::STACK_SIZE);
+            Application::_heap = new (&Application::_preheap[0]) Heap(heap, HEAP_SIZE);
         } else
             for(unsigned int frames = MMU::allocable(); frames; frames = MMU::allocable())
                 System::_heap->free(MMU::alloc(frames), frames * sizeof(MMU::Page));
