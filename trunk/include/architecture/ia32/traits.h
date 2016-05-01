@@ -23,8 +23,14 @@ template<> struct Traits<IA32_MMU>: public Traits<void>
 {
 };
 
+template<> struct Traits<IA32_FPU>: public Traits<void>
+{
+    static const bool enabled = false;
+};
+
 template<> struct Traits<IA32_PMU>: public Traits<void>
 {
+    static const bool enabled = false;
 };
 
 __END_SYS

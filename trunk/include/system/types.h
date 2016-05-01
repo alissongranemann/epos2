@@ -60,6 +60,7 @@ class Utility;
 class IA32;
 class IA32_TSC;
 class IA32_MMU;
+class IA32_FPU;
 class IA32_PMU;
 
 class ARMv7;
@@ -79,6 +80,7 @@ class PC_RTC;
 class PC_UART;
 class PC_EEPROM;
 class PC_Display;
+class PC_Keyboard;
 class PC_Scratchpad;
 class PC_NIC;
 class PC_Ethernet;
@@ -114,6 +116,7 @@ class CC2538;
 class AT86RF;
 
 class Serial_Display;
+class Serial_Keyboard;
 
 // Abstractions
 class System;
@@ -191,8 +194,10 @@ enum
     CPU_ID = 100,
     TSC_ID,
     MMU_ID,
+    FPU_ID,
+    PMU_ID,
 
-    MACHINE_ID,
+    MACHINE_ID = 200,
     PCI_ID,
     IC_ID,
     TIMER_ID,
@@ -201,6 +206,7 @@ enum
     SCRATCHPAD_ID,
     UART_ID,
     DISPLAY_ID,
+    KEYBOARD_ID,
     NIC_ID,
 
     THREAD_ID = 0,
@@ -233,6 +239,8 @@ template<typename T> struct Type { static const Type_Id ID = UNKNOWN_TYPE_ID; };
 template<> struct Type<IA32> { static const Type_Id ID = CPU_ID; };
 template<> struct Type<IA32_TSC> { static const Type_Id ID = TSC_ID; };
 template<> struct Type<IA32_MMU> { static const Type_Id ID = MMU_ID; };
+template<> struct Type<IA32_FPU> { static const Type_Id ID = FPU_ID; };
+template<> struct Type<IA32_PMU> { static const Type_Id ID = PMU_ID; };
 
 template<> struct Type<ARMv7> { static const Type_Id ID = CPU_ID; };
 template<> struct Type<ARMv7_TSC> { static const Type_Id ID = TSC_ID; };
@@ -246,6 +254,7 @@ template<> struct Type<PC_UART> { static const Type_Id ID = UART_ID; };
 template<> struct Type<PC_RTC> { static const Type_Id ID = RTC_ID; };
 template<> struct Type<PC_PCI> { static const Type_Id ID = PCI_ID; };
 template<> struct Type<PC_Display> { static const Type_Id ID = DISPLAY_ID; };
+template<> struct Type<PC_Keyboard> { static const Type_Id ID = KEYBOARD_ID; };
 template<> struct Type<PC_Scratchpad> { static const Type_Id ID = SCRATCHPAD_ID; };
 template<> struct Type<PC_Ethernet> { static const Type_Id ID = NIC_ID; };
 

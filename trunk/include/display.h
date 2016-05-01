@@ -16,6 +16,7 @@ protected:
 class Serial_Display: public Display_Common
 {
     friend class PC_Setup;
+    friend class Serial_Keyboard;
     friend class First_Object;
 
 private:
