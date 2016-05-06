@@ -1,12 +1,11 @@
 // EPOS PC Keyboard Mediator Implementation
 
 #include <machine/pc/keyboard.h>
-#include <machine/pc/timer.h>
 
 __BEGIN_SYS
 
 // Class attributes
-unsigned int PC_Keyboard::_flags;
+unsigned int PC_Keyboard::_status;
 
 PC_Keyboard::Scancode PC_Keyboard::_scancodes[]= {{   0,    0,   0,   0}, // 00
                                                   {  27,   27,   0,   0}, // 01
@@ -70,45 +69,55 @@ PC_Keyboard::Scancode PC_Keyboard::_scancodes[]= {{   0,    0,   0,   0}, // 00
                                                   { 204,  204,   0,   0}, // 59 - F1
                                                   { 205,  205,   0,   0}, // 60 - F2
                                                   { 206,  206,   0,   0}};// 61 - F3
+Observed PC_Keyboard::_observed;
 
 // Methods
-char PC_Keyboard::getc() {
-     int code = scancode();
+char PC_Keyboard::getc()
+{
+    return map(scancode());
+}
+
+char PC_Keyboard::try_getc()
+{
+    if((status() & OUT_BUF_FULL))
+        return map(data());
+    else
+        return 0;
+}
+
+void PC_Keyboard::int_handler(const IC::Interrupt_Id & i)
+{
+    db<Keyboard>(TRC) << "Keyboard::int_handler(int=" << i << ")" << endl;
+
+    if(!_observed.notify())
+        getc(); // it is necessary to clear the output buffer before a new interrupt can happen!
+}
+
+char PC_Keyboard::map(int code)
+{
      switch(code) {
-     case  29: _flags &= ~CTRL;  break;
-     case 154: _flags &= ~CTRL;  break;
-     case  42: _flags |= SHIFT;  break;
-     case  54: _flags |= SHIFT;
-               _flags |= CAPS;   break;
-     case 170: _flags &= ~SHIFT; break;
-     case 182: _flags &= ~SHIFT;
-               _flags &= ~CAPS;  break;
-     case  56: _flags |= ALT;    break;
-     case 184: _flags &= ~ALT;   break;
+     case LCTRL                 : _status |=  CONTROL; break;
+     case LCTRL  | BREAK        : _status &= ~CONTROL; break;
+     case LSHIFT                :
+     case RSHIFT                : _status |=  SHIFT;   break;
+     case RSHIFT | BREAK        :
+     case LSHIFT | BREAK        : _status &= ~SHIFT;   break;
+     case LALT                  : _status |=  ALT;     break;
+     case LALT   | BREAK        : _status &= ~ALT;     break;
+     case LCAPS                 : _status ^=  CAPS;
+                                  Engine::leds((_status & CAPS) ? Engine::CAPS : 0);
+                                  break;
      };
 
      char c;
-     if(_flags & CTRL)       c = _scancodes[code].ctrl;
-     else if(_flags & ALT)   c = _scancodes[code].alt;
-     else if(_flags & SHIFT) c = _scancodes[code].shift;
-     else                    c = _scancodes[code].normal;
+     if(_status & CONTROL)    c = _scancodes[code].ctrl;
+     else if(_status & ALT)   c = _scancodes[code].alt;
+     else if(_status & SHIFT) c = _scancodes[code].shift;
+     else                     c = _scancodes[code].normal;
 
-     if(_flags & CAPS)       c = upper(c);
+     if(_status & CAPS)       c = upper(c);
 
      return c;
  }
-
-void PC_Keyboard::reboot()
-{
-    for(int i = 0; (i < 300) && (status() & IN_BUF_FULL); i++)
-        i8255::ms_delay(1);
-
-    // Sending 0xfe to the keyboard controller port causes it to pulse
-    // the reset line
-    command(0xfe);
-
-    for(int i = 0; (i < 300) && (status() & IN_BUF_FULL); i++)
-        i8255::ms_delay(1);
-}
 
 __END_SYS

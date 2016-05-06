@@ -452,9 +452,10 @@ private:
 public:
     using IC_Common::Interrupt_Id;
     using IC_Common::Interrupt_Handler;
-    using Engine::INT_TIMER;
     using Engine::INT_RESCHEDULER;
     using Engine::INT_SYSCALL;
+    using Engine::INT_TIMER;
+    using Engine::INT_KEYBOARD;
 
     using Engine::ipi_send;
 

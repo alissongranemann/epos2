@@ -20,6 +20,9 @@ void PC::init()
     if(Traits<PC_Scratchpad>::enabled)
         PC_Scratchpad::init();
 
+    if(Traits<PC_Keyboard>::enabled)
+        PC_Keyboard::init();
+
     if(Traits<PC_Ethernet>::enabled)
         PC_Ethernet::init();
 }

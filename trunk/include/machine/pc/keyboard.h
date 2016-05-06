@@ -3,7 +3,9 @@
 #ifndef __pc_keyboard_h
 #define __pc_keyboard_h
 
+#include <utility/observer.h>
 #include <cpu.h>
+#include <ic.h>
 #include <keyboard.h>
 
 __BEGIN_SYS
@@ -34,9 +36,12 @@ public:
     // Commands
     typedef unsigned char Command;
     enum {
+        READ_CFG        = 0x20,
+        WRITE_CFG       = 0x60,
         SET_LEDS        = 0xed,
         SET_RATE        = 0xf3,
-        ACK             = 0xfa
+        ACK             = 0xfa,
+        REBOOT          = 0xfe
     };
 
     // LEDs
@@ -52,16 +57,18 @@ public:
     static int status() { return(CPU::in8(STATUS)); }
     static bool command(const Command & cmd) {
         // Wait for the controller's input buffer to get empty
-        while((CPU::in8(STATUS) & IN_BUF_FULL));
+        for(int i = 0; (i < 300) && (status() & IN_BUF_FULL); i++);
+        if((status() & IN_BUF_FULL)) return false;
 
         // Send command
         CPU::out8(COMMAND, cmd);
 
         // Wait for a keyboard controller reaction
-        while(!(CPU::in8(STATUS) & OUT_BUF_FULL));
+        for(int i = 0; (i < 300) && !(status() & OUT_BUF_FULL); i++);
+        if(!(status() & OUT_BUF_FULL)) return false;
 
         // Check for an ACK
-        return (CPU::in8(DATA) == ACK);
+        return (data() == ACK);
     }
     static int data() { return(CPU::in8(DATA)); }
 
@@ -70,12 +77,25 @@ public:
         return data();
     }
 
-    static bool set_leds(unsigned char leds = (SCROLL | NUM | CAPS)) {
+    static bool leds(unsigned char leds = (SCROLL | NUM | CAPS)) {
         return (command(SET_LEDS) && command(leds));
     }
-    static int set_rate(int delay, int rate) {
+
+    static int rate(int delay, int rate) {
         return (command(SET_RATE) && command(((delay << 5) | rate) & 0xff));
     }
+
+    static void int_enable(bool press = true, bool release = true) {
+        command(READ_CFG);
+        unsigned char cfg = data() | 1;
+        command(WRITE_CFG) && command(cfg);
+    }
+    static void int_disable(bool press = true, bool release = true) {
+        command(READ_CFG);
+        unsigned char cfg = data() & 0xfe;
+        command(WRITE_CFG) && command(cfg);
+    }
+
     static void flush() {
         do
         {
@@ -88,9 +108,11 @@ public:
 
 class PC_Keyboard: public Keyboard_Common, private i8042
 {
-    friend class PC_Setup;
+    friend class PC;
 
 private:
+    typedef i8042 Engine;
+
     struct Scancode {
        unsigned char normal;
        unsigned char shift;
@@ -98,35 +120,54 @@ private:
        unsigned char alt;
     };
 
+    // Keyboard Status
     enum {
-        CTRL,
+        CONTROL,
         ALT,
         SHIFT,
         CAPS
+    };
+
+    // Keyboard Special Keys
+    enum {
+        BREAK   = 0x80,
+        ENTER   = 0x1c,
+        LSHIFT  = 0x2a,
+        RSHIFT  = 0x36,
+        LCTRL   = 0x1d,
+        LALT    = 0x38,
+        LCAPS   = 0x3a,
+        SCROL   = 0x46,
+        NUM     = 0x45
     };
 
 public:
     PC_Keyboard() {}
 
     static char getc();
+    static char try_getc();
 
-//    void int_enable(bool receive = true, bool send = true, bool line = true, bool modem = true) {
-//        Engine::int_enable(receive, send, line, modem);
-//    }
-//    void int_disable(bool receive = true, bool send = true, bool line = true, bool modem = true) {
-//        Engine::int_disable(receive, send, line, modem);
-//    }
+    using Engine::int_enable;
+    using Engine::int_disable;
 
     static void reboot();
 
-private:
-    static void init() { flush(); }
+    static void attach(Observer * obs) { _observed.attach(obs); }
+    static void detach(Observer * obs) { _observed.detach(obs); }
 
+private:
     static char upper(char c) { return ((c >= 'a') && (c <= 'z')) ? (c -'a' + 'A') : c; }
+    static char map(int code);
+
+    static void int_handler(const IC::Interrupt_Id & i);
+
+    static void init();
 
 private:
-    static unsigned int _flags;
+    static unsigned int _status;
     static Scancode _scancodes[255];
+
+    static Observed _observed;
 };
 
 __END_SYS

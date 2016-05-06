@@ -3,6 +3,7 @@
 #ifndef __keyboard_h
 #define __keyboard_h
 
+#include <utility/observer.h>
 #include <display.h>
 
 __BEGIN_SYS
@@ -25,8 +26,14 @@ public:
         return Serial_Display::_uart.get();
     }
 
+    static void attach(Observer * obs) { _observed.attach(obs); }
+    static void detach(Observer * obs) { _observed.detach(obs); }
+
 private:
     static void init() {}
+
+private:
+    static Observed _observed;
 };
 
 __END_SYS

@@ -84,10 +84,4 @@ __END_SYS
 #include "nic.h"
 #include "scratchpad.h"
 
-__BEGIN_SYS
-
-inline void PC::reboot() { PC_Keyboard::reboot(); }
-
-__END_SYS
-
 #endif
