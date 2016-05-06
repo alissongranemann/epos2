@@ -363,7 +363,6 @@ public:
 
     static void attach(Observer * obs, const Protocol & prot) { _observed.attach(obs, prot); }
     static void detach(Observer * obs, const Protocol & prot) { _observed.detach(obs, prot); }
-    static bool notify(const Protocol & prot, Buffer * buf) { return _observed.notify(prot, buf); }
 
     friend Debug & operator<<(Debug & db, const IP & ip) {
         db << "{a=" << ip._address
@@ -382,6 +381,8 @@ private:
     void config_by_dhcp();
 
     void update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf);
+
+    static bool notify(const Protocol & prot, Buffer * buf) { return _observed.notify(prot, buf); }
 
     static void init(unsigned int unit);
 
