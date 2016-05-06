@@ -4,6 +4,13 @@
 #include <flash.h>
 #include <utility/string.h>
 
+/**
+* This class is properly documented at http://lisha.ufsc.br/Flash+Logger+Module
+* The last update occured on 06/05/2016.
+* The last change in this file is present at the svn version 3940.
+* If any doubts are still present, email asantana@lisha.ufsc.br
+**/
+
 __BEGIN_UTIL
 
 extern "C"{
@@ -30,7 +37,7 @@ protected:
 public:
     static const unsigned int MAX_BLOCK_COUNT;
 
-    const unsigned int data_size() const{
+    const unsigned int block_size() const{
         return Log_Data<n>::DATA_SIZE;
     }
 
@@ -60,6 +67,9 @@ public:
     void write(const unsigned int * const data, const unsigned int data_count, const unsigned int block,const unsigned int offset){
         unsigned int address, rewrite_data_size;
         rewrite_data_size = data_count*sizeof(unsigned int);
+
+        if(data_count > Log_Data<n>::DATA_COUNT || data_count + offset >= Log_Data<n>::DATA_COUNT || offset >= Log_Data<n>::DATA_COUNT)
+            return;
 
         address = get_block_address(block) + offset*sizeof(unsigned int);
         Flash::write(address, data, rewrite_data_size);

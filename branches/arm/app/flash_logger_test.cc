@@ -2,6 +2,13 @@
 #include <utility/ostream.h>
 #include <timer.h>
 
+/**
+* This class is properly documented at http://lisha.ufsc.br/Flash+Logger+Module
+* The last update occured on 06/05/2016.
+* The last change in this file is present at the svn version 3940.
+* If any doubts are still present, email asantana@lisha.ufsc.br
+**/
+
 using namespace EPOS;
 
 #define TESTED_DATA_COUNT 2
