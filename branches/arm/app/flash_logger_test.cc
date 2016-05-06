@@ -101,7 +101,7 @@ const bool test_simple_hydrology_logging_with_block_read(){
     for(int i = 0; i < TESTED_DATA_AMMOUNT; ++i){
         flash_logger.write(block_data);
 
-        flash_logger.read_block(i, read_block);
+        flash_logger.read(i, read_block);
 
         for(int u = 0; u < TESTED_DATA_COUNT; ++u){
             is_equals = block_data[u] == read_block[u];
@@ -124,8 +124,8 @@ const bool test_rewrite_block(){
         generate_data();
     }
 
-    flash_logger.rewrite_block(block_data,TESTED_DATA_AMMOUNT-1);
-    flash_logger.read_block(TESTED_DATA_AMMOUNT-1,read_block);
+    flash_logger.write(block_data,TESTED_DATA_AMMOUNT-1);
+    flash_logger.read(TESTED_DATA_AMMOUNT-1,read_block);
 
     for(int u = 0; u < TESTED_DATA_COUNT; ++u){
         is_equals = block_data[u] == read_block[u];
@@ -146,8 +146,8 @@ const bool test_rewrite_block_in_offset(){
         generate_data();
     }
 
-    flash_logger.rewrite_block_in_offset(block_data, TESTED_DATA_COUNT-1, TESTED_DATA_AMMOUNT-1, 0);
-    flash_logger.read_block(TESTED_DATA_AMMOUNT-1,read_block);
+    flash_logger.write(block_data, TESTED_DATA_COUNT-1, TESTED_DATA_AMMOUNT-1, 0);
+    flash_logger.read(TESTED_DATA_AMMOUNT-1,read_block);
 
     for(int u = 0; u < TESTED_DATA_COUNT-1; ++u){
         is_equals = block_data[u] == read_block[u];
@@ -169,7 +169,7 @@ const bool test_read_multiple_blocks(){
         generate_data();
     }
 
-    flash_logger.read_multiple_blocks(0,TESTED_DATA_AMMOUNT,all_blocks_data);
+    flash_logger.read(0,TESTED_DATA_AMMOUNT,all_blocks_data);
 
     for(int i = 0; i < TESTED_DATA_COUNT*TESTED_DATA_AMMOUNT; ++i)
         if(all_blocks_cache[i] != all_blocks_data[i])

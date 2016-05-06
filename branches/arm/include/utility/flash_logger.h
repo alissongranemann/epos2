@@ -53,11 +53,11 @@ public:
     }
 
 
-    void rewrite_block(const unsigned int * const data, const unsigned int block){
+    void write(const unsigned int * const data, const unsigned int block){
         Flash::write(get_block_address(block), data, Log_Data<n>::DATA_SIZE);
     }
 
-    void rewrite_block_in_offset(const unsigned int * const data, const unsigned int data_count, const unsigned int block,const unsigned int offset){
+    void write(const unsigned int * const data, const unsigned int data_count, const unsigned int block,const unsigned int offset){
         unsigned int address, rewrite_data_size;
         rewrite_data_size = data_count*sizeof(unsigned int);
 
@@ -72,11 +72,11 @@ public:
         return Flash::read(address);
     }
 
-    void read_block(const unsigned int log_block, unsigned int * data_array) const{
+    void read(const unsigned int log_block, unsigned int * data_array) const{
         Flash::read(get_block_address(log_block), data_array, Log_Data<n>::DATA_SIZE);
     }
 
-    void read_multiple_blocks(const unsigned int starting_block, const unsigned int block_count, unsigned int *data_array) const{
+    void read(const unsigned int starting_block, const unsigned int block_count, unsigned int *data_array) const{
         unsigned int address = get_block_address(starting_block);
         unsigned int read_already;
         if(starting_block + block_count <= MAX_BLOCK_COUNT){
@@ -85,8 +85,8 @@ public:
         }
         else{
             read_already = MAX_BLOCK_COUNT-starting_block;
-            read_multiple_blocks(starting_block,read_already,data_array);
-            read_multiple_blocks(0,block_count-read_already,data_array+read_already);
+            read(starting_block,read_already,data_array);
+            read(0,block_count-read_already,data_array+read_already);
         }
     }
 
