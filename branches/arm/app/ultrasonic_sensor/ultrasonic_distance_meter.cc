@@ -1,6 +1,6 @@
  #define HCSR04_RELAY
 
-#include "ultrasonic_sensor_controller.h"
+#include "sensor/ultrasonic_sensor_controller.h"
 #include "gpio.h"
 #include <utility/ostream.h>
 

@@ -2,17 +2,15 @@
 #define ultrasonic_sensor_controller_hdr
 
 #include "ultrasonic_sensor_hcsr04.h"
-#include <alarm.h>
 
 using namespace EPOS;
 
-#define HCSR04_RELAY //comment this line if no relays are used with the sensor for power management
-
+// Define HCSR04_RELAY for when you need to use relays before including this file.
 class Ultrasonic_Sensor_Controller{
 protected:
 
     enum Sample_strategy{
-        NUMBER_OF_READS = 5, // arbitrary
+        NUMBER_OF_READS = 4, // arbitrary and intentionally multiple of a potency of 2
         INTERVAL_BETWEEN_READS = 60000, //60ms recommended by datasheet
 
         #ifdef HCSR04_RELAY
@@ -23,8 +21,10 @@ protected:
     Ultrasonic_Sensor_HC_SR04 _sensor;
 
 public:
-    typedef void (*Sense_Callback)(int) ;
-    typedef int (*Sense_Callback_Dynamic)(int);
+    typedef Ultrasonic_Sensor_HC_SR04::Sense Sense;
+    typedef void (*Sense_Callback)(Sense) ;
+    typedef unsigned int (*Sense_Callback_Dynamic)(Sense);
+
 
     #ifdef HCSR04_RELAY // if using relays
 
@@ -34,27 +34,27 @@ public:
     Ultrasonic_Sensor_Controller(GPIO trigger,GPIO echo) : _sensor(trigger,echo){}
     #endif
 
-    int sense(){
+    Sense sense(){
         return evaluate_strategy();
     }
 
-    void sense(unsigned int interval, unsigned int times, int * const values){
+    void sense(unsigned int interval, unsigned int times, Sense* const values){
         for(int i = 0; i < times; ++i){
             values[i] = evaluate_strategy();
-            Alarm::delay(interval);
+            Ultrasonic_Sensor_HC_SR04::Timer::delay(interval);
         }
     }
 
     void sense(unsigned int interval, Sense_Callback f){
         while(1){
             f(evaluate_strategy());
-            Alarm::delay(interval);
+            Ultrasonic_Sensor_HC_SR04::Timer::delay(interval);
         }
     }
 
     void sense(Sense_Callback_Dynamic f){
         while(1){
-            Alarm::delay(f(evaluate_strategy()));
+            Ultrasonic_Sensor_HC_SR04::Timer::delay(f(evaluate_strategy()));
         }
     }
 
@@ -65,33 +65,25 @@ protected:
         return _sensor.sense();
     }*/
 
-    int evaluate_strategy(){
-        int *samples, ret;
+    Sense evaluate_strategy(){
+        Sense ret = 0;
 
         #ifdef HCSR04_RELAY // if using relays
         _sensor.enable();
-        Alarm::delay(Sample_strategy::RELAY_DELAY);
+        Ultrasonic_Sensor_HC_SR04::Timer::delay(Sample_strategy::RELAY_DELAY);
         #endif
 
-        ret = 0;
-        samples = new int[Sample_strategy::NUMBER_OF_READS];
         for(int i = 0; i < Sample_strategy::NUMBER_OF_READS; ++i){
-            int c = _sensor.sense();
-            samples[i] = c;
-            Alarm::delay(Sample_strategy::INTERVAL_BETWEEN_READS);
+            Sense sense = _sensor.sense();
+            ret += (sense == -1)? 0 : sense;
+            Ultrasonic_Sensor_HC_SR04::Timer::delay(Sample_strategy::INTERVAL_BETWEEN_READS);
         }
 
         #ifdef HCSR04_RELAY // if using relays
         _sensor.disable();
         #endif
 
-        for(int i = 0; i < Sample_strategy::NUMBER_OF_READS; ++i){
-            ret += (samples[i] == -1)? 0 : samples[i];
-        }
-
-        ret /= Sample_strategy::NUMBER_OF_READS;
-        delete[] samples;
-        return ret;
+        return ret/Sample_strategy::NUMBER_OF_READS;
     }
 };
 

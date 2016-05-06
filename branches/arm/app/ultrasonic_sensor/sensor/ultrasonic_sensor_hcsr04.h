@@ -10,6 +10,8 @@ class Ultrasonic_Sensor_Controller;
 
 class Ultrasonic_Sensor_HC_SR04{
     typedef User_Timer_0 Timer;
+    typedef unsigned int Sense;
+
     friend class Ultrasonic_Sensor_Controller;
 
 public:
@@ -23,9 +25,7 @@ protected:
 
     #ifdef HCSR04_RELAY // if using relays
     GPIO _relay;
-    #endif
 
-    #ifdef HCSR04_RELAY // if using relays
     Ultrasonic_Sensor_HC_SR04(GPIO relay,GPIO trigger,GPIO echo): _trigger(trigger), _echo(echo), _relay(relay){
         _trigger.output();
         _echo.input();
@@ -42,13 +42,8 @@ protected:
     }
     #endif
 
-    int sense()
+    Sense sense()
     {
-        #ifdef HCSR04_RELAY // if using relays
-        if(!_relay.get())
-            return -1;
-        #endif
-
         int elapsed_time;
         Timer timer(TIME_FRAME);
 
