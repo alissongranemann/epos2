@@ -74,50 +74,57 @@ Observed PC_Keyboard::_observed;
 // Methods
 char PC_Keyboard::getc()
 {
-    return map(scancode());
+    char c = map(scancode());
+    while(c == -1)
+        c = map(scancode());
+    return c;
 }
 
 char PC_Keyboard::try_getc()
 {
+    char c = -1;
     if((status() & OUT_BUF_FULL))
-        return map(data());
-    else
-        return 0;
+        c = map(scancode());
+    return c;
 }
 
 void PC_Keyboard::int_handler(const IC::Interrupt_Id & i)
 {
     db<Keyboard>(TRC) << "Keyboard::int_handler(int=" << i << ")" << endl;
 
-    if(!_observed.notify())
-        getc(); // it is necessary to clear the output buffer before a new interrupt can happen!
+    if(!notify())
+        data(); // it is necessary to clear the output buffer before a new interrupt can happen!
 }
 
 char PC_Keyboard::map(int code)
 {
-     switch(code) {
-     case LCTRL                 : _status |=  CONTROL; break;
-     case LCTRL  | BREAK        : _status &= ~CONTROL; break;
-     case LSHIFT                :
-     case RSHIFT                : _status |=  SHIFT;   break;
-     case RSHIFT | BREAK        :
-     case LSHIFT | BREAK        : _status &= ~SHIFT;   break;
-     case LALT                  : _status |=  ALT;     break;
-     case LALT   | BREAK        : _status &= ~ALT;     break;
-     case LCAPS                 : _status ^=  CAPS;
-                                  Engine::leds((_status & CAPS) ? Engine::CAPS : 0);
-                                  break;
-     };
+    char c = 0;
 
-     char c;
-     if(_status & CONTROL)    c = _scancodes[code].ctrl;
-     else if(_status & ALT)   c = _scancodes[code].alt;
-     else if(_status & SHIFT) c = _scancodes[code].shift;
-     else                     c = _scancodes[code].normal;
+    switch(code) {
+    case LCTRL                 : _status |=  CONTROL; c = -1; break;
+    case LCTRL  | BREAK        : _status &= ~CONTROL; c = -1; break;
+    case LSHIFT                :
+    case RSHIFT                : _status |=  SHIFT;   c = -1; break;
+    case RSHIFT | BREAK        :
+    case LSHIFT | BREAK        : _status &= ~SHIFT;   c = -1; break;
+    case LALT                  : _status |=  ALT;     c = -1; break;
+    case LALT   | BREAK        : _status &= ~ALT;     c = -1; break;
+    case LCAPS                 : _status ^=  CAPS;    c = -1; Engine::leds((_status & CAPS) ? Engine::CAPS : 0); break;
+    case LCAPS  | BREAK        :                      c = -1; break;
+    }
 
-     if(_status & CAPS)       c = upper(c);
+    if(c != -1) {
+        if(_status & CONTROL)    c = _scancodes[code].ctrl;
+        else if(_status & SHIFT) c = _scancodes[code].shift;
+        else if(_status & ALT)   c = _scancodes[code].alt;
+        else                     c = _scancodes[code].normal;
 
-     return c;
+        if(_status & CAPS)       c = upper(c);
+    }
+
+    db<Keyboard>(TRC) << "Keyboard::macp(code=" << hex << code << dec << ") => " << int(c) << endl;
+
+    return c;
  }
 
 __END_SYS

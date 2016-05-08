@@ -36,7 +36,7 @@ private:
 };
 
 
-// Observer x Conditionally Observed with Data decoupled by a Semaphore
+// Conditional Observer x Conditionally Observed with Data decoupled by a Semaphore
 template<typename D, typename C = int>
 class Semaphore_Observer;
 
@@ -54,22 +54,22 @@ public:
 
 public:
     Semaphore_Observed() {
-        db<Observeds, Semaphore>(TRC) << "Observed() => " << this << endl;
+        db<Observeds, Semaphore>(TRC) << "Semaphore_Observed() => " << this << endl;
     }
 
     ~Semaphore_Observed() {
-        db<Observeds, Semaphore>(TRC) << "~Observed(this=" << this << ")" << endl;
+        db<Observeds, Semaphore>(TRC) << "~Semaphore_Observed(this=" << this << ")" << endl;
     }
 
     void attach(Semaphore_Observer<D, C> * o, C c) {
-        db<Observeds, Semaphore>(TRC) << "Observed::attach(obs=" << o << ",cond=" << c << ")" << endl;
+        db<Observeds, Semaphore>(TRC) << "Semaphore_Observed::attach(obs=" << o << ",cond=" << c << ")" << endl;
 
         o->_link = Element(o, c);
         _observers.insert(&o->_link);
     }
 
     void detach(Semaphore_Observer<D, C> * o, C c) {
-        db<Observeds, Semaphore>(TRC) << "Observed::detach(obs=" << o << ",cond=" << c << ")" << endl;
+        db<Observeds, Semaphore>(TRC) << "Semaphore_Observed::detach(obs=" << o << ",cond=" << c << ")" << endl;
 
         _observers.remove(&o->_link);
     }
@@ -77,7 +77,7 @@ public:
     bool notify(C c, D * d) {
         bool notified = false;
 
-        db<Observeds, Semaphore>(TRC) << "Observed::notify(this=" << this << ",cond=" << c << ")" << endl;
+        db<Observeds, Semaphore>(TRC) << "Semaphore_Observed::notify(this=" << this << ",cond=" << c << ")" << endl;
 
         for(Element * e = _observers.head(); e; e = e->next()) {
             if(e->rank() == c) {

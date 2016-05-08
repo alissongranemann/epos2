@@ -9,12 +9,16 @@ void PC_Keyboard::init()
 {
     db<Init, Keyboard>(TRC) << "Keyboard::init()" << endl;
 
-    Engine::leds(0);
-    Engine::flush();
-    Engine::int_enable();
+    Engine::disable();
 
     IC::int_vector(IC::INT_KEYBOARD, int_handler);
     IC::enable(IC::INT_KEYBOARD);
+
+    Engine::flush();
+    Engine::int_enable();
+
+    Engine::enable();
+    Engine::leds(0);
 }
 
 __END_SYS

@@ -46,7 +46,7 @@ public:
             _dst(dst), _src(src), _prot(htons(prot)) {}
 
         friend Debug & operator<<(Debug & db, const Header & h) {
-            db << "{" << h._dst << "," << h._src << "," << h.prot() << "}";
+            db << "{d=" << h._dst << ",s=" << h._src << ",p=" << hex << h.prot() << dec << "}";
             return db;
         }
 
@@ -78,7 +78,7 @@ public:
         T * data() { return reinterpret_cast<T *>(&_data); }
 
         friend Debug & operator<<(Debug & db, const Frame & f) {
-            db << "{" << f.dst() << "," << f.src() << "," << f.prot() << "," << f._data << "}";
+            db << "{h=" << reinterpret_cast<const Header &>(f) << ",d=" << f._data << "}";
             return db;
         }
         

@@ -38,6 +38,10 @@ public:
     enum {
         READ_CFG        = 0x20,
         WRITE_CFG       = 0x60,
+        DISABLE_C2      = 0xa7,
+        ENABLE_C2       = 0xa8,
+        DISABLE_C1      = 0xad,
+        ENABLE_C1       = 0xae,
         SET_LEDS        = 0xed,
         SET_RATE        = 0xf3,
         ACK             = 0xfa,
@@ -55,6 +59,7 @@ public:
     i8042() {}
 
     static int status() { return(CPU::in8(STATUS)); }
+
     static bool command(const Command & cmd) {
         // Wait for the controller's input buffer to get empty
         for(int i = 0; (i < 300) && (status() & IN_BUF_FULL); i++);
@@ -70,6 +75,7 @@ public:
         // Check for an ACK
         return (data() == ACK);
     }
+
     static int data() { return(CPU::in8(DATA)); }
 
     static int scancode() {
@@ -85,6 +91,15 @@ public:
         return (command(SET_RATE) && command(((delay << 5) | rate) & 0xff));
     }
 
+    static void enable() {
+        command(ENABLE_C1);
+        command(ENABLE_C2);
+    }
+    static void disable() {
+        command(DISABLE_C1);
+        command(DISABLE_C2);
+    }
+
     static void int_enable(bool press = true, bool release = true) {
         command(READ_CFG);
         unsigned char cfg = data() | 1;
@@ -97,12 +112,9 @@ public:
     }
 
     static void flush() {
-        do
-        {
-            // Wait for the controller to get reeady
-            while(status() & OUT_BUF_FULL)
-                data(); // Consume a byte
-        } while(status() & IN_BUF_FULL);
+        // Wait for the controller to get reeady
+        while(status() & OUT_BUF_FULL)
+            data(); // Discard a byte
     }
 };
 
@@ -122,10 +134,10 @@ private:
 
     // Keyboard Status
     enum {
-        CONTROL,
-        ALT,
-        SHIFT,
-        CAPS
+        CONTROL = 0x01,
+        SHIFT   = 0x02,
+        ALT     = 0x04,
+        CAPS    = 0x08
     };
 
     // Keyboard Special Keys
@@ -140,6 +152,10 @@ private:
         SCROL   = 0x46,
         NUM     = 0x45
     };
+
+public:
+    typedef EPOS::S::U::Observer Observer;
+    typedef EPOS::S::U::Observed Observed;
 
 public:
     PC_Keyboard() {}
@@ -158,6 +174,8 @@ public:
 private:
     static char upper(char c) { return ((c >= 'a') && (c <= 'z')) ? (c -'a' + 'A') : c; }
     static char map(int code);
+
+    static bool notify() { return _observed.notify(); }
 
     static void int_handler(const IC::Interrupt_Id & i);
 
