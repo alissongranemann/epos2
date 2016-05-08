@@ -162,6 +162,7 @@ public:
     enum {
         INT_FIRST_HARD  = i8259A::INT_FIRST_HARD,
         INT_TIMER	= i8259A::INT_TIMER,
+        INT_KEYBOARD    = i8259A::INT_KEYBOARD,
         INT_RESCHEDULER = i8259A::INT_RESCHEDULER, // in multicores, reschedule goes via IPI, which must be acknowledged just like hardware
         INT_SYSCALL     = i8259A::INT_SYSCALL,
         INT_LAST_HARD   = INT_RESCHEDULER

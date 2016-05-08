@@ -64,6 +64,11 @@ public:
 
 public:
     template<typename ... Tn>
+    Periodic_Thread(const Microsecond & p, int (* entry)(Tn ...), Tn ... an)
+    : Thread(Thread::Configuration(SUSPENDED, Criterion(p)), entry, an ...),
+      _semaphore(0), _handler(&_semaphore, this), _alarm(p, &_handler, INFINITE) { resume(); }
+
+    template<typename ... Tn>
     Periodic_Thread(const Configuration & conf, int (* entry)(Tn ...), Tn ... an)
     : Thread(Thread::Configuration(SUSPENDED, (conf.criterion != NORMAL) ? conf.criterion : Criterion(conf.period), conf.task, conf.stack_size), entry, an ...),
       _semaphore(0), _handler(&_semaphore, this), _alarm(conf.period, &_handler, conf.times) {

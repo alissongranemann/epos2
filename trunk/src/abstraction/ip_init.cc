@@ -34,7 +34,7 @@ IP::IP(unsigned int nic): _nic(nic), _arp(&_nic, this), _address(Traits<IP>::Con
 
 void IP::init(unsigned int unit)
 {
-    db<Init, IP>(TRC) << "IP::init()" << endl;
+    db<Init, IP>(TRC) << "IP::init(u=" << unit << ")" << endl;
 
     _networks[unit] = new (SYSTEM) IP(unit);
 }

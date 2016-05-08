@@ -7,6 +7,7 @@
 #include <icmp.h>
 #include <udp.h>
 #include <tcp.h>
+#include <tstp.h>
 
 __BEGIN_SYS
 
@@ -42,6 +43,13 @@ void Network::init()
         if(Traits<TCP>::enabled)
             new (SYSTEM) TCP;
     }
+
+    // If TSTPOE was initialized, initialize also the rest of the stack
+    if(Traits<Network>::NETWORKS::Count<TSTPOE>::Result) {
+        if(Traits<TSTP>::enabled)
+            new (SYSTEM) TSTP;
+    }
+
 }
 
 __END_SYS
