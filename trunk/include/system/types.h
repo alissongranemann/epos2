@@ -160,8 +160,12 @@ class Delay;
 template<typename NIC, typename Network, unsigned int HTYPE>
 class ARP;
 class Network;
+
 class TSTPOE;
 class TSTP;
+template<typename S>
+class Smart_Data;
+
 class IP;
 class ICMP;
 class UDP;

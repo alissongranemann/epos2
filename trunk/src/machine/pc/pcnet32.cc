@@ -132,6 +132,7 @@ PCNet32::Buffer * PCNet32::alloc(NIC * nic, const Address & dst, const Protocol 
 
         ++_tx_cur %= TX_BUFS;
 
+        db<PCNet32>(INF) << "PCNet32::alloc:buf=" << buf << " => " << *buf << endl;
         pool.insert(buf->link());
     }
 
@@ -148,6 +149,8 @@ int PCNet32::send(Buffer * buf)
         Tx_Desc * desc = reinterpret_cast<Tx_Desc *>(buf->back());
 
         db<PCNet32>(TRC) << "PCNet32::send(buf=" << buf << ")" << endl;
+
+        db<PCNet32>(INF) << "PCNet32::send:buf=" << buf << " => " << *buf << endl;
 
         desc->size = -(buf->size() + sizeof(Header)); // 2's comp.
 
@@ -176,6 +179,8 @@ int PCNet32::send(Buffer * buf)
 void PCNet32::free(Buffer * buf)
 {
     db<PCNet32>(TRC) << "PCNet32::free(buf=" << buf << ")" << endl;
+
+    db<PCNet32>(INF) << "PCNet32::free:buf=" << buf << " => " << *buf << endl;
 
     for(Buffer::Element * el = buf->link(); el; el = el->next()) {
         buf = el->object();
