@@ -179,6 +179,16 @@ template<> struct Traits<Network>: public Traits<void>
     typedef LIST<TSTPOE> NETWORKS;
 };
 
+template<> struct Traits<TSTP>: public Traits<Network>
+{
+    static const bool debugged = true;
+};
+
+template<> template <typename S> struct Traits<Smart_Data<S>>: public Traits<Network>
+{
+    static const bool debugged = true;
+};
+
 template<> struct Traits<IP>: public Traits<Network>
 {
     enum {STATIC, MAC, INFO, RARP, DHCP};

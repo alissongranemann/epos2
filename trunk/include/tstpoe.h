@@ -2,18 +2,21 @@
 
 #include <nic.h>
 #include <tstp.h>
+#include <rtc.h>
 
 #ifndef __tstpoe_h
 #define __tstpoe_h
 
 __BEGIN_SYS
 
-class TSTPOE: public TSTP_Common, private NIC::Observer
+class TSTPOE: private TSTP_Common, private NIC::Observer
 {
     friend class System;
     template<int unit> friend void call_init();
 
 public:
+    static const unsigned int MTU = 1514;
+
     // Buffers received from the NIC
     typedef NIC::Buffer Buffer;
 
@@ -36,13 +39,11 @@ public:
         _nic.detach(this, NIC::TSTP);
     }
 
-    static NIC * nic() { return &(_networks[0]->_nic); }
-
     static Buffer * alloc(unsigned int payload)
     {
         db<TSTPOE>(TRC) << "TSTPOE::alloc(pl=" << payload << ")" << endl;
 
-        return nic()->alloc(nic(), NIC::Address::BROADCAST, NIC::TSTP, 0, sizeof(Header), payload);
+        return nic()->alloc(nic(), NIC::Address::BROADCAST, NIC::TSTP, 0, 0, payload);
     }
 
     static int send(Buffer * buf) {
@@ -51,7 +52,11 @@ public:
         return nic()->send(buf); // implicitly releases the buffer
     }
 
-    static const unsigned int mtu() { return 1500; }
+    static Coordinates here() { return (nic()->address())[5] % 2 ? Coordinates(0, 0, 0) : Coordinates(10, 10, 10); }
+    static Time now() { return RTC::seconds_since_epoch(); }
+
+    static NIC * nic() { return &(_networks[0]->_nic); }
+    static const unsigned int mtu() { return MTU; }
 
     static void attach(Observer * obs) { _observed.attach(obs); }
     static void detach(Observer * obs) { _observed.detach(obs); }
@@ -60,11 +65,7 @@ public:
 private:
     void update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf) {
         db<TSTPOE>(TRC) << "TSTPOE::update(obs=" << obs << ",prot=" << hex << prot << dec << ",buf=" << buf << ")" << endl;
-        db<TSTPOE>(INF) << "TSTPOE::update:eth=" << buf->frame() << " => " << *buf->frame()->header() << endl;
-
-        Packet* packet = buf->frame()->data<Packet>();
-        db<TSTPOE>(INF) << "TSTPOE::update:pkt=" << packet << " => " << *packet << endl;
-
+        buf->nic(&_nic);
         if(!notify(buf))
             _nic.free(buf);
     }
@@ -81,6 +82,8 @@ protected:
     static TSTPOE * _networks[Traits<NIC>::UNITS];
     static Observed _observed; // shared by all TSTPOE instances, so the default for binding on a unit is for all NICs
 };
+
+typedef TSTPOE TSTPNIC;
 
 __END_SYS
 

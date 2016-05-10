@@ -16,9 +16,7 @@ public:
     static const unsigned int LAN = 10000; // Nodes
     static const unsigned int NODES = Traits<Build>::NODES;
 
-    typedef RTC::Microsecond Microsecond;
-    typedef unsigned long long Time;
-    typedef unsigned long Time_Offset;
+    static const unsigned int MTU = 127;
 
     // Version
     // This field is packed first and matches the Frame Type field in the Frame Control in IEEE 802.15.4 MAC.
@@ -43,6 +41,11 @@ public:
         CM_32    = 3
     };
     static const Scale SCALE = (NODES <= PAN) ? CMx50_8 : (NODES <= SAN) ? CM_16 : (NODES <= LAN) ? CMx25_16 : CM_32;
+
+    // Time
+    typedef RTC::Microsecond Microsecond;
+    typedef unsigned long long Time;
+    typedef unsigned long Time_Offset;
 
     // Geographic Coordinates
     template<Scale S>
@@ -128,7 +131,6 @@ public:
     typedef _Header<SCALE> Header;
 
     // Packet
-    typedef unsigned char Data[];
     template<Scale S>
     class _Packet: public Header
     {
@@ -141,12 +143,12 @@ public:
         T * data() { return reinterpret_cast<T *>(&_data); }
 
         friend Debug & operator<<(Debug & db, const _Packet & p) {
-            db << "{head=" << reinterpret_cast<const Header &>(p) << ",data=" << p._data << "}";
+            db << "{h=" << reinterpret_cast<const Header &>(p) << ",d=" << p._data << "}";
             return db;
         }
 
     private:
-        Data _data;
+        unsigned char _data[MTU - sizeof(Header)];
     } __attribute__((packed));
     typedef _Packet<SCALE> Packet;
 
@@ -395,11 +397,6 @@ __END_SYS
 
 __BEGIN_SYS
 
-typedef TSTPOE TSTPNIC;
-
-template<typename S>
-class Smart_Data;
-
 class TSTP: public TSTP_Common, private TSTPNIC::Observer
 {
     template<typename> friend class Smart_Data;
@@ -418,10 +415,13 @@ public:
     class Responsive;
     typedef Hash<Responsive, 10, Unit> Responsives;
 
-    // Response Modes
+    // Interest/Response Modes
     enum Mode {
+        // Response
         SINGLE = 0, // Only one response is desired for each interest job (desired, but multiple responses are still possible)
-        ALL    = 1  // All possible responses (e.g. from different sensors) are desired
+        ALL    = 1, // All possible responses (e.g. from different sensors) are desired
+        // Interest
+        DELETE = 2  // Revoke an interest
     };
 
     // TSTP Messages
@@ -444,9 +444,6 @@ public:
         bool time_triggered() { return _period; }
         bool event_driven() { return !time_triggered(); }
 
-        template<typename T>
-        T * data() { return reinterpret_cast<T *>(&_data); }
-
         friend Debug & operator<<(Debug & db, const Interest & m) {
             db << reinterpret_cast<const Header &>(m) << ",u=" << m._unit << ",m=" << ((m._mode == ALL) ? 'A' : 'S') << ",e=" << int(m._precision) << ",x=" << m._expiry << ",re=" << m._region << ",p=" << m._period;
             return db;
@@ -459,12 +456,14 @@ public:
         unsigned char _precision : 6;
         Time_Offset _expiry;
         Microsecond _period;
-        Data _data;
     } __attribute__((packed));
 
     // Response (Data) Message
     class Response: public Header
     {
+    private:
+        typedef unsigned char Data[]; // Data size varies with Unit and must be manually calculated at send-time
+
     public:
         Response(const Unit & unit, const Error & error = 0, const Time & expiry = 0)
         : Header(RESPONSE, 0, 0, here(), here(), 0), _unit(unit), _error(error), _expiry(expiry) {}
@@ -483,20 +482,11 @@ public:
         T * data() { return reinterpret_cast<T *>(&_data); }
 
         friend Debug & operator<<(Debug & db, const Response & m) {
-            db << reinterpret_cast<const Header &>(m) << ",u=" << m._unit << ",e=" << int(m._error) << ",x=" << m._expiry;
+            db << reinterpret_cast<const Header &>(m) << ",u=" << m._unit << ",e=" << int(m._error) << ",x=" << m._expiry << ",d=" << *const_cast<Response &>(m).data<int>();
             return db;
         }
 
-        void send(const Time & expiry) {
-            if(expiry)
-                _expiry = expiry;
-            Buffer * buf = TSTPNIC::alloc(sizeof(Response));
-            db<TSTP>(TRC) << "TSTP::send() => " << *this << endl;
-            memcpy(buf, this, sizeof(Response));
-            TSTPNIC::send(buf);
-        }
-
-    private:
+    protected:
         Unit _unit;
         Error _error;
         Time _expiry;
@@ -506,9 +496,12 @@ public:
     // Command Message
     class Command: public Header
     {
+    private:
+        typedef unsigned char Data[]; // Data size varies with Unit and must be manually calculated at send-time
+
     public:
         Command(const Unit & unit, const Region & region)
-        : Header(COMMAND), _unit(unit), _region(region) {}
+        : Header(COMMAND, 0, 0, here(), here(), 0), _region(region), _unit(unit) {}
 
         const Region & region() const { return _region; }
         const Unit & unit() const { return _unit; }
@@ -520,6 +513,36 @@ public:
         T * data() { return reinterpret_cast<T *>(&_data); }
 
         friend Debug & operator<<(Debug & db, const Command & m) {
+            db << reinterpret_cast<const Header &>(m) << ",u=" << m._unit << ",reg=" << m._region;
+            return db;
+        }
+
+    protected:
+        Region _region;
+        Unit _unit;
+        Data _data;
+    } __attribute__((packed));
+
+    // Control Message
+    class Control: public Header
+    {
+    private:
+        typedef unsigned char Data[]; // Data size varies with Unit and must be manually calculated at send-time
+
+    public:
+        Control(const Unit & unit, const Region & region)
+        : Header(CONTROL, 0, 0, here(), here(), 0), _unit(unit), _region(region) {}
+
+        const Region & region() const { return _region; }
+        const Unit & unit() const { return _unit; }
+
+        template<typename T>
+        T * command() { return reinterpret_cast<T *>(&_data); }
+
+        template<typename T>
+        T * data() { return reinterpret_cast<T *>(&_data); }
+
+        friend Debug & operator<<(Debug & db, const Control & m) {
             db << reinterpret_cast<const Header &>(m) << ",u=" << m._unit << ",reg=" << m._region;
             return db;
         }
@@ -539,8 +562,6 @@ public:
         : Interest(region, unit, mode, precision, expiry, period), _link(this, T::UNIT) {
             db<TSTP>(TRC) << "TSTP::Interested(d=" << data << ",r=" << region << ",p=" << period << ") => " << reinterpret_cast<const Interest &>(*this) << endl;
             _interested.insert(&_link);
-            _origin = _last_hop = here();
-            _elapsed = 0;
             advertise();
         }
         ~Interested() {
@@ -550,14 +571,13 @@ public:
         }
 
         void advertise() { send(); }
-        void revoke() { _region.t1 = 0 ; send(); } // An interest with t1=0 deletes a previous interest for the same Unit in the same Region
+        void revoke() { _mode = DELETE; send(); }
 
     private:
         void send() {
+            db<TSTP>(TRC) << "TSTP::Interested::send() => " << reinterpret_cast<const Interest &>(*this) << endl;
             Buffer * buf = TSTPNIC::alloc(sizeof(Interest));
-            db<TSTP>(TRC) << "TSTP::send() => " << reinterpret_cast<const Interest &>(*this) << endl;
             memcpy(buf->frame()->data<Interest>(), this, sizeof(Interest));
-            db<TSTP>(TRC) << "TSTP::send() => " << reinterpret_cast<const Interest &>(*this) << endl;
             TSTPNIC::send(buf);
         }
 
@@ -571,7 +591,7 @@ public:
     public:
         template<typename T>
         Responsive(T * data, const Unit & unit, const Time & expiry, const Error & error)
-        : Response(unit, expiry, error), _link(this, T::UNIT) {
+        : Response(unit, expiry, error), _size(sizeof(Response) + sizeof(typename T::Value)), _link(this, T::UNIT) {
             db<TSTP>(TRC) << "TSTP::Responsive(d=" << data << ")" << endl;
             _responsives.insert(&_link);
         }
@@ -580,9 +600,18 @@ public:
             _responsives.remove(&_link);
         }
 
-        void respond(const Time & expiry = 0) { send(expiry); }
+        void respond(const Time & expiry) { send(expiry); }
 
     private:
+        void send(const Time & expiry) {
+            db<TSTP>(TRC) << "TSTP::Responsive::send(x=" << expiry << ") => " << reinterpret_cast<const Response &>(*this) << endl;
+            Buffer * buf = TSTPNIC::alloc(_size);
+            memcpy(buf->frame()->data<Response>(), this, _size);
+            TSTPNIC::send(buf);
+        }
+
+    private:
+        unsigned int _size;
         Responsives::Element _link;
     };
 
@@ -596,14 +625,14 @@ public:
         TSTPNIC::detach(this);
     }
 
-    static Time now() { return TSC::time_stamp() / 1000000; }
-    static Coordinates here() { return Coordinates(0, 0, 0); }
+    static Time now() { return TSTPNIC::now(); }
+    static Coordinates here() { return TSTPNIC::here(); }
 
     static void attach(Observer * obs, int interest) { _observed.attach(obs, interest); }
     static void detach(Observer * obs, int interest) { _observed.detach(obs, interest); }
     static bool notify(int interest, Packet * packet) { return _observed.notify(interest, packet); }
 
-   static void init(unsigned int unit) {
+    static void init(unsigned int unit) {
         db<Init, TSTP>(TRC) << "TSTP::init()" << endl;
     }
 
@@ -625,11 +654,12 @@ private:
             if(list)
                 for(Responsives::Element * el = list->head(); el; el = el->next()) {
                     Responsive * responsive = el->object();
-                    db<TSTP>(INF) << "TSTP::update:msg=" << interest << " => " << *interest << endl;
-                    if(interest->region().contains(responsive->origin(), now())) // TODO: revokation messagens with T1 = 0 won't match!
+                    db<TSTP>(INF) << "TSTP::update:match:r=" << interest->region() << ",o=" << responsive->origin() << ",t=" << now() <<  endl;
+                    if(interest->region().contains(responsive->origin(), now())) {
+                        db<TSTP>(INF) << "TSTP::update:match: true" << endl;
                         notify(int(responsive), packet);
+                    }
                 }
-            db<TSTP>(INF) << "TSTP::update:msg=" << interest << " => " << *interest << endl;
         } break;
         case RESPONSE: {
             Response * response = reinterpret_cast<Response *>(packet);

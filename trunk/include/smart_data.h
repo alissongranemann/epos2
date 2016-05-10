@@ -57,6 +57,8 @@ public:
             _value = 0;
         if(Device::INTERRUPT)
             Device::attach(this);
+        if(_responsive)
+            TSTP::attach(this, int(_responsive));
         db<Smart_Data>(INF) << "Smart_Data(dev=" << dev << ",exp=" << expiry << ",mode=" << mode << ") => " << *this << endl;
     }
     // Remote, event-driven (period = 0) or time-triggered data source
@@ -114,10 +116,11 @@ public:
 
 private:
     void update(TSTP::Observed * obs, int subject, TSTP::Packet * packet) {
+        db<Smart_Data>(TRC) << "Smart_Data:update(obs=" << obs << ",cond=" << subject << ",data=" << packet << ")" << endl;
         switch(packet->type()) {
         case TSTP::INTEREST: {
-            TSTP::Interest * interest = packet->data<TSTP::Interest>();
-            db<Smart_Data>(TRC) << "Smart_Data(this=" << this << ",exp=" << _expiry << ") => " << _value << endl;
+            TSTP::Interest * interest = reinterpret_cast<TSTP::Interest *>(packet);
+            db<Smart_Data>(TRC) << "Smart_Data:update[I]:msg=" << interest << " => " << *interest << endl;
             if(interest->period()) {
                 if(!_thread)
                     _thread = new Periodic_Thread(interest->period(), &updater, _device, interest->expiry(), this);
@@ -134,7 +137,7 @@ private:
             }
         } break;
         case TSTP::RESPONSE: {
-            TSTP::Response * response = packet->data<TSTP::Response>();
+            TSTP::Response * response = reinterpret_cast<TSTP::Response *>(packet);
             _value = response->value<Value>();
             _error = response->error();
             _coordinates = response->origin();
@@ -143,8 +146,8 @@ private:
         }
         case TSTP::COMMAND: {
             if(_mode & COMMANDED) {
-                TSTP::Command * message = packet->data<TSTP::Command>();
-                Device::actuate(_device, this, message->command<void>());
+                TSTP::Command * command = reinterpret_cast<TSTP::Command *>(packet);
+                Device::actuate(_device, this, command->command<void>());
             }
         } break;
         case TSTP::CONTROL: {
@@ -163,7 +166,7 @@ private:
         if(_responsive) {
             _responsive->value(_value);
             db<TSTP>(TRC) << "TSTP::send() => " << *reinterpret_cast<TSTP::Response *>(_responsive) << endl;
-            _responsive->respond();
+            _responsive->respond(_expiry);
         }
     }
 
