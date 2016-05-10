@@ -51,14 +51,6 @@ private:
     }
 
 public:
-    void remap()
-    {
-        db<PC_Ethernet>(TRC) << "PC_Ethernet::remap" << endl;
-
-        _dev = reinterpret_cast<Meta_NIC<NICS>::Base *>(unsigned(_dev) | Memory_Map<PC>::PHY_MEM);
-        _dev->remap();
-    }
-
     const unsigned int mtu() const { return _dev->mtu(); }
     const Address broadcast() const { return _dev->broadcast(); }
 

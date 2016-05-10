@@ -165,9 +165,13 @@ PC_Setup::PC_Setup(char * boot_image)
     bi = reinterpret_cast<char *>(boot_image);
     si = reinterpret_cast<System_Info<PC> *>(bi);
 
-    Display::init();
+    PC_Display::init(PC_Display::FB_PHY_ADDR);
     Serial_Display::init();
     Serial_Display_Ready = true;
+
+    if(si->bm.n_cpus > Traits<PC>::CPUS) {
+        si->bm.n_cpus = Traits<PC>::CPUS;
+    }
 
     // Multicore conditional start up
     int cpu_id = Machine::cpu_id();
@@ -229,8 +233,10 @@ PC_Setup::PC_Setup(char * boot_image)
         // Load EPOS parts (e.g. INIT, SYSTEM, APP)
         load_parts();
 
-        set_code_pages_read_only();
-        CPU::cr0(CPU::cr0() | CPU::CR0_WP); /* inhibits supervisor-level procedures from writing into read-only pages */
+        if (Traits<Build>::MODE == Traits<Build>::KERNEL) {
+            set_code_pages_read_only();
+            CPU::cr0(CPU::cr0() | CPU::CR0_WP); /* inhibits supervisor-level procedures from writing into read-only pages */
+        }
 
         if (Traits<IA32>::CACHE_DISABLED) {
             CPU::cr0(CPU::cr0() | CPU::CR0_CD); /* Disables Cache */
@@ -247,7 +253,9 @@ PC_Setup::PC_Setup(char * boot_image)
         // Enable paging
         enable_paging();
 
-        CPU::cr0(CPU::cr0() | CPU::CR0_WP); /* inhibits supervisor-level procedures from writing into read-only pages */
+        if (Traits<Build>::MODE == Traits<Build>::KERNEL) {
+            CPU::cr0(CPU::cr0() | CPU::CR0_WP); /* inhibits supervisor-level procedures from writing into read-only pages */
+        }
 
         if (Traits<IA32>::CACHE_DISABLED) {
             CPU::cr0(CPU::cr0() | CPU::CR0_CD); /* Disables Cache */
@@ -1210,25 +1218,6 @@ void _start()
 
     // Multicore conditional start up
     if(APIC::id() == 0) { // Boot strap CPU (BSP)
-
-        // Initialize shared CPU counter
-        si->bm.n_cpus = 1;
-
-        // Broadcast INIT IPI to all APs excluding self
-        APIC::ipi_init(si->bm.cpu_status);
-
-        // Broadcast STARTUP IPI to all APs excluding self
-        // Non-boot CPUs will run a simplified boot strap just to
-        // trampoline them into protected mode
-        // PC_BOOT arranged for this code and stored it at 0x3000
-        // ipi_start() waits for cpu_status to be incremented by the finc
-        // further down in this code
-        APIC::ipi_start(0x3000, si->bm.cpu_status);
-
-        if(si->bm.n_cpus > Traits<PC>::CPUS) {
-            si->bm.n_cpus = Traits<PC>::CPUS;
-        }
-
         // Check SETUP integrity and get information about its ELF structure
         ELF * elf = reinterpret_cast<ELF *>(&bi[si->bm.setup_offset]);
         if(!elf->valid()) {
@@ -1257,20 +1246,6 @@ void _start()
         }
         APIC::remap(APIC::LOCAL_APIC_PHY_ADDR);
 
-        unsigned long long waiting_time_us = 12000000LL;
-        unsigned long long frequency_mhz = 2830LL; // Depens on the machine. It is hardcoded since we haven't called PC_Setup::calibrate_timers yet.
-        unsigned long long now = TSC::time_stamp();
-        unsigned long long t_end = now + (waiting_time_us * frequency_mhz);
-        while(now < t_end) {
-            now = TSC::time_stamp();
-        }
-
-        for (unsigned int n = 1; n < Traits<PC>::CPUS; n++) {
-            if(si->bm.cpu_status[n] == 1) {
-                CPU::finc(si->bm.cpu_status[n]);
-            }
-        }
-
         // Move the boot image to after SETUP, so there will be nothing else
         // below SETUP to be preserved
         // SETUP code + data + 1 stack per CPU)
@@ -1279,20 +1254,26 @@ void _start()
 
         // Passes a pointer to the just allocated stack pool to other CPUs
         Stacks = dst;
+
+        // Initialize shared CPU counter
+        si->bm.n_cpus = 1;
+
+        // Broadcast INIT IPI to all APs excluding self
+        APIC::ipi_init(si->bm.cpu_status);
+
+        // Broadcast STARTUP IPI to all APs excluding self
+        // Non-boot CPUs will run a simplified boot strap just to
+        // trampoline them into protected mode
+        // PC_BOOT arranged for this code and stored it at 0x3000
+        // ipi_start() waits for cpu_status to be incremented by the finc
+        // further down in this code
+        APIC::ipi_start(0x3000, si->bm.cpu_status);
+
         Stacks_Ready = true;
 
     } else { // Additional CPUs (APs)
-
         // Each AP increments the CPU counter
         CPU::finc(si->bm.n_cpus);
-
-        unsigned long long waiting_time_us = 3000000LL;
-        unsigned long long frequency_mhz = 2830LL; // Depens on the machine. It is hardcoded since we haven't called PC_Setup::calibrate_timers yet.
-        unsigned long long now = TSC::time_stamp();
-        unsigned long long t_end = now + (waiting_time_us * frequency_mhz);
-        while(now < t_end) {
-            now = TSC::time_stamp();
-        }
 
         // Inform BSP that this AP has been initialized
         CPU::finc(si->bm.cpu_status[APIC::id()]);

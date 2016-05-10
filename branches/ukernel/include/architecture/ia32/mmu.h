@@ -245,9 +245,28 @@ public:
 
         void activate() const { IA32::pdp(reinterpret_cast<IA32::Reg32>(_pd)); }
 
-        Log_Addr attach(const Chunk & chunk)
+        /// Attaches the page tables of **chunk** to the current page directory
+        /*! Attaches the page tables of **chunk** to the current page directory.
+         * That will create maps
+         * Page Directory Entry logical -> Page Directory Entry physical
+         * or
+         * Page Table "page" -> Page Table "frame"
+         *
+         * Parameters:
+         * **chunk** the set of page tables to he attached
+         * **from** the starting page table entry.
+         * If **from** is informed it start searching for free entries from
+         * the page_directory[from].
+         * Otherwise it starts at the beginning (first entry) of the page
+         * directory.
+         *
+         * Return: It returns true if the the page directory is able to
+         * accommodate all page tables informed by **chunk**.
+         * It returns false otherwise.
+         * */
+        Log_Addr attach(const Chunk & chunk, unsigned int from = 0)
         {
-            for(unsigned int i = 0; i < PD_ENTRIES; i++) {
+            for(unsigned int i = from; i < PD_ENTRIES; i++) {
                 if(attach(i, chunk.pt(), chunk.pts(), chunk.flags())) {
                     return i << DIRECTORY_SHIFT;
                 }
@@ -335,7 +354,7 @@ public:
         DMA_Buffer(unsigned int s) : Chunk(s, IA32_Flags::DMA)
         {
             Directory dir(current());
-            _log_addr = dir.attach(*this);
+            _log_addr = dir.attach(*this, MMU::directory(Memory_Map<PC>::SYS_HEAP));
             db<IA32_MMU>(TRC) << "IA32_MMU::DMA_Buffer() => " << *this << endl;
         }
 

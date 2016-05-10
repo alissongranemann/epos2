@@ -50,11 +50,6 @@ extern "C" {
         return _API::This_Thread::this_thread_id();
     }
 
-    void _task_setup()
-    {
-        _API::Task::setup();
-    }
-
 }
 
 __USING_SYS;

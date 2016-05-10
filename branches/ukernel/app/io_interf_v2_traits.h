@@ -126,7 +126,7 @@ template<> struct Traits<Application>: public Traits<void>
     static const unsigned int STACK_SIZE = Traits<Machine>::STACK_SIZE;
     static const unsigned int HEAP_SIZE = Traits<Machine>::HEAP_SIZE;
     static const unsigned int MAX_THREADS = Traits<Machine>::MAX_THREADS;
-    static const unsigned long DOMAIN_PERIOD = 50 * 1000;
+    static const unsigned long DOMAIN_PERIOD = 20 * 1000;
     static const unsigned int WSS = 12 * 1024 * 1024; /*! Bytes */
 
     static const unsigned long MAX_INTERF = 1000 * 1;   // 1 ms
@@ -137,7 +137,7 @@ template<> struct Traits<Application>: public Traits<void>
 
     static const unsigned long TIME_BETWEEN_SEGMENTS = LESS_THAN_MIN_INTERF; /*! Experiment Factor Set in Client */
 
-    static const unsigned long GUEST_OS_1_TASK_ITERATIONS = 3;
+    static const unsigned long GUEST_OS_1_TASK_ITERATIONS = 3000;
     static const unsigned long GUEST_OS_TASK_ITERATIONS = GUEST_OS_1_TASK_ITERATIONS;
     static const unsigned long GUEST_OS_2_TASK_ITERATIONS = (GUEST_OS_1_TASK_ITERATIONS * DOMAIN_PERIOD) / TIME_BETWEEN_SEGMENTS;
     static const unsigned int NUM_OF_DOMAINS = 2;

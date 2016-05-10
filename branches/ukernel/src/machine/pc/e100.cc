@@ -711,12 +711,4 @@ int E100::self_test()
 }
 
 
-void E100::remap()
-{
-    MMU::Directory current = MMU::Directory(reinterpret_cast<MMU::Page_Directory *>(CPU::cr3()));
-    current.attach(*_dma_buffer, _dma_buffer->log_address());
-
-    db<E100>(TRC) << "E100::remap, attached: " << _dma_buffer->log_address() << " on: " << current.pd() << endl;
-}
-
 __END_SYS

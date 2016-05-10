@@ -299,9 +299,6 @@ void Agent::handle_task()
         in(thread);
         task->main(thread);
     } break;
-    case TASK_SETUP: {
-        Adapter<Task>::setup();
-    } break;
     default: {
         db<Framework>(WRN) << "Undefined method for Task agent. Method = " << method() << endl;
         res = UNDEFINED;

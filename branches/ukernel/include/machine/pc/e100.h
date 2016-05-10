@@ -395,8 +395,6 @@ public:
 
     static E100 * get(unsigned int unit = 0) { return get_by_unit(unit); }
 
-    void remap();
-
 private:
     E100(unsigned int unit, Log_Addr io_mem, IO_Irq irq, DMA_Buffer * dma);
 

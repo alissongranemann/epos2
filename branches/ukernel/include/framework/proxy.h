@@ -77,7 +77,6 @@ public:
     CPU::Log_Addr data() { return invoke(TASK_DATA); }
     Proxy<Thread> * main() { return new (reinterpret_cast<Adapter<Thread> *>(invoke(TASK_MAIN))) Proxied<Thread>; }
     void main(Proxy<Thread> * thread) { invoke(TASK_SET_MAIN, thread->id().unit()); }
-    static void setup() { static_invoke(TASK_SETUP); }
 
     // Memory management
     CPU::Phy_Addr pd() { return invoke(ADDRESS_SPACE_PD); }

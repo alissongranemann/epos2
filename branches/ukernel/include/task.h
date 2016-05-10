@@ -85,7 +85,6 @@ public:
     void main(Thread * thread) { _main = thread; }
 
     static Task * volatile self() { return current(); } /* This method is not multiprocessor safe. */
-    static void setup();
 
 private:
     void activate() const { _as->activate(); }

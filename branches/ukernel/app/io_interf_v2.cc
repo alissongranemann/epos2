@@ -81,7 +81,7 @@ int main()
     db<Domain_1>(WRN) << "WSS = " << sizeof(unsigned int) * WSS << endl;
     db<Domain_1>(WRN) << "NUM_OF_PCPUS = " << NUM_OF_PCPUS << endl;
     db<Domain_1>(WRN) << "ITERATIONS = " << ITERATIONS << endl;
-    db<Domain_1>(WRN) << "Networking = " << (_SYS::Traits<Network>::enabled ? "enabled" : "disabled") << endl;
+    db<Domain_1>(WRN) << "Networking = " << ((_SYS::Traits<_SYS::Build>::NODES > 1) ? "enabled" : "disabled") << endl;
 
     Task * domain_u = Task::self();
 

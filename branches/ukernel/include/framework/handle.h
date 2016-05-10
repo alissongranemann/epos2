@@ -86,7 +86,6 @@ public:
     CPU::Log_Addr data() const { return _stub->data(); }
     Handle<Thread> * main() const { return new (_stub->main()) Handled<Thread>; }
     void main(Handle<Thread> * thread) { _stub->main(thread->_stub); }
-    static void setup() { _Stub::setup(); }
 
     // Memory Management
     CPU::Phy_Addr pd() { return _stub->pd(); }
