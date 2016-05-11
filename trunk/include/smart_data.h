@@ -49,12 +49,10 @@ public:
 public:
     // Local data source, possibly advertised to or commanded by the network
     Smart_Data(unsigned int dev, const Microsecond & expiry, const Mode & mode = PRIVATE)
-    : _unit(UNIT), _error(ERROR), _expiry(expiry), _device(dev), _mode(mode), _thread(0), _interested(0), _responsive((mode & ADVERTISED) | (mode & COMMANDED) ? new Responsive(this, UNIT, ERROR, expiry) : 0) {
+    : _unit(UNIT), _value(0), _error(ERROR), _coordinates(TSTP::here()), _time(TSTP::now()), _expiry(expiry), _device(dev), _mode(mode), _thread(0), _interested(0), _responsive((mode & ADVERTISED) | (mode & COMMANDED) ? new Responsive(this, UNIT, ERROR, expiry) : 0) {
         db<Smart_Data>(TRC) << "Smart_Data(dev=" << dev << ",exp=" << expiry << ",mode=" << mode << ")" << endl;
         if(Device::POLLING)
             Device::sense(_device, this);
-        else
-            _value = 0;
         if(Device::INTERRUPT)
             Device::attach(this);
         if(_responsive)
@@ -63,7 +61,7 @@ public:
     }
     // Remote, event-driven (period = 0) or time-triggered data source
     Smart_Data(const Region & region, const Microsecond & expiry, const Microsecond & period = 0)
-    : _unit(UNIT), _error(ERROR), _expiry(expiry), _device(0), _mode(PRIVATE), _thread(0), _interested(new Interested(this, region, UNIT, TSTP::SINGLE, 0, expiry, period)), _responsive(0) {
+    : _unit(UNIT), _value(0), _error(ERROR), _coordinates(0), _time(0), _expiry(expiry), _device(0), _mode(PRIVATE), _thread(0), _interested(new Interested(this, region, UNIT, TSTP::SINGLE, 0, expiry, period)), _responsive(0) {
         TSTP::attach(this, _interested);
     }
 
@@ -81,10 +79,11 @@ public:
     }
 
     operator Value() {
-        if(TSTP::now() > _expiry)
-            if(_device) // Local data source
+        if(TSTP::now() > (_time + _expiry))
+            if(_device) { // Local data source
                 Device::sense(_device, this); // read sensor
-            else // Other data sources must have called update() timely
+                _time = TSTP::now();
+            } else // Other data sources must have called update() timely
                 db<Smart_Data>(WRN) << "Smart_Data::get(this=" << this << ",exp=" << _expiry << ",val=" << _value << ") => expired!" << endl;
         return _value;
     }
@@ -116,11 +115,11 @@ public:
 
 private:
     void update(TSTP::Observed * obs, int subject, TSTP::Packet * packet) {
-        db<Smart_Data>(TRC) << "Smart_Data:update(obs=" << obs << ",cond=" << reinterpret_cast<void *>(subject) << ",data=" << packet << ")" << endl;
+        db<Smart_Data>(TRC) << "Smart_Data::update(obs=" << obs << ",cond=" << reinterpret_cast<void *>(subject) << ",data=" << packet << ")" << endl;
         switch(packet->type()) {
         case TSTP::INTEREST: {
             TSTP::Interest * interest = reinterpret_cast<TSTP::Interest *>(packet);
-            db<Smart_Data>(TRC) << "Smart_Data:update[I]:msg=" << interest << " => " << *interest << endl;
+            db<Smart_Data>(INF) << "Smart_Data::update[I]:msg=" << interest << " => " << *interest << endl;
             if(interest->period()) {
                 if(!_thread)
                     _thread = new Periodic_Thread(interest->period(), &updater, _device, interest->expiry(), this);
@@ -138,11 +137,12 @@ private:
         } break;
         case TSTP::RESPONSE: {
             TSTP::Response * response = reinterpret_cast<TSTP::Response *>(packet);
+            db<Smart_Data>(INF) << "Smart_Data:update[R]:msg=" << response << " => " << *response << endl;
             _value = response->value<Value>();
             _error = response->error();
             _coordinates = response->origin();
             _time = response->time();
-            _expiry = response->expiry();
+            db<Smart_Data>(INF) << "Smart_Data:update[R]:this=" << this << " => " << *this << endl;
         }
         case TSTP::COMMAND: {
             if(_mode & COMMANDED) {
@@ -161,10 +161,12 @@ private:
 
     void update(typename Device::Observed * obs) {
         Device::sense(_device, this);
+        _time = TSTP::now();
         db<Smart_Data>(TRC) << "Smart_Data::update(this=" << this << ",exp=" << _expiry << ") => " << _value << endl;
         db<Smart_Data>(TRC) << "Smart_Data::update:responsive=" << _responsive << " => " << *reinterpret_cast<TSTP::Response *>(_responsive) << endl;
         if(_responsive) {
             _responsive->value(_value);
+            _responsive->time(_time);
             _responsive->respond(_expiry);
         }
     }
@@ -173,6 +175,7 @@ private:
         while(1) {
             Device::sense(dev, data);
             data->_responsive->value(data->_value);
+            data->_responsive->time(TSTP::now());
             data->_responsive->respond(expiry);
             Periodic_Thread::wait_next();
         }
@@ -196,39 +199,6 @@ private:
 
 __END_SYS
 
-#include <utility/observer.h>
-#include <keyboard.h>
-
-__BEGIN_SYS
-
-typedef TSTP::Region Region;
-typedef TSTP::Coordinates Coordinates;
-
-class Keyboard_Sensor: public PC_Keyboard
-{
-public:
-    static const unsigned int UNIT = TSTP::Unit::Acceleration;
-    static const unsigned int NUM = TSTP::Unit::I28;
-    static const int ERROR = 0; // Unknown
-
-    static const bool INTERRUPT = true;
-    static const bool POLLING = false;
-
-    typedef PC_Keyboard::Observer Observer;
-    typedef PC_Keyboard::Observed Observed;
-
-public:
-    Keyboard_Sensor() {}
-
-    static void sense(unsigned int dev, Smart_Data<Keyboard_Sensor> * data) {
-        data->_value = try_getc();
-    }
-
-    static void actuate(unsigned int dev, Smart_Data<Keyboard_Sensor> * data, void * command) {}
-};
-
-typedef Smart_Data<Keyboard_Sensor> Acceleration;
-
-__END_SYS
-
 #endif
+
+#include <sensor.h>

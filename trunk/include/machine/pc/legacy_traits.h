@@ -103,6 +103,7 @@ template<> struct Traits<PC_UART>: public Traits<PC_Common>
 
 template<> struct Traits<PC_Display>: public Traits<PC_Common>
 {
+    static const bool enabled = !Traits<Serial_Display>::enabled;
     static const int COLUMNS = 80;
     static const int LINES = 25;
     static const int TAB_SIZE = 8;
@@ -112,7 +113,7 @@ template<> struct Traits<PC_Display>: public Traits<PC_Common>
 
 template<> struct Traits<PC_Keyboard>: public Traits<PC_Common>
 {
-    static const bool enabled = true; //!Traits<Serial_Display>::enabled;
+    static const bool enabled = !Traits<Serial_Keyboard>::enabled;
 };
 
 template<> struct Traits<PC_Ethernet>: public Traits<PC_Common>

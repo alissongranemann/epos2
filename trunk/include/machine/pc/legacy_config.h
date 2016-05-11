@@ -40,7 +40,7 @@ typedef PC_RTC          RTC;
 typedef PC_EEPROM       EEPROM;
 typedef PC_UART         UART;
 typedef IF<Traits<Serial_Display>::enabled, Serial_Display, PC_Display>::Result Display;
-typedef IF<Traits<Serial_Display>::enabled, Serial_Keyboard, PC_Keyboard>::Result Keyboard;
+typedef IF<Traits<Serial_Keyboard>::enabled, Serial_Keyboard, PC_Keyboard>::Result Keyboard;
 typedef PC_Ethernet     NIC;
 typedef PC_Scratchpad   Scratchpad;
 

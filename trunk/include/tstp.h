@@ -113,6 +113,7 @@ public:
         void last_hop(const Coordinates & c) { _last_hop = c; }
 
         Time time() const;
+        void time(const Time & t);
 
         friend Debug & operator<<(Debug & db, const _Header & h) {
             db << "{v=" << h.version() - V0 << ",t=" << ((h.type() == INTEREST) ? 'I' :  (h.type() == RESPONSE) ? 'R' : (h.type() == COMMAND) ? 'C' : 'P') << ",tr=" << h.time_request() << ",s=" << h.scale() << ",e=" << h._elapsed << ",o=" << h._origin << ",l=" << h._last_hop << "}";
@@ -130,8 +131,9 @@ public:
 
 
     // TSTP encodes SI Units similarly to IEEE 1451 TEDs
-    struct Unit
+    class Unit
     {
+    public:
         // Formats
         // Bit       31                                 16                                     0
         //         +--+----------------------------------+-------------------------------------+
@@ -153,8 +155,8 @@ public:
 
         // Valid values for field NUM
         enum {
-            I28 = 0 << 29, // Value is an integral number stored in the 28 last significant bits of a 32-bit big-endian integer. The 4 most significant bits encode an SI Factor.
-            I60 = 1 << 29, // Value is an integral number stored in the 60 last significant bits of a 64-bit big-endian integer. The 4 most significant bits encode an SI Factor.
+            I32 = 0 << 29, // Value is an integral number stored in the 28 last significant bits of a 32-bit big-endian integer. The 4 most significant bits encode an SI Factor.
+            I64 = 1 << 29, // Value is an integral number stored in the 60 last significant bits of a 64-bit big-endian integer. The 4 most significant bits encode an SI Factor.
             F32 = 2 << 29, // Value is a real number stored as an IEEE 754 binary32 big-endian floating point.
             D64 = 3 << 29, // Value is a real number stored as an IEEE 754 binary64 big-endian doulbe precision floating point.
             NUM = D64      // AND mask to select NUM bits
@@ -182,7 +184,26 @@ public:
             CD      = 7 <<  0
         };
 
+        // Typical SI Quantities
+        enum Quantity {
+             //                        si      | mod       | sr            | rad           |  m            |  kg           |  s            |  A            |  K            |  mol          |  cd
+             Length                  = 1 << 31 | DIR << 27 | (4 + 0) << 24 | (4 + 0) << 21 | (4 + 1) << 18 | (4 + 0) << 15 | (4 + 0) << 12 | (4 + 0) << 9  | (4 + 0) << 6  | (4 + 0) << 3  | (4 + 0),
+             Mass                    = 1 << 31 | DIR << 27 | (4 + 0) << 24 | (4 + 0) << 21 | (4 + 0) << 18 | (4 + 1) << 15 | (4 + 0) << 12 | (4 + 0) << 9  | (4 + 0) << 6  | (4 + 0) << 3  | (4 + 0),
+             Time                    = 1 << 31 | DIR << 27 | (4 + 0) << 24 | (4 + 0) << 21 | (4 + 0) << 18 | (4 + 0) << 15 | (4 + 1) << 12 | (4 + 0) << 9  | (4 + 0) << 6  | (4 + 0) << 3  | (4 + 0),
+             Current                 = 1 << 31 | DIR << 27 | (4 + 0) << 24 | (4 + 0) << 21 | (4 + 0) << 18 | (4 + 0) << 15 | (4 + 0) << 12 | (4 + 1) << 9  | (4 + 0) << 6  | (4 + 0) << 3  | (4 + 0),
+             Electric_Current        = Current,
+             Temperature             = 1 << 31 | DIR << 27 | (4 + 0) << 24 | (4 + 0) << 21 | (4 + 0) << 18 | (4 + 0) << 15 | (4 + 0) << 12 | (4 + 0) << 9  | (4 + 1) << 6  | (4 + 0) << 3  | (4 + 0),
+             Amount_of_Substance     = 1 << 31 | DIR << 27 | (4 + 0) << 24 | (4 + 0) << 21 | (4 + 0) << 18 | (4 + 0) << 15 | (4 + 0) << 12 | (4 + 0) << 9  | (4 + 0) << 6  | (4 + 1) << 3  | (4 + 0),
+             Liminous_Intensity      = 1 << 31 | DIR << 27 | (4 + 0) << 24 | (4 + 0) << 21 | (4 + 0) << 18 | (4 + 0) << 15 | (4 + 0) << 12 | (4 + 0) << 9  | (4 + 0) << 6  | (4 + 0) << 3  | (4 + 1),
+             Area                    = 1 << 31 | DIR << 27 | (4 + 0) << 24 | (4 + 0) << 21 | (4 + 2) << 18 | (4 + 0) << 15 | (4 + 0) << 12 | (4 + 0) << 9  | (4 + 0) << 6  | (4 + 0) << 3  | (4 + 0),
+             Volume                  = 1 << 31 | DIR << 27 | (4 + 0) << 24 | (4 + 0) << 21 | (4 + 3) << 18 | (4 + 0) << 15 | (4 + 0) << 12 | (4 + 0) << 9  | (4 + 0) << 6  | (4 + 0) << 3  | (4 + 0),
+             Speed                   = 1 << 31 | DIR << 27 | (4 + 0) << 24 | (4 + 0) << 21 | (4 + 1) << 18 | (4 + 0) << 15 | (4 - 1) << 12 | (4 + 0) << 9  | (4 + 0) << 6  | (4 + 0) << 3  | (4 + 0),
+             Velocity                = Speed,
+             Acceleration            = 1 << 31 | DIR << 27 | (4 + 0) << 24 | (4 + 0) << 21 | (4 + 1) << 18 | (4 + 0) << 15 | (4 - 2) << 12 | (4 + 0) << 9  | (4 + 0) << 6  | (4 + 0) << 3  | (4 + 0)
+         };
+
         // SI Factors
+        typedef char Factor;
         enum {
          // Name           Code         Symbol    Factor
             ATTO        = (8 - 8), //     a       0.000000000000000001
@@ -203,43 +224,27 @@ public:
             PETA        = (8 + 7)  //     P       1000000000000000
         };
 
-        // Typical SI Quantities
-        enum Quantity {
-             //                        si      | mod       | sr            | rad           |  m            |  kg           |  s            |  A            |  K            |  mol          |  cd
-             Length                  = 1 << 31 | DIR << 27 | (4 + 0) << 24 | (4 + 0) << 21 | (4 + 1) << 18 | (4 + 0) << 15 | (4 + 0) << 12 | (4 + 0) << 9  | (4 + 0) << 6  | (4 + 0) << 3  | (4 + 0),
-             Mass                    = 1 << 31 | DIR << 27 | (4 + 0) << 24 | (4 + 0) << 21 | (4 + 0) << 18 | (4 + 1) << 15 | (4 + 0) << 12 | (4 + 0) << 9  | (4 + 0) << 6  | (4 + 0) << 3  | (4 + 0),
-             Time                    = 1 << 31 | DIR << 27 | (4 + 0) << 24 | (4 + 0) << 21 | (4 + 0) << 18 | (4 + 0) << 15 | (4 + 1) << 12 | (4 + 0) << 9  | (4 + 0) << 6  | (4 + 0) << 3  | (4 + 0),
-             Current                 = 1 << 31 | DIR << 27 | (4 + 0) << 24 | (4 + 0) << 21 | (4 + 0) << 18 | (4 + 0) << 15 | (4 + 0) << 12 | (4 + 1) << 9  | (4 + 0) << 6  | (4 + 0) << 3  | (4 + 0),
-             Electric_Current        = Current,
-             Temperature             = 1 << 31 | DIR << 27 | (4 + 0) << 24 | (4 + 0) << 21 | (4 + 0) << 18 | (4 + 0) << 15 | (4 + 0) << 12 | (4 + 0) << 9  | (4 + 1) << 6  | (4 + 0) << 3  | (4 + 0),
-             Amount_of_Substance     = 1 << 31 | DIR << 27 | (4 + 0) << 24 | (4 + 0) << 21 | (4 + 0) << 18 | (4 + 0) << 15 | (4 + 0) << 12 | (4 + 0) << 9  | (4 + 0) << 6  | (4 + 1) << 3  | (4 + 0),
-             Liminous_Intensity      = 1 << 31 | DIR << 27 | (4 + 0) << 24 | (4 + 0) << 21 | (4 + 0) << 18 | (4 + 0) << 15 | (4 + 0) << 12 | (4 + 0) << 9  | (4 + 0) << 6  | (4 + 0) << 3  | (4 + 1),
-             Area                    = 1 << 31 | DIR << 27 | (4 + 0) << 24 | (4 + 0) << 21 | (4 + 2) << 18 | (4 + 0) << 15 | (4 + 0) << 12 | (4 + 0) << 9  | (4 + 0) << 6  | (4 + 0) << 3  | (4 + 0),
-             Volume                  = 1 << 31 | DIR << 27 | (4 + 0) << 24 | (4 + 0) << 21 | (4 + 3) << 18 | (4 + 0) << 15 | (4 + 0) << 12 | (4 + 0) << 9  | (4 + 0) << 6  | (4 + 0) << 3  | (4 + 0),
-             Speed                   = 1 << 31 | DIR << 27 | (4 + 0) << 24 | (4 + 0) << 21 | (4 + 1) << 18 | (4 + 0) << 15 | (4 - 1) << 12 | (4 + 0) << 9  | (4 + 0) << 6  | (4 + 0) << 3  | (4 + 0),
-             Velocity                = Speed,
-             Acceleration            = 1 << 31 | DIR << 27 | (4 + 0) << 24 | (4 + 0) << 21 | (4 + 1) << 18 | (4 + 0) << 15 | (4 - 2) << 12 | (4 + 0) << 9  | (4 + 0) << 6  | (4 + 0) << 3  | (4 + 0)
-         };
 
         template<int N>
-        struct Get { typedef typename SWITCH<N, CASE<I28, long, CASE<I60, long long, CASE<DEFAULT, long>>>>::Result Type; };
+        struct Get { typedef typename SWITCH<N, CASE<I32, long, CASE<I64, long long, CASE<DEFAULT, long>>>>::Result Type; };
 
         template<typename T>
-        struct GET { enum { NUM = I28 }; };
+        struct GET { enum { NUM = I32 }; };
 
-        Unit(unsigned int u) { unit = u; }
+    public:
+        Unit(unsigned long u) { _unit = u; }
 
-        operator unsigned int() const { return unit; }
+        operator unsigned long() const { return _unit; }
 
-        int sr()  const { return ((unit & SR)  >> 24) - 4 ; }
-        int rad() const { return ((unit & RAD) >> 21) - 4 ; }
-        int m()   const { return ((unit & M)   >> 18) - 4 ; }
-        int kg()  const { return ((unit & KG)  >> 15) - 4 ; }
-        int s()   const { return ((unit & S)   >> 12) - 4 ; }
-        int a()   const { return ((unit & A)   >>  9) - 4 ; }
-        int k()   const { return ((unit & K)   >>  6) - 4 ; }
-        int mol() const { return ((unit & MOL) >>  3) - 4 ; }
-        int cd()  const { return ((unit & CD)  >>  0) - 4 ; }
+        int sr()  const { return ((_unit & SR)  >> 24) - 4 ; }
+        int rad() const { return ((_unit & RAD) >> 21) - 4 ; }
+        int m()   const { return ((_unit & M)   >> 18) - 4 ; }
+        int kg()  const { return ((_unit & KG)  >> 15) - 4 ; }
+        int s()   const { return ((_unit & S)   >> 12) - 4 ; }
+        int a()   const { return ((_unit & A)   >>  9) - 4 ; }
+        int k()   const { return ((_unit & K)   >>  6) - 4 ; }
+        int mol() const { return ((_unit & MOL) >>  3) - 4 ; }
+        int cd()  const { return ((_unit & CD)  >>  0) - 4 ; }
 
         friend Debug & operator<<(Debug & db, const Unit & u) {
             if(u & SI) {
@@ -251,8 +256,8 @@ public:
                 case LOG_DIV: db << "[log(U/U)]";
                 };
                 switch(u & NUM) {
-                case I28: db << ".I28"; break;
-                case I60: db << ".I60"; break;
+                case I32: db << ".I32"; break;
+                case I64: db << ".I64"; break;
                 case F32: db << ".F32"; break;
                 case D64: db << ".D64";
                 }
@@ -281,20 +286,21 @@ public:
             return db;
         }
 
-        unsigned long unit;
+    private:
+        unsigned long _unit;
     } __attribute__((packed));
 
-    // SI values (either integer28, integer60, float32, double64)
+    // SI values (either integer32, integer64, float32, double64)
     template<int NUM>
-    struct Value
+    class Value
     {
-        Value(long int v): exp(0), value(v) {}
-        Value(int e, long int v): exp(e), value(v) {}
+    public:
+        Value(long int v): _value(v) {}
 
-        operator long int() { return value & (0xf << 28); }
+        operator long int() { return _value; }
 
-        long int exp:4;
-        long int value:28;
+    private:
+        long int _value;
     };
 
     // Precision or Error in SI values, expressed as 10^Error
@@ -327,35 +333,39 @@ struct TSTP_Common::_Coordinates<TSTP_Common::CM_32>: public Point<long, 3>
 } __attribute__((packed));
 
 template<>
-struct TSTP_Common::Value<TSTP_Common::Unit::I60>
+class TSTP_Common::Value<TSTP_Common::Unit::I64>
 {
-    Value(long long int v): exp(0), value(v) {}
-    Value(int e, long long int v): exp(e), value(v) {}
+public:
+    Value(long long int v): _value(v) {}
 
-    operator long long int() { return value & (0xfULL << 60); }
+    operator long long int() { return _value; }
 
-    long long int exp:4;
-    long long int value:60;
+public:
+    long long int _value;
 };
 
 template<>
-struct TSTP_Common::Value<TSTP_Common::Unit::F32>
+class TSTP_Common::Value<TSTP_Common::Unit::F32>
 {
-    Value(float v): value(v) {}
+public:
+    Value(float v): _value(v) {}
 
-    operator float() { return value; }
+    operator float() { return _value; }
 
-    float value;
+private:
+    float _value;
 };
 
 template<>
-struct TSTP_Common::Value<TSTP_Common::Unit::D64>
+class TSTP_Common::Value<TSTP_Common::Unit::D64>
 {
-    Value(double v): value(v) {}
+public:
+    Value(double v): _value(v) {}
 
-    operator double() { return value; }
+    operator double() { return _value; }
 
-    double value;
+private:
+    double _value;
 };
 
 __END_SYS
@@ -383,8 +393,8 @@ public:
 
 
     // Packet
-//    static const unsigned int MTU = TSTPNIC::MTU - sizeof(Header);
-    static const unsigned int MTU = 127 - sizeof(Header);
+    static const unsigned int MTU = TSTPNIC::MTU - sizeof(Header);
+//    static const unsigned int MTU = 127 - sizeof(Header);
     template<Scale S>
     class _Packet: public Header
     {
@@ -496,7 +506,7 @@ public:
     protected:
         Unit _unit;
         Error _error;
-        Time _expiry;
+        Time_Offset _expiry;
         Data _data;
     } __attribute__((packed));
 
@@ -608,13 +618,18 @@ public:
             _responsives.remove(&_link);
         }
 
+
+        using Header::time;
+        using Header::origin;
+
         void respond(const Time & expiry) { send(expiry); }
 
     private:
         void send(const Time & expiry) {
-            db<TSTP>(TRC) << "TSTP::Responsive::send(x=" << expiry << ",s=" << _size << ") => " << reinterpret_cast<const Response &>(*this) << endl;
+            db<TSTP>(TRC) << "TSTP::Responsive::send(x=" << expiry << ")" << endl;
             Buffer * buf = TSTPNIC::alloc(_size);
             memcpy(buf->frame()->data<Response>(), this, _size);
+            db<TSTP>(INF) << "TSTP::Responsive::send:response=" << this << " => " << reinterpret_cast<const Response &>(*this) << endl;
             TSTPNIC::send(buf);
         }
 
@@ -654,26 +669,20 @@ private:
         switch(packet->type()) {
         case INTEREST: {
             Interest * interest = reinterpret_cast<Interest *>(packet);
-
             db<TSTP>(INF) << "TSTP::update:msg=" << interest << " => " << *interest << endl;
-
             // Check for local capability to respond and notify interested observers
             Responsives::List * list = _responsives[interest->unit()]; // TODO: What if sensor can answer multiple formats (e.g. int and float)
             if(list)
                 for(Responsives::Element * el = list->head(); el; el = el->next()) {
                     Responsive * responsive = el->object();
-//                    db<TSTP>(INF) << "TSTP::update:match:r=" << interest->region() << ",o=" << responsive->origin() << ",t=" << now() <<  endl;
                     if(interest->region().contains(responsive->origin(), now())) {
-//                        db<TSTP>(INF) << "TSTP::update:match: true" << endl;
                         notify(responsive, packet);
                     }
                 }
         } break;
         case RESPONSE: {
             Response * response = reinterpret_cast<Response *>(packet);
-
             db<TSTP>(INF) << "TSTP::update:msg=" << response << " => " << *response << endl;
-
             // Check region inclusion and notify interested observers
             Interests::List * list = _interested[response->unit()];
             if(list)
@@ -685,9 +694,7 @@ private:
         } break;
         case COMMAND: {
             Command * command = reinterpret_cast<Command *>(packet);
-
             db<TSTP>(INF) << "TSTP::update:msg=" << command << " => " << *command << endl;
-
             // Check for local capability to respond and notify interested observers
             Responsives::List * list = _responsives[command->unit()]; // TODO: What if sensor can answer multiple formats (e.g. int and float)
             if(list)
@@ -716,71 +723,11 @@ inline TSTP_Common::Time TSTP_Common::_Header<S>::time() const {
     return TSTP::now() + _elapsed;
 }
 
+template<TSTP_Common::Scale S>
+inline void TSTP_Common::_Header<S>::time(const TSTP_Common::Time & t) {
+    _elapsed = t - TSTP::now();
+}
 
-//// Digital Data Response Message
-//template<>
-//class TSTP::Response<TSTP::Unit::DIGITAL>: public _Response
-//{
-//public:
-//    Response(const Unit & u, const Time & t = 0, const Error & e = 0): _Response(u, t, e) {}
-//
-//    template<typename T>
-//    T * data() { return reinterpret_cast<T *>(&_data); }
-//
-//    friend Debug & operator<<(Debug & db, const Response & m) {
-//        db << reinterpret_cast<const _Response &>(m) << ",d=" << m._data;
-//        return db;
-//    }
-//
-//protected:
-//    Data _data;
-//};
-//
-// SI I28 Response Message Marshalling
-//template<>
-//long TSTP::Response::value<long>() {
-//    return reinterpret_cast<TSTP::Value<TSTP::Unit::I28> &>(_data);
-//}
-//
-//// SI I60 Response Message
-//template<>
-//class TSTP::Response<TSTP::Unit::SI | TSTP::Unit::I60>: public _Response, public TSTP::Value<TSTP::Unit::I60>
-//{
-//public:
-//    Response(const Unit & u, const Time & t = 0, const Error & e = 0): _Response(u, t, e) {}
-//
-//    friend Debug & operator<<(Debug & db, const Response & m) {
-//        db << reinterpret_cast<const _Response &>(m) << ",v={e=" << m.exp << ",v=" << m.value;
-//        return db;
-//    }
-//} __attribute__((packed));
-//
-//// SI F32 Response Message
-//template<>
-//class TSTP::Response<TSTP::Unit::SI | TSTP::Unit::F32>: public _Response, public TSTP::Value<TSTP::Unit::F32>
-//{
-//public:
-//    Response(const Unit & u, const Time & t = 0, const Error & e = 0): _Response(u, t, e) {}
-//
-//    friend Debug & operator<<(Debug & db, const Response & m) {
-//        db << reinterpret_cast<const _Response &>(m) << ",v={e=" << m.exp << ",v=" << m.value;
-//        return db;
-//    }
-//} __attribute__((packed));
-//
-//// SI D64 Response Message
-//template<>
-//class TSTP::Response<TSTP::Unit::SI | TSTP::Unit::D64>: public _Response, public TSTP::Value<TSTP::Unit::D64>
-//{
-//public:
-//    Response(const Unit & u, const Time & t = 0, const Error & e = 0): _Response(u, t, e) {}
-//
-//    friend Debug & operator<<(Debug & db, const Response & m) {
-//        db << reinterpret_cast<const _Response &>(m) << ",v={e=" << m.exp << ",v=" << m.value;
-//        return db;
-//    }
-//} __attribute__((packed));
-//
 __END_SYS
 
 #endif

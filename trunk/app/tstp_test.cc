@@ -21,8 +21,8 @@ int main()
     cout << "  Size of TSTP::Response:    " << sizeof(TSTP::Response) << endl;
     cout << "  Size of TSTP::Command:     " << sizeof(TSTP::Command) << endl;
     cout << "  Size of TSTP::Unit:        " << sizeof(TSTP::Unit) << endl;
-    cout << "  Size of TSTP::Value<I32>:  " << sizeof(TSTP::Value<TSTP::Unit::I28>) << endl;
-    cout << "  Size of TSTP::Value<I60>:  " << sizeof(TSTP::Value<TSTP::Unit::I60>) << endl;
+    cout << "  Size of TSTP::Value<I32>:  " << sizeof(TSTP::Value<TSTP::Unit::I32>) << endl;
+    cout << "  Size of TSTP::Value<I64>:  " << sizeof(TSTP::Value<TSTP::Unit::I64>) << endl;
     cout << "  Size of TSTP::Value<F32>:  " << sizeof(TSTP::Value<TSTP::Unit::F32>) << endl;
     cout << "  Size of TSTP::Value<D64>:  " << sizeof(TSTP::Value<TSTP::Unit::D64>) << endl;
     cout << "  Size of TSTP::Time_Offset: " << sizeof(TSTP::Time_Offset) << endl;
@@ -51,16 +51,16 @@ void sink(const NIC::Address & mac)
     cout << "My location is " << TSTP::here() << " and the time now is " << TSTP::now() << endl;
     cout << "I'll now declare my interests ..." << endl;
 
-    Acceleration a0(Region(Coordinates(5, 5, 5), 10, 0, 3000000000UL), 1000000); // Remote, from a region centered at (1, 1, 1), with radius 10, from time 20 to 30, updated on each event, with expiration time of 1s.
-//    Delay (10000000);
-//    Acceleration a1(Region(Coordinates(5, 5, 5), 10, 0, 3000000000UL), 1000000, 1000000); // Remote, from a region centered at (1, 1, 1), with radius 10, from time 20 to 30, updated every ten seconds, with expiration time of 1s.
+    Acceleration a0(Region(Coordinates(5, 5, 5), 10, 0, 3000000000UL), 10000000); // Remote, from a region centered at (1, 1, 1), with radius 10, from time 20 to 30, updated on each event, with expiration time of 10s.
+    Acceleration a1(Region(Coordinates(5, 5, 5), 10, 0, 3000000000UL), 1000000, 1000000); // Remote, from a region centered at (1, 1, 1), with radius 10, from time 20 to 30, updated every ten seconds, with expiration time of 1s.
 
+    Delay(5000000);
 
-    do {
+    while((a0 != 'a') && (a1 != 'a')) {
         cout << "a0=" << a0 << endl;
-//        cout << "a1=" << a1 << endl;
-        Delay (10000000);
-    } while((a0 != 'a') && (a0 != 'a'));
+        cout << "a1=" << a1 << endl;
+        Delay (50000);
+    }
 }
 
 void sensor(const NIC::Address & mac)
@@ -73,7 +73,8 @@ void sensor(const NIC::Address & mac)
     Acceleration a0(0, 1000000); // Local, private, with expiration time of 1 s.
     Acceleration a1(1, 10000000, Acceleration::COMMANDED); // Local, commanded, with local expiration time of 10 s.
 
-    while(1)
+    while(a0 != 'a') {
+        cout << "a0=" << a0 << endl;
         Delay(50000);
+    }
 }
-
