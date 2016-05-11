@@ -58,24 +58,24 @@ public:
         if(Device::INTERRUPT)
             Device::attach(this);
         if(_responsive)
-            TSTP::attach(this, int(_responsive));
+            TSTP::attach(this, _responsive);
         db<Smart_Data>(INF) << "Smart_Data(dev=" << dev << ",exp=" << expiry << ",mode=" << mode << ") => " << *this << endl;
     }
     // Remote, event-driven (period = 0) or time-triggered data source
     Smart_Data(const Region & region, const Microsecond & expiry, const Microsecond & period = 0)
     : _unit(UNIT), _error(ERROR), _expiry(expiry), _device(0), _mode(PRIVATE), _thread(0), _interested(new Interested(this, region, UNIT, TSTP::SINGLE, 0, expiry, period)), _responsive(0) {
-        TSTP::attach(this, int(_interested));
+        TSTP::attach(this, _interested);
     }
 
     ~Smart_Data() {
         if(_thread)
             delete _thread;
         if(_interested) {
-            TSTP::detach(this, int(_interested));
+            TSTP::detach(this, _interested);
             delete _interested;
         }
         if(_responsive) {
-            TSTP::detach(this, int(_responsive));
+            TSTP::detach(this, _responsive);
             delete _responsive;
         }
     }
@@ -116,7 +116,7 @@ public:
 
 private:
     void update(TSTP::Observed * obs, int subject, TSTP::Packet * packet) {
-        db<Smart_Data>(TRC) << "Smart_Data:update(obs=" << obs << ",cond=" << subject << ",data=" << packet << ")" << endl;
+        db<Smart_Data>(TRC) << "Smart_Data:update(obs=" << obs << ",cond=" << reinterpret_cast<void *>(subject) << ",data=" << packet << ")" << endl;
         switch(packet->type()) {
         case TSTP::INTEREST: {
             TSTP::Interest * interest = reinterpret_cast<TSTP::Interest *>(packet);
@@ -162,10 +162,9 @@ private:
     void update(typename Device::Observed * obs) {
         Device::sense(_device, this);
         db<Smart_Data>(TRC) << "Smart_Data::update(this=" << this << ",exp=" << _expiry << ") => " << _value << endl;
-        db<TSTP>(TRC) << "TSTP::send() => " << *reinterpret_cast<TSTP::Response *>(_responsive) << endl;
+        db<Smart_Data>(TRC) << "Smart_Data::update:responsive=" << _responsive << " => " << *reinterpret_cast<TSTP::Response *>(_responsive) << endl;
         if(_responsive) {
             _responsive->value(_value);
-            db<TSTP>(TRC) << "TSTP::send() => " << *reinterpret_cast<TSTP::Response *>(_responsive) << endl;
             _responsive->respond(_expiry);
         }
     }

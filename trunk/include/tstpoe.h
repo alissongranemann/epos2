@@ -15,7 +15,7 @@ class TSTPOE: private TSTP_Common, private NIC::Observer
     template<int unit> friend void call_init();
 
 public:
-    static const unsigned int MTU = 1514;
+    static const unsigned int MTU = 1500;
 
     // Buffers received from the NIC
     typedef NIC::Buffer Buffer;

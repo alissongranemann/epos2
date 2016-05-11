@@ -16,8 +16,6 @@ public:
     static const unsigned int LAN = 10000; // Nodes
     static const unsigned int NODES = Traits<Build>::NODES;
 
-    static const unsigned int MTU = 127;
-
     // Version
     // This field is packed first and matches the Frame Type field in the Frame Control in IEEE 802.15.4 MAC.
     // A version number above 4 renders TSTP into the reserved frame type zone and should avoid interfernce.
@@ -129,28 +127,6 @@ public:
         Time_Offset _elapsed;
     } __attribute__((packed));
     typedef _Header<SCALE> Header;
-
-    // Packet
-    template<Scale S>
-    class _Packet: public Header
-    {
-    public:
-        _Packet() {}
-
-        Header * header() { return this; }
-
-        template<typename T>
-        T * data() { return reinterpret_cast<T *>(&_data); }
-
-        friend Debug & operator<<(Debug & db, const _Packet & p) {
-            db << "{h=" << reinterpret_cast<const Header &>(p) << ",d=" << p._data << "}";
-            return db;
-        }
-
-    private:
-        unsigned char _data[MTU - sizeof(Header)];
-    } __attribute__((packed));
-    typedef _Packet<SCALE> Packet;
 
 
     // TSTP encodes SI Units similarly to IEEE 1451 TEDs
@@ -405,15 +381,49 @@ public:
     // Buffers received from the NIC
     typedef TSTPNIC::Buffer Buffer;
 
+
+    // Packet
+//    static const unsigned int MTU = TSTPNIC::MTU - sizeof(Header);
+    static const unsigned int MTU = 127 - sizeof(Header);
+    template<Scale S>
+    class _Packet: public Header
+    {
+    private:
+        typedef unsigned char Data[MTU];
+
+    public:
+        _Packet() {}
+
+        Header * header() { return this; }
+
+        template<typename T>
+        T * data() { return reinterpret_cast<T *>(&_data); }
+
+        friend Debug & operator<<(Debug & db, const _Packet & p) {
+            db << "{h=" << reinterpret_cast<const Header &>(p) << ",d=" << p._data << "}";
+            return db;
+        }
+
+    private:
+        Data _data;
+    } __attribute__((packed));
+    typedef _Packet<SCALE> Packet;
+
+
     // TSTP observer/d conditioned to a message's address (ID)
     typedef Data_Observer<Packet, int> Observer;
     typedef Data_Observed<Packet, int> Observed;
+
 
     // Hash to store TSTP Observers by type
     class Interested;
     typedef Hash<Interested, 10, Unit> Interests;
     class Responsive;
     typedef Hash<Responsive, 10, Unit> Responsives;
+
+
+    // TSTP Messages
+    // Each TSTP message is encapsulated in a single package. TSTP does not need nor supports fragmentation.
 
     // Interest/Response Modes
     enum Mode {
@@ -423,9 +433,6 @@ public:
         // Interest
         DELETE = 2  // Revoke an interest
     };
-
-    // TSTP Messages
-    // Each TSTP message is encapsulated in a single package. TSTP does not need nor supports fragmentation.
 
     // Interest Message
     class Interest: public Header
@@ -462,7 +469,7 @@ public:
     class Response: public Header
     {
     private:
-        typedef unsigned char Data[]; // Data size varies with Unit and must be manually calculated at send-time
+        typedef unsigned char Data[MTU - sizeof(Unit) - sizeof(Error) - sizeof(Time)];
 
     public:
         Response(const Unit & unit, const Error & error = 0, const Time & expiry = 0)
@@ -482,7 +489,7 @@ public:
         T * data() { return reinterpret_cast<T *>(&_data); }
 
         friend Debug & operator<<(Debug & db, const Response & m) {
-            db << reinterpret_cast<const Header &>(m) << ",u=" << m._unit << ",e=" << int(m._error) << ",x=" << m._expiry << ",d=" << *const_cast<Response &>(m).data<int>();
+            db << reinterpret_cast<const Header &>(m) << ",u=" << m._unit << ",e=" << int(m._error) << ",x=" << m._expiry << ",d=" << hex << *const_cast<Response &>(m).data<unsigned>() << dec;
             return db;
         }
 
@@ -497,7 +504,7 @@ public:
     class Command: public Header
     {
     private:
-        typedef unsigned char Data[]; // Data size varies with Unit and must be manually calculated at send-time
+        typedef unsigned char Data[MTU - sizeof(Region) - sizeof(Unit)];
 
     public:
         Command(const Unit & unit, const Region & region)
@@ -527,11 +534,11 @@ public:
     class Control: public Header
     {
     private:
-        typedef unsigned char Data[]; // Data size varies with Unit and must be manually calculated at send-time
+        typedef unsigned char Data[MTU - sizeof(Region) - sizeof(Unit)];
 
     public:
         Control(const Unit & unit, const Region & region)
-        : Header(CONTROL, 0, 0, here(), here(), 0), _unit(unit), _region(region) {}
+        : Header(CONTROL, 0, 0, here(), here(), 0), _region(region), _unit(unit) {}
 
         const Region & region() const { return _region; }
         const Unit & unit() const { return _unit; }
@@ -548,8 +555,8 @@ public:
         }
 
     protected:
-        Unit _unit;
         Region _region;
+        Unit _unit;
         Data _data;
     } __attribute__((packed));
 
@@ -590,9 +597,10 @@ public:
     {
     public:
         template<typename T>
-        Responsive(T * data, const Unit & unit, const Time & expiry, const Error & error)
-        : Response(unit, expiry, error), _size(sizeof(Response) + sizeof(typename T::Value)), _link(this, T::UNIT) {
-            db<TSTP>(TRC) << "TSTP::Responsive(d=" << data << ")" << endl;
+        Responsive(T * data, const Unit & unit, const Error & error, const Time & expiry)
+        : Response(unit, error, expiry), _size(sizeof(Response) + sizeof(typename T::Value)), _link(this, T::UNIT) {
+            db<TSTP>(TRC) << "TSTP::Responsive(d=" << data << ",s=" << _size << ") => " << this << endl;
+            db<TSTP>(INF) << "TSTP::Responsive() => " << reinterpret_cast<const Response &>(*this) << endl;
             _responsives.insert(&_link);
         }
         ~Responsive() {
@@ -604,7 +612,7 @@ public:
 
     private:
         void send(const Time & expiry) {
-            db<TSTP>(TRC) << "TSTP::Responsive::send(x=" << expiry << ") => " << reinterpret_cast<const Response &>(*this) << endl;
+            db<TSTP>(TRC) << "TSTP::Responsive::send(x=" << expiry << ",s=" << _size << ") => " << reinterpret_cast<const Response &>(*this) << endl;
             Buffer * buf = TSTPNIC::alloc(_size);
             memcpy(buf->frame()->data<Response>(), this, _size);
             TSTPNIC::send(buf);
@@ -628,9 +636,9 @@ public:
     static Time now() { return TSTPNIC::now(); }
     static Coordinates here() { return TSTPNIC::here(); }
 
-    static void attach(Observer * obs, int interest) { _observed.attach(obs, interest); }
-    static void detach(Observer * obs, int interest) { _observed.detach(obs, interest); }
-    static bool notify(int interest, Packet * packet) { return _observed.notify(interest, packet); }
+    static void attach(Observer * obs, void * subject) { _observed.attach(obs, int(subject)); }
+    static void detach(Observer * obs, void * subject) { _observed.detach(obs, int(subject)); }
+    static bool notify(void * subject, Packet * packet) { return _observed.notify(int(subject), packet); }
 
     static void init(unsigned int unit) {
         db<Init, TSTP>(TRC) << "TSTP::init()" << endl;
@@ -654,10 +662,10 @@ private:
             if(list)
                 for(Responsives::Element * el = list->head(); el; el = el->next()) {
                     Responsive * responsive = el->object();
-                    db<TSTP>(INF) << "TSTP::update:match:r=" << interest->region() << ",o=" << responsive->origin() << ",t=" << now() <<  endl;
+//                    db<TSTP>(INF) << "TSTP::update:match:r=" << interest->region() << ",o=" << responsive->origin() << ",t=" << now() <<  endl;
                     if(interest->region().contains(responsive->origin(), now())) {
-                        db<TSTP>(INF) << "TSTP::update:match: true" << endl;
-                        notify(int(responsive), packet);
+//                        db<TSTP>(INF) << "TSTP::update:match: true" << endl;
+                        notify(responsive, packet);
                     }
                 }
         } break;
@@ -672,7 +680,7 @@ private:
                 for(Interests::Element * el = list->head(); el; el = el->next()) {
                     Interested * interested = el->object();
                     if(interested->region().contains(response->origin(), response->time()))
-                        notify(int(interested), packet);
+                        notify(interested, packet);
                 }
         } break;
         case COMMAND: {
@@ -686,7 +694,7 @@ private:
                 for(Responsives::Element * el = list->head(); el; el = el->next()) {
                     Responsive * responsive = el->object();
                     if(command->region().contains(responsive->origin(), now()))
-                        notify(int(responsive), packet);
+                        notify(responsive, packet);
                 }
         } break;
         case CONTROL: break;
