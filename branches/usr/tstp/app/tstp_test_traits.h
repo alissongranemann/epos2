@@ -196,6 +196,9 @@ template<> struct Traits<TSTP>: public Traits<Network>
     // Time management component selection. Possible values = {PTS};
     typedef PTS Time_Manager;
 
+    // Locator component selection. Possible values = {NIC_Locator, Static_Locator};
+    typedef NIC_Locator Locator;
+
     // Router component selection. Possible values = {SGGR};
     //typedef SGGR Router;
 
@@ -228,6 +231,13 @@ template<> struct Traits<TSTP>: public Traits<Network>
     template<unsigned int unit = 0, typename TIME_MANAGER = Traits<TSTP>::Time_Manager>
     struct Time_Config : public Traits<TIME_MANAGER> {};
     */
+};
+
+template<> struct Traits<Static_Locator>: public Traits<TSTP>
+{
+    static const unsigned int X = 10;
+    static const unsigned int Y = 10;
+    static const unsigned int Z = 10;
 };
 
 template<> template <typename S> struct Traits<Smart_Data<S>>: public Traits<Network>

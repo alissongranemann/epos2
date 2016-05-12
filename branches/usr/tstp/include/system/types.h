@@ -166,6 +166,8 @@ class TSTP;
 template<typename S>
 class Smart_Data;
 class PTS;
+class NIC_Locator;
+class Static_Locator;
 
 class IP;
 class ICMP;

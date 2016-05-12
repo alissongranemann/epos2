@@ -17,6 +17,7 @@ public:
     static const unsigned int NODES = Traits<Build>::NODES;
 
     typedef Traits<TSTP>::Time_Manager Time_Manager;
+    typedef Traits<TSTP>::Locator Locator;
 
     // Version
     // This field is packed first and matches the Frame Type field in the Frame Control in IEEE 802.15.4 MAC.
@@ -413,10 +414,120 @@ __END_SYS
 #include <utility/hash.h>
 #include <network.h>
 #include <tstpoe.h>
-#include <tstp_time.h>
 
 __BEGIN_SYS
 
+// Time Managers
+#include <timer.h>
+#include <utility/math.h>
+
+// Passive Time Synchronization
+class PTS : public TSTP_Common, private TSTPNIC::Observer
+{
+    friend class TSTP;
+    friend class TSTPOE;
+
+    typedef TSTP_Timer Timer;
+    static const unsigned int TX_DELAY = TSTPNIC::TX_DELAY; 
+
+    typedef TSTPNIC::Buffer Buffer;
+    typedef TSTPNIC::Packet Packet;
+
+    typedef TSTP_Timer::Time_Stamp Time_Stamp;
+    static const IF<(static_cast<Time_Stamp>(-1) < static_cast<Time_Stamp>(0)), bool, void>::Result _time_stamp_sign_check; // TSTP_Timer::Time_Stamp must be signed!
+    typedef TSTP_Common::Time_Stamp Short_Time_Stamp;
+    typedef TSTP_Common::Microsecond Time;
+
+public:
+    // Called by TSTP
+    PTS() {
+        _timer.start();
+        TSTPNIC::attach(this, NIC_Observing_Condition::ALL);
+    }
+    ~PTS() {
+        _timer.stop();
+        TSTPNIC::detach(this, NIC_Observing_Condition::ALL);
+    }
+
+    static Time now() {
+        auto t = _timer.now();
+        auto t2 = ts_to_us(t);
+        kout << t << " " << t2 << " hey" << endl;
+        return t2;
+        return ts_to_us(_timer.now()); 
+    }
+
+    static bool bootstrap() { return true; } //TODO
+
+
+    // Called by TSTPNIC
+    static void cancel_interrupt() { _timer.cancel_interrupt(); }
+
+    static void interrupt(const Time & when) {
+        auto tnow = _timer.now();
+        Time_Stamp w = us_to_ts(when);
+        if(when <= tnow) {
+            _timer.interrupt(tnow + 1000, &int_handler); //TODO
+        } else {
+            _timer.interrupt(w, &int_handler);
+        }
+    }
+
+    static void stamp_receive(Buffer * buf) { buf->sfd_time(_timer.sfd()); }
+
+    static void stamp_send(Buffer * buf) { buf->frame()->data<Packet>()->last_hop_time(_timer.now()); }
+
+    // Called by Observer
+    void update(TSTPNIC::Observed * obs, NIC_Observing_Condition c, Buffer * buf) {
+        Time_Stamp adjust = 0;
+        auto packet = buf->frame()->data<Packet>();
+        switch(packet->type()) {
+        case INTEREST: {
+            Short_Time_Stamp sfd = buf->sfd_time();
+            Short_Time_Stamp to_set = packet->last_hop_time() + TX_DELAY;
+            Time_Stamp diff1 = sfd - to_set;
+            Time_Stamp diff2 = to_set - sfd;
+            adjust = _UTIL::abs(diff1) < _UTIL::abs(diff2) ? diff1 : diff2;
+            _timer.adjust(adjust);
+            kout << "sfd = " << sfd << endl;
+            kout << "to_set = " << to_set << endl;
+            kout << "diff1 = " << diff1 << endl;
+            kout << "diff2 = " << diff2 << endl;
+            kout << "adjust = " << adjust << endl;
+        } break;
+        default: break;
+        }
+    }
+
+private:
+    static void int_handler(const unsigned int & interrupt) {} //TODO
+    static Time ts_to_us(const Time_Stamp & ts) { return ts * 1000000ll / _timer.frequency(); }
+    static Time_Stamp us_to_ts(const Time & us) { return us * _timer.frequency() / 1000000ll; }
+
+    static Timer _timer; // TODO: several units?
+};
+
+
+// Locators
+class NIC_Locator : public TSTP_Common 
+{
+public:
+    static Coordinates here() { return TSTPNIC::here(); }
+    static Coordinates absolute(const Coordinates & coordinates) { return coordinates; }
+};
+
+class Static_Locator : public TSTP_Common 
+{
+public:
+    static Coordinates here() { return _here; }
+    static Coordinates absolute(const Coordinates & coordinates) { return coordinates; }
+
+private:
+    static Coordinates _here;
+};
+
+
+// TSTP
 class TSTP: public TSTP_Common, private TSTPNIC::Observer
 {
     template<typename> friend class Smart_Data;
@@ -650,7 +761,7 @@ public:
     };
 
 public:
-    TSTP() : _time_manager() {
+    TSTP() : _time_manager(), _locator() {
         db<TSTP>(TRC) << "TSTP::TSTP()" << endl;
         NIC::attach(this, NIC_Observing_Condition::FOR_ME);
     }
@@ -670,7 +781,7 @@ public:
     }
 
     static Microsecond now() { return Time_Manager::now(); }
-    static Coordinates here() { return NIC::here(); }
+    static Coordinates here() { return Locator::here(); }
 
     static void attach(Observer * obs, void * subject) { _observed.attach(obs, int(subject)); }
     static void detach(Observer * obs, void * subject) { _observed.detach(obs, int(subject)); }
@@ -683,7 +794,7 @@ public:
 private:
     static bool report() { return true; } // TODO
 
-    static Coordinates absolute(const Coordinates & coordinates) { return coordinates; }
+    static Coordinates absolute(const Coordinates & coordinates) { return Locator::absolute(coordinates); }
 
     void update(NIC::Observed * obs, NIC_Observing_Condition c, Buffer * buf) {
         db<TSTP>(TRC) << "TSTP::update(obs=" << obs << ",buf=" << buf << ")" << endl;
@@ -740,6 +851,7 @@ private:
     static Observed _observed; // Channel protocols are singletons
 
     Time_Manager _time_manager;
+    Locator _locator;
 };
 /*
 template<TSTP_Common::Scale S>
