@@ -1,7 +1,7 @@
-// EPOS Smart Sensor Declarations
+// EPOS Smart Transducer Declarations
 
-#ifndef __sensor_h
-#define __sensor_h
+#ifndef __tranducer_h
+#define __tranducer_h
 
 #include <smart_data.h>
 

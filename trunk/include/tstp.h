@@ -155,8 +155,8 @@ public:
 
         // Valid values for field NUM
         enum {
-            I32 = 0 << 29, // Value is an integral number stored in the 28 last significant bits of a 32-bit big-endian integer. The 4 most significant bits encode an SI Factor.
-            I64 = 1 << 29, // Value is an integral number stored in the 60 last significant bits of a 64-bit big-endian integer. The 4 most significant bits encode an SI Factor.
+            I32 = 0 << 29, // Value is an integral number stored in the 32 last significant bits of a 32-bit big-endian integer.
+            I64 = 1 << 29, // Value is an integral number stored in the 64 last significant bits of a 64-bit big-endian integer.
             F32 = 2 << 29, // Value is a real number stored as an IEEE 754 binary32 big-endian floating point.
             D64 = 3 << 29, // Value is a real number stored as an IEEE 754 binary64 big-endian doulbe precision floating point.
             NUM = D64      // AND mask to select NUM bits
@@ -387,14 +387,16 @@ class TSTP: public TSTP_Common, private TSTPNIC::Observer
 {
     template<typename> friend class Smart_Data;
 
+private:
+    typedef TSTPNIC NIC;
+
 public:
     // Buffers received from the NIC
     typedef TSTPNIC::Buffer Buffer;
 
 
     // Packet
-    static const unsigned int MTU = TSTPNIC::MTU - sizeof(Header);
-//    static const unsigned int MTU = 127 - sizeof(Header);
+    static const unsigned int MTU = NIC::MTU - sizeof(Header);
     template<Scale S>
     class _Packet: public Header
     {
@@ -593,9 +595,9 @@ public:
     private:
         void send() {
             db<TSTP>(TRC) << "TSTP::Interested::send() => " << reinterpret_cast<const Interest &>(*this) << endl;
-            Buffer * buf = TSTPNIC::alloc(sizeof(Interest));
+            Buffer * buf = NIC::alloc(sizeof(Interest));
             memcpy(buf->frame()->data<Interest>(), this, sizeof(Interest));
-            TSTPNIC::send(buf);
+            NIC::send(buf);
         }
 
     private:
@@ -627,10 +629,10 @@ public:
     private:
         void send(const Time & expiry) {
             db<TSTP>(TRC) << "TSTP::Responsive::send(x=" << expiry << ")" << endl;
-            Buffer * buf = TSTPNIC::alloc(_size);
+            Buffer * buf = NIC::alloc(_size);
             memcpy(buf->frame()->data<Response>(), this, _size);
             db<TSTP>(INF) << "TSTP::Responsive::send:response=" << this << " => " << reinterpret_cast<const Response &>(*this) << endl;
-            TSTPNIC::send(buf);
+            NIC::send(buf);
         }
 
     private:
@@ -641,15 +643,15 @@ public:
  public:
     TSTP() {
         db<TSTP>(TRC) << "TSTP::TSTP()" << endl;
-        TSTPNIC::attach(this);
+        NIC::attach(this);
     }
     ~TSTP() {
         db<TSTP>(TRC) << "TSTP::~TSTP()" << endl;
-        TSTPNIC::detach(this);
+        NIC::detach(this);
     }
 
-    static Time now() { return TSTPNIC::now(); }
-    static Coordinates here() { return TSTPNIC::here(); }
+    static Time now() { return NIC::now(); }
+    static Coordinates here() { return NIC::here(); }
 
     static void attach(Observer * obs, void * subject) { _observed.attach(obs, int(subject)); }
     static void detach(Observer * obs, void * subject) { _observed.detach(obs, int(subject)); }
@@ -662,7 +664,7 @@ public:
 private:
     static Coordinates absolute(const Coordinates & coordinates) { return coordinates; }
 
-    void update(TSTPNIC::Observed * obs, Buffer * buf) {
+    void update(NIC::Observed * obs, Buffer * buf) {
         db<TSTP>(TRC) << "TSTP::update(obs=" << obs << ",buf=" << buf << ")" << endl;
 
         Packet * packet = buf->frame()->data<Packet>();

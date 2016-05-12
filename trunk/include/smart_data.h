@@ -14,12 +14,12 @@ struct Smart_Data_Type_Wrapper
    typedef T Type;
 };
 
-// Smart Data encapsulates sensors and actuators (Device), local or remote, and bridges them with TSTP
-// Devices must implement either sense() or actuate()
-template<typename Device>
-class Smart_Data: private TSTP::Observer, private Device::Observer
+// Smart Data encapsulates Transducers (i.e. sensors and actuators), local or remote, and bridges them with TSTP
+// Transducers must implement either sense() or actuate() and must define UNIT, NUM, and ERROR.
+template<typename Transducer>
+class Smart_Data: private TSTP::Observer, private Transducer::Observer
 {
-    friend class Smart_Data_Type_Wrapper<Device>::Type; // friend S is OK in C++11, but this GCC does not implements it yet. Remove after GCC upgrade.
+    friend class Smart_Data_Type_Wrapper<Transducer>::Type; // friend S is OK in C++11, but this GCC does not implements it yet. Remove after GCC upgrade.
 
 private:
     typedef TSTP::Buffer Buffer;
@@ -27,9 +27,9 @@ private:
     typedef typename TSTP::Interested Interested;
 
 public:
-    static const unsigned int UNIT = Device::UNIT;
-    static const unsigned int NUM = Device::NUM;
-    static const unsigned int ERROR = Device::ERROR;
+    static const unsigned int UNIT = Transducer::UNIT;
+    static const unsigned int NUM = Transducer::NUM;
+    static const unsigned int ERROR = Transducer::ERROR;
     typedef typename TSTP::Unit::Get<NUM>::Type Value;
 
     enum Mode {
@@ -51,10 +51,10 @@ public:
     Smart_Data(unsigned int dev, const Microsecond & expiry, const Mode & mode = PRIVATE)
     : _unit(UNIT), _value(0), _error(ERROR), _coordinates(TSTP::here()), _time(TSTP::now()), _expiry(expiry), _device(dev), _mode(mode), _thread(0), _interested(0), _responsive((mode & ADVERTISED) | (mode & COMMANDED) ? new Responsive(this, UNIT, ERROR, expiry) : 0) {
         db<Smart_Data>(TRC) << "Smart_Data(dev=" << dev << ",exp=" << expiry << ",mode=" << mode << ")" << endl;
-        if(Device::POLLING)
-            Device::sense(_device, this);
-        if(Device::INTERRUPT)
-            Device::attach(this);
+        if(Transducer::POLLING)
+            Transducer::sense(_device, this);
+        if(Transducer::INTERRUPT)
+            Transducer::attach(this);
         if(_responsive)
             TSTP::attach(this, _responsive);
         db<Smart_Data>(INF) << "Smart_Data(dev=" << dev << ",exp=" << expiry << ",mode=" << mode << ") => " << *this << endl;
@@ -81,7 +81,7 @@ public:
     operator Value() {
         if(TSTP::now() > (_time + _expiry))
             if(_device) { // Local data source
-                Device::sense(_device, this); // read sensor
+                Transducer::sense(_device, this); // read sensor
                 _time = TSTP::now();
             } else // Other data sources must have called update() timely
                 db<Smart_Data>(WRN) << "Smart_Data::get(this=" << this << ",exp=" << _expiry << ",val=" << _value << ") => expired!" << endl;
@@ -100,16 +100,10 @@ public:
             }
             db << "[" << d._device << "]:";
         }
-        if(d._thread) {
-            db << "TTResp:";
-        }
-        if(d._interested) {
-            db << "Int:";
-        }
-        if(d._responsive) {
-            db << "EDResp:";
-        }
-        db << "u=" << d._unit << ",v=" << d._value << ",e=" << int(d._error) << ",c=" << d._coordinates << ",t=" << d._time << ",x=" << d._expiry << "}";
+        if(d._thread) db << "ReTT";
+        if(d._responsive) db << "ReED";
+        if(d._interested) db << "In" << ((d._period) ? "TT" : "ED");
+        db << ":u=" << d._unit << ",v=" << d._value << ",e=" << int(d._error) << ",c=" << d._coordinates << ",t=" << d._time << ",x=" << d._expiry << "}";
         return db;
     }
 
@@ -130,7 +124,7 @@ private:
                      */
                 }
             } else {
-                Device::sense(_device, this);
+                Transducer::sense(_device, this);
                 _responsive->value(_value);
                 _responsive->respond(interest->expiry());
             }
@@ -147,7 +141,7 @@ private:
         case TSTP::COMMAND: {
             if(_mode & COMMANDED) {
                 TSTP::Command * command = reinterpret_cast<TSTP::Command *>(packet);
-                Device::actuate(_device, this, command->command<void>());
+                Transducer::actuate(_device, this, command->command<void>());
             }
         } break;
         case TSTP::CONTROL: {
@@ -159,8 +153,8 @@ private:
         }
     }
 
-    void update(typename Device::Observed * obs) {
-        Device::sense(_device, this);
+    void update(typename Transducer::Observed * obs) {
+        Transducer::sense(_device, this);
         _time = TSTP::now();
         db<Smart_Data>(TRC) << "Smart_Data::update(this=" << this << ",exp=" << _expiry << ") => " << _value << endl;
         db<Smart_Data>(TRC) << "Smart_Data::update:responsive=" << _responsive << " => " << *reinterpret_cast<TSTP::Response *>(_responsive) << endl;
@@ -173,7 +167,7 @@ private:
 
     static int updater(unsigned int dev, Time expiry, Smart_Data * data) {
         while(1) {
-            Device::sense(dev, data);
+            Transducer::sense(dev, data);
             data->_responsive->value(data->_value);
             data->_responsive->time(TSTP::now());
             data->_responsive->respond(expiry);
@@ -201,4 +195,4 @@ __END_SYS
 
 #endif
 
-#include <sensor.h>
+#include <transducer.h>
