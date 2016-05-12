@@ -40,13 +40,14 @@ public:
 
     static const unsigned int NO_DEVICE = -1;
 
-    typedef RTC::Microsecond Microsecond;
+    //typedef RTC::Microsecond Microsecond;
 
     typedef TSTP::Unit Unit;
     typedef TSTP::Error Error;
     typedef TSTP::Coordinates Coordinates;
     typedef TSTP::Region Region;
-    typedef TSTP::Microsecond Time;
+    typedef TSTP::Microsecond Microsecond;
+    typedef Microsecond Time;
 
 public:
     // Local data source, possibly advertised to or commanded by the network
@@ -86,18 +87,15 @@ public:
         if(expired())
             if(_device != NO_DEVICE) { // Local data source
                 Transducer::sense(_device, this); // read sensor
-                auto t = TSTP::now();
-                db<Smart_Data>(WRN) << "Helloooooo" << TSTP::now() << " " << _time << endl;
-                _time = t;
+                _time = TSTP::now();
             } else { // Other data sources must have called update() timely
                 db<Smart_Data>(WRN) << "Smart_Data::get(this=" << this << ",exp=" << _expiry << ",val=" << _value << ") => expired!" << endl;
-                db<Smart_Data>(WRN) << TSTP::now() << " " << _time << endl;
             }
         return _value;
     }
 
     Time time() const { return _time; }
-    bool expired() { return TSTP::now() >= (_time + _expiry); }
+    bool expired() { return TSTP::now() > (_time + _expiry); }
 
     const Coordinates & origin() const { return TSTP::absolute(_coordinates); }
 
@@ -130,7 +128,7 @@ private:
             db<Smart_Data>(INF) << "Smart_Data::update[I]:msg=" << interest << " => " << *interest << endl;
             if(interest->period()) {
                 if(!_thread)
-                    _thread = new Periodic_Thread(interest->period(), &updater, _device, interest->expiry(), this);
+                    _thread = new Periodic_Thread(interest->period(), &updater, _device, interest->expiry(), this, interest->region().t1);
                 else {
                     /*
                     if(!interest->period() != _thread->period())
@@ -181,14 +179,18 @@ private:
         }
     }
 
-    static int updater(unsigned int dev, Time expiry, Smart_Data * data) {
+    static int updater(unsigned int dev, Time expiry, Smart_Data * data, Time end) {
         while(1) {
             Transducer::sense(dev, data);
             data->time(TSTP::now());
             data->_responsive->value(data->_value);
             data->_responsive->time(data->time());
-            data->_responsive->respond(expiry);
-            Periodic_Thread::wait_next();
+            if(data->time() < end) {
+                data->_responsive->respond(expiry);
+                Periodic_Thread::wait_next();
+            } else {
+                return 0;
+            }
         }
         return 0;
     }

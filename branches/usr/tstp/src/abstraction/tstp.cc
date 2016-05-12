@@ -15,6 +15,7 @@ TSTP::Observed TSTP::_observed;
 
 // PTS class attributes
 TSTP_Timer PTS::_timer;
+volatile bool PTS::_synced = false;
 
 // Static_Locator class attributes
 Static_Locator::Coordinates Static_Locator::_here(Traits<Static_Locator>::X, Traits<Static_Locator>::Y, Traits<Static_Locator>::Z);

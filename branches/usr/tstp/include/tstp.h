@@ -34,6 +34,15 @@ public:
         CONTROL   = 3
     };
 
+    // Control Packet Types
+    enum Control_Subtype {
+        KEY_REQUEST = 0,
+        KEY_RESPONSE = 1,
+        AUTH_REQUEST = 2,
+        AUTH_RESPONSE = 3,
+        REPORT = 4,
+    };
+
     // Scale for local network's geographic coordinates
     enum Scale {
         CMx50_8  = 0,
@@ -449,15 +458,12 @@ public:
         TSTPNIC::detach(this, NIC_Observing_Condition::ALL);
     }
 
-    static Time now() {
-        auto t = _timer.now();
-        auto t2 = ts_to_us(t);
-        kout << t << " " << t2 << " hey" << endl;
-        return t2;
-        return ts_to_us(_timer.now()); 
-    }
+    static Time now() { return ts_to_us(_timer.now()); }
 
-    static bool bootstrap() { return true; } //TODO
+    static bool bootstrap() {
+        while(!_synced);
+        return true; 
+    }
 
 
     // Called by TSTPNIC
@@ -489,6 +495,7 @@ public:
             Time_Stamp diff2 = to_set - sfd;
             adjust = _UTIL::abs(diff1) < _UTIL::abs(diff2) ? diff1 : diff2;
             _timer.adjust(adjust);
+            _synced = true;
             kout << "sfd = " << sfd << endl;
             kout << "to_set = " << to_set << endl;
             kout << "diff1 = " << diff1 << endl;
@@ -505,6 +512,7 @@ private:
     static Time_Stamp us_to_ts(const Time & us) { return us * _timer.frequency() / 1000000ll; }
 
     static Timer _timer; // TODO: several units?
+    static volatile bool _synced;
 };
 
 
@@ -512,6 +520,7 @@ private:
 class NIC_Locator : public TSTP_Common 
 {
 public:
+    static bool bootstrap() { return true; }
     static Coordinates here() { return TSTPNIC::here(); }
     static Coordinates absolute(const Coordinates & coordinates) { return coordinates; }
 };
@@ -519,6 +528,7 @@ public:
 class Static_Locator : public TSTP_Common 
 {
 public:
+    static bool bootstrap() { return true; }
     static Coordinates here() { return _here; }
     static Coordinates absolute(const Coordinates & coordinates) { return coordinates; }
 
@@ -548,10 +558,11 @@ public:
     typedef Data_Observed<Buffer, int> Observed;
 
     // Hash to store TSTP Observers by type
+    static const unsigned int HASH_SIZE = 10;
     class Interested;
-    typedef Hash<Interested, 10, Unit> Interests;
+    typedef Hash<Interested, HASH_SIZE, Unit> Interests;
     class Responsive;
-    typedef Hash<Responsive, 10, Unit> Responsives;
+    typedef Hash<Responsive, HASH_SIZE, Unit> Responsives;
 
 
     // TSTP Messages
@@ -663,32 +674,32 @@ public:
     } __attribute__((packed));
 
     // Control Message
-    class Control: public Header
+    class _Control : public Header
+    {
+    public:
+        _Control(unsigned char st) : Header(CONTROL, 0, 0, here(), here(), 0, 0), _subtype(st) {}
+    protected:
+        static const unsigned int MTU = TSTP::MTU - sizeof(unsigned char);
+        unsigned char _subtype;
+    }__attribute__((packed));
+
+    class Report : public _Control 
     {
     private:
-        typedef unsigned char Data[MTU - sizeof(Region) - sizeof(Unit)];
+        typedef unsigned char Data[_Control::MTU];
+        static const Control_Subtype TYPE = Control_Subtype::REPORT;
 
     public:
-        Control(const Unit & unit, const Region & region)
-        : Header(CONTROL, 0, 0, here(), here(), 0), _region(region), _unit(unit) {}
-
-        const Region & region() const { return _region; }
-        const Unit & unit() const { return _unit; }
-
-        template<typename T>
-        T * command() { return reinterpret_cast<T *>(&_data); }
-
-        template<typename T>
-        T * data() { return reinterpret_cast<T *>(&_data); }
-
-        friend Debug & operator<<(Debug & db, const Control & m) {
-            db << reinterpret_cast<const Header &>(m) << ",u=" << m._unit << ",reg=" << m._region;
-            return db;
+        static unsigned int size(const Responsive * s) { 
+            return _UTIL::min(s->_size - sizeof(Header) + sizeof(_Control), sizeof(Report));
         }
 
+        Report(const Responsive * s)
+            : _Control(TYPE) {
+                memcpy(&_data, &(reinterpret_cast<const char *>(s)[sizeof(Header)]), size(s) - sizeof(_Control));
+            }
+
     protected:
-        Region _region;
-        Unit _unit;
         Data _data;
     } __attribute__((packed));
 
@@ -727,6 +738,7 @@ public:
     // Responsive (binder between Smart Data (Sensors) and Response messages)
     class Responsive: public Response
     {
+        friend class Report;
     public:
         template<typename T>
         Responsive(T * data, const Unit & unit, const Error & error, const Microsecond & expiry)
@@ -745,6 +757,15 @@ public:
         using Header::origin;
 
         void respond(const Microsecond & expiry) { send(expiry); }
+
+        void advertise() {
+            Buffer * buf = NIC::alloc(Report::size(this));
+            if(buf) {
+                new (buf->frame()->data<Report>()) Report(this);
+                db<TSTP>(INF) << "TSTP::Responsive::send:report=" << buf << " => " << reinterpret_cast<const Response &>(*this) << endl;
+                NIC::send(buf);
+            }
+        }
 
     private:
         void send(const Microsecond & expiry) {
@@ -772,7 +793,7 @@ public:
 
     static bool bootstrap() {
         bool ret = true;
-        //if((ret = Locator::bootstrap()))
+        if((ret = Locator::bootstrap()))
             //if((ret = Router::bootstrap()))
                 if((ret = Time_Manager::bootstrap()))
                     //if((ret = Security::bootstrap()))
@@ -792,7 +813,17 @@ public:
     }
 
 private:
-    static bool report() { return true; } // TODO
+    static bool report() {
+        for(unsigned int i = 0; i < HASH_SIZE; i++) {
+            Responsives::List * list = _responsives[i];
+            if(list)
+                for(Responsives::Element * el = list->head(); el; el = el->next()) {
+                    Responsive * responsive = el->object();
+                    responsive->advertise();
+                }
+        }
+        return true;
+    }
 
     static Coordinates absolute(const Coordinates & coordinates) { return Locator::absolute(coordinates); }
 

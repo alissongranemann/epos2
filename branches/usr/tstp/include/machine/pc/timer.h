@@ -360,7 +360,7 @@ public:
 
     typedef long long Time_Stamp;
 
-    Time_Stamp now() { kout << "offset = " << _offset << endl; return read() + _offset; };
+    Time_Stamp now() { return read() + _offset; };
     Time_Stamp sfd() { return now(); }
 
     void adjust(const Time_Stamp & offset) { _offset += offset; }
@@ -369,7 +369,7 @@ public:
     void interrupt(const Time_Stamp & when, IC::Interrupt_Handler handler); // Not supported in PC
     void cancel_interrupt(); // Not supported in PC
 
-    TSTP_Timer() : _offset(0) { kout << "TSTP_Timer() offset = " << _offset << endl; }
+    TSTP_Timer() : _offset(0) { }
 
     void start() { }
     void stop() { }
