@@ -13,6 +13,22 @@ protected:
     Display_Common() {}
 };
 
+class Null_Display : public Display_Common 
+{
+    friend class PC_Setup;
+    friend class First_Object;
+public:
+    Null_Display() {}
+    static void clear() { }
+    static void putc(char c) { }
+    static void puts(const char * s) { }
+    static void geometry(int * lines, int * columns) { }
+    static void position(int * line, int * column) { }
+    static void position(int line, int column) { }
+private:
+    static void init() { }
+};
+
 class Serial_Display: public Display_Common
 {
     friend class PC_Setup;

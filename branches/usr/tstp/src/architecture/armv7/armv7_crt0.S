@@ -4,7 +4,7 @@
         // Interrupt Vector Table
         .type   _vector_table, object
 _vector_table:
-        .word   0x20002000              // Stack pointer at reset
+        .word   MEM_TOP  + 1            // Stack pointer at reset (set by sed in the makefile)
         .word   _start + 1              // Reset  (lsb must be 1 in thumb mode)
         .word   _int_dispatch + 1       // NMI
         .word   _int_dispatch + 1       // Hard fault
@@ -50,15 +50,34 @@ _vector_table:
         .word   _int_dispatch + 1       // IRQ27
         .word   _int_dispatch + 1       // IRQ28
         .word   _int_dispatch + 1       // IRQ29
-
+        .word   _int_dispatch + 1       // IRQ30
+        .word   _int_dispatch + 1       // IRQ31
+        .word   _int_dispatch + 1       // IRQ32
+        .word   _int_dispatch + 1       // IRQ33
+        .word   _int_dispatch + 1       // IRQ34
+        .word   _int_dispatch + 1       // IRQ35
+        .word   _int_dispatch + 1       // IRQ36
+        .word   _int_dispatch + 1       // IRQ37
+        .word   _int_dispatch + 1       // IRQ38
+        .word   _int_dispatch + 1       // IRQ39
+        .word   _int_dispatch + 1       // IRQ40
+        .word   _int_dispatch + 1       // IRQ41
+        .word   _int_dispatch + 1       // IRQ42
+        .word   _int_dispatch + 1       // IRQ43
+        .word   _int_dispatch + 1       // IRQ44
+        .word   _int_dispatch + 1       // IRQ45
 	.section .init
 	.align  2
 	.global _start
 	.type   _start, function
 _start:
         // Clear BSS
-        mov     r0, #0
-        ldr     r1, =__bss_start__
+        eor     r0, r0
+// Loading 0x20000000 into r1
+// FIXME: This value should not be hardcoded, but __bss_start__ is pointing to the wrong address!
+        mov     r1, #32
+        lsl     r1, r1, #24
+//        ldr     r1, =__bss_start__
         ldr     r2, =__bss_end__
   .L1:  str     r0, [r1]
         add     r1, #4
@@ -71,8 +90,8 @@ _start:
         .globl  __epos_app_entry
         .type   __epos_app_entry, function
 __epos_app_entry:
-        mov     r0, #1
-        msr     CONTROL, r0
+//        mov     r0, #1
+//        msr     CONTROL, r0
         bl      main
         push    {r0}         // save main's return value to be used by exit()
     	bl	_fini

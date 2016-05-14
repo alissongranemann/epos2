@@ -92,8 +92,20 @@ class Cortex_M_RTC;
 class Cortex_M_UART;
 class Cortex_M_EEPROM;
 class Cortex_M_Display;
+class Cortex_M_USB_Serial_Display;
 class Cortex_M_Scratchpad;
 class Cortex_M_Radio;
+class Cortex_M_USB;
+class Cortex_M_GPIO;
+class Cortex_M_ADC;
+class CC2538_TSC;
+class CC2538_PHY;
+class MAC_Timer;
+
+class User_Timer_0;
+class User_Timer_1;
+class User_Timer_2;
+class User_Timer_3;
 
 class ATmega;
 class ATmega_IC;
@@ -112,11 +124,16 @@ class ATmega_Radio;
 class PCNet32;
 class C905;
 class E100;
-class CC2538;
+class eMote3_IEEE802_15_4;
+class IEEE802_15_4;
 class AT86RF;
 
 class Serial_Display;
+class Null_Display;
+
 class Serial_Keyboard;
+
+class eMote3_Flash;
 
 // Abstractions
 class System;

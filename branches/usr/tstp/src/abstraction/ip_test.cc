@@ -37,7 +37,7 @@ int icmp_test()
             if(sent == sizeof(ICMP::Packet))
                 cout << "  Data: " << &packet << endl;
             else
-                cout << "  Data was not correctly sent. It was " << sizeof(ICMP::Packet) << " bytes long, but only " << sent << "bytes were sent!"<< endl;
+                cout << "  Data was not correctly sent. It was " << sizeof(ICMP::Packet) << " bytes long, but only " << sent << " bytes were sent!"<< endl;
             Delay(100000);
         }
     } else { // receiver
@@ -132,7 +132,7 @@ int udp_test()
             if(sent == sizeof(data))
                 cout << "  Data: " << data << endl;
             else
-                cout << "  Data was not correctly sent. It was " << sizeof(data) << " bytes long, but only " << sent << "bytes were sent!"<< endl;
+                cout << "  Data was not correctly sent. It was " << sizeof(data) << " bytes long, but only " << sent << " bytes were sent!"<< endl;
         }
     } else { // receiver
         cout << "Receiver:" << endl;

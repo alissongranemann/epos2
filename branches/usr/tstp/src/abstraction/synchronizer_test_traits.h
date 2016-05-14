@@ -20,13 +20,13 @@ template<> struct Traits<Build>
     enum {LIBRARY, BUILTIN, KERNEL};
     static const unsigned int MODE = LIBRARY;
 
-    enum {IA32, AVR8, ARMv7};
+    enum {IA32, ARMv7};
     static const unsigned int ARCHITECTURE = ARMv7;
 
-    enum {PC, ATmega, Cortex_M, Cortex_A};
+    enum {PC, Cortex_M, Cortex_A};
     static const unsigned int MACHINE = Cortex_M;
 
-    enum {Legacy, eMote1, eMote2, eMote3, Arduino, LM3S811};
+    enum {Legacy, eMote3, LM3S811};
     static const unsigned int MODEL = LM3S811;
 
     static const unsigned int CPUS = 1;
@@ -58,6 +58,13 @@ template<> struct Traits<Heaps>: public Traits<void>
     static const bool debugged = hysterically_debugged;
 };
 
+template<> struct Traits<Observers>: public Traits<void>
+{
+    // Some observed objects are created before initializing the Display
+    // Enabling debug may cause trouble in some Machines
+    static const bool debugged = false;
+
+};
 
 // System Parts (mostly to fine control debugging)
 template<> struct Traits<Boot>: public Traits<void>
@@ -82,11 +89,16 @@ template<> struct Traits<Serial_Display>: public Traits<void>
     static const int TAB_SIZE = 8;
 };
 
+template<> struct Traits<Serial_Keyboard>: public Traits<void>
+{
+    static const bool enabled = false;
+};
+
 __END_SYS
 
 #include __ARCH_TRAITS_H
-#include __MACH_CONFIG_H
 #include __MACH_TRAITS_H
+#include __MACH_CONFIG_H
 
 __BEGIN_SYS
 
@@ -169,7 +181,68 @@ template<> struct Traits<Network>: public Traits<void>
     static const unsigned int TIMEOUT = 10; // s
 
     // This list is positional, with one network for each NIC in traits<NIC>::NICS
-    typedef LIST<IP> NETWORKS;
+    typedef LIST<TSTPOE> NETWORKS;
+};
+
+template<> struct Traits<TSTP>: public Traits<Network>
+{
+    static const bool debugged = true;
+    //static const bool is_sink = false;
+
+
+    // MAC component selection. Possible values = {TSTP_MAC, One_Hop_MAC};
+    typedef TSTPOE MAC;
+    
+    // Time management component selection. Possible values = {PTS};
+    typedef PTS Time_Manager;
+
+    // Locator component selection. Possible values = {NIC_Locator, Static_Locator};
+    typedef NIC_Locator Locator;
+
+    // Router component selection. Possible values = {SGGR};
+    //typedef SGGR Router;
+
+    // Security component selection. Possible values = {TSTP_Security};
+    //typedef TSTP_Security Security;
+
+
+    /*
+    // Default configurations that apply to all MACs
+    template<typename MAC>
+    struct MAC_Config_App {
+        static const unsigned int RECEIVE_BUFFERS = 4;
+        static const unsigned int SEND_BUFFERS = 64 - RECEIVE_BUFFERS;
+    };
+    // Machine- and unit-dependent MAC configurations, definable in machine traits 
+    template<unsigned int unit = 0, typename MAC = Traits<TSTP>::MAC>
+    struct MAC_Config : public Traits<MAC> {};
+
+    // Default configurations that apply to all routers
+    template<typename ROUTER>
+    struct Router_Config_App {};
+    // Machine- and unit-dependent router configurations, definable in machine traits 
+    template<unsigned int unit = 0, typename ROUTER = Traits<TSTP>::Router>
+    struct Router_Config : public Traits<ROUTER> {};
+
+    // Default configurations that apply to all time managers
+    template<typename TIME_MANAGER>
+    struct Time_Config_App {};
+    // Machine- and unit-dependent time manager configurations, definable in machine traits 
+    template<unsigned int unit = 0, typename TIME_MANAGER = Traits<TSTP>::Time_Manager>
+    struct Time_Config : public Traits<TIME_MANAGER> {};
+    */
+};
+
+template<> struct Traits<Static_Locator>: public Traits<TSTP>
+{
+    static const unsigned int X = 10;
+    static const unsigned int Y = 10;
+    static const unsigned int Z = 10;
+};
+
+template<> template <typename S> struct Traits<Smart_Data<S>>: public Traits<Network>
+{
+    static const bool debugged = true;
 };
 
 template<> struct Traits<IP>: public Traits<Network>

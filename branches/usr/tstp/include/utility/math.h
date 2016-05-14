@@ -57,7 +57,7 @@ inline float sqrt(float x)
         float new_guess = (xhi + xlo) / 2;
         if (new_guess == guess)
             break; // not getting closer
-            guess = new_guess;
+        guess = new_guess;
     }
 
     return guess;

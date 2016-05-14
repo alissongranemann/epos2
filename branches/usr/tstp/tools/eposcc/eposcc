@@ -61,19 +61,31 @@ F77_LINK_LIBS="f2c"
 LINKER="$TOOLS_PREFIX""ld"
 
 LINKER_LIBRARY=$LINKER
+if [ "$MMOD" = "emote3" ]; then
+LINK_FLGS_LIBRARY="-L$LIB -L`$C_COMPILER $C_COMP_FLGS -print-file-name=` -z max-page-size=4 -static --nmagic --section-start $MACH_CODE_NAME=$APP_CODE --section-start $MACH_DATA_NAME=$APP_DATA"
+else
 LINK_FLGS_LIBRARY="-L$LIB -L`$C_COMPILER $C_COMP_FLGS -print-file-name=` -static --nmagic --section-start $MACH_CODE_NAME=$APP_CODE --section-start $MACH_DATA_NAME=$APP_DATA"
+fi
 LINK_OBJI_LIBRARY="$LIB/$ARCH""_crt0.o $LIB/$ARCH""_crtbegin.o $LIB/$MACH""_init_first.o $LIB/$MACH""_init_application.o $LIB/$MACH""_application.o"
 LINK_OBJN_LIBRARY="$LIB/$MACH""_init_system.o $LIB/$MACH""_system.o $LIB/$ARCH""_crtend.o"
 LINK_LIBS_LIBRARY="util_$ARCH init_$ARCH sys_$ARCH mach_$ARCH arch_$ARCH util_$ARCH gcc"
 
 LINKER_BUILTIN=$LINKER
+if [ "$MMOD" = "emote3" ]; then
+LINK_FLGS_BUILTIN="-L$LIB -L`$C_COMPILER $C_COMP_FLGS -print-file-name=` -z max-page-size=4 -static --nmagic --section-start $MACH_CODE_NAME=$APP_CODE --section-start $MACH_DATA_NAME=$APP_DATA"
+else
 LINK_FLGS_BUILTIN="-L$LIB -L`$C_COMPILER $C_COMP_FLGS -print-file-name=` -static --nmagic --section-start $MACH_CODE_NAME=$APP_CODE --section-start $MACH_DATA_NAME=$APP_DATA"
+fi
 LINK_OBJI_BUILTIN="$LIB/$ARCH""_crt0.o $LIB/$ARCH""_crtbegin.o $LIB/$MACH""_init_application.o  $LIB/$MACH""_application.o"
 LINK_OBJN_BUILTIN="$LIB/$ARCH""_crtend.o -R$SRC/system/$MACH""_system"
 LINK_LIBS_BUILTIN="util_$ARCH gcc"
 
 LINKER_KERNEL=$LINKER
+if [ "$MMOD" = "emote3" ]; then
+LINK_FLGS_KERNEL="-L$LIB -L`$C_COMPILER $C_COMP_FLGS -print-file-name=` -z max-page-size=4 -static --nmagic --section-start $MACH_CODE_NAME=$APP_CODE --section-start $MACH_DATA_NAME=$APP_DATA"
+else
 LINK_FLGS_KERNEL="-L$LIB -L`$C_COMPILER $C_COMP_FLGS -print-file-name=` -static --nmagic --section-start $MACH_CODE_NAME=$APP_CODE --section-start $MACH_DATA_NAME=$APP_DATA"
+fi
 LINK_OBJI_KERNEL="$LIB/$ARCH""_crt0.o $LIB/$ARCH""_crtbegin.o $LIB/$MACH""_init_application.o  $LIB/$MACH""_application.o"
 LINK_OBJN_KERNEL="$LIB/$ARCH""_crtend.o"
 LINK_LIBS_KERNEL="util_$ARCH arch_$ARCH gcc"

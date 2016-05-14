@@ -160,7 +160,7 @@ public:
     HA resolve(const PA & pa) {
         db<ARP>(TRC) << "ARP::resolve(pa=" << pa << ") => ";
 
-        volatile HA ha = HA(HA::NULL);
+        volatile HA ha(HA::NULL);
 
         lock();
         Element * el = _table.search_key(pa);

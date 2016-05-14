@@ -1,13 +1,10 @@
 // EPOS Cortex-M NIC Mediator Declarations
 
-#include <nic.h>
-
 #ifndef __cortex_m_nic_h
 #define __cortex_m_nic_h
 
 #include <ieee802_15_4.h>
 #include <system.h>
-#include "machine.h"
 #include "cc2538_radio.h"
 
 __BEGIN_SYS
@@ -21,6 +18,9 @@ private:
     static const unsigned int UNITS = NICS::Length;
 
 public:
+    typedef IEEE802_15_4::Observed Observed;
+    typedef IEEE802_15_4::Observer Observer;
+
     template<unsigned int UNIT = 0>
     Cortex_M_Radio(unsigned int u = UNIT) {
         _dev = Meta_NIC<NICS>::Get<UNIT>::Result::get(u);
@@ -47,13 +47,23 @@ public:
     const Address & address() { return _dev->address(); }
     void address(const Address & address) { _dev->address(address); }
 
+    const unsigned int channel() { return _dev->channel(); }
+    void channel(unsigned int channel) { _dev->channel(channel); }
+
     const Statistics & statistics() { return _dev->statistics(); }
 
     void reset() { _dev->reset(); }
 
+    void listen() { _dev->listen(); }
+    void stop_listening() { _dev->stop_listening(); }
+
     void attach(Observer * obs, const Protocol & prot) { _dev->attach(obs, prot); }
     void detach(Observer * obs, const Protocol & prot) { _dev->detach(obs, prot); }
-    void notify(const Protocol & prot, Buffer * buf) { _dev->notify(prot, buf); }
+    void notify(const Protocol & prot, Buffer * buf)
+    { 
+        db<Cortex_M_Radio>(TRC) << "NIC::notify(prot=" << prot << ",buf=" << buf << endl;
+        _dev->notify(prot, buf); 
+    }
 
 private:
     static void init();

@@ -28,6 +28,7 @@ public:
     void lap() { if(_start != 0) _stop = tsc.time_stamp(); }
     void stop() { lap(); }
 
+    // TODO: eMote3 mult
     Microsecond read() { return ticks() * 1000000 / frequency(); }
 
 private:
@@ -64,6 +65,7 @@ public:
     void lap() { if(_start != 0) _stop = Alarm::_elapsed; }
     void stop() { lap(); }
 
+    // TODO: eMote3 mult
     Microsecond read() { return ticks() * 1000000 / frequency(); }
 
 private:
