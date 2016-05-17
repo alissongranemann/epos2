@@ -3,6 +3,7 @@
 #ifndef __smart_data_h
 #define __smart_data_h
 
+#include <utility/sstream.h>
 #include <tstp.h>
 #include <periodic_thread.h>
 
@@ -46,6 +47,28 @@ public:
     typedef TSTP::Region Region;
     typedef TSTP::Time Time;
 
+    struct DB_Record {
+        unsigned long unit;
+        double value;
+        unsigned char error;
+        unsigned long x;
+        unsigned long y;
+        unsigned long z;
+        unsigned long long t;
+    };
+
+    struct DB_Series {
+        void to_text(char * buf, unsigned int size);
+
+        unsigned long unit;
+        unsigned long x;
+        unsigned long y;
+        unsigned long z;
+        unsigned long r;
+        unsigned long long t0;
+        unsigned long long t1;
+    };
+
 public:
     // Local data source, possibly advertised to or commanded by the network
     Smart_Data(unsigned int dev, const Microsecond & expiry, const Mode & mode = PRIVATE)
@@ -88,7 +111,7 @@ public:
         return _value;
     }
 
-    const Coordinates & origin() const { return TSTP::absolute(_coordinates); }
+    const Coordinates & location() const { return TSTP::absolute(_coordinates); }
 
     friend Debug & operator<<(Debug & db, const Smart_Data & d) {
         db << "{";

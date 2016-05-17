@@ -10,7 +10,6 @@ __BEGIN_UTIL
 class CRC
 {
 public:
-
     static unsigned short crc16(char * ptr, int size) {
         unsigned short crc = 0;
 
