@@ -976,6 +976,7 @@ void PC_Setup::calibrate_timers()
     // Read CPU clock counter again
     TSC::Time_Stamp t1 = TSC::time_stamp(); // ascending
 
+    // The measurement was for 50ms, scale it to 1s
     si->tm.cpu_clock = (t1 - t0) * 20;
     db<Setup>(INF) << "PC_Setup::calibrate_timers:CPU clock=" << si->tm.cpu_clock / 1000000 << " MHz" << endl;
 

@@ -252,8 +252,6 @@ int tcp_test()
 
 int main()
 {
-    Network::init();
-
     cout << "IP Test Program" << endl;
     cout << "Sizes:" << endl;
     cout << "  NIC::Header => " << sizeof(NIC::Header) << endl;

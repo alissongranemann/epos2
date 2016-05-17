@@ -11,8 +11,6 @@ void sink(const NIC::Address & mac);
 
 int main()
 {
-    Network::init();
-
     cout << "TSTP test" << endl;
     cout << "Configuration:" << endl;
     cout << "  Size of TSTP::Header:      " << sizeof(TSTP::Header) << endl;

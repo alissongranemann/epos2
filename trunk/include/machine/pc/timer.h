@@ -257,8 +257,8 @@ protected:
     static const unsigned int FREQUENCY = Traits<PC_Timer>::FREQUENCY;
 
 public:
-    PC_Timer(const Hertz & frequency, const Handler & handler, const Channel & channel, bool retrigger = true):
-        _channel(channel), _initial(FREQUENCY / frequency), _retrigger(retrigger), _handler(handler) {
+    PC_Timer(const Hertz & frequency, const Handler & handler, const Channel & channel, bool retrigger = true)
+    : _channel(channel), _initial(FREQUENCY / frequency), _retrigger(retrigger), _handler(handler) {
         db<Timer>(TRC) << "Timer(f=" << frequency << ",h=" << reinterpret_cast<void*>(handler)
                        << ",ch=" << channel << ") => {count=" << _initial << "}" << endl;
 

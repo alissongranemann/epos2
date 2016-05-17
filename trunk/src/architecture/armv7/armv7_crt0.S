@@ -73,6 +73,7 @@ _start:
 __epos_app_entry:
         mov     r0, #1
         msr     CONTROL, r0
+        bl      __pre_main
         bl      main
         push    {r0}         // save main's return value to be used by exit()
     	bl	_fini

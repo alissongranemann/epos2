@@ -40,7 +40,6 @@ class Lists;
 class Observers;
 class Observeds;
 class OStream;
-class SStream;
 class Queues;
 class Random;
 class Spin;
