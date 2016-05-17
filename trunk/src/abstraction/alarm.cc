@@ -14,12 +14,11 @@ Alarm::Queue Alarm::_request;
 
 // Methods
 Alarm::Alarm(const Microsecond & time, Handler * handler, int times)
-: _ticks(ticks(time)), _handler(handler), _times(times), _link(this, _ticks)
+: _time(time), _handler(handler), _times(times), _ticks(ticks(time)), _link(this, _ticks)
 {
     lock();
 
-    db<Alarm>(TRC) << "Alarm(t=" << time << ",tk=" << _ticks << ",h=" << reinterpret_cast<void *>(handler)
-                   << ",x=" << times << ") => " << this << endl;
+    db<Alarm>(TRC) << "Alarm(t=" << time << ",tk=" << _ticks << ",h=" << reinterpret_cast<void *>(handler) << ",x=" << times << ") => " << this << endl;
 
     if(_ticks) {
         _request.insert(&_link);
@@ -38,6 +37,20 @@ Alarm::~Alarm()
     db<Alarm>(TRC) << "~Alarm(this=" << this << ")" << endl;
 
     _request.remove(this);
+
+    unlock();
+}
+
+void Alarm::period(const Microsecond & p)
+{
+    lock();
+
+    db<Alarm>(TRC) << "Alarm::period(this=" << this << ",p=" << p << ")" << endl;
+
+    _request.remove(this);
+    _time = p;
+    _ticks = ticks(p);
+    _request.insert(&_link);
 
     unlock();
 }

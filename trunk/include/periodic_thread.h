@@ -79,6 +79,9 @@ public:
             _state = conf.state;
     }
 
+    const Microsecond & period() const { return _alarm.period(); }
+    void period(const Microsecond & p) { _alarm.period(p); }
+
     static volatile bool wait_next() {
         Periodic_Thread * t = reinterpret_cast<Periodic_Thread *>(running());
 

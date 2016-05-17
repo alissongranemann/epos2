@@ -3,7 +3,6 @@
 #ifndef __smart_data_h
 #define __smart_data_h
 
-#include <utility/sstream.h>
 #include <tstp.h>
 #include <periodic_thread.h>
 
@@ -48,7 +47,6 @@ public:
     typedef TSTP::Time Time;
 
     struct DB_Record {
-        unsigned long unit;
         double value;
         unsigned char error;
         unsigned long x;
@@ -58,8 +56,6 @@ public:
     };
 
     struct DB_Series {
-        void to_text(char * buf, unsigned int size);
-
         unsigned long unit;
         unsigned long x;
         unsigned long y;
@@ -141,10 +137,8 @@ private:
                 if(!_thread)
                     _thread = new Periodic_Thread(interest->period(), &updater, _device, interest->expiry(), this);
                 else {
-                    /*
                     if(!interest->period() != _thread->period())
                         _thread->period(interest->period()) ;
-                     */
                 }
             } else {
                 Transducer::sense(_device, this);

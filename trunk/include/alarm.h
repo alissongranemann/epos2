@@ -38,6 +38,9 @@ public:
     Alarm(const Microsecond & time, Handler * handler, int times = 1);
     ~Alarm();
 
+    const Microsecond & period() const { return _time; }
+    void period(const Microsecond & p);
+
     static Hertz frequency() { return _timer->frequency(); }
 
     static void delay(const Microsecond & time);
@@ -45,12 +48,12 @@ public:
 private:
     static void init();
 
-    static Microsecond period() {
+    static Microsecond timer_period() {
         return 1000000 / frequency();
     }
 
     static Tick ticks(const Microsecond & time) {
-        return (time + period() / 2) / period();
+        return (time + timer_period() / 2) / timer_period();
     }
 
     static void lock() { Thread::lock(); }
@@ -59,9 +62,10 @@ private:
     static void handler(const IC::Interrupt_Id & i);
 
 private:
-    Tick _ticks;
+    Microsecond _time;
     Handler * _handler;
     int _times; 
+    Tick _ticks;
     Queue::Element _link;
 
     static Alarm_Timer * _timer;
