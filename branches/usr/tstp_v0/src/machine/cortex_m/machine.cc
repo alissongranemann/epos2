@@ -8,7 +8,8 @@ __BEGIN_SYS
 void Cortex_M::panic()
 {
     CPU::int_disable();
-    Display::puts("PANIC!\n");
+    if(Traits<Display>::enabled)
+        Display::puts("PANIC!\n");
     if(Traits<System>::reboot)
         reboot();
     else

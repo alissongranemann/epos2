@@ -114,18 +114,10 @@ public:
     static Hertz bus_clock() { return _bus_clock; }
 
     static void int_enable() {
-        ASM("mov r0, #1 \n"
-            "msr primask, r0 \n"
-            "msr faultmask, r0");
-        //    ASM("cpsie f");
-//        Cortex_Model_Specifics::scs(Cortex_Model_Specifics::STCTRL) |= Cortex_Model_Specifics::INTEN;
+        ASM("cpsie i");
     }
     static void int_disable() {
-//        Cortex_Model_Specifics::scs(Cortex_Model_Specifics::STCTRL) &= ~Cortex_Model_Specifics::INTEN;
-    //    ASM("cpsid f");
-        ASM("mov r0, #0 \n"
-            "msr primask, r0 \n"
-            "msr faultmask, r0");
+        ASM("cpsid i");
     }
 
     static bool int_enabled() {
@@ -133,7 +125,7 @@ public:
     }
     static bool int_disabled() {
         bool disabled;
-        ASM("mrs %0, faultmask" : "=r"(disabled));
+        ASM("mrs %0, primask" : "=r"(disabled));
         return disabled;
     }
 
@@ -165,11 +157,11 @@ public:
 
     static Reg32 fr() {
         Reg32 value;
-        ASM("" : "=r"(value) : : "r0");
+        ASM("mov %0, r0" : "=r"(value));
         return value;
     }
     static void fr(const Reg32 & fr) {
-        ASM("" : : "r"(fr) : "r0");
+        ASM("mov r0, %0" : : "r"(fr) : "r0");
     }
 
     static Log_Addr ip() // due to RISC pipelining PC is read with a +8 (4 for thumb) offset

@@ -12,7 +12,7 @@ __BEGIN_SYS
 typedef TSTP::Region Region;
 typedef TSTP::Coordinates Coordinates;
 
-class Keyboard_Sensor: public PC_Keyboard
+class Keyboard_Sensor: public Keyboard
 {
 public:
     static const unsigned int UNIT = TSTP::Unit::Acceleration;
@@ -22,8 +22,8 @@ public:
     static const bool INTERRUPT = true;
     static const bool POLLING = false;
 
-    typedef PC_Keyboard::Observer Observer;
-    typedef PC_Keyboard::Observed Observed;
+    typedef Keyboard::Observer Observer;
+    typedef Keyboard::Observed Observed;
 
 public:
     Keyboard_Sensor() {}

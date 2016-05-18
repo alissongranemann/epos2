@@ -21,13 +21,13 @@ template<> struct Traits<Build>
     static const unsigned int MODE = LIBRARY;
 
     enum {IA32, ARMv7};
-    static const unsigned int ARCHITECTURE = IA32;
+    static const unsigned int ARCHITECTURE = ARMv7;
 
     enum {PC, Cortex_M, Cortex_A};
-    static const unsigned int MACHINE = PC;
+    static const unsigned int MACHINE = Cortex_M;
 
     enum {Legacy, eMote3, LM3S811};
-    static const unsigned int MODEL = Legacy;
+    static const unsigned int MODEL = eMote3;
 
     static const unsigned int CPUS = 1;
     static const unsigned int NODES = 2; // > 1 => NETWORKING
@@ -97,8 +97,8 @@ template<> struct Traits<Serial_Keyboard>: public Traits<void>
 __END_SYS
 
 #include __ARCH_TRAITS_H
-#include __MACH_CONFIG_H
 #include __MACH_TRAITS_H
+#include __MACH_CONFIG_H
 
 __BEGIN_SYS
 

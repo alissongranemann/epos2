@@ -20,6 +20,16 @@ all1: $(SUBDIRS)
 $(SUBDIRS): FORCE
 		(cd $@ && $(MAKE))
 
+deploy: FORCE
+ifndef APPLICATION
+		$(foreach app,$(APPLICATIONS),$(MAKE) APPLICATION=$(app) flash $(PRECLEAN) deploy1;)
+else
+		$(MAKE) flash deploy1
+endif
+
+deploy1:
+		(cd img && $(MAKE) deploy)
+
 run: FORCE
 ifndef APPLICATION
 		$(foreach app,$(APPLICATIONS),$(MAKE) APPLICATION=$(app) $(PRECLEAN) run1;)
@@ -64,8 +74,8 @@ prebuild_$(APPLICATION):
 posbuild_$(APPLICATION):
 		@echo "done!"
 prerun_$(APPLICATION):
-		@echo "Cooling down for 10s ..."
-		sleep 10
+		@echo "Cooling down for 2s ..."
+		sleep 2
 		@echo "Running $(APPLICATION) ..."
 
 clean: FORCE

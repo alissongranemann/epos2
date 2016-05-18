@@ -9,10 +9,11 @@
 #include <utility/list.h>
 #include <utility/observer.h>
 #include <utility/buffer.h>
+#include <utility/random.h>
 
 __BEGIN_SYS
 
-class TSTP_MAC: private NIC::Common, public TSTP_Common
+class TSTP_MAC: private NIC_Common, public TSTP_Common
 {
 public:
     static const unsigned int TX_DELAY = 0; // TODO
@@ -23,7 +24,8 @@ public:
 
     // Just to comply with EPOS' NIC interface
     typedef NIC_Common::Address<1> Address;
-    enum Protocol { TSTP   = 0x8401, };
+    enum { TSTP   = 0x8401, };
+    typedef NIC_Common::Protocol Protocol;
 
     // TSTP MAC Frame
     static const unsigned int MTU = 127 - sizeof(CRC);
@@ -34,14 +36,14 @@ public:
         typedef unsigned char Data[MTU];
 
     public:
-        _Frame() {}
+        Frame() : Header(INTEREST) {}
 
         Header * header() { return this; }
 
         template<typename T>
         T * data() { return reinterpret_cast<T *>(&_data); }
 
-        friend Debug & operator<<(Debug & db, const _Frame & p) {
+        friend Debug & operator<<(Debug & db, const Frame & p) {
             db << "{h=" << reinterpret_cast<const Header &>(p) << ",d=" << p._data << "}";
             return db;
         }
@@ -82,6 +84,8 @@ public:
     // Observers of a protocol get a also a pointer to the received buffer
     typedef Data_Observer<Buffer, Protocol> Observer;
     typedef Data_Observed<Buffer, Protocol> Observed;
+
+    typedef NIC_Common::Statistics Statistics;
 
 protected:
     typedef unsigned char Count;
@@ -127,6 +131,13 @@ protected:
     };
 
     typedef Simple_Relative_List<Buffer, Time> TX_Schedule;
+
+protected:
+    TSTP_MAC() {}
+
+public:
+    static const unsigned int mtu() { return MTU; }
+    static const Address broadcast() { return Address::BROADCAST; }
 };
 
 __END_SYS

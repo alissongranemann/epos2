@@ -18,6 +18,12 @@ void Cortex_M::init()
         Cortex_M_Timer::init();
 //    if(Traits<Cortex_M_Scratchpad>::enabled)
 //        Cortex_M_Scratchpad::init();
+    if(Traits<Cortex_M_USB>::enabled)
+        Cortex_M_USB::init();
+#ifndef __no_networking__
+    if(Traits<Cortex_M_Radio>::enabled)
+        Cortex_M_Radio::init();
+#endif
 }
 
 __END_SYS

@@ -38,6 +38,31 @@ public:
     // Load Map (not used in this machine, but kept for architectural transparency)
     struct Load_Map
     {
+        bool  has_stp;
+        bool  has_ini;
+        bool  has_sys;
+        bool  has_app;
+        bool  has_ext;
+        LAddr stp_entry;
+        Size  stp_segments;
+        LAddr stp_code;
+        Size  stp_code_size;
+        LAddr stp_data;
+        Size  stp_data_size;
+        LAddr ini_entry;
+        Size  ini_segments;
+        LAddr ini_code;
+        Size  ini_code_size;
+        LAddr ini_data;
+        Size  ini_data_size;
+        LAddr sys_entry;
+        Size  sys_segments;
+        LAddr sys_code;
+        Size  sys_code_size;
+        LAddr sys_data;
+        Size  sys_data_size;
+        LAddr sys_stack;
+        Size  sys_stack_size;
         LAddr app_entry;
         Size  app_segments;
         LAddr app_code;

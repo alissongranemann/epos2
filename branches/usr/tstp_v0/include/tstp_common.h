@@ -55,6 +55,8 @@ public:
     } __attribute__((packed));
     typedef _Coordinates<SCALE> Coordinates;
 
+    typedef Coordinates::Number Distance;
+
     // Geographic Region in a time interval (not exactly Spacetime, but ...)
     template<Scale S>
     struct _Region: public Sphere<typename _Coordinates<S>::Number>

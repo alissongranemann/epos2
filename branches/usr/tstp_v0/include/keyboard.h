@@ -20,8 +20,17 @@ class Serial_Keyboard: public Keyboard_Common
     friend class First_Object;
 
 public:
+    typedef EPOS::S::U::Observer Observer;
+    typedef EPOS::S::U::Observed Observed;
+
     Serial_Keyboard() {}
 
+    static char try_getc() {
+        char c = -1;
+        if(Serial_Display::_uart.has_data())
+            c = getc();
+        return c;
+    }
     static char getc() {
         return Serial_Display::_uart.get();
     }

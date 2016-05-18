@@ -9,6 +9,7 @@
 #include <tsc.h>
 #include <machine.h>
 #include <rtc.h>
+#include <usb.h>
 #include __MODEL_H
 #include "info.h"
 #include "memory_map.h"
@@ -29,8 +30,10 @@ public:
     static void panic();
     static void reboot() { 
         db<Machine>(WRN) << "Machine::reboot()" << endl;
-        scs(AIRCR) |=  SYSRESREQ ;
-        for(;;); // TODO: the above is not working!
+        Reg32 val = scs(AIRCR) & (~((-1u / VECTKEY) * VECTKEY));
+        val |= SYSRESREQ;
+        val |= 0x05FA * VECTKEY;
+        scs(AIRCR) =  val;
     }
     static void poweroff() { reboot(); }
 
