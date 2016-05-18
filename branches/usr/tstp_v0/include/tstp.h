@@ -379,7 +379,7 @@ __END_SYS
 #include <utility/buffer.h>
 #include <utility/hash.h>
 #include <network.h>
-#include <tstpoe.h>
+#include <tstp_net.h>
 
 __BEGIN_SYS
 
