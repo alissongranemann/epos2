@@ -162,6 +162,7 @@ class ARP;
 class Network;
 
 class TSTPOE;
+class TSTPOTM;
 class TSTP;
 class RTC_Time_Manager;
 class NIC_Locator;

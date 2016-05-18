@@ -135,7 +135,6 @@ private:
     void update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf) {
         db<TSTPOTM>(TRC) << "TSTPOTM::update(obs=" << obs << ",prot=" << hex << prot << dec << ",buf=" << buf << ")" << endl;
         buf->nic(&_nic);
-        buf->destined_to_me(true);
         if(!notify(buf))
             _nic.free(buf);
     }
