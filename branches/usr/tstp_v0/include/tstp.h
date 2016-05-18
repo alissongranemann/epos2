@@ -383,12 +383,28 @@ __END_SYS
 
 __BEGIN_SYS
 
+typedef Traits<TSTP>::MAC TSTPNIC;
+
+class RTC_Time_Manager : public TSTP_Common {
+public:
+    static Time now() { return RTC::seconds_since_epoch(); }
+};
+
+class NIC_Locator : public TSTP_Common {
+public:
+    static Coordinates here() { return (TSTPNIC::nic()->address())[5] % 2 ? Coordinates(0, 0, 0) : Coordinates(10, 10, 10); }
+};
+
 class TSTP: public TSTP_Common, private TSTPNIC::Observer
 {
     template<typename> friend class Smart_Data;
 
 private:
     typedef TSTPNIC NIC;
+    typedef Traits<TSTP>::Time_Manager Time_Manager;
+    typedef Traits<TSTP>::Security Security;
+    typedef Traits<TSTP>::Locator Locator;
+    typedef Traits<TSTP>::Router Router;
 
 public:
     // Buffers received from the NIC
@@ -650,8 +666,8 @@ public:
         NIC::detach(this);
     }
 
-    static Time now() { return NIC::now(); }
-    static Coordinates here() { return NIC::here(); }
+    static Time now() { return Time_Manager::now(); }
+    static Coordinates here() { return Locator::here(); }
 
     static void attach(Observer * obs, void * subject) { _observed.attach(obs, int(subject)); }
     static void detach(Observer * obs, void * subject) { _observed.detach(obs, int(subject)); }
@@ -667,46 +683,48 @@ private:
     void update(NIC::Observed * obs, Buffer * buf) {
         db<TSTP>(TRC) << "TSTP::update(obs=" << obs << ",buf=" << buf << ")" << endl;
 
-        Packet * packet = buf->frame()->data<Packet>();
-        switch(packet->type()) {
-        case INTEREST: {
-            Interest * interest = reinterpret_cast<Interest *>(packet);
-            db<TSTP>(INF) << "TSTP::update:msg=" << interest << " => " << *interest << endl;
-            // Check for local capability to respond and notify interested observers
-            Responsives::List * list = _responsives[interest->unit()]; // TODO: What if sensor can answer multiple formats (e.g. int and float)
-            if(list)
-                for(Responsives::Element * el = list->head(); el; el = el->next()) {
-                    Responsive * responsive = el->object();
-                    if(interest->region().contains(responsive->origin(), now())) {
-                        notify(responsive, packet);
+        if(buf->destined_to_me()) {
+            Packet * packet = buf->frame()->data<Packet>();
+            switch(packet->type()) {
+            case INTEREST: {
+                Interest * interest = reinterpret_cast<Interest *>(packet);
+                db<TSTP>(INF) << "TSTP::update:msg=" << interest << " => " << *interest << endl;
+                // Check for local capability to respond and notify interested observers
+                Responsives::List * list = _responsives[interest->unit()]; // TODO: What if sensor can answer multiple formats (e.g. int and float)
+                if(list)
+                    for(Responsives::Element * el = list->head(); el; el = el->next()) {
+                        Responsive * responsive = el->object();
+                        if(interest->region().contains(responsive->origin(), now())) {
+                            notify(responsive, packet);
+                        }
                     }
-                }
-        } break;
-        case RESPONSE: {
-            Response * response = reinterpret_cast<Response *>(packet);
-            db<TSTP>(INF) << "TSTP::update:msg=" << response << " => " << *response << endl;
-            // Check region inclusion and notify interested observers
-            Interests::List * list = _interested[response->unit()];
-            if(list)
-                for(Interests::Element * el = list->head(); el; el = el->next()) {
-                    Interested * interested = el->object();
-                    if(interested->region().contains(response->origin(), response->time()))
-                        notify(interested, packet);
-                }
-        } break;
-        case COMMAND: {
-            Command * command = reinterpret_cast<Command *>(packet);
-            db<TSTP>(INF) << "TSTP::update:msg=" << command << " => " << *command << endl;
-            // Check for local capability to respond and notify interested observers
-            Responsives::List * list = _responsives[command->unit()]; // TODO: What if sensor can answer multiple formats (e.g. int and float)
-            if(list)
-                for(Responsives::Element * el = list->head(); el; el = el->next()) {
-                    Responsive * responsive = el->object();
-                    if(command->region().contains(responsive->origin(), now()))
-                        notify(responsive, packet);
-                }
-        } break;
-        case CONTROL: break;
+            } break;
+            case RESPONSE: {
+                Response * response = reinterpret_cast<Response *>(packet);
+                db<TSTP>(INF) << "TSTP::update:msg=" << response << " => " << *response << endl;
+                // Check region inclusion and notify interested observers
+                Interests::List * list = _interested[response->unit()];
+                if(list)
+                    for(Interests::Element * el = list->head(); el; el = el->next()) {
+                        Interested * interested = el->object();
+                        if(interested->region().contains(response->origin(), response->time()))
+                            notify(interested, packet);
+                    }
+            } break;
+            case COMMAND: {
+                Command * command = reinterpret_cast<Command *>(packet);
+                db<TSTP>(INF) << "TSTP::update:msg=" << command << " => " << *command << endl;
+                // Check for local capability to respond and notify interested observers
+                Responsives::List * list = _responsives[command->unit()]; // TODO: What if sensor can answer multiple formats (e.g. int and float)
+                if(list)
+                    for(Responsives::Element * el = list->head(); el; el = el->next()) {
+                        Responsive * responsive = el->object();
+                        if(command->region().contains(responsive->origin(), now()))
+                            notify(responsive, packet);
+                    }
+            } break;
+            case CONTROL: break;
+            }
         }
 
         buf->nic()->free(buf);

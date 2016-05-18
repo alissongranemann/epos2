@@ -163,6 +163,8 @@ class Network;
 
 class TSTPOE;
 class TSTP;
+class RTC_Time_Manager;
+class NIC_Locator;
 template<typename S>
 class Smart_Data;
 

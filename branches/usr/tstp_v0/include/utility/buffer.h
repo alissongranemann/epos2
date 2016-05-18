@@ -53,6 +53,17 @@ public:
         return db;
     }
 
+    int rssi() const { return _rssi; }
+    void rssi(int r) { _rssi = r; }
+    unsigned long long sfd_time() const { return _sfd_time; }
+    void sfd_time(unsigned long long t) { _sfd_time = t; }
+    //unsigned int id() const { return _id; }
+    //void id(unsigned int i) { _id = i; }
+    //unsigned long long offset() const { return _offset; }
+    //void offset(unsigned long long o) { _offset = o; }
+    bool destined_to_me() const { return _destined_to_me; }
+    void destined_to_me(bool d) { _destined_to_me = d; }
+
 private:
     volatile bool _lock;
     Owner * _owner;
@@ -60,6 +71,12 @@ private:
     unsigned int _size;
     Element _link1;
     Element _link2;
+
+    int _rssi;
+    unsigned long long _sfd_time;
+    //unsigned int _id;
+    //unsigned long long _offset;
+    bool _destined_to_me;
 };
 
 __END_UTIL

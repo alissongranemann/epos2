@@ -44,10 +44,18 @@ void Network::init()
             new (SYSTEM) TCP;
     }
 
-    // If TSTPOE was initialized, initialize also the rest of the stack
-    if(Traits<Network>::NETWORKS::Count<TSTPOE>::Result) {
-        if(Traits<TSTP>::enabled)
-            new (SYSTEM) TSTP;
+    // If TSTP's MAC was initialized, initialize also the rest of the stack
+    if(Traits<TSTP>::enabled and Traits<Network>::NETWORKS::Count<Traits<TSTP>::MAC>::Result) {
+        if(not EQUAL<Traits<TSTP>::Time_Manager, Traits<TSTP>::DISABLED>::Result)
+            new (SYSTEM) Traits<TSTP>::Time_Manager;
+        if(not EQUAL<Traits<TSTP>::Security, Traits<TSTP>::DISABLED>::Result)
+            new (SYSTEM) Traits<TSTP>::Security;
+        if(not EQUAL<Traits<TSTP>::Locator, Traits<TSTP>::DISABLED>::Result)
+            new (SYSTEM) Traits<TSTP>::Locator;
+        if(not EQUAL<Traits<TSTP>::Router, Traits<TSTP>::DISABLED>::Result)
+            new (SYSTEM) Traits<TSTP>::Router;
+
+        new (SYSTEM) TSTP;
     }
 
 }

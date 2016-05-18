@@ -39,8 +39,7 @@ public:
         _nic.detach(this, NIC::TSTP);
     }
 
-    static Buffer * alloc(unsigned int payload)
-    {
+    static Buffer * alloc(unsigned int payload) {
         db<TSTPOE>(TRC) << "TSTPOE::alloc(pl=" << payload << ")" << endl;
 
         return nic()->alloc(nic(), NIC::Address::BROADCAST, NIC::TSTP, 0, 0, payload);
@@ -51,9 +50,6 @@ public:
 
         return nic()->send(buf); // implicitly releases the buffer
     }
-
-    static Coordinates here() { return (nic()->address())[5] % 2 ? Coordinates(0, 0, 0) : Coordinates(10, 10, 10); }
-    static Time now() { return RTC::seconds_since_epoch(); }
 
     static NIC * nic() { return &(_networks[0]->_nic); }
     static const unsigned int mtu() { return MTU; }
@@ -66,6 +62,7 @@ private:
     void update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf) {
         db<TSTPOE>(TRC) << "TSTPOE::update(obs=" << obs << ",prot=" << hex << prot << dec << ",buf=" << buf << ")" << endl;
         buf->nic(&_nic);
+        buf->destined_to_me(true);
         if(!notify(buf))
             _nic.free(buf);
     }
@@ -82,8 +79,6 @@ protected:
     static TSTPOE * _networks[Traits<NIC>::UNITS];
     static Observed _observed; // shared by all TSTPOE instances, so the default for binding on a unit is for all NICs
 };
-
-typedef TSTPOE TSTPNIC;
 
 __END_SYS
 

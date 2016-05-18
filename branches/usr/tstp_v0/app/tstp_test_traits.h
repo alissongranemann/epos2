@@ -186,6 +186,14 @@ template<> struct Traits<Network>: public Traits<void>
 
 template<> struct Traits<TSTP>: public Traits<Network>
 {
+    typedef Traits<Network>::NETWORKS::Get<0>::Result MAC;
+
+    typedef RTC_Time_Manager Time_Manager;
+    typedef NIC_Locator Locator;
+
+    class DISABLED {};
+    typedef DISABLED Security;
+    typedef DISABLED Router;
 };
 
 template<> template <typename S> struct Traits<Smart_Data<S>>: public Traits<Network>
