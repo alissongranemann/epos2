@@ -9,6 +9,7 @@
 #include <timer.h>
 #include <machine.h>
 #include <machine/cortex_m/emote3_gptm.h>
+#include <machine/cortex_m/emote3_mac_timer.h>
 #include __MODEL_H
 
 __BEGIN_SYS
@@ -189,34 +190,38 @@ public:
 };
 
 // Timer wrapper used by TSTP
-class TSTP_Timer //TODO
+class TSTP_Timer
 {
-    static const unsigned int FREQUENCY = 1;
+    typedef eMote3_MAC_Timer Engine;
 
 public:
+    static const unsigned int FREQUENCY = Engine::FREQUENCY;
     static unsigned int frequency() { return FREQUENCY; }
 
-    typedef long long Time_Stamp;
+    typedef Engine::Timestamp Time_Stamp;
+    typedef Engine::Microsecond Microsecond;
 
-    Time_Stamp now() { return read() + _offset; };
-    Time_Stamp sfd() { return now(); }
+    Time_Stamp now() { return read() + _offset; }
+    Time_Stamp sfd() { return Engine::last_sfd_ts(); }
 
     void adjust(const Time_Stamp & offset) { _offset += offset; }
     void set(const Time_Stamp & value) { _offset = value - read(); }
 
-    void interrupt(const Time_Stamp & when, IC::Interrupt_Handler handler); // Not supported in PC
-    void cancel_interrupt(); // Not supported in PC
+    void interrupt(const Time_Stamp & when, IC::Interrupt_Handler handler) { Engine::interrupt_ts(when, handler); }
+    void cancel_interrupt() { Engine::int_disable(); }
 
-    TSTP_Timer() : _offset(0) { }
+    TSTP_Timer() : _offset(0) { Engine::config(); }
 
-    void start() { }
-    void stop() { }
+    void start() { Engine::start(); }
+    void stop() { Engine::stop(); }
+
+    static Time_Stamp us_to_ts(Microsecond us) { return Engine::us_to_ts(us); }
+    static Microsecond ts_to_us(Time_Stamp ts) { return Engine::ts_to_us(ts); }
 
 private:
-    Time_Stamp read() { return 0; } // TODO
+    Time_Stamp read() { return Engine::read_ts(); }
     Time_Stamp _offset;
 };
 __END_SYS
 
 #endif
-

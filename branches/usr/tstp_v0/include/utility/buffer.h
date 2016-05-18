@@ -57,12 +57,14 @@ public:
     void rssi(int r) { _rssi = r; }
     unsigned long long sfd_time() const { return _sfd_time; }
     void sfd_time(unsigned long long t) { _sfd_time = t; }
-    //unsigned int id() const { return _id; }
-    //void id(unsigned int i) { _id = i; }
-    //unsigned long long offset() const { return _offset; }
-    //void offset(unsigned long long o) { _offset = o; }
+    unsigned int id() const { return _id; }
+    void id(unsigned int i) { _id = i; }
+    unsigned long long offset() const { return _offset; }
+    void offset(unsigned long long o) { _offset = o; }
     bool destined_to_me() const { return _destined_to_me; }
     void destined_to_me(bool d) { _destined_to_me = d; }
+    unsigned long long deadline() const { return _deadline; }
+    void deadline(unsigned long long t) { _deadline = t; }
 
 private:
     volatile bool _lock;
@@ -74,9 +76,10 @@ private:
 
     int _rssi;
     unsigned long long _sfd_time;
-    //unsigned int _id;
-    //unsigned long long _offset;
+    unsigned int _id;
+    unsigned long long _offset;
     bool _destined_to_me;
+    unsigned long long _deadline;
 };
 
 __END_UTIL

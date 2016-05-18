@@ -55,30 +55,29 @@ public:
 
     typedef Frame PDU;
 
+    class Buffer;
+    typedef Simple_Relative_List<Buffer, Time> TX_Schedule;
+
     // Buffers used to hold frames across a zero-copy network stack
     class Buffer : public _UTIL::Buffer<NIC, TSTP_MAC::Frame, void> {
         friend class TSTP_MAC;
 
-        typedef _UTIL::Buffer<NIC, TSTP_MAC::Frame> Base;
-        typedef Ordered_List<Buffer, TSTP_MAC::Time> List;
+        typedef _UTIL::Buffer<NIC, TSTP_MAC::Frame, void> Base;
+        typedef TSTP_MAC::TX_Schedule List;
         typedef List::Element Element;
 
     public:
-        Buffer(void * s) : Base(s), _tx_link(this), _id(0) { }
-        Buffer(NIC * n, unsigned int s) : Base(n, s), _tx_link(this), _id(0) { }
+        Buffer(void * s) : Base(s), _tx_link(this) { }
+        Buffer(NIC * n, unsigned int s) : Base(n, s), _tx_link(this) { }
         template<typename ... Tn>
-        Buffer(NIC * n, unsigned int s, Tn ... an): Base(n, s, an ...), _tx_link(this), _id(0) {}
+        Buffer(NIC * n, unsigned int s, Tn ... an): Base(n, s, an ...), _tx_link(this) {}
 
         Element * tx_link() { return &_tx_link; }
 
-        void set_id() { _id = (Random::random() & 0x7fff); } // TODO
-
-        void id(TSTP_MAC::Frame_ID i) { _id = i; }
-        TSTP_MAC::Frame_ID id() const { return _id; }
+        void set_id() { id(Random::random() & 0x7fff); } // TODO
 
     private:
         Element _tx_link;
-        TSTP_MAC::Frame_ID _id;
     };
 
     // Observers of a protocol get a also a pointer to the received buffer
@@ -129,8 +128,6 @@ protected:
         TX_MF,
         TX_DATA        
     };
-
-    typedef Simple_Relative_List<Buffer, Time> TX_Schedule;
 
 protected:
     TSTP_MAC() {}

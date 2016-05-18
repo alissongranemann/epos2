@@ -350,6 +350,38 @@ public:
     User_Timer(const Microsecond & quantum, const Handler & handler): PC_Timer(1000000 / quantum, handler, USER, true) {}
 };
 
+// Timer wrapper used by TSTP
+class TSTP_Timer
+{
+    static const unsigned int FREQUENCY = 1;
+
+public:
+    static unsigned int frequency() { return FREQUENCY; }
+
+    typedef long long Time_Stamp;
+    typedef Time_Stamp Microsecond;
+
+    Time_Stamp now() { return read() + _offset; };
+    Time_Stamp sfd() { return now(); }
+
+    void adjust(const Time_Stamp & offset) { _offset += offset; }
+    void set(const Time_Stamp & value) { _offset = value - read(); }
+
+    void interrupt(const Time_Stamp & when, IC::Interrupt_Handler handler); // Not supported in PC
+    void cancel_interrupt(); // Not supported in PC
+
+    TSTP_Timer() : _offset(0) { }
+
+    void start() { }
+    void stop() { }
+
+    static Time_Stamp us_to_ts(Microsecond us) { return us * frequency() / 1000000; }
+    static Microsecond ts_to_us(Time_Stamp ts) { return ts * 1000000 / frequency(); }
+
+private:
+    Time_Stamp read() { return RTC::seconds_since_epoch(); }
+    Time_Stamp _offset;
+};
 __END_SYS
 
 #endif

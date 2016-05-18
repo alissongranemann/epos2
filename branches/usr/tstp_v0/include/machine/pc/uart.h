@@ -160,6 +160,7 @@ public:
         Engine::config(*baud_rate, *data_bits, *parity, *stop_bits);
     }
 
+    bool has_data() { return rxd_ok(); }
     char get() { while(!rxd_ok()); return rxd(); }
     void put(char c) { while(!txd_ok()); txd(c); }
 

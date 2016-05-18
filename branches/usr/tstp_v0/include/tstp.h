@@ -9,15 +9,110 @@
 #include <utility/hash.h>
 #include <network.h>
 #include <tstp_net.h>
+#include <timer.h>
 
 __BEGIN_SYS
 
 typedef Traits<TSTP>::MAC TSTPNIC;
 
-//Time Managers
+class TSTP_Packet: public TSTP_Common::Header
+{
+public:
+    static const unsigned int MTU = NIC::MTU - sizeof(TSTP_Common::Header);
+private:
+    typedef unsigned char Data[MTU];
+public:
+    TSTP_Packet() {}
+
+    TSTP_Common::Header * header() { return this; }
+
+    template<typename T>
+    T * data() { return reinterpret_cast<T *>(&_data); }
+
+    friend Debug & operator<<(Debug & db, const TSTP_Packet & p) {
+        db << "{h=" << reinterpret_cast<const TSTP_Common::Header &>(p) << ",d=" << p._data << "}";
+        return db;
+    }
+
+private:
+    Data _data;
+} __attribute__((packed));
+
+// Time Managers
 class RTC_Time_Manager : public TSTP_Common {
 public:
     static Time now() { return RTC::seconds_since_epoch(); }
+};
+
+// Passive Time Synchronization
+class PTS : public TSTP_Common, private TSTPNIC::Observer
+{
+    typedef TSTP_Timer Timer;
+    static const unsigned int TX_DELAY = TSTPNIC::TX_DELAY; 
+
+    typedef TSTPNIC::Buffer Buffer;
+    typedef TSTP_Packet Packet;
+
+    typedef TSTP_Timer::Time_Stamp Time_Stamp;
+    static const IF<(static_cast<Time_Stamp>(-1) < static_cast<Time_Stamp>(0)), bool, void>::Result _time_stamp_sign_check; // TSTP_Timer::Time_Stamp must be signed!
+    typedef TSTP_Common::Time_Offset Short_Time_Stamp;
+    typedef TSTP_Common::Microsecond Time;
+
+public:
+    PTS() {
+        _timer.start();
+        TSTPNIC::attach(this);
+    }
+    ~PTS() {
+        _timer.stop();
+        TSTPNIC::detach(this);
+    }
+
+    static Time now() { return ts_to_us(_timer.now()); }
+
+    static bool bootstrap() {
+        while(!_synced);
+        return true; 
+    }
+
+    // Called by TSTPNIC
+    typedef IC::Interrupt_Handler Interrupt_Handler;
+    static void cancel_interrupt() { _timer.cancel_interrupt(); }
+
+    static void interrupt(const Time & when, const Interrupt_Handler & h) {
+        auto tnow = _timer.now();
+        Time_Stamp w = us_to_ts(when);
+        if(when <= tnow) {
+            _timer.interrupt(tnow + 1000, h); //TODO
+        } else {
+            _timer.interrupt(w, h);
+        }
+    }
+
+    // Called by Observer
+    void update(TSTPNIC::Observed * obs, Buffer * buf) {
+        //Time_Stamp adjust = 0;
+        auto packet = buf->frame()->data<Packet>();
+        switch(packet->type()) {
+        case INTEREST: {
+            //Short_Time_Stamp sfd = buf->sfd_time();
+            //Short_Time_Stamp to_set = packet->last_hop_time() + TX_DELAY;
+            //Time_Stamp diff1 = sfd - to_set;
+            //Time_Stamp diff2 = to_set - sfd;
+            //adjust = _UTIL::abs(diff1) < _UTIL::abs(diff2) ? diff1 : diff2;
+            //_timer.adjust(adjust);
+            //_synced = true;
+        } break;
+        default: break;
+        }
+    }
+
+private:
+    static Time ts_to_us(const Time_Stamp & ts) { return _timer.ts_to_us(ts); }
+    static Time_Stamp us_to_ts(const Time & us) { return _timer.us_to_ts(us); }
+
+    static Timer _timer;
+    static volatile bool _synced;
 };
 
 //Locators
@@ -41,38 +136,13 @@ public:
     // Buffers received from the NIC
     typedef TSTPNIC::Buffer Buffer;
 
-
     // Packet
-    static const unsigned int MTU = NIC::MTU - sizeof(Header);
-    template<Scale S>
-    class _Packet: public Header
-    {
-    private:
-        typedef unsigned char Data[MTU];
-
-    public:
-        _Packet() {}
-
-        Header * header() { return this; }
-
-        template<typename T>
-        T * data() { return reinterpret_cast<T *>(&_data); }
-
-        friend Debug & operator<<(Debug & db, const _Packet & p) {
-            db << "{h=" << reinterpret_cast<const Header &>(p) << ",d=" << p._data << "}";
-            return db;
-        }
-
-    private:
-        Data _data;
-    } __attribute__((packed));
-    typedef _Packet<SCALE> Packet;
-
+    typedef TSTP_Packet Packet;
+    static const unsigned int MTU = Packet::MTU;
 
     // TSTP observer/d conditioned to a message's address (ID)
     typedef Data_Observer<Packet, int> Observer;
     typedef Data_Observed<Packet, int> Observed;
-
 
     // Hash to store TSTP Observers by type
     class Interested;

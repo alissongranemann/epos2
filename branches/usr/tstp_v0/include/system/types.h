@@ -97,8 +97,8 @@ class Cortex_M_Scratchpad;
 class Cortex_M_Radio;
 class Cortex_M_USB;
 class Cortex_M_GPIO;
-class CC2538_PHY;
-class MAC_Timer;
+class eMote3_IEEE802_15_4_PHY;
+class eMote3_MAC_Timer;
 
 class User_Timer_0;
 class User_Timer_1;
@@ -178,6 +178,7 @@ class Network;
 class TSTPOE;
 class TSTPOTM;
 class TSTP_MAC;
+class TSTP_Timer;
 class TSTP;
 class RTC_Time_Manager;
 class NIC_Locator;

@@ -90,6 +90,7 @@ public:
         // Bits          8                  8            32     8/16/32   8/16/32   8/16/32   8/16/32   8/16/32   8/16/32
 
     public:
+        _Header() {}
         _Header(const Type & t, bool tr = false, unsigned char c = 0, const Coordinates & o = 0, const Coordinates & l = 0, const Time_Offset & e = 0, const Version & v = V0)
         : _config(v << 5 | t << 3 | tr << 2 | S), _confidence(c), _origin(o), _last_hop(l), _elapsed(e) {}
 
