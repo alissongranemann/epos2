@@ -76,12 +76,30 @@ __END_SYS
 
 #include "pci.h"
 #include "timer.h"
-#include "rtc.h"
-#include "eeprom.h"
-#include "uart.h"
-#include "display.h"
-#include "keyboard.h"
-#include "nic.h"
-#include "scratchpad.h"
+
+#ifdef __RTC_H
+#include __RTC_H
+#endif
+#ifdef __EEPROM_H
+#include __EEPROM_H
+#endif
+#ifdef __UART_H
+#include __UART_H
+#endif
+#ifdef __DISPLAY_H
+#include __DISPLAY_H
+#endif
+#ifdef __KEYBOARD_H
+#include __KEYBOARD_H
+#endif
+#ifdef __SCRATCHPAD_H
+#include __SCRATCHPAD_H
+#endif
+#ifdef __NIC_H
+#include __NIC_H
+#endif
+#ifdef __FPGA_H
+#include __FPGA_H
+#endif
 
 #endif

@@ -116,6 +116,13 @@ template<> struct Traits<PC_Keyboard>: public Traits<PC_Common>
     static const bool enabled = !Traits<Serial_Keyboard>::enabled;
 };
 
+template<> struct Traits<PC_Scratchpad>: public Traits<PC_Common>
+{
+    static const bool enabled = false;
+    static const unsigned int ADDRESS = Traits<PC_Display>::FRAME_BUFFER_ADDRESS;
+    static const unsigned int SIZE = Traits<PC_Display>::FRAME_BUFFER_SIZE;
+};
+
 template<> struct Traits<PC_Ethernet>: public Traits<PC_Common>
 {
     static const bool enabled = (Traits<Build>::NODES > 1);
@@ -145,13 +152,12 @@ template<> struct Traits<C905>: public Traits<PC_Ethernet>
     static const unsigned int RECEIVE_BUFFERS = 64; // per unit
 };
 
-template<> struct Traits<PC_Scratchpad>: public Traits<PC_Common>
+template<> struct Traits<PC_FPGA>: public Traits<PC_Common>
 {
-    static const bool enabled = false;
-    static const unsigned int ADDRESS = Traits<PC_Display>::FRAME_BUFFER_ADDRESS;
-    static const unsigned int SIZE = Traits<PC_Display>::FRAME_BUFFER_SIZE;
-};
+    static const bool enabled = true;
 
+    static const unsigned int DMA_BUFFER_SIZE = 64 * 1024; // 64 KB
+};
 __END_SYS
 
 #endif

@@ -84,6 +84,7 @@ class PC_Keyboard;
 class PC_Scratchpad;
 class PC_NIC;
 class PC_Ethernet;
+class PC_FPGA;
 
 class Cortex_M;
 class Cortex_M_IC;
