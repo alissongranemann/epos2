@@ -91,10 +91,13 @@ class Cortex_M_IC;
 class Cortex_M_Timer;
 class Cortex_M_RTC;
 class Cortex_M_UART;
+class Cortex_M_USB;
+class Cortex_M_GPIO;
 class Cortex_M_EEPROM;
 class Cortex_M_Display;
 class Cortex_M_Scratchpad;
-class Cortex_M_Radio;
+class Cortex_M_NIC;
+class Cortex_M_IEEE802_15_4;
 
 class ATmega;
 class ATmega_IC;
@@ -158,25 +161,30 @@ class Chronometer;
 class Alarm;
 class Delay;
 
-template<typename NIC, typename Network, unsigned int HTYPE>
-class ARP;
 class Network;
+
+class ELP;
 
 class TSTPOE;
 class TSTP;
-template<typename S>
-class Smart_Data;
 
+template<typename NIC, typename Network, unsigned int HTYPE>
+class ARP;
 class IP;
 class ICMP;
 class UDP;
 class TCP;
 class DHCP;
+
 class IPC;
+
 template<typename Channel, bool connectionless = Channel::connectionless>
 class Link;
 template<typename Channel, bool connectionless = Channel::connectionless>
 class Port;
+
+template<typename S>
+class Smart_Data;
 
 // Framework
 class Framework;
@@ -272,7 +280,7 @@ template<> struct Type<Cortex_M_UART> { static const Type_Id ID = UART_ID; };
 template<> struct Type<Cortex_M_RTC> { static const Type_Id ID = RTC_ID; };
 template<> struct Type<Cortex_M_Display> { static const Type_Id ID = DISPLAY_ID; };
 template<> struct Type<Cortex_M_Scratchpad> { static const Type_Id ID = SCRATCHPAD_ID; };
-template<> struct Type<Cortex_M_Radio> { static const Type_Id ID = NIC_ID; };
+template<> struct Type<Cortex_M_IEEE802_15_4> { static const Type_Id ID = NIC_ID; };
 
 
 template<> struct Type<Thread> { static const Type_Id ID = THREAD_ID; };

@@ -15,7 +15,6 @@ __BEGIN_SYS
 class Ethernet: private NIC_Common
 {
 protected:
-    static const unsigned int MTU = 1500;
     static const unsigned int HEADER_SIZE = 14;
 
 
@@ -33,9 +32,10 @@ public:
         PTP    = 0x88F7
     };
 
+    static const unsigned int MTU = 1500;
     typedef unsigned char Data[MTU];
-    typedef NIC_Common::CRC32 CRC;
 
+    typedef NIC_Common::CRC32 CRC;
 
     // The Ethernet Header (RFC 894)
     class Header

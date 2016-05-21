@@ -64,13 +64,6 @@ public:
         reg(RDMATLPA) = _dma_buf->log_address() + 4 * 1024; // Write: Read DMA TLP Address register with starting address.
         reg(RDMATLPS) = 0x20;               // Write: Read DMA TLP Size register with default value (32dwords)
         reg(RDMATLPC) = 0x2000;             // Write: Read DMA TLP Count register with default value (2000)
-
-//        reg(18, 0x100);              // Write: Legacy CLR
-
-//        if (gWriteBuffer)
-//            memset(gWriteBuffer, 0, BUF_SIZE);
-//        if (gReadBuffer)
-//            memset(gReadBuffer, 0, BUF_SIZE);
     }
 
 protected:

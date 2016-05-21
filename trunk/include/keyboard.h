@@ -20,11 +20,14 @@ class Serial_Keyboard: public Keyboard_Common
     friend class First_Object;
 
 public:
+    typedef _UTIL::Observer Observer;
+    typedef _UTIL::Observed Observed;
+
+public:
     Serial_Keyboard() {}
 
-    static char getc() {
-        return Serial_Display::_uart.get();
-    }
+    static char get() { return Serial_Display::_engine.get(); }
+    static bool ready_to_get() { return Serial_Display::_engine.ready_to_get(); }
 
     static void attach(Observer * obs) { _observed.attach(obs); }
     static void detach(Observer * obs) { _observed.detach(obs); }

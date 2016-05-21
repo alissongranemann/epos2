@@ -15,7 +15,8 @@ BIN		:= $(TOP)/bin
 LIB		:= $(TOP)/lib
 IMG		:= $(TOP)/img
 ETC		:= $(TOP)/etc
-DOC		:= $(TOP)/doc
+DOC             := $(TOP)/doc
+TOOLS           := $(TOP)/tools
 LARCHNAME	:= arch
 LMACHNAME	:= mach
 LSYSNAME	:= sys
@@ -87,16 +88,21 @@ pc_CC_FLAGS             := -Wa,--32
 pc_AS_FLAGS             := --32
 pc_LD_FLAGS             := 
 pc_EMULATOR             = qemu-system-i386 -smp $(CPUS) -m $(MEM_SIZE)k -nographic -no-reboot -fda
+pc_DEBUGGER             := gdb
 
 cortex_m_CC_FLAGS       := -mcpu=cortex-m3 -mthumb -mno-thumb-interwork -mfpu=fpa #-Wa,-mimplicit-it=arm -marm 
 cortex_m_AS_FLAGS       := -mcpu=cortex-m3 -mthumb -mfpu=fpa
 cortex_m_LD_FLAGS       := 
 cortex_m_EMULATOR       = timeout --preserve-status --foreground 20s qemu-system-arm -cpu cortex-m3 -machine lm3s811evb -m $(MEM_SIZE)k -nographic -no-reboot -kernel
+cortex_m_DEBUGGER       := arm-none-eabi-gdb
+cortex_m_FLASHER        = $(TOOLS)/eposflash/eposflash-$(MMOD)
 
 atmega_CC_FLAGS         := -mmcu=atmega128 -Wno-inline
 atmega_AS_FLAGS         := -mmcu=atmega128
 atmega_LD_FLAGS         := -m avr5
 atmega_EMULATOR         = 
+atmega_DEBUGGER         =
+atmega_FLASHER          = $(TOOLS)/eposflash/eposflash-$(MMOD)
 
 $(MACH)_CODE_NAME       := .init
 $(MACH)_DATA_NAME       := .ctors
@@ -115,7 +121,7 @@ MACH_EMULATOR           = $(subst -m ,-s -S -m ,$($(MACH)_EMULATOR))
 else
 MACH_EMULATOR           = $($(MACH)_EMULATOR)
 endif
-MACH_DEBUGGER           = $(TERM) gdb -ex "target remote:1234" -ex "set confirm off"
+MACH_DEBUGGER           = $(TERM) $($(MACH)_DEBUGGER) -ex "target remote:1234" -ex "set confirm off"
 ifneq ($(wildcard $(IMG)/$(MACH)_setup),) 
 MACH_DEBUGGER           := $(MACH_DEBUGGER) -ex "add-symbol-file $(call DBSEC,$(SRC)/setup/$(MACH)_setup,.text)"
 endif
@@ -125,6 +131,7 @@ endif
 ifneq ($(wildcard $(IMG)/$(MACH)_system),) 
 MACH_DEBUGGER           := $(MACH_DEBUGGER) -ex "add-symbol-file $(call DBSEC,$(SRC)/system/$(MACH)_system,.text)"
 endif
+MACH_FLASHER            := $(MACH_FLASHER)
 
 # Architecture specifics
 ARCH_LITTLE	:= little
@@ -179,6 +186,8 @@ DD		:= dd
 DEBUGGER	= $(MACH_DEBUGGER) 
 
 EMULATOR	= $(MACH_EMULATOR) 
+
+FLASHER 	= $(MACH_FLASHER) 
 
 INSTALL		:= install
 

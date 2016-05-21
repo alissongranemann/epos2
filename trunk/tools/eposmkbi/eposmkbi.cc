@@ -447,8 +447,10 @@ bool add_machine_secrets(int fd, unsigned int i_size, char * mach, char *mmod)
         put_buf(fd, key_string, (strlen(key_string)+1));		
     }
     else if (!strcmp(mmod, "emote3")) { // EPOSMoteIII
-        //Customer Configuration Area (CCA)
-        char key_string[] = ":020000040027D3\r\n:0CFFD400FFFFFFEF000000000000200015\r\n:00000001FF\r\n";
+        // Customer Configuration Area (CCA)
+        //char key_string[] = ":020000040027D3\r\n:0CFFD400FFFFFFF700000000000020000D\r\n:00000001FF\r\n"; // Bottloader Enabled, enter by setting pin PA7 to low
+        //char key_string[] = ":020000040027D3\r\n:0CFFD400FFFFFFFF000000000000200005\r\n:00000001FF\r\n"; // Bottloader Enabled, enter by setting pin PA7 to high
+        char key_string[] = ":020000040027D3\r\n:0CFFD400FFFFFFEF000000000000200015\r\n:00000001FF\r\n"; // Bootloader Disabled
         const int key_offset = -strlen(":00000001FF\r\n");
  
         // Write key string to unlock epos

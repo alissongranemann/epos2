@@ -8,132 +8,218 @@
 #include <cpu.h>
 #include <utility/list.h>
 #include <utility/observer.h>
+#include <utility/buffer.h>
 
 __BEGIN_SYS
 
 class IEEE802_15_4: private NIC_Common
 {
-protected:
-    static const unsigned int MTU = 1500;
-    static const unsigned int HEADER_SIZE = 14;
-
-
 public:
-    typedef NIC_Common::Address<6> Address;
+    typedef NIC_Common::Address<2> Short_Address;
+    typedef NIC_Common::Address<8> Extended_Address;
+    typedef Short_Address Address;
+    typedef CPU::Reg8 Reg8;
+    typedef CPU::Reg16 Reg16;
+    typedef CPU::Reg16 CRC;
 
-    typedef unsigned short Protocol;
-    enum
-    {
-        IP     = 0x0800,
-        ARP    = 0x0806,
-        RARP   = 0x8035,
-        ELP    = 0x8888,
-        PTP    = 0x88F7
-    };
+    // IEEE 802.15.4 Physical Layer
+    static const unsigned int MTU = 127;
 
-    typedef unsigned char Data[MTU];
-    typedef NIC_Common::CRC32 CRC;
-
-
-    // The Ethernet Header (RFC 894)
-    class Header
+    // Header
+    class Phy_Header
     {
     public:
-        Header() {}
-        Header(const Address & src, const Address & dst, const Protocol & prot):
-            _dst(dst), _src(src), _prot(htons(prot)) {}
+        Phy_Header() {};
+        Phy_Header(const Reg8 & len): _length(len) {};
 
-        friend Debug & operator<<(Debug & db, const Header & h) {
-            db << "{" << h._dst << "," << h._src << "," << h.prot() << "}";
+        const Reg8 & length() const { return _length; }
+        void length(const Reg8 & len) { _length = len; }
+
+        friend Debug & operator<<(Debug & db, const Phy_Header & h) {
+            db << "{l=" << h._length << "}";
             return db;
         }
+
+    protected:
+        Reg8 _length;
+    } __attribute__((packed));
+
+    typedef unsigned char Data[MTU];
+
+    // Frame
+    class Phy_Frame: public Phy_Header
+    {
+    public:
+        Phy_Frame() {}
+        Phy_Frame(const Reg8 & len): Phy_Header(len) {}
+        Phy_Frame(const void * data, const Reg8 & len): Phy_Header(len) { memcpy(_data, data, len); }
+
+        Phy_Header * header() { return this; }
+
+        template<typename T>
+        T * data() { return reinterpret_cast<T *>(&_data); }
+
+        friend Debug & operator<<(Debug & db, const Phy_Frame & f) {
+            db << "{h=" << reinterpret_cast<const Phy_Header &>(f) << ",d=" << f._data << "}";
+            return db;
+        }
+
+    protected:
+        Data _data;
+    } __attribute__((packed, may_alias));
+
+
+    // IEEE 802.15.4 MAC Layer
+    // Frame types
+    typedef unsigned char Type;
+    enum
+    {
+        BEACON  = 0,
+        DATA    = 1,
+        ACK     = 2,
+        MAC_CMD = 3,
+    };
+
+    typedef Type Protocol;
+    enum
+    {
+        IP     = 1,
+        ARP    = 1,
+        RARP   = 1,
+        TSTP   = 4,
+        ELP    = 1,
+        PTP    = 1
+    };
+
+    // Addresses
+    enum Addressing_Mode
+    {
+        NO_ADDRRESS      = 0,
+        SHORT_ADDRESS    = 2,
+        EXTENTED_ADDRESS = 4,
+    };
+
+    enum
+    {
+        PAN_ID_BROADCAST = 0xffff
+    };
+
+    // Header
+    // 802.15.4 headers can have variable format, for now this only
+    // supports a simple, fixed format
+    class Header: public Phy_Header
+    {
+    public:
+        // Frame Control
+        class Frame_Control
+        {
+        public:
+            Frame_Control()
+            : _fc(DATA << 13 | 0 << 12 | 0 << 11 | 0 << 10 | 1 << 9 | SHORT_ADDRESS << 4 | SHORT_ADDRESS) {}
+            Frame_Control(unsigned short type, bool se, bool fp, bool ar, bool pic, unsigned short dam, unsigned short sam)
+            : _fc(type << 13 | se << 12 | fp << 11 | ar << 10 | pic << 9 | dam << 4 | sam) {}
+
+            unsigned short type() const { return (_fc >> 13) & 0x0007; }
+            void type(unsigned short t) { _fc = (_fc & 0x1fff) | ((t & 0x0007) << 13); }
+
+            bool se() const { return (_fc >> 12) & 0x0001; }
+            void se(bool b) { _fc = (_fc & 0xefff) | (b << 12); }
+
+            bool fp() const { return (_fc >> 11) & 0x0001; }
+            void fp(bool b) { _fc = (_fc & 0xf7ff) | (b << 11); }
+
+            bool ar() const { return (_fc >> 10) & 0x0001; }
+            void ar(bool b) { _fc = (_fc & 0xfbff) | (b << 10); }
+
+            bool pic() const { return (_fc >> 9) & 0x0001; }
+            void pic(bool b) { _fc = (_fc & 0xfdff) | (b << 9); }
+
+            unsigned short dam() const { return (_fc >> 4) & 0x0003; }
+            void dam(unsigned short m) { _fc = (_fc & 0xffcf) | ((m & 0x003) << 4); }
+
+            unsigned short sam() const { return (_fc & 0x0003); }
+            void sam(unsigned short m) { _fc = (_fc & 0xfffc) | (m & 0x0003); }
+
+            friend Debug & operator<<(Debug & db, const Frame_Control & fc) {
+                db << "{type=" << fc.type() << ",se=" << fc.se() << ",fp=" << fc.fp() << ",ar=" << fc.ar() << ",pic=" << fc.pic() << ",dam=" << fc.dam() << ",sam=" << fc.sam() << "}";
+                return db;
+            }
+
+            private:
+                unsigned short _fc;
+        } __attribute__((packed));
+
+    public:
+        Header() {}
+        Header(const Type & type, const Reg8 & len)
+        : Phy_Header(len + sizeof(Header) - sizeof(Phy_Header)) {};
+        Header(const Type & type, const Address & src, const Address & dst)
+        : Phy_Header(0 + sizeof(Header) - sizeof(Phy_Header)), _frame_control(), _dst(dst), _src(src) {}
+        Header(const Type & type, const Address & src, const Address & dst, const Reg8 & len)
+        : Phy_Header(len + sizeof(Header) - sizeof(Phy_Header)), _frame_control(), _sequence_number(0), _dst_pan_id(PAN_ID_BROADCAST), _dst(dst), _src(src) {}
 
         const Address & src() const { return _src; }
         const Address & dst() const { return _dst; }
 
-        Protocol prot() const { return ntohs(_prot); }
+//        void sequence_number(Reg8 seq) { _sequence_number = seq; }
+        const Reg8 & sequence_number() { return _sequence_number; }
+
+        bool pending() const { return _frame_control.fp(); }
+        unsigned int type() const { return _frame_control.type(); }
+        void ack_request(bool val) { _frame_control.ar(val); }
+        bool ack_request() { return _frame_control.ar(); }
+
+        friend Debug & operator<<(Debug & db, const Header & h) {
+            db << "{fc=" << ",sn=" << h._sequence_number << ",pid=" << h._dst_pan_id << ",dst=" << h._dst << ",src=" << h._src << "," << "}";
+            return db;
+        }
 
     protected:
+        Frame_Control _frame_control;
+        Reg8 _sequence_number;
+        Reg16 _dst_pan_id;
         Address _dst;
         Address _src;
-        Protocol _prot;
-    } __attribute__((packed, may_alias));
+    } __attribute__((packed));
 
-
-    // The Ethernet Frame (RFC 894)
     class Frame: public Header
     {
     public:
+        static const unsigned int MTU = IEEE802_15_4::MTU - sizeof(Header) + sizeof(Phy_Header) - sizeof(CRC);
+        typedef unsigned char Data[MTU];
+
+    public:
         Frame() {}
-        Frame(const Address & src, const Address & dst, const Protocol & prot) : Header(src, dst, prot) {}
-        Frame(const Address & src, const Address & dst, const Protocol & prot, const void * data, unsigned int size): Header(src, dst, prot) {
-            memcpy(_data, data, size);
-        }
-        
+        Frame(const Type & type, const Address & src, const Address & dst): Header(type, src, dst) {}
+        Frame(const Type & type, const Address & src, const Address & dst, const void * data, unsigned int size)
+        : Header(type, src, dst, ((size & (~0x7f)) ? 0x7f : size) + sizeof(CRC)) { memcpy(_data, data, size); }
+
         Header * header() { return this; }
 
         template<typename T>
         T * data() { return reinterpret_cast<T *>(&_data); }
 
         friend Debug & operator<<(Debug & db, const Frame & f) {
-            db << "{" << f.dst() << "," << f.src() << "," << f.prot() << "," << f._data << "}";
+            db << "{h=" << reinterpret_cast<const Header &>(f) << ",d=" << f._data << "}";
             return db;
         }
-        
+
     protected:
         Data _data;
         CRC _crc;
     } __attribute__((packed));
 
+
     typedef Frame PDU;
 
 
     // Buffers used to hold frames across a zero-copy network stack
-    class Buffer: private Frame
-    {
-    public:
-        typedef Simple_List<Buffer> List;
-        typedef List::Element Element;
-
-    public:
-        Buffer(void * back): _lock(false), _nic(0), _back(back), _size(sizeof(Frame)), _link(this) {}
-        Buffer(NIC * nic, const Address & src, const Address & dst, const Protocol & prot, unsigned int size):
-            Frame(src, dst, prot), _lock(false), _nic(nic), _size(size), _link(this) {}
-
-        Frame * frame() { return this; }
-
-        bool lock() { return !CPU::tsl(_lock); }
-        void unlock() { _lock = 0; }
-
-        NIC * nic() const { return _nic; }
-        void nic(NIC * n) { _nic = n; }
-
-        template<typename T>
-        T * back() const { return reinterpret_cast<T *>(_back); }
-
-        unsigned int size() const { return _size; }
-        void size(unsigned int s) { _size = s; }
-
-        Element * link() { return &_link; }
-
-        friend Debug & operator<<(Debug & db, const Buffer & b) {
-            db << "{nc=" << b._nic << ",lk=" << b._lock << ",sz=" << b._size << ",bl=" << b._back << "}";
-            return db;
-        }
-
-    private:
-        volatile bool _lock;
-        NIC * _nic;
-        void * _back;
-        unsigned int _size;
-        Element _link;
-    };
+    typedef _UTIL::Buffer<NIC, Frame, void> Buffer;
 
 
     // Observers of a protocol get a also a pointer to the received buffer
-    typedef Data_Observer<Buffer, Protocol> Observer;
-    typedef Data_Observed<Buffer, Protocol> Observed;
-
+    typedef Data_Observer<Buffer, Type> Observer;
+    typedef Data_Observed<Buffer, Type> Observed;
 
     // Meaningful statistics for Ethernet
     struct Statistics: public NIC_Common::Statistics
@@ -165,7 +251,7 @@ protected:
     IEEE802_15_4() {}
 
 public:
-    static const unsigned int mtu() { return MTU; }
+    static const unsigned int mtu() { return Frame::MTU; }
     static const Address broadcast() { return Address::BROADCAST; }
 };
 

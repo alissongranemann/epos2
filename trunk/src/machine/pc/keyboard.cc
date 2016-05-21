@@ -72,18 +72,10 @@ PC_Keyboard::Scancode PC_Keyboard::_scancodes[]= {{   0,    0,   0,   0}, // 00
 Observed PC_Keyboard::_observed;
 
 // Methods
-char PC_Keyboard::getc()
+char PC_Keyboard::get()
 {
     char c = map(scancode());
     while(c == -1)
-        c = map(scancode());
-    return c;
-}
-
-char PC_Keyboard::try_getc()
-{
-    char c = -1;
-    if((status() & OUT_BUF_FULL))
         c = map(scancode());
     return c;
 }

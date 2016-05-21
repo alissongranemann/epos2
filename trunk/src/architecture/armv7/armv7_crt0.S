@@ -50,7 +50,22 @@ _vector_table:
         .word   _int_dispatch + 1       // IRQ27
         .word   _int_dispatch + 1       // IRQ28
         .word   _int_dispatch + 1       // IRQ29
-
+        .word   _int_dispatch + 1       // IRQ30
+        .word   _int_dispatch + 1       // IRQ31
+        .word   _int_dispatch + 1       // IRQ32
+        .word   _int_dispatch + 1       // IRQ33
+        .word   _int_dispatch + 1       // IRQ34
+        .word   _int_dispatch + 1       // IRQ35
+        .word   _int_dispatch + 1       // IRQ36
+        .word   _int_dispatch + 1       // IRQ37
+        .word   _int_dispatch + 1       // IRQ38
+        .word   _int_dispatch + 1       // IRQ39
+        .word   _int_dispatch + 1       // IRQ40
+        .word   _int_dispatch + 1       // IRQ41
+        .word   _int_dispatch + 1       // IRQ42
+        .word   _int_dispatch + 1       // IRQ43
+        .word   _int_dispatch + 1       // IRQ44
+        .word   _int_dispatch + 1       // IRQ45
 	.section .init
 	.align  2
 	.global _start
