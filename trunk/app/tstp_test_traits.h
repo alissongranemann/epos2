@@ -84,6 +84,8 @@ template<> struct Traits<Init>: public Traits<void>
 template<> struct Traits<Serial_Display>: public Traits<void>
 {
     static const bool enabled = true;
+    enum {UART, USB};
+    static const int ENGINE = UART;
     static const int COLUMNS = 80;
     static const int LINES = 24;
     static const int TAB_SIZE = 8;
@@ -97,8 +99,8 @@ template<> struct Traits<Serial_Keyboard>: public Traits<void>
 __END_SYS
 
 #include __ARCH_TRAITS_H
-#include __MACH_CONFIG_H
 #include __MACH_TRAITS_H
+#include __MACH_CONFIG_H
 
 __BEGIN_SYS
 
@@ -180,12 +182,26 @@ template<> struct Traits<Network>: public Traits<void>
     static const unsigned int RETRIES = 3;
     static const unsigned int TIMEOUT = 10; // s
 
-    // This list is positional, with one network for each NIC in traits<NIC>::NICS
+    // This list is positional, with one network for each NIC in Traits<NIC>::NICS
     typedef LIST<TSTPOE> NETWORKS;
 };
 
 template<> struct Traits<TSTP>: public Traits<Network>
 {
+    typedef Traits<Network>::NETWORKS::Get<0>::Result MAC;
+
+//    typedef RTC_Time_Manager Time_Manager;
+//    typedef NIC_Locator Locator;
+
+    class DISABLED {};
+    typedef DISABLED Security;
+    typedef DISABLED Router;
+};
+
+template<> struct Traits<ELP>: public Traits<Network>
+{
+    static const bool acknowledged = true;
+    static const bool avoid_collisions = true;
 };
 
 template<> template <typename S> struct Traits<Smart_Data<S>>: public Traits<Network>
