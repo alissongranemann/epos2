@@ -1,4 +1,4 @@
-// EPOS EPOSMoteIII (Cortex-M4) MCU Metainfo and Configuration
+// EPOS EPOSMoteIII (Cortex-M3) MCU Metainfo and Configuration
 
 #ifndef __emote3_traits_h
 #define __emote3_traits_h
@@ -18,27 +18,27 @@ template <> struct Traits<Cortex_M>: public Traits<Cortex_M_Common>
     static const unsigned int CPUS = Traits<Build>::CPUS;
 
     // Physical Memory
-    static const unsigned int MEM_BASE  = 0x20000000;
-    static const unsigned int MEM_TOP   = 0x20001fff; // 8 KB (MAX for 32-bit is 0x70000000 / 1792 MB)
+    static const unsigned int MEM_BASE  = 0x20000004;
+    static const unsigned int MEM_TOP   = 0x20007ff7; // 32 KB (MAX for 32-bit is 0x70000000 / 1792 MB)
 
     // Logical Memory Map
-    static const unsigned int APP_LOW   = 0x20000000;
-    static const unsigned int APP_CODE  = 0x00200000;
-    static const unsigned int APP_DATA  = 0x20000000;
-    static const unsigned int APP_HIGH  = 0x20001fff; // 8 KB
+    static const unsigned int APP_LOW   = 0x20000004;
+    static const unsigned int APP_CODE  = 0x00204000;
+    static const unsigned int APP_DATA  = 0x20000004;
+    static const unsigned int APP_HIGH  = 0x20007ff7;
 
-    static const unsigned int PHY_MEM   = 0x20000000;
+    static const unsigned int PHY_MEM   = 0x20000004;
     static const unsigned int IO_BASE   = 0x40000000;
     static const unsigned int IO_TOP    = 0x440067ff;
 
-    static const unsigned int SYS       = 0x00200000;
-    static const unsigned int SYS_CODE  = 0x00200000; // Library mode only => APP + SYS
-    static const unsigned int SYS_DATA  = 0x20000000; // Library mode only => APP + SYS
+    static const unsigned int SYS       = 0x00204000;
+    static const unsigned int SYS_CODE  = 0x00204000; // Library mode only => APP + SYS
+    static const unsigned int SYS_DATA  = 0x20000004; // Library mode only => APP + SYS
 
     // Default Sizes and Quantities
-    static const unsigned int STACK_SIZE = 1024;
-    static const unsigned int HEAP_SIZE = 512;
-    static const unsigned int MAX_THREADS = 3;
+    static const unsigned int STACK_SIZE = 3 * 1024;
+    static const unsigned int HEAP_SIZE = 3 * 1024;
+    static const unsigned int MAX_THREADS = 7;
 };
 
 template <> struct Traits<Cortex_M_IC>: public Traits<Cortex_M_Common>
@@ -67,24 +67,30 @@ template <> struct Traits<Cortex_M_UART>: public Traits<Cortex_M_Common>
     static const unsigned int DEF_STOP_BITS = 1;
 };
 
-template <> struct Traits<Cortex_M_NIC>: public Traits<Cortex_M_Common>
+template <> struct Traits<Cortex_M_USB>: public Traits<Cortex_M_Common>
 {
-    static const bool enabled = (Traits<Build>::NODES > 1);
-
-    typedef LIST<Radio> NICS;
-    static const unsigned int UNITS = NICS::Length;
-};
-
-template <> struct Traits<Radio>: public Traits<Cortex_M_NIC>
-{
-    static const unsigned int UNITS = NICS::Count<Radio>::Result;
-    static const unsigned int SEND_BUFFERS = 64; // per unit
-    static const unsigned int RECEIVE_BUFFERS = 256; // per unit
+    static const unsigned int UNITS = 1;
+    static const bool blocking = true;
 };
 
 template <> struct Traits<Cortex_M_Scratchpad>: public Traits<Cortex_M_Common>
 {
     static const bool enabled = false;
+};
+
+template <> struct Traits<Cortex_M_IEEE802_15_4>: public Traits<Cortex_M_Common>
+{
+    static const bool enabled = (Traits<Build>::NODES > 1);
+
+    typedef LIST<CC2538> NICS;
+    static const unsigned int UNITS = NICS::Length;
+};
+
+template <> struct Traits<CC2538>: public Traits<Cortex_M_IEEE802_15_4>
+{
+    static const unsigned int UNITS = NICS::Count<CC2538>::Result;
+    static const unsigned int SEND_BUFFERS = 64; // per unit
+    static const unsigned int RECEIVE_BUFFERS = 256; // per unit
 };
 
 __END_SYS

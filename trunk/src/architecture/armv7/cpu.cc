@@ -12,22 +12,22 @@ unsigned int ARMv7::_bus_clock;
 // Class methods
 void ARMv7::Context::save() volatile
 {
-    ASM("       mov     r2, pc                  \n"
-        "       push    {r2}                    \n"
+    ASM("       mov     r12, pc                 \n"
+        "       push    {r12}                   \n"
         "       push    {r0-r12, lr}            \n"
-        "       mrs     r2, xpsr                \n"
-        "       push    {r2}                    \n"
+        "       mrs     r12, xpsr               \n"
+        "       push    {r12}                   \n"
         "       str     sp, [%0]                \n"
         : : "r"(this));
 }
 
 void ARMv7::Context::load() const volatile
 {
-//    System::_heap->free(reinterpret_cast<void *>(Memory_Map<Machine>::SYS_STACK), Traits<System>::STACK_SIZE);
+    System::_heap->free(reinterpret_cast<void *>(Memory_Map<Machine>::SYS_STACK), Traits<System>::STACK_SIZE);
     ASM("       mov     sp, %0                  \n"
         "       isb                             \n"     // serialize the pipeline so that SP gets updated before the pop
-        "       pop     {r2}                    \n"
-        "       msr     xpsr, r2                \n"
+        "       pop     {r12}                   \n"
+        "       msr     xpsr, r12               \n"
         "       pop     {r0-r12, lr}            \n"
         "       pop     {pc}                    \n"
         : : "r"(this));
@@ -35,20 +35,19 @@ void ARMv7::Context::load() const volatile
 
 void ARMv7::switch_context(Context * volatile * o, Context * volatile n)
 {
-    ASM("       adr     r2, .ret                \n"
-        "       push    {r2}                    \n"
+    ASM("       adr     r12, .ret               \n"
+        "       push    {r12}                   \n"
         "       push    {r0-r12, lr}            \n"
-        "       mrs     r2, xpsr                \n"
-        "       push    {r2}                    \n"
+        "       mrs     r12, xpsr               \n"
+        "       push    {r12}                   \n"
         "       str     sp, [%0]                \n"
-
         "       mov     sp, %1                  \n"
         "       isb                             \n"     // serialize the pipeline so that SP gets updated before the pop
-        "       pop     {r2}                    \n"
-        "       msr     xpsr, r2                \n"
+        "       pop     {r12}                   \n"
+        "       msr     xpsr, r12               \n"
         "       pop     {r0-r12, lr}            \n"
-        "       pop     {r2}                    \n"
-        "       mov     pc, r2                  \n"     // popping directly into PC causes an Usage Fault???
+        "       pop     {r12}                   \n"
+        "       mov     pc, r12                 \n"     // popping directly into PC causes an Usage Fault???
         ".ret:  bx      lr                      \n"
         : : "r"(o), "r"(n));
 }

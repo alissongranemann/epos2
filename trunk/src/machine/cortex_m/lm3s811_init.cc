@@ -1,6 +1,8 @@
 // EPOS LM3S811 (Cortex-M3) MCU Initialization
 
-#include <machine/cortex_m/lm3s811.h>
+#include <system/config.h>
+#include __MODEL_H
+#ifdef __lm3s811_h
 
 __BEGIN_SYS
 
@@ -31,11 +33,7 @@ void LM3S811::init()
     scr(RCC) = rcc;
 
     // wait for the PLL to lock by polling PLLLRIS
-    PLL_Init_loop:
-    CPU::Reg32 ris = scr(RIS);
-    ris &= RIS_PLLLRIS;
-    if(ris)
-        goto PLL_Init_loop;
+    while(!(scr(RIS) & RIS_PLLLRIS));
 
     // enable use of PLL by clearing BYPASS
     rcc &= ~RCC_BYPASS;
@@ -43,3 +41,5 @@ void LM3S811::init()
 }
 
 __END_SYS
+
+#endif

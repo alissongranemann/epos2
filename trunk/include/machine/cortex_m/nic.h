@@ -8,25 +8,25 @@
 #include <ieee802_15_4.h>
 #include <system.h>
 #include "machine.h"
-#include "cc2538_radio.h"
+#include "cc2538.h"
 
 __BEGIN_SYS
 
-class Cortex_M_Radio: public IEEE802_15_4
+class Cortex_M_IEEE802_15_4: public IEEE802_15_4
 {
     friend class Cortex_M;
 
 private:
-    typedef Traits<Cortex_M_Radio>::NICS NICS;
+    typedef Traits<Cortex_M_IEEE802_15_4>::NICS NICS;
     static const unsigned int UNITS = NICS::Length;
 
 public:
     template<unsigned int UNIT = 0>
-    Cortex_M_Radio(unsigned int u = UNIT) {
+    Cortex_M_IEEE802_15_4(unsigned int u = UNIT) {
         _dev = Meta_NIC<NICS>::Get<UNIT>::Result::get(u);
-        db<Cortex_M_Radio>(TRC) << "NIC::NIC(u=" << UNIT << ",d=" << _dev << ") => " << this << endl;
+        db<NIC>(TRC) << "NIC::NIC(u=" << UNIT << ",d=" << _dev << ") => " << this << endl;
     }
-    ~Cortex_M_Radio() { _dev = 0; }
+    ~Cortex_M_IEEE802_15_4() { _dev = 0; }
     
     Buffer * alloc(NIC * nic, const Address & dst, const Protocol & prot, unsigned int once, unsigned int always, unsigned int payload) {
         return _dev->alloc(nic, dst, prot, once, always, payload);
@@ -46,6 +46,9 @@ public:
     
     const Address & address() { return _dev->address(); }
     void address(const Address & address) { _dev->address(address); }
+
+    const unsigned int channel() { return _dev->channel(); }
+    void channel(unsigned int channel) { _dev->channel(channel); }
 
     const Statistics & statistics() { return _dev->statistics(); }
 

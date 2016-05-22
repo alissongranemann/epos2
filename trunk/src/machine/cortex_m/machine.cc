@@ -8,10 +8,18 @@ __BEGIN_SYS
 void Cortex_M::panic()
 {
     CPU::int_disable();
-    Display::puts("PANIC!\n");
+    if(Traits<Display>::enabled)
+        Display::puts("PANIC!\n");
     if(Traits<System>::reboot)
         reboot();
     else
         CPU::halt();
 }
+
+void Cortex_M::reboot()
+{
+    db<Machine>(WRN) << "Machine::reboot()" << endl;
+    Cortex_M_Model::reboot();
+}
+
 __END_SYS

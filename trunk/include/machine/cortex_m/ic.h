@@ -22,41 +22,24 @@ public:
     using IC_Common::Interrupt_Handler;
 
     // IRQs
-    static const unsigned int IRQS = 29;
+    static const unsigned int IRQS = Cortex_M_Model::IRQS;
     typedef Interrupt_Id IRQ;
-    enum {
-        IRQ_TIMER       = 0,
-        IRQ_KEYBOARD    = 1,
-        IRQ_CASCADE     = 2,
-        IRQ_SERIAL24    = 3,
-        IRQ_SERIAL13    = 4,
-        IRQ_PARALLEL23  = 5,
-        IRQ_FLOPPY      = 6,
-        IRQ_PARALLEL1   = 7,
-        IRQ_RTC         = 8,
-        IRQ_MOUSE       = 12,
-        IRQ_MATH        = 13,
-        IRQ_DISK1       = 14,
-        IRQ_DISK2       = 15,
-        IRQ_LAST        = IRQ_DISK2
-    };
 
     // Interrupts
-    static const unsigned int INTS = 48;
+    static const unsigned int INTS = 64;
+    static const unsigned int EXC_INT = 0;
     static const unsigned int HARD_INT = 16;
     static const unsigned int SOFT_INT = HARD_INT + IRQS;
     enum {
+        INT_HARD_FAULT  = EXC_INT + CPU::EXC_HARD,
         INT_TIMER       = 15,
         INT_FIRST_HARD  = HARD_INT,
-        INT_LAST_HARD   = HARD_INT + IRQ_LAST,
+        INT_LAST_HARD   = SOFT_INT - 1,
         INT_RESCHEDULER = SOFT_INT
     };
 
 public:
     Cortex_M_IC() {}
-
-    static int irq2int(int i) { return i; }
-    static int int2irq(int i) { return i; }
 
     static Interrupt_Handler int_vector(const Interrupt_Id & i) {
         assert(i < INTS);
@@ -71,32 +54,71 @@ public:
 
     static void enable() {
         db<IC>(TRC) << "IC::enable()" << endl;
-        scs(IRQ_ENABLE) = ~0;
+        scs(IRQ_ENABLE0) = ~0;
+        if(IRQS > 32) scs(IRQ_ENABLE1) = ~0;
+        if(IRQS > 64) scs(IRQ_ENABLE2) = ~0;
     }
 
     static void enable(const IRQ & i) {
         db<IC>(TRC) << "IC::enable(irq=" << i << ")" << endl;
         assert(i < IRQS);
-        scs(IRQ_ENABLE) |= 1 << i;
+        if(i < 32) scs(IRQ_ENABLE0) = 1 << i;
+        else if((IRQS > 32) && (i < 64)) scs(IRQ_ENABLE1) = 1 << (i - 32);
+        else if(IRQS > 64) scs(IRQ_ENABLE2) = 1 << (i - 64);
     }
 
     static void disable() {
         db<IC>(TRC) << "IC::disable()" << endl;
-        scs(IRQ_DISABLE) = ~0;
+        scs(IRQ_DISABLE0) = ~0;
+        if(IRQS > 32) scs(IRQ_DISABLE1) = ~0;
+        if(IRQS > 64) scs(IRQ_DISABLE2) = ~0;
     }
 
     static void disable(const IRQ & i) {
         db<IC>(TRC) << "IC::disable(irq=" << i << ")" << endl;
         assert(i < IRQS);
-        scs(IRQ_DISABLE) |= 1 << i;
+        if(i < 32) scs(IRQ_DISABLE0) = 1 << i;
+        else if((IRQS > 32) && (i < 64)) scs(IRQ_DISABLE1) = 1 << (i - 32);
+        else if(IRQS > 64) scs(IRQ_DISABLE2) = 1 << (i - 64);
+        unpend(i);
     }
 
-    static void ipi_send(unsigned int cpu, unsigned int interrupt) {}
+    static int irq2int(int i) { return i + HARD_INT; }
+    static int int2irq(int i) { return i - HARD_INT; }
+
+    static void ipi_send(int dest, int interrupt) {}
 
 private:
-    static void dispatch();
+    static void unpend() {
+        db<IC>(TRC) << "IC::unpend()" << endl;
+        scs(IRQ_UNPEND0) = ~0;
+        scs(IRQ_UNPEND1) = ~0;
+        scs(IRQ_UNPEND2) = ~0;
+    }
 
+    static void unpend(const IRQ & i) {
+        db<IC>(TRC) << "IC::unpend(irq=" << i << ")" << endl;
+        assert(i < IRQS);
+        if(i < 32) scs(IRQ_UNPEND0) = 1 << i;
+        else if((IRQS > 32) && (i < 64)) scs(IRQ_UNPEND1) = 1 << (i - 32);
+        else if(IRQS > 64) scs(IRQ_UNPEND2) = 1 << (i - 64);
+    }
+
+    static void dispatch() {
+        register Interrupt_Id id = CPU::int_id();
+
+        if((id != INT_TIMER) || Traits<IC>::hysterically_debugged)
+            db<IC>(TRC) << "IC::dispatch(i=" << id << ")" << endl;
+
+        _int_vector[id](id);
+    }
+
+    // Logical handlers
     static void int_not(const Interrupt_Id & i);
+    static void hard_fault(const Interrupt_Id & i);
+
+    // Physical handler
+    static void entry() __attribute__((naked));
 
     static void init();
 

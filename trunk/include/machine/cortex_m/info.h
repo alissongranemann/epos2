@@ -38,6 +38,7 @@ public:
     // Load Map (not used in this machine, but kept for architectural transparency)
     struct Load_Map
     {
+        bool  has_ext;
         LAddr app_entry;
         Size  app_segments;
         LAddr app_code;
