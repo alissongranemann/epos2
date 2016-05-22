@@ -24,6 +24,40 @@ public:
     // IRQs
     static const unsigned int IRQS = Cortex_M_Model::IRQS;
     typedef Interrupt_Id IRQ;
+    enum {
+        IRQ_GPIOA       = 0,
+        IRQ_GPIOB       = 1,
+        IRQ_GPIOC       = 2,
+        IRQ_GPIOD       = 3,
+        IRQ_GPIOE       = 4,
+        IRQ_UART0       = 5,
+        IRQ_UART1       = 6,
+        IRQ_SSI0        = 7,
+        IRQ_I2C         = 8,
+        IRQ_ADC         = 14,
+        IRQ_WATCHDOG    = 18,
+        IRQ_GPT0A       = 19,
+        IRQ_GPT0B       = 20,
+        IRQ_GPT1A       = 21,
+        IRQ_GPT1B       = 22,
+        IRQ_GPT2A       = 23,
+        IRQ_GPT2b       = 24,
+        IRQ_AC          = 25,
+        IRQ_RFTXRX      = 26,
+        IRQ_RFERR       = 27,
+        IRQ_SC          = 28,
+        IRQ_FC          = 29,
+        IRQ_AES         = 30,
+        IRQ_PKA         = 31,
+        IRQ_SMT         = 32,
+        IRQ_MACTIMER    = 33,
+        IRQ_SSI1        = 34,
+        IRQ_GPT3A       = 35,
+        IRQ_FPT3B       = 36,
+        IRQ_UDMASW      = 46,
+        IRQ_UDMAERR     = 47,
+        IRQ_LAST        = IRQ_UDMAERR
+    };
 
     // Interrupts
     static const unsigned int INTS = 64;
@@ -34,6 +68,7 @@ public:
         INT_HARD_FAULT  = EXC_INT + CPU::EXC_HARD,
         INT_TIMER       = 15,
         INT_FIRST_HARD  = HARD_INT,
+        INT_MACTIMER    = HARD_INT + IRQ_MACTIMER,
         INT_LAST_HARD   = SOFT_INT - 1,
         INT_RESCHEDULER = SOFT_INT
     };

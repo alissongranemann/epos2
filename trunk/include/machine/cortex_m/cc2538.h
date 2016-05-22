@@ -25,12 +25,13 @@ public:
     // Bases
     enum
     {
-        FFSM_BASE = 0x40088500,
-        XREG_BASE = 0x40088600,
-        SFR_BASE  = 0x40088800,
-        ANA_BASE  = 0x40088800,
-        RXFIFO    = 0x40088000,
-        TXFIFO    = 0x40088200,
+        FFSM_BASE       = 0x40088500,
+        XREG_BASE       = 0x40088600,
+        SFR_BASE        = 0x40088800,
+        MACTIMER_BASE   = SFR_BASE,
+        ANA_BASE        = SFR_BASE,
+        RXFIFO          = 0x40088000,
+        TXFIFO          = 0x40088200,
     };
 
     // Useful FFSM register offsets
@@ -41,12 +42,6 @@ public:
         PAN_ID1     = 0xcc,
         SHORT_ADDR0 = 0xd0,
         SHORT_ADDR1 = 0xd4,
-    };
-
-    // ANA_REGS register
-    enum
-    {
-        IVCTRL    = 0x04,
     };
 
     // Useful XREG register offsets
@@ -86,6 +81,26 @@ public:
         RFIRQF1 = 0x30,
         RFIRQF0 = 0x34,
         RFST    = 0x38,
+    };
+
+    // Useful MACTIMER offsets
+    enum {       //Offset   Description                               Type    Value after reset
+        MTCSPCFG = 0x00, // MAC Timer event configuration              RW     0x0
+        MTCTRL   = 0x04, // MAC Timer control register                 RW     0x2
+        MTIRQM   = 0x08, // MAC Timer interrupt mask                   RW     0x0
+        MTIRQF   = 0x0C, // MAC Timer interrupt flags                  RW     0x0
+        MTMSEL   = 0x10, // MAC Timer multiplex select                 RW     0x0
+        MTM0     = 0x14, // MAC Timer multiplexed register 0           RW     0x0
+        MTM1     = 0x18, // MAC Timer multiplexed register 1           RW     0x0
+        MTMOVF2  = 0x1C, // MAC Timer multiplexed overflow register 2  RW     0x0
+        MTMOVF1  = 0x20, // MAC Timer multiplexed overflow register 1  RW     0x0
+        MTMOVF0  = 0x24, // MAC Timer multiplexed overflow register 0  RW     0x0
+    };
+
+    // ANA_REGS register
+    enum
+    {
+        IVCTRL    = 0x04,
     };
 
     // Radio commands
@@ -205,6 +220,187 @@ public:
         INT_TXACKDONE  = 1 << 0,
     };
 
+    // Useful bits in MTCTRL
+    enum {           //Offset   Description                                                             Type    Value after reset
+        MTCTRL_LATCH_MODE = 1 << 3, // 0: Reading MTM0 with MTMSEL.MTMSEL = 000 latches the high               RW      0
+        // byte of the timer, making it ready to be read from MTM1. Reading
+        // MTMOVF0 with MTMSEL.MTMOVFSEL = 000 latches the two
+        // most-significant bytes of the overflow counter, making it possible to
+        // read these from MTMOVF1 and MTMOVF2.
+        // 1: Reading MTM0 with MTMSEL.MTMSEL = 000 latches the high
+        // byte of the timer and the entire overflow counter at once, making it
+        // possible to read the values from MTM1, MTMOVF0, MTMOVF1, and MTMOVF2.
+        MTCTRL_STATE      = 1 << 2, // State of MAC Timer                                                      RO      0
+        // 0: Timer idle
+        // 1: Timer running
+        MTCTRL_SYNC       = 1 << 1, // 0: Starting and stopping of timer is immediate; that is, synchronous    RW      1
+        // with clk_rf_32m.
+        // 1: Starting and stopping of timer occurs at the first positive edge of
+        // the 32-kHz clock. For more details regarding timer start and stop,
+        // see Section 22.4.
+        MTCTRL_RUN        = 1 << 0, // Write 1 to start timer, write 0 to stop timer. When read, it returns    RW      0
+        // the last written value.
+    };
+
+    // Useful bits in MSEL
+    enum {
+        MSEL_MTMOVFSEL = 1 << 4, // See possible values below
+        MSEL_MTMSEL    = 1 << 0, // See possible values below
+    };
+    enum {
+        OVERFLOW_COUNTER  = 0x00,
+        OVERFLOW_CAPTURE  = 0x01,
+        OVERFLOW_PERIOD   = 0x02,
+        OVERFLOW_COMPARE1 = 0x03,
+        OVERFLOW_COMPARE2 = 0x04,
+    };
+    enum {
+        TIMER_COUNTER  = 0x00,
+        TIMER_CAPTURE  = 0x01,
+        TIMER_PERIOD   = 0x02,
+        TIMER_COMPARE1 = 0x03,
+        TIMER_COMPARE2 = 0x04,
+    };
+    enum {
+        INT_OVERFLOW_COMPARE2 = 1 << 5,
+        INT_OVERFLOW_COMPARE1 = 1 << 4,
+        INT_OVERFLOW_PER      = 1 << 3,
+        INT_COMPARE2          = 1 << 2,
+        INT_COMPARE1          = 1 << 1,
+        INT_PER               = 1 << 0
+    };
+
+    class Timer
+    {
+    private:
+        const static unsigned int CLOCK = 32 * 1000 * 1000; // 32MHz
+
+    public:
+        typedef long long Time_Stamp;
+
+    public:
+        Timer() {}
+
+        static Time_Stamp now() { return read() + _offset; }
+        static Time_Stamp sfd() { return last_sfd(); }
+
+        static void adjust(const Time_Stamp & offset) { _offset += offset; }
+        static void set(const Time_Stamp & value) { _offset = value - read(); }
+
+        static void interrupt(const Time_Stamp & when, const IC::Interrupt_Handler & h) {
+            int_set(0);
+            _handler = h;
+            mactimer(MTMSEL) = (OVERFLOW_COMPARE1 * MSEL_MTMOVFSEL) | (TIMER_COMPARE1 * MSEL_MTMSEL);
+            mactimer(MTM0) = when;
+            mactimer(MTM1) = when >> 8;
+            mactimer(MTMOVF0) = when >> 16;
+            mactimer(MTMOVF1) = when >> 24;
+            mactimer(MTMOVF2) = when >> 32;
+            _int_overflow_count_overflow = when >> 40ll;
+
+            int_clear();
+            Time_Stamp now = read();
+            if(when <= now) {
+                int_enable(INT_OVERFLOW_PER);
+                _handler(49); // FIXME: this cannot be right!
+            } else if((when >> 16ll) > (now >> 16ll)) {
+                int_enable(INT_OVERFLOW_COMPARE1 | INT_OVERFLOW_PER);
+            } else if(when > now) {
+                int_enable(INT_COMPARE1 | INT_OVERFLOW_PER);
+            }
+        }
+
+        static void start() { mactimer(MTCTRL) |= MTCTRL_RUN; }
+        static void stop()  { mactimer(MTCTRL) &= ~MTCTRL_RUN; }
+
+        static void int_enable(const Reg32 & interrupt) { mactimer(MTIRQM) |= interrupt; }
+        static void int_disable() { mactimer(MTIRQM) = INT_OVERFLOW_PER; }
+
+        static Time_Stamp us_to_ts(RTC::Microsecond us) { return us * static_cast<Time_Stamp>(CLOCK / 1000000); }
+        static RTC::Microsecond ts_to_us(Time_Stamp ts) { return ts / static_cast<Time_Stamp>(CLOCK / 1000000); }
+
+    private:
+        static void init() {
+            stop();
+            int_set(0);
+            int_clear();
+            mactimer(MTCTRL) &= ~MTCTRL_SYNC; // We can't use the sync feature because we want to change the count and overflow values when the timer is stopped
+            mactimer(MTCTRL) |= MTCTRL_LATCH_MODE; // count and overflow will be latched at once
+            IC::int_vector(IC::INT_MACTIMER, &int_handler);
+            IC::enable(33);
+            int_enable(INT_OVERFLOW_PER);
+        }
+
+        static Time_Stamp read() {
+            mactimer(MTMSEL) = ((OVERFLOW_COUNTER * MSEL_MTMOVFSEL) | (TIMER_COUNTER * MSEL_MTMSEL));
+
+            Time_Stamp ts = mactimer(MTM0); // M0 must be read first
+            ts += mactimer(MTM1) << 8;
+            ts += static_cast<long long>(mactimer(MTMOVF2)) << 32ll;
+            ts += static_cast<long long>(mactimer(MTMOVF1)) << 24ll;
+            ts += static_cast<long long>(mactimer(MTMOVF0)) << 16ll;
+            ts += static_cast<long long>(_overflow_count_overflow) << 40ll;
+
+            return ts;
+        }
+//        static void set(const Time_Stamp & t) {
+//            bool r = running();
+//            if(r) stop();
+//
+//            mactimer(MSEL) = (OVERFLOW_COUNTER * MSEL_MTMOVFSEL) | (TIMER_COUNTER * MSEL_MTMSEL);
+//
+//            mactimer(MOVF0) = t >> 16ll;
+//            mactimer(MOVF1) = t >> 24ll;
+//            mactimer(MOVF2) = t >> 32ll; // MOVF2 must be written last
+//            _overflow_count_overflow = t >> 40ll;
+//
+//            mactimer(M0) = t; // M0 must be written first
+//            mactimer(M1) = t >> 8ll;
+//
+//            if(r) start();
+//        }
+
+        static Time_Stamp last_sfd() {
+            mactimer(MTMSEL) = (TIMER_CAPTURE * MSEL_MTMSEL);
+
+            Time_Stamp ts = mactimer(MTM0); // M0 must be read first
+            ts += mactimer(MTM1) << 8;
+            ts += static_cast<long long>(mactimer(MTMOVF2)) << 32ll;
+            ts += static_cast<long long>(mactimer(MTMOVF1)) << 24ll;
+            ts += static_cast<long long>(mactimer(MTMOVF0)) << 16ll;
+            ts += static_cast<long long>(_overflow_count_overflow) << 40ll;
+
+            return ts;
+        }
+
+        static void int_handler(const IC::Interrupt_Id & interrupt) {
+            Reg32 ints = mactimer(MTIRQF);
+            int_clear();
+            if(ints & INT_OVERFLOW_PER) {
+                _overflow_count_overflow++;
+                if(_int_overflow_count_overflow == _overflow_count_overflow) {
+                    int_enable(INT_OVERFLOW_COMPARE1);
+                }
+            }
+            if(ints & INT_OVERFLOW_COMPARE1) {
+                int_set(INT_COMPARE1 | INT_OVERFLOW_PER);
+            } else if(ints & INT_COMPARE1) {
+                int_disable();
+                _handler(interrupt);
+            }
+        }
+
+        static void int_clear() { mactimer(MTIRQF) = 0; }
+        static void int_set(const Reg32 & interrupt) { mactimer(MTIRQM) = interrupt; }
+
+    private:
+        static Time_Stamp _offset;
+        static IC::Interrupt_Handler _handler;
+        static Reg32 _overflow_count_overflow;
+        static Reg32 _int_overflow_count_overflow;
+    };
+
+public:
     CC2538RF() {
         // Enable clock to the RF CORE module
         Machine::radio_enable();
@@ -297,10 +493,11 @@ protected:
         while(xreg(TXFIFOCNT) != 0);
     }
 
-    volatile Reg32 & ana (unsigned int offset) { return *(reinterpret_cast<volatile Reg32*>(ANA_BASE + offset)); }
-    volatile Reg32 & xreg (unsigned int offset) { return *(reinterpret_cast<volatile Reg32*>(XREG_BASE + offset)); }
-    volatile Reg32 & ffsm (unsigned int offset) { return *(reinterpret_cast<volatile Reg32*>(FFSM_BASE + offset)); }
-    volatile Reg32 & sfr  (unsigned int offset) { return *(reinterpret_cast<volatile Reg32*>(SFR_BASE  + offset)); }
+    static volatile Reg32 & ana     (unsigned int offset) { return *(reinterpret_cast<volatile Reg32 *>(ANA_BASE + offset)); }
+    static volatile Reg32 & xreg    (unsigned int offset) { return *(reinterpret_cast<volatile Reg32 *>(XREG_BASE + offset)); }
+    static volatile Reg32 & ffsm    (unsigned int offset) { return *(reinterpret_cast<volatile Reg32 *>(FFSM_BASE + offset)); }
+    static volatile Reg32 & sfr     (unsigned int offset) { return *(reinterpret_cast<volatile Reg32 *>(SFR_BASE  + offset)); }
+    static volatile Reg32 & mactimer(unsigned int offset) { return *(reinterpret_cast<volatile Reg32 *>(MACTIMER_BASE + offset)); }
 
     volatile bool _rx_done() { return (xreg(FSMSTAT1) & FIFOP); }
 };

@@ -71,7 +71,7 @@ void CC2538::init(unsigned int unit)
     // Allocate a DMA Buffer for init block, rx and tx rings
     DMA_Buffer * dma_buf = new (SYSTEM) DMA_Buffer(DMA_BUFFER_SIZE);
 
-    IO_Irq irq = 10;
+    IO_Irq irq = 10; // Fixme: this cannot be right
 
     // Initialize the device
     CC2538 * dev = new (SYSTEM) CC2538(unit, irq, dma_buf);
