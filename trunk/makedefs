@@ -93,7 +93,7 @@ pc_DEBUGGER             := gdb
 cortex_m_CC_FLAGS       := -mcpu=cortex-m3 -mthumb -mno-thumb-interwork -mfpu=fpa #-Wa,-mimplicit-it=arm -marm 
 cortex_m_AS_FLAGS       := -mcpu=cortex-m3 -mthumb -mfpu=fpa
 cortex_m_LD_FLAGS       := 
-cortex_m_EMULATOR       = timeout --preserve-status --foreground 20s qemu-system-arm -cpu cortex-m3 -machine lm3s811evb -m $(MEM_SIZE)k -nographic -no-reboot -kernel
+cortex_m_EMULATOR       = qemu-system-arm -cpu cortex-m3 -machine lm3s811evb -m $(MEM_SIZE)k -nographic -no-reboot -kernel
 cortex_m_DEBUGGER       := arm-none-eabi-gdb
 cortex_m_FLASHER        = $(TOOLS)/eposflash/eposflash-$(MMOD)
 
@@ -105,7 +105,7 @@ atmega_DEBUGGER         =
 atmega_FLASHER          = $(TOOLS)/eposflash/eposflash-$(MMOD)
 
 $(MACH)_CODE_NAME       := .init
-$(MACH)_DATA_NAME       := .ctors
+$(MACH)_DATA_NAME       := .data
 ifeq ($(GDB),1)
 MACH_CC_FLAGS           := -g -feliminate-unused-debug-symbols $($(MACH)_CC_FLAGS)
 MACH_AS_FLAGS           := -g $($(MACH)_AS_FLAGS)
