@@ -48,7 +48,7 @@ public:
 
     // CPU Exceptions
     typedef Reg32 Exceptions;
-    enum  {
+    enum {
         EXC_BASE        = 0x00,
         EXC_DIV0	= 0x00,
         EXC_DEBUG	= 0x01,
