@@ -17,7 +17,7 @@ protected:
 public:
     static const unsigned int IRQS = 64;
     static const unsigned int GPIO_PORTS = 4;
-//    static const bool supports_gpio_power_up = true;
+    static const bool supports_gpio_power_up = true;
 
 
     // Base address for memory-mapped System Control Registers

@@ -9,13 +9,14 @@ __BEGIN_SYS
 
 class LM3S811
 {
-private:
+protected:
     typedef CPU::Reg32 Reg32;
     typedef CPU::Log_Addr Log_Addr;
 
 public:
     static const unsigned int IRQS = 30;
     static const unsigned int GPIO_PORTS = 5;
+    static const bool supports_gpio_power_up = false;
 
     // Base address for memory-mapped System Control Registers
     enum {
@@ -296,10 +297,6 @@ protected:
         val |= 0x05fa * VECTKEY;
         scs(AIRCR) = val;
     }
-
-//    void config_GPTM(unsigned int which_timer) //TODO
-//    {
-//    }
 
     void uart_config(volatile Log_Addr * base) {
         if(base == reinterpret_cast<Log_Addr *>(UART0_BASE)) {
