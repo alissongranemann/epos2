@@ -17,12 +17,12 @@ public:
 
 public:
     // This constructor is meant to be used at initialization time to correlate shadow data structures (e.g. NIC ring buffers)
-    Buffer(Shadow * s): _lock(false), _owner(0), _shadow(s), _size(sizeof(Data)), _link1(this), _link2(this) {}
+    Buffer(Shadow * s): _lock(false), _owner(0), _shadow(s), _size(sizeof(Data)), _link1(this), _link2(this), _destined_to_me(true) {}
 
     // These constructors are used whenever a Buffer receives new data
-    Buffer(Owner * o, unsigned int s): _lock(false), _owner(o), _size(s), _link1(this), _link2(this) {}
+    Buffer(Owner * o, unsigned int s): _lock(false), _owner(o), _size(s), _link1(this), _link2(this), _destined_to_me(true) {}
     template<typename ... Tn>
-    Buffer(Owner * o, unsigned int s, Tn ... an): Data(an ...), _lock(false), _owner(o), _size(s), _link1(this), _link2(this) {}
+    Buffer(Owner * o, unsigned int s, Tn ... an): Data(an ...), _lock(false), _owner(o), _size(s), _link1(this), _link2(this), _destined_to_me(true) {}
 
     Data * data() { return this; }
     Data * frame() { return data(); }
@@ -53,18 +53,55 @@ public:
         return db;
     }
 
+    // Set by TSTP MAC
     int rssi() const { return _rssi; }
     void rssi(int r) { _rssi = r; }
-    unsigned long long sfd_time() const { return _sfd_time; }
-    void sfd_time(unsigned long long t) { _sfd_time = t; }
+
+    // Set by TSTP MAC
+    long long sfd_time_stamp() const { return _sfd_time_stamp; }
+    void sfd_time_stamp(long long t) { _sfd_time_stamp = t; }
+
+    // Set by TSTP MAC
     unsigned int id() const { return _id; }
     void id(unsigned int i) { _id = i; }
-    unsigned long long offset() const { return _offset; }
-    void offset(unsigned long long o) { _offset = o; }
+
+    // Set by TSTP Router
+    long long offset() const { return _offset; }
+    void offset(long long o) { _offset = o; }
+
+    // Set by TSTP Router
     bool destined_to_me() const { return _destined_to_me; }
     void destined_to_me(bool d) { _destined_to_me = d; }
-    unsigned long long deadline() const { return _deadline; }
-    void deadline(unsigned long long t) { _deadline = t; }
+
+    // Set by any TSTP component
+    bool relevant() const { return _relevant; }
+    void relevant(bool r) { _relevant = r; }
+
+    // Set by TSTP Time Manager
+    long long deadline() const { return _deadline; }
+    void deadline(long long t) { _deadline = t; }
+
+    // Set by TSTP Time Manager on reception 
+    // Set by TSTP on creation transmission 
+    long long origin_time() const { return _origin_time; }
+    void origin_time(long long t) { _origin_time = t; }
+
+    // Set by TSTP Router
+    long my_distance() const { return _my_distance; }
+    void my_distance(long d) { _my_distance = d; }
+
+    // Set by TSTP MAC or TSTPOE
+    bool is_microframe() { return _is_microframe; }
+    void is_microframe(bool m) { _is_microframe = m; }
+    bool is_frame() { return !is_microframe(); }
+    void is_frame(bool m) { is_microframe(!m); }
+
+    // Set by TSTP MAC or TSTPOE
+    bool is_tx() { return _is_tx; }
+    void is_tx(bool t) { _is_tx = t; }
+    bool is_rx() { return !is_tx(); }
+    void is_rx(bool t) { is_tx(!t); }
+
 
 private:
     volatile bool _lock;
@@ -75,11 +112,16 @@ private:
     Element _link2;
 
     int _rssi;
-    unsigned long long _sfd_time;
+    long long _sfd_time_stamp;
     unsigned int _id;
-    unsigned long long _offset;
+    long long _offset;
     bool _destined_to_me;
-    unsigned long long _deadline;
+    long long _deadline;
+    long long _origin_time;
+    long _my_distance;
+    bool _is_tx;
+    bool _is_microframe;
+    bool _relevant;
 };
 
 __END_UTIL

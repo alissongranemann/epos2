@@ -39,8 +39,8 @@ template<> struct Traits<Debug>
 {
     static const bool error   = true;
     static const bool warning = true;
-    static const bool info    = false;
-    static const bool trace   = false;
+    static const bool info    = true;
+    static const bool trace   = true;
 };
 
 template<> struct Traits<Lists>: public Traits<void>
@@ -188,7 +188,10 @@ template<> struct Traits<TSTP>: public Traits<Network>
 {
     typedef Traits<Network>::NETWORKS::Get<0>::Result MAC;
 
-    typedef RTC_Time_Manager Time_Manager;
+    typedef PTS<false> No_Time_Synchronization;
+    typedef PTS<true> Time_Synchronization;
+    typedef No_Time_Synchronization Time_Manager;
+
     typedef NIC_Locator Locator;
 
     class DISABLED {};

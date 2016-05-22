@@ -17,10 +17,11 @@ class eMote3_MAC_Timer
 
     public:
     const static unsigned int FREQUENCY = CLOCK;
-    static unsigned int frequency() { return CLOCK; }
+    static unsigned int frequency() { return FREQUENCY; }
 
     typedef long long Timestamp;
     typedef Timestamp Microsecond;
+    typedef void (* Interrupt_Handler)();
 
     static Timestamp us_to_ts(Microsecond us) { return us * static_cast<Timestamp>(frequency() / 1000000); }
     static Microsecond ts_to_us(Timestamp ts) { return ts / static_cast<Timestamp>((frequency() / 1000000)); }
@@ -94,9 +95,9 @@ class eMote3_MAC_Timer
 
 
 public:
-    static void interrupt(const Microsecond & when, const IC::Interrupt_Handler & h) { interrupt_ts(us_to_ts(when), h); }
+    static void interrupt(const Microsecond & when, const Interrupt_Handler & h) { interrupt_ts(us_to_ts(when), h); }
 
-    static void interrupt_ts(const Timestamp & when, const IC::Interrupt_Handler & h) {
+    static void interrupt_ts(const Timestamp & when, const Interrupt_Handler & h) {
         int_set(0);
         _user_handler = h;
         reg(MSEL) = (OVERFLOW_COMPARE1 * MSEL_MTMOVFSEL) | (TIMER_COMPARE1 * MSEL_MTMSEL);
@@ -111,7 +112,7 @@ public:
         Timestamp now = read_ts();
         if(when <= now) {
             int_enable(INT_OVERFLOW_PER);
-            _user_handler(49);
+            _user_handler();
         } else if((when >> 16ll) > (now >> 16ll)) {
             int_enable(INT_OVERFLOW_COMPARE1 | INT_OVERFLOW_PER);
         } else if(when > now) {
@@ -161,12 +162,12 @@ private:
             int_set(INT_COMPARE1 | INT_OVERFLOW_PER);
         } else if(ints & INT_COMPARE1) {
             int_disable();
-            _user_handler(interrupt);
+            _user_handler();
         }
     }
 
 protected:
-    static IC::Interrupt_Handler _user_handler;
+    static Interrupt_Handler _user_handler;
 
     static volatile Reg32 & reg (unsigned int offset) { return *(reinterpret_cast<volatile Reg32*>(MAC_TIMER_BASE + offset)); }
     

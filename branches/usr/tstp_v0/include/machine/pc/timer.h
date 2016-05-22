@@ -356,31 +356,25 @@ class TSTP_Timer
     static const unsigned int FREQUENCY = 1;
 
 public:
-    static unsigned int frequency() { return FREQUENCY; }
-
     typedef long long Time_Stamp;
     typedef Time_Stamp Microsecond;
 
-    Time_Stamp now() { return read() + _offset; };
-    Time_Stamp sfd() { return now(); }
+    static Time_Stamp frequency() { return FREQUENCY; }
 
-    void adjust(const Time_Stamp & offset) { _offset += offset; }
-    void set(const Time_Stamp & value) { _offset = value - read(); }
+    static Time_Stamp now() { return RTC::seconds_since_epoch(); }
+    static Time_Stamp sfd() { return now(); }
 
     void interrupt(const Time_Stamp & when, IC::Interrupt_Handler handler); // Not supported in PC
     void cancel_interrupt(); // Not supported in PC
 
-    TSTP_Timer() : _offset(0) { }
+    TSTP_Timer() { }
 
-    void start() { }
-    void stop() { }
+    static void start() { }
+    static void stop() { }
+    static void adjust(const Time_Stamp & t) { } // Not supported in PC
 
-    static Time_Stamp us_to_ts(Microsecond us) { return us * frequency() / 1000000; }
-    static Microsecond ts_to_us(Time_Stamp ts) { return ts * 1000000 / frequency(); }
-
-private:
-    Time_Stamp read() { return RTC::seconds_since_epoch(); }
-    Time_Stamp _offset;
+    static Time_Stamp us_to_ts(const Microsecond & us) { return us * frequency() / 1000000ll; }
+    static Microsecond ts_to_us(const Time_Stamp & ts) { return ts * 1000000ll / frequency(); }
 };
 __END_SYS
 

@@ -197,31 +197,33 @@ class TSTP_Timer
 public:
     static const unsigned int FREQUENCY = Engine::FREQUENCY;
     static unsigned int frequency() { return FREQUENCY; }
+    typedef void (* Interrupt_Handler)();
 
     typedef Engine::Timestamp Time_Stamp;
     typedef Engine::Microsecond Microsecond;
 
-    Time_Stamp now() { return read() + _offset; }
-    Time_Stamp sfd() { return Engine::last_sfd_ts(); }
+    static Time_Stamp now() { return read() + _offset; }
+    static Time_Stamp sfd() { return Engine::last_sfd_ts(); }
 
-    void adjust(const Time_Stamp & offset) { _offset += offset; }
-    void set(const Time_Stamp & value) { _offset = value - read(); }
+    static void adjust(const Time_Stamp & offset) { _offset += offset; }
+    static void set(const Time_Stamp & value) { _offset = value - read(); }
 
-    void interrupt(const Time_Stamp & when, IC::Interrupt_Handler handler) { Engine::interrupt_ts(when, handler); }
-    void cancel_interrupt() { Engine::int_disable(); }
+    static void interrupt(const Time_Stamp & when, Interrupt_Handler handler) { Engine::interrupt_ts(when, handler); }
+    static void cancel_interrupt() { Engine::int_disable(); }
 
-    TSTP_Timer() : _offset(0) { Engine::config(); }
+    TSTP_Timer() { _offset = 0; Engine::config(); }
 
-    void start() { Engine::start(); }
-    void stop() { Engine::stop(); }
+    static void start() { Engine::start(); }
+    static void stop() { Engine::stop(); }
 
     static Time_Stamp us_to_ts(Microsecond us) { return Engine::us_to_ts(us); }
     static Microsecond ts_to_us(Time_Stamp ts) { return Engine::ts_to_us(ts); }
 
 private:
-    Time_Stamp read() { return Engine::read_ts(); }
-    Time_Stamp _offset;
+    static Time_Stamp read() { return Engine::read_ts(); }
+    static Time_Stamp _offset;
 };
+
 __END_SYS
 
 #endif

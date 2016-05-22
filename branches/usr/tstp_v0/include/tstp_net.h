@@ -3,6 +3,7 @@
 #include <nic.h>
 #include <tstp.h>
 #include <rtc.h>
+#include <timer.h>
 
 #ifndef __tstp_net_h
 #define __tstp_net_h
@@ -44,12 +45,23 @@ public:
     static Buffer * alloc(unsigned int payload) {
         db<TSTPOE>(TRC) << "TSTPOE::alloc(pl=" << payload << ")" << endl;
 
-        return nic()->alloc(nic(), NIC::Address::BROADCAST, NIC::TSTP, 0, 0, payload);
+        Buffer * buf = nic()->alloc(nic(), NIC::Address::BROADCAST, NIC::TSTP, 0, 0, payload);
+        if(buf) {
+            buf->is_tx(true);
+            buf->is_frame(true);
+        }
+        return buf;
     }
 
     static int send(Buffer * buf) {
         db<TSTPOE>(TRC) << "TSTPOE::send(buf=" << buf << ")" << endl;
 
+        notify(buf); // Let components insert metadata
+
+        auto h = buf->frame()->data<Header>();
+        auto t = TSTP_Timer::now();
+        h->last_hop_time(t);
+        h->elapsed(t - TSTP_Timer::us_to_ts(buf->origin_time()));
         return nic()->send(buf); // implicitly releases the buffer
     }
 
@@ -62,11 +74,12 @@ public:
 
 private:
     void update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf) {
+        buf->sfd_time_stamp(TSTP_Timer::now());
         db<TSTPOE>(TRC) << "TSTPOE::update(obs=" << obs << ",prot=" << hex << prot << dec << ",buf=" << buf << ")" << endl;
         buf->nic(&_nic);
         buf->destined_to_me(true);
-        if(!notify(buf))
-            _nic.free(buf);
+        buf->rssi(0);
+        notify(buf);
     }
 
     static void init(unsigned int unit) {
@@ -90,6 +103,7 @@ class TSTPOTM: private TSTP_Common, private NIC::Observer
 
 public:
     static const unsigned int MTU = 127;
+    static const unsigned int TX_DELAY = 0; // TODO
 
     // Buffers received from the NIC
     typedef NIC::Buffer Buffer;
@@ -116,7 +130,12 @@ public:
     static Buffer * alloc(unsigned int payload) {
         db<TSTPOTM>(TRC) << "TSTPOTM::alloc(pl=" << payload << ")" << endl;
 
-        return nic()->alloc(nic(), NIC::Address::BROADCAST, NIC::TSTP, 0, 0, payload);
+        Buffer * buf = nic()->alloc(nic(), NIC::Address::BROADCAST, NIC::TSTP, 0, 0, payload);
+        if(buf) {
+            buf->is_tx(true);
+            buf->is_frame(true);
+        }
+        return buf;
     }
 
     static int send(Buffer * buf) {
@@ -136,8 +155,8 @@ private:
     void update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf) {
         db<TSTPOTM>(TRC) << "TSTPOTM::update(obs=" << obs << ",prot=" << hex << prot << dec << ",buf=" << buf << ")" << endl;
         buf->nic(&_nic);
-        if(!notify(buf))
-            _nic.free(buf);
+        notify(buf);
+        _nic.free(buf);
     }
 
     static void init(unsigned int unit) {

@@ -39,12 +39,8 @@ private:
 } __attribute__((packed));
 
 // Time Managers
-class RTC_Time_Manager : public TSTP_Common {
-public:
-    static Time now() { return RTC::seconds_since_epoch(); }
-};
-
 // Passive Time Synchronization
+template <bool do_synchronize = true>
 class PTS : public TSTP_Common, private TSTPNIC::Observer
 {
     typedef TSTP_Timer Timer;
@@ -58,6 +54,7 @@ class PTS : public TSTP_Common, private TSTPNIC::Observer
     typedef TSTP_Common::Time_Offset Short_Time_Stamp;
     typedef TSTP_Common::Microsecond Time;
 
+    static const typename IF<(do_synchronize and (not EQUAL<TSTPNIC, TSTPOTM>::Result)), void, bool>::Result _time_sync_requirement_check; // Synchronization is only available with TSTP MAC
 public:
     PTS() {
         _timer.start();
@@ -71,39 +68,36 @@ public:
     static Time now() { return ts_to_us(_timer.now()); }
 
     static bool bootstrap() {
-        while(!_synced);
-        return true; 
-    }
-
-    // Called by TSTPNIC
-    typedef IC::Interrupt_Handler Interrupt_Handler;
-    static void cancel_interrupt() { _timer.cancel_interrupt(); }
-
-    static void interrupt(const Time & when, const Interrupt_Handler & h) {
-        auto tnow = _timer.now();
-        Time_Stamp w = us_to_ts(when);
-        if(when <= tnow) {
-            _timer.interrupt(tnow + 1000, h); //TODO
-        } else {
-            _timer.interrupt(w, h);
+        if(do_synchronize) {
+            while(!_synced);
         }
+        return true; 
     }
 
     // Called by Observer
     void update(TSTPNIC::Observed * obs, Buffer * buf) {
-        //Time_Stamp adjust = 0;
-        auto packet = buf->frame()->data<Packet>();
-        switch(packet->type()) {
-        case INTEREST: {
-            //Short_Time_Stamp sfd = buf->sfd_time();
-            //Short_Time_Stamp to_set = packet->last_hop_time() + TX_DELAY;
-            //Time_Stamp diff1 = sfd - to_set;
-            //Time_Stamp diff2 = to_set - sfd;
-            //adjust = _UTIL::abs(diff1) < _UTIL::abs(diff2) ? diff1 : diff2;
-            //_timer.adjust(adjust);
-            //_synced = true;
-        } break;
-        default: break;
+        db<TSTP>(TRC) << "PTS::update(obs=" << obs << ",buf=" << buf << endl;
+        if(buf->is_frame()) {
+            auto packet = buf->frame()->data<Packet>();
+            if(buf->is_rx()) {
+                Time_Stamp tx_delay = us_to_ts(TX_DELAY);
+                if(do_synchronize) {
+                    switch(packet->type()) {
+                    case INTEREST: {
+                        Short_Time_Stamp sfd = buf->sfd_time_stamp();
+                        Short_Time_Stamp to_set = packet->last_hop_time() + tx_delay;
+                        Time_Stamp diff1 = sfd - to_set;
+                        Time_Stamp diff2 = to_set - sfd;
+                        Time_Stamp adjust = _UTIL::abs(diff1) < _UTIL::abs(diff2) ? diff1 : diff2;
+                        _timer.adjust(adjust);
+                        buf->sfd_time_stamp(buf->sfd_time_stamp() + adjust);
+                        _synced = true;
+                    } break;
+                    default: break;
+                    }
+                }
+                buf->origin_time(ts_to_us(buf->sfd_time_stamp() - tx_delay - packet->elapsed()));
+            }
         }
     }
 
@@ -114,6 +108,10 @@ private:
     static Timer _timer;
     static volatile bool _synced;
 };
+
+template<bool S> typename PTS<S>::Timer PTS<S>::_timer;
+template<bool S> volatile bool PTS<S>::_synced;
+
 
 //Locators
 class NIC_Locator : public TSTP_Common {
@@ -141,8 +139,8 @@ public:
     static const unsigned int MTU = Packet::MTU;
 
     // TSTP observer/d conditioned to a message's address (ID)
-    typedef Data_Observer<Packet, int> Observer;
-    typedef Data_Observed<Packet, int> Observed;
+    typedef Data_Observer<Buffer, int> Observer;
+    typedef Data_Observed<Buffer, int> Observed;
 
     // Hash to store TSTP Observers by type
     class Interested;
@@ -168,12 +166,15 @@ public:
     {
     public:
         Interest(const Region & region, const Unit & unit, const Mode & mode, const Error & precision, const Microsecond & expiry, const Microsecond & period = 0)
-        : Header(INTEREST, 0, 0, here(), here(), 0), _region(region), _unit(unit), _mode(mode), _precision(0), _expiry(expiry), _period(period) {}
+        : Header(INTEREST, 0, 0, here(), here(), 0, 0), _region(region), _unit(unit), _mode(mode), _precision(0), _expiry(expiry), _period(period) {}
 
         const Unit & unit() const { return _unit; }
         const Region & region() const { return _region; }
         Microsecond period() const { return _period; }
-        Time expiry() const { return _expiry; } // TODO: must return absolute time
+
+        Time_Offset expiry() const { return _expiry; }
+        void expiry(const Time_Offset & x) { _expiry = x; }
+
         Mode mode() const { return static_cast<Mode>(_mode); }
         Error precision() const { return static_cast<Error>(_precision); }
 
@@ -191,7 +192,7 @@ public:
         unsigned char _mode : 2;
         unsigned char _precision : 6;
         Time_Offset _expiry;
-        Microsecond _period;
+        Time_Offset _period;
     } __attribute__((packed));
 
     // Response (Data) Message
@@ -201,11 +202,14 @@ public:
         typedef unsigned char Data[MTU - sizeof(Unit) - sizeof(Error) - sizeof(Time)];
 
     public:
-        Response(const Unit & unit, const Error & error = 0, const Time & expiry = 0)
-        : Header(RESPONSE, 0, 0, here(), here(), 0), _unit(unit), _error(error), _expiry(expiry) {}
+        Response(const Unit & unit, const Error & error = 0, const Time_Offset & expiry = 0)
+        : Header(RESPONSE, 0, 0, here(), here(), 0, 0), _unit(unit), _error(error), _expiry(expiry) {}
 
         const Unit & unit() const { return _unit; }
-        Time expiry() const { return _expiry; }
+
+        Time_Offset expiry() const { return _expiry; }
+        void expiry(const Time_Offset & x) { _expiry = x; }
+
         Error error() const { return _error; }
 
         template<typename T>
@@ -237,7 +241,7 @@ public:
 
     public:
         Command(const Unit & unit, const Region & region)
-        : Header(COMMAND, 0, 0, here(), here(), 0), _region(region), _unit(unit) {}
+        : Header(COMMAND, 0, 0, here(), here(), 0, 0), _region(region), _unit(unit) {}
 
         const Region & region() const { return _region; }
         const Unit & unit() const { return _unit; }
@@ -267,7 +271,7 @@ public:
 
     public:
         Control(const Unit & unit, const Region & region)
-        : Header(CONTROL, 0, 0, here(), here(), 0), _region(region), _unit(unit) {}
+        : Header(CONTROL, 0, 0, here(), here(), 0, 0), _region(region), _unit(unit) {}
 
         const Region & region() const { return _region; }
         const Unit & unit() const { return _unit; }
@@ -314,6 +318,7 @@ public:
             db<TSTP>(TRC) << "TSTP::Interested::send() => " << reinterpret_cast<const Interest &>(*this) << endl;
             Buffer * buf = NIC::alloc(sizeof(Interest));
             memcpy(buf->frame()->data<Interest>(), this, sizeof(Interest));
+            buf->origin_time(TSTP::now());
             NIC::send(buf);
         }
 
@@ -337,17 +342,20 @@ public:
             _responsives.remove(&_link);
         }
 
-
-        using Header::time;
         using Header::origin;
 
         void respond(const Time & expiry) { send(expiry); }
+
+        Time time() { return _time; }
+        void time(const Time & t) { _time = t; }
 
     private:
         void send(const Time & expiry) {
             db<TSTP>(TRC) << "TSTP::Responsive::send(x=" << expiry << ")" << endl;
             Buffer * buf = NIC::alloc(_size);
             memcpy(buf->frame()->data<Response>(), this, _size);
+            buf->origin_time(_time);
+            buf->frame()->data<Response>()->expiry(expiry);
             db<TSTP>(INF) << "TSTP::Responsive::send:response=" << this << " => " << reinterpret_cast<const Response &>(*this) << endl;
             NIC::send(buf);
         }
@@ -355,6 +363,7 @@ public:
     private:
         unsigned int _size;
         Responsives::Element _link;
+        Time _time;
     };
 
  public:
@@ -372,7 +381,7 @@ public:
 
     static void attach(Observer * obs, void * subject) { _observed.attach(obs, int(subject)); }
     static void detach(Observer * obs, void * subject) { _observed.detach(obs, int(subject)); }
-    static bool notify(void * subject, Packet * packet) { return _observed.notify(int(subject), packet); }
+    static bool notify(void * subject, Buffer * buffer) { return _observed.notify(int(subject), buffer); }
 
     static void init(unsigned int unit) {
         db<Init, TSTP>(TRC) << "TSTP::init()" << endl;
@@ -384,7 +393,7 @@ private:
     void update(NIC::Observed * obs, Buffer * buf) {
         db<TSTP>(TRC) << "TSTP::update(obs=" << obs << ",buf=" << buf << ")" << endl;
 
-        if(buf->destined_to_me()) {
+        if(buf->is_rx() and buf->is_frame() and buf->destined_to_me()) {
             Packet * packet = buf->frame()->data<Packet>();
             switch(packet->type()) {
             case INTEREST: {
@@ -396,7 +405,7 @@ private:
                     for(Responsives::Element * el = list->head(); el; el = el->next()) {
                         Responsive * responsive = el->object();
                         if(interest->region().contains(responsive->origin(), now())) {
-                            notify(responsive, packet);
+                            notify(responsive, buf);
                         }
                     }
             } break;
@@ -408,8 +417,8 @@ private:
                 if(list)
                     for(Interests::Element * el = list->head(); el; el = el->next()) {
                         Interested * interested = el->object();
-                        if(interested->region().contains(response->origin(), response->time()))
-                            notify(interested, packet);
+                        if(interested->region().contains(response->origin(), buf->origin_time()))
+                            notify(interested, buf);
                     }
             } break;
             case COMMAND: {
@@ -421,14 +430,12 @@ private:
                     for(Responsives::Element * el = list->head(); el; el = el->next()) {
                         Responsive * responsive = el->object();
                         if(command->region().contains(responsive->origin(), now()))
-                            notify(responsive, packet);
+                            notify(responsive, buf);
                     }
             } break;
             case CONTROL: break;
             }
         }
-
-        buf->nic()->free(buf);
     }
 
 private:
@@ -436,18 +443,8 @@ private:
     static Responsives _responsives;
 
     static Observed _observed; // Channel protocols are singletons
- };
+};
 
-
-template<TSTP_Common::Scale S>
-inline TSTP_Common::Time TSTP_Common::_Header<S>::time() const {
-    return TSTP::now() + _elapsed;
-}
-
-template<TSTP_Common::Scale S>
-inline void TSTP_Common::_Header<S>::time(const TSTP_Common::Time & t) {
-    _elapsed = t - TSTP::now();
-}
 
 __END_SYS
 

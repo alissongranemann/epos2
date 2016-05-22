@@ -10,6 +10,8 @@ __BEGIN_SYS
 //Cortex_M_Timer::Handler* Cortex_M_Timer::handlers[4];
 Cortex_M_Timer * Cortex_M_Timer::_channels[CHANNELS];
 
+TSTP_Timer::Time_Stamp TSTP_Timer::_offset;
+
 // Class methods
 void Cortex_M_Timer::int_handler(const Interrupt_Id & i)
 {

@@ -4,6 +4,7 @@
 #define __emote3_tstp_mac_h
 
 #include <ic.h>
+#include <cpu.h>
 #include <machine/cortex_m/emote3_ieee802_15_4_phy.h>
 #include <tstp_mac.h>
 
@@ -27,8 +28,12 @@ class eMote3_TSTP_MAC: public TSTP_MAC, public TSTP_MAC::Observed, private eMote
     typedef TSTP_MAC::Frame Frame;
     typedef TSTP_MAC::Header Header;
     typedef TSTP_MAC::Statistics Statistics;
+    typedef TSTP_MAC::CRC CRC;
 
 private:
+    static void lock() { CPU::int_disable(); }
+    static void unlock() { CPU::int_enable(); }
+
     static const unsigned int UNITS = Traits<eMote3_TSTP_MAC>::UNITS;
 
     // Interrupt dispatching binding
@@ -52,10 +57,17 @@ public:
     Buffer * alloc(NIC * nic, const Address & dst, const Protocol & prot, unsigned int once, unsigned int always, unsigned int payload);
     void free(Buffer * buf);
     int send(Buffer * buf);
+private:
+    Buffer * alloc_mf(bool all_listen, const Frame_ID & id);
+public:
 
     // Just to comply with EPOS' NIC interface
-    const Address & address(); //{ return _address; }
-    void address(const Address & address);
+    const Address & address() { return _address; }
+    void address(const Address & address) { _address = address; }
+private:
+    Address _address;
+
+public:
 
     const Statistics & statistics() { return _statistics; }
 
@@ -68,6 +80,26 @@ private:
     void handle_int();
 
     static void int_handler(const IC::Interrupt_Id & interrupt);
+
+    static unsigned int _timer_int_unit;
+
+    STATE _scheduled_state;
+
+    void next_state(const STATE & s, const Time & when);
+    static void state_machine() { get_by_unit(_timer_int_unit)->state(); }
+
+    void state() { state(_scheduled_state); }
+    void state(const STATE & s) {
+        switch(s) {
+            case STATE::CHECK_TX_SCHEDULE: check_tx_schedule(); break;
+            case STATE::RX_MF: rx_mf(); break;
+            case STATE::RX_DATA: rx_data(); break;
+            case STATE::CCA: cca(); break;
+            case STATE::TX_MF: tx_mf(); break;
+            case STATE::TX_DATA: tx_data(); break;
+            default: break;
+        }
+    }
 
     static eMote3_TSTP_MAC * get_by_unit(unsigned int unit) {
         if(unit >= UNITS) {
@@ -88,8 +120,17 @@ private:
 
     static void init(unsigned int unit);
 
-    void send_mf(Buffer * b);
-    void send_frame(Buffer * b);
+    // TSTP MAC methods
+    void prepare_tx_mf();
+    void process_mf(Buffer * buf);
+    void process_data(Buffer * buf);
+    //// State Machine
+    void check_tx_schedule();
+    void rx_mf();
+    void rx_data(); 
+    void cca(); 
+    void tx_mf(); 
+    void tx_data(); 
 
 private:
     unsigned int _unit;
@@ -107,6 +148,11 @@ private:
     Buffer * _tx_buffer[TX_BUFS];
 
     static Device _devices[UNITS];
+    Buffer::List _tx_schedule;
+    Buffer * _tx_pending;
+    Buffer * _sending_microframe;
+    STATE _rx_state;
+    Frame_ID _receiving_data_id;
 };
 
 __END_SYS

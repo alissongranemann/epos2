@@ -41,9 +41,12 @@ public:
     static const Scale SCALE = (NODES <= PAN) ? CMx50_8 : (NODES <= SAN) ? CM_16 : (NODES <= LAN) ? CMx25_16 : CM_32;
 
     // Time
-    typedef RTC::Microsecond Microsecond;
-    typedef unsigned long long Time;
-    typedef unsigned long Time_Offset;
+    //typedef RTC::Microsecond Microsecond;
+    typedef long long Time; // microseconds
+    typedef Time Microsecond; // microseconds
+    typedef unsigned long Time_Offset; // microseconds
+    typedef unsigned long Time_Stamp; // least significant bytes from TSTP_Timer's time stamp (8 MHz)
+    typedef unsigned long Time_Stamp_Offset; // 8 MHz
 
     // Geographic Coordinates
     template<Scale S>
@@ -91,8 +94,8 @@ public:
 
     public:
         _Header() {}
-        _Header(const Type & t, bool tr = false, unsigned char c = 0, const Coordinates & o = 0, const Coordinates & l = 0, const Time_Offset & e = 0, const Version & v = V0)
-        : _config(v << 5 | t << 3 | tr << 2 | S), _confidence(c), _origin(o), _last_hop(l), _elapsed(e) {}
+        _Header(const Type & t, bool tr = false, unsigned char c = 0, const Coordinates & o = 0, const Coordinates & l = 0, const Time_Stamp & lht = 0, const Time_Stamp_Offset & e = 0, const Version & v = V0)
+        : _config(v << 5 | t << 3 | tr << 2 | S), _confidence(c), _origin(o), _last_hop(l), _last_hop_time(lht), _elapsed(e) {}
 
         Version version() const { return static_cast<Version>((_config >> 5) & 0x07); }
         void version(const Version & v) { _config = (_config & 0x1f) | (v << 5); }
@@ -106,8 +109,8 @@ public:
         Scale scale() const { return static_cast<Scale>(_config & 0x03); }
         void scale(const Scale & s) { _config = (_config & 0xfc) | s; }
 
-        Time_Offset elapsed() const { return _elapsed; }
-        void elapsed(const Time_Offset & e) { _elapsed = e; }
+        Time_Stamp_Offset elapsed() const { return _elapsed; }
+        void elapsed(const Time_Stamp_Offset & e) { _elapsed = e; }
 
         const Coordinates & origin() const { return _origin; }
         void origin(const Coordinates & c) { _origin = c; }
@@ -115,8 +118,8 @@ public:
         const Coordinates & last_hop() const { return _last_hop; }
         void last_hop(const Coordinates & c) { _last_hop = c; }
 
-        Time time() const;
-        void time(const Time & t);
+        Time_Stamp last_hop_time() const { return _last_hop_time; }
+        void last_hop_time(const Time_Stamp & lht) { _last_hop_time = lht; }
 
         friend Debug & operator<<(Debug & db, const _Header & h) {
             db << "{v=" << h.version() - V0 << ",t=" << ((h.type() == INTEREST) ? 'I' :  (h.type() == RESPONSE) ? 'R' : (h.type() == COMMAND) ? 'C' : 'P') << ",tr=" << h.time_request() << ",s=" << h.scale() << ",e=" << h._elapsed << ",o=" << h._origin << ",l=" << h._last_hop << "}";
@@ -128,7 +131,8 @@ public:
         unsigned char _confidence;
         Coordinates _origin;
         Coordinates _last_hop;
-        Time_Offset _elapsed;
+        Time_Stamp _last_hop_time;
+        Time_Stamp_Offset _elapsed;
     } __attribute__((packed));
     typedef _Header<SCALE> Header;
 

@@ -16,7 +16,31 @@ __BEGIN_SYS
 class TSTP_MAC: private NIC_Common, public TSTP_Common
 {
 public:
-    static const unsigned int TX_DELAY = 0; // TODO
+    //TODO: Traits
+    static const unsigned int PERIOD = 225000;
+    static const unsigned int Tu = 192; // IEEE 802.15.4 TX Turnaround Time
+    //static const unsigned int G = 320; // Tu + 8 / symbol_rate
+    //static const unsigned int Ts = 480; // Time to send a single microframe (including PHY headers)
+    static const unsigned int Ts = 676 - Tu; // Time to send a single microframe (including PHY headers)
+    static const unsigned int MICROFRAME_TIME = Ts;
+    static const unsigned int MIN_Ti = 2*Tu; // Minimum time between consecutive microframes
+    static const unsigned int RADIO_RADIUS = 17 * 100; //TODO
+    static const unsigned int TX_UNTIL_PROCESS_DATA_DELAY = 0;//5100; //TODO
+    static const unsigned int DATA_SKIP_TIME = Tu + 2032;
+
+    // == Calculated parameters ==
+    static const unsigned int N_MICROFRAMES = ((PERIOD / (MIN_Ti + Ts)) > 255) ? 255 : (PERIOD / (MIN_Ti + Ts));
+    //static const unsigned int N_MICROFRAMES = 20;
+    static const unsigned int Ti = (PERIOD / N_MICROFRAMES) - Ts;
+    static const unsigned int TIME_BETWEEN_MICROFRAMES = Ti;
+    static const unsigned int DATA_LISTEN_MARGIN = TIME_BETWEEN_MICROFRAMES; // Subtract this amount when calculating time until data transmission
+    static const unsigned int RX_MF_TIMEOUT = 2*Ts + 2*TIME_BETWEEN_MICROFRAMES;
+    static const unsigned int SLEEP_PERIOD = PERIOD - RX_MF_TIMEOUT;
+    static const unsigned int DUTY_CYCLE = (RX_MF_TIMEOUT * 100000) / PERIOD; //ppm
+
+    static const unsigned int RX_DATA_TIMEOUT = DATA_SKIP_TIME + DATA_LISTEN_MARGIN + 4 * (MICROFRAME_TIME + TIME_BETWEEN_MICROFRAMES);
+    static const unsigned int G = Tu + 128; // Tu + 8 / symbol_rate
+    static const unsigned int CCA_TIME = (2 * MICROFRAME_TIME + TIME_BETWEEN_MICROFRAMES) > 256 ? (2 * MICROFRAME_TIME + TIME_BETWEEN_MICROFRAMES) : 256;
 
     typedef NIC_Common::CRC16 CRC;
     typedef CPU::Reg16 Frame_ID;
@@ -24,24 +48,29 @@ public:
 
     // Just to comply with EPOS' NIC interface
     typedef NIC_Common::Address<1> Address;
-    enum { TSTP   = 0x8401, };
+    enum PROTOCOL { 
+        IP     = 0x0800,
+        ARP    = 0x0806,
+        RARP   = 0x8035,
+        TSTP   = 0x8401,
+        ELP    = 0x8402,
+        PTP    = 0x88F7
+    };
     typedef NIC_Common::Protocol Protocol;
 
     // TSTP MAC Frame
     static const unsigned int MTU = 127 - sizeof(CRC);
+    typedef unsigned char Data[MTU];
 
     class Frame: public Header
     {
-    private:
-        typedef unsigned char Data[MTU];
-
     public:
         Frame() : Header(INTEREST) {}
 
         Header * header() { return this; }
 
         template<typename T>
-        T * data() { return reinterpret_cast<T *>(&_data); }
+        T * data() { return reinterpret_cast<T *>(header()); } // Header is shared between MAC and higher layers
 
         friend Debug & operator<<(Debug & db, const Frame & p) {
             db << "{h=" << reinterpret_cast<const Header &>(p) << ",d=" << p._data << "}";
@@ -55,30 +84,7 @@ public:
 
     typedef Frame PDU;
 
-    class Buffer;
-    typedef Simple_Relative_List<Buffer, Time> TX_Schedule;
-
-    // Buffers used to hold frames across a zero-copy network stack
-    class Buffer : public _UTIL::Buffer<NIC, TSTP_MAC::Frame, void> {
-        friend class TSTP_MAC;
-
-        typedef _UTIL::Buffer<NIC, TSTP_MAC::Frame, void> Base;
-        typedef TSTP_MAC::TX_Schedule List;
-        typedef List::Element Element;
-
-    public:
-        Buffer(void * s) : Base(s), _tx_link(this) { }
-        Buffer(NIC * n, unsigned int s) : Base(n, s), _tx_link(this) { }
-        template<typename ... Tn>
-        Buffer(NIC * n, unsigned int s, Tn ... an): Base(n, s, an ...), _tx_link(this) {}
-
-        Element * tx_link() { return &_tx_link; }
-
-        void set_id() { id(Random::random() & 0x7fff); } // TODO
-
-    private:
-        Element _tx_link;
-    };
+    typedef _UTIL::Buffer<NIC, TSTP_MAC::Frame, void> Buffer;
 
     // Observers of a protocol get a also a pointer to the received buffer
     typedef Data_Observer<Buffer, Protocol> Observer;
@@ -91,6 +97,8 @@ protected:
 
     class Microframe {
     public:
+        Microframe() {}
+
         Microframe(bool all_listen, const Frame_ID & id, const Count & count, const Distance & hint) : 
             _al_id((id & 0x7fff) | (static_cast<unsigned int>(all_listen) << 15)), _count(count), _hint(hint) {}
 

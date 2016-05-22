@@ -180,7 +180,8 @@ class TSTPOTM;
 class TSTP_MAC;
 class TSTP_Timer;
 class TSTP;
-class RTC_Time_Manager;
+template<bool S>
+class PTS;
 class NIC_Locator;
 template<typename S>
 class Smart_Data;

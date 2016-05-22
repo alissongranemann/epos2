@@ -5,7 +5,7 @@
 __BEGIN_SYS
 
 // Class attributes
-IC::Interrupt_Handler eMote3_MAC_Timer::_user_handler;
+eMote3_MAC_Timer::Interrupt_Handler eMote3_MAC_Timer::_user_handler;
 CPU::Reg32 eMote3_MAC_Timer::_overflow_count_overflow;
 CPU::Reg32 eMote3_MAC_Timer::_int_overflow_count_overflow;
 

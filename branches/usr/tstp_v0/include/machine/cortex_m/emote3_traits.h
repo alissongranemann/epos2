@@ -113,9 +113,9 @@ template <> struct Traits<Cortex_M_Radio>: public Traits<Cortex_M_Common>
 {
     static const bool enabled = (Traits<Build>::NODES > 1);
 
-    typedef IEEE802_15_4 MAC;
+    typedef TSTP_MAC MAC;
 
-    typedef LIST<eMote3_IEEE802_15_4> NICS;
+    typedef LIST<eMote3_TSTP_MAC> NICS;
 
     static const unsigned int UNITS = NICS::Length;
 };
