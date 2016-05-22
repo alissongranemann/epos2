@@ -1,6 +1,8 @@
 #include <smart_data.h>
 #include <alarm.h>
 #include <thread.h>
+#include <ieee802_15_4.h>
+#include <nic.h>
 
 using namespace EPOS;
 

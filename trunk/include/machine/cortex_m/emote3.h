@@ -15,6 +15,11 @@ protected:
     typedef CPU::Log_Addr Log_Addr;
 
 public:
+    static const unsigned int IRQS = 64;
+    static const unsigned int GPIO_PORTS = 4;
+//    static const bool supports_gpio_power_up = true;
+
+
     // Base address for memory-mapped System Control Registers
     enum {
         SSI0_BASE       = 0x40008000,
@@ -665,9 +670,6 @@ public:
         GPIOD_BASE      = 0x400DC000,   // GPIO Port D
     };
 
-    static const unsigned int GPIO_PORTS = 4;
-    static const bool supports_gpio_power_up = true;
-
     // GPIO Ports Registers offsets
     enum {                              // Description                  Type    Value after reset
         DATA		= 0x000,	// Data  	                R/W	0x0000.0000
@@ -777,13 +779,11 @@ protected:
 protected:
     eMote3() {}
 
-    void gpio_pull_up(int port, int pin) {
-        auto over = PA0_OVER + 0x20*port + 0x4*pin;
-        ioc(over) = PUE;
-    }
-    void gpio_pull_down(int port, int pin) {
-        auto over = PA0_OVER + 0x20*port + 0x4*pin;
-        ioc(over) = PDE;
+    static void reboot() {
+        Reg32 val = scs(AIRCR) & (~((-1u / VECTKEY) * VECTKEY));
+        val |= SYSRESREQ;
+        val |= 0x05fa * VECTKEY;
+        scs(AIRCR) = val;
     }
 
     void uart_config(volatile Log_Addr * base)
@@ -827,6 +827,8 @@ protected:
            gpiod(AFSEL) |= (PIN0) + (PIN1);
         }
     }
+    static void uart_enable() {};
+    static void uart_disable() {};
 
     // Set D+ USB pull-up resistor, which is controlled by GPIO pin C2 in eMote3
     static void usb_config()
@@ -837,11 +839,20 @@ protected:
         gpioc(DIR) |= pin_bit; // Set pin C2 as output
         gpioc(pin_bit << 2) = 0xff; // Set pin C2 (high)
     }
-
+    static void usb_enable() {};
     static void usb_disable()
     {
         const unsigned int pin_bit = 1 << 2;
         gpioc(pin_bit << 2) = 0; // Clear pin C2 (low)
+    }
+
+    void gpio_pull_up(int port, int pin) {
+        auto over = PA0_OVER + 0x20*port + 0x4*pin;
+        ioc(over) = PUE;
+    }
+    void gpio_pull_down(int port, int pin) {
+        auto over = PA0_OVER + 0x20*port + 0x4*pin;
+        ioc(over) = PDE;
     }
 
     // Enable clock to the RF CORE module
@@ -1033,22 +1044,6 @@ public:
 
 typedef eMote3 Cortex_M_Model;
 
-class PL011;
-typedef PL011 Cortex_M_Model_UART;
-//class CC2538_SSI;
-//typedef CC2538_SSI Cortex_M_Model_SPI;
-//class CC2538_I2C;
-//typedef CC2538_I2C Cortex_M_Model_I2C;
-
 __END_SYS
 
 #endif
-
-//#include <spi.h>
-//#include "emote3_ssi.h"
-//#include <i2c.h>
-//#include "emote3_i2c.h"
-//#include "emote3_tsc.h"
-#include <usb.h>
-#include "pl011.h"
-//#include <adc.h>

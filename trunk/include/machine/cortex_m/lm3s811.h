@@ -10,11 +10,10 @@ __BEGIN_SYS
 class LM3S811
 {
 private:
+    typedef CPU::Reg32 Reg32;
     typedef CPU::Log_Addr Log_Addr;
 
 public:
-    typedef CPU::Reg32 Reg32;
-
     static const unsigned int IRQS = 30;
     static const unsigned int GPIO_PORTS = 5;
 
@@ -302,13 +301,6 @@ protected:
 //    {
 //    }
 
-    void gpio_pull_up(int port, int pin) {
-        gpio(port, PUR) &= 1 << pin;
-    }
-    void gpio_pull_down(int port, int pin) {
-        gpio(port, PDR) &= 1 << pin;
-    }
-
     void uart_config(volatile Log_Addr * base) {
         if(base == reinterpret_cast<Log_Addr *>(UART0_BASE)) {
             scr(RCGC1) |= RCGC1_UART0;                   // Activate UART 0 clock
@@ -328,6 +320,9 @@ protected:
     static void usb_config() {};
     static void usb_enable() {};
     static void usb_disable() {};
+
+    void gpio_pull_up(int port, int pin) { gpio(port, PUR) &= 1 << pin; }
+    void gpio_pull_down(int port, int pin) { gpio(port, PDR) &= 1 << pin; }
 
     static void radio_enable() {};
     static void radio_disable() {};
