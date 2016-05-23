@@ -9,13 +9,14 @@ __BEGIN_SYS
 
 class LM3S811
 {
-private:
+protected:
+    typedef CPU::Reg32 Reg32;
     typedef CPU::Log_Addr Log_Addr;
 
 public:
-    typedef CPU::Reg32 Reg32;
-
     static const unsigned int IRQS = 30;
+    static const unsigned int GPIO_PORTS = 5;
+    static const bool supports_gpio_power_up = false;
 
     // Base address for memory-mapped System Control Registers
     enum {
@@ -150,16 +151,21 @@ public:
         STCTRL          = 0x010,        // SysTick Control and Status Register                  R/W     0x00000000
         STRELOAD        = 0x014,        // SysTick Reload Value Register                        R/W     0x00000000
         STCURRENT       = 0x018,        // SysTick Current Value Register                       R/WC    0x00000000
-        IRQ_ENABLE      = 0x100,        // Interrupt 0-29 Set Enable                            R/W     0x00000000
-        IRQ_ENABLE1     = 0x104,        // Interrupt 0-64 Set Enable                            R/W     0x00000000
-        IRQ_DISABLE     = 0x180,        // Interrupt 0-29 Clear Enable                          R/W     0x00000000
-        IRQ_DISABLE1    = 0x184,        // Interrupt 0-32 Clear Enable                          R/W     0x00000000
-        IRQ_PEND        = 0x200,        // Interrupt 0-29 Set Pending                           R/W     0x00000000
-        IRQ_PEND1       = 0x204,        // Interrupt 0-32 Set Pending                           R/W     0x00000000
-        IRQ_UNPEND      = 0x280,        // Interrupt 0-29 Clear Pending                         R/W     0x00000000
-        IRQ_UNPEND1     = 0x284,        // Interrupt 0-32 Clear Pending                         R/W     0x00000000
-        IRQ_ACTIVE      = 0x300,        // Interrupt 0-29 Active Bit                            R/W     0x00000000
-        IRQ_ACTIVE1     = 0x304,        // Interrupt 0-32 Active Bit                            R/W     0x00000000
+        IRQ_ENABLE0     = 0x100,        // Interrupt 0-31 Set Enable                            R/W     0x00000000
+        IRQ_ENABLE1     = 0x100,        // Inexistent in this model, defined for machine completion
+        IRQ_ENABLE2     = 0x100,        // Inexistent in this model, defined for machine completion
+        IRQ_DISABLE0    = 0x180,        // Interrupt 0-31 Clear Enable                          R/W     0x00000000
+        IRQ_DISABLE1    = 0x180,        // Inexistent in this model, defined for machine completion
+        IRQ_DISABLE2    = 0x180,        // Inexistent in this model, defined for machine completion
+        IRQ_PEND0       = 0x200,        // Interrupt 0-31 Set Pending                           R/W     0x00000000
+        IRQ_PEND1       = 0x200,        // Inexistent in this model, defined for machine completion
+        IRQ_PEND2       = 0x200,        // Inexistent in this model, defined for machine completion
+        IRQ_UNPEND0     = 0x280,        // Interrupt 0-31 Clear Pending                         R/W     0x00000000
+        IRQ_UNPEND1     = 0x280,        // Inexistent in this model, defined for machine completion
+        IRQ_UNPEND2     = 0x280,        // Inexistent in this model, defined for machine completion
+        IRQ_ACTIVE0     = 0x300,        // Interrupt 0-31 Active Bit                            R/W     0x00000000
+        IRQ_ACTIVE1     = 0x300,        // Inexistent in this model, defined for machine completion
+        IRQ_ACTIVE2     = 0x300,        // Inexistent in this model, defined for machine completion
         CPUID           = 0xd00,        // CPUID Base Register                                  RO      0x410fc231
         INTCTRL         = 0xd04,        // Interrupt Control and State Register                 R/W     0x00000000
         VTOR            = 0xd08,        // Vector Table Offset Register                         R/W     0x00000000
@@ -221,9 +227,6 @@ public:
         GPIOE_BASE      = 0x40024000    // GPIO Port E
     };
 
-    static const unsigned int GPIO_PORTS = 5;
-    static const bool supports_gpio_power_up = false;
-
     // GPIO Ports Registers offsets
     enum {                              // Description                  Type    Value after reset
         DATA		= 0x000,	// Data  	                R/W	0x0000.0000
@@ -244,9 +247,9 @@ public:
         PDR		= 0x514,	// Pull-Down Select 	        R/W	0x0000.0000
         SLR		= 0x518,	// Slew Rate Control Select	R/W	0x0000.0000
         DEN		= 0x51c,	// Digital Enable 	        R/W	0x0000.00ff
-        P_EDGE_CTRL = 0x704, // Power-up Interrupt Edge Control R/W 0x0000.0000
-        PI_IEN  = 0x710,	// Power-up Interrupt Enable       R/W	0x0000.0000
-        IRQ_DETECT_ACK = 0x718, 
+        P_EDGE_CTRL     = 0x704,        // Power-up Int. Edge Control   R/W     0x0000.0000
+        PI_IEN          = 0x710,	// Power-up Interrupt Enable    R/W	0x0000.0000
+        IRQ_DETECT_ACK  = 0x718,        // TODO: document this!
         PeriphID4	= 0xfd0,	// Peripheral Identification 4	RO	0x0000.0000
         PeriphID5	= 0xfd4,	// Peripheral Identification 5 	RO	0x0000.0000
         PeriphID6	= 0xfd8,	// Peripheral Identification 6	RO	0x0000.0000
@@ -288,13 +291,14 @@ public:
 protected:
     LM3S811() {}
 
-    static void reboot() { }
-
-    void config_GPTM(unsigned int which_timer) //TODO
-    {
+    static void reboot() {
+        Reg32 val = scs(AIRCR) & (~((-1u / VECTKEY) * VECTKEY));
+        val |= SYSRESREQ;
+        val |= 0x05fa * VECTKEY;
+        scs(AIRCR) = val;
     }
-    void config_UART(volatile Log_Addr * base)
-    {
+
+    void uart_config(volatile Log_Addr * base) {
         if(base == reinterpret_cast<Log_Addr *>(UART0_BASE)) {
             scr(RCGC1) |= RCGC1_UART0;                   // Activate UART 0 clock
             scr(RCGC2) |= RCGC2_GPIOA;                   // Activate port A clock
@@ -307,21 +311,20 @@ protected:
             gpiod(DEN) |= (DEN_DIGP2 | DEN_DIGP3);       // Enable digital I/O on Pins D[3:2]
         }
     }
+    static void uart_enable() {};
+    static void uart_disable() {};
 
-    void GPIO_pull_up(int port, int pin) {
-        gpio(port, PUR) &= 1 << pin;
-    }
-    void GPIO_pull_down(int port, int pin) {
-        gpio(port, PDR) &= 1 << pin;
-    }
+    static void usb_config() {};
+    static void usb_enable() {};
+    static void usb_disable() {};
+
+    void gpio_pull_up(int port, int pin) { gpio(port, PUR) &= 1 << pin; }
+    void gpio_pull_down(int port, int pin) { gpio(port, PDR) &= 1 << pin; }
+
+    static void radio_enable() {};
+    static void radio_disable() {};
 
 public:
-    static void radio_enable(){};
-    static void radio_disable(){};
-    static void USB_disable(){};
-    static void config_USB(){};
-
-    //static volatile Reg32 & ioc(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(IOC_BASE)[o / sizeof(Reg32)]; }
     static volatile Reg32 & scr(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(SCR_BASE)[o / sizeof(Reg32)]; }
     static volatile Reg32 & scs(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(SCS_BASE)[o / sizeof(Reg32)]; }
 
@@ -338,11 +341,6 @@ protected:
 
 typedef LM3S811 Cortex_M_Model;
 
-class PL011;
-typedef PL011 Cortex_M_Model_UART;
-
 __END_SYS
 
 #endif
-
-#include "pl011.h"

@@ -464,13 +464,14 @@ public:
     PC_IC() {}
 
     static Interrupt_Handler int_vector(const Interrupt_Id & i) {
-        return (i < INTS) ? _int_vector[i] : 0;
+        assert(i < INTS);
+        return _int_vector[i];
     }
 
     static void int_vector(const Interrupt_Id & i, const Interrupt_Handler & h) {
         db<IC>(TRC) << "IC::int_vector(int=" << i << ",h=" << reinterpret_cast<void *>(h) <<")" << endl;
-        if(i < INTS)
-            _int_vector[i] = h;
+        assert(i < INTS);
+        _int_vector[i] = h;
     }
 
     static void enable() {
@@ -480,6 +481,7 @@ public:
 
     static void enable(int i) {
         db<IC>(TRC) << "IC::enable(int=" << i << ")" << endl;
+        assert(i < INTS);
         Engine::enable(i);
     }
 
@@ -490,6 +492,7 @@ public:
 
     static void disable(int i) {
         db<IC>(TRC) << "IC::disable(int=" << i << ")" << endl;
+        assert(i < INTS);
         Engine::disable(i);
     }
 

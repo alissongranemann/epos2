@@ -5,7 +5,7 @@
 __BEGIN_SYS
 
 // Class attributes
-UART Serial_Display::_uart;
+Serial_Display::Engine Serial_Display::_engine;
 int Serial_Display::_line;
 int Serial_Display::_column;
 

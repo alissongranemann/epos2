@@ -76,6 +76,8 @@ template <> struct Traits<Init>: public Traits<void>
 template <> struct Traits<Serial_Display>: public Traits<void>
 {
     static const bool enabled = true;
+    enum {UART, USB};
+    static const int ENGINE = UART;
     static const int COLUMNS = 80;
     static const int LINES = 24;
     static const int TAB_SIZE = 8;
@@ -84,8 +86,8 @@ template <> struct Traits<Serial_Display>: public Traits<void>
 __END_SYS
 
 #include __ARCH_TRAITS_H
-#include __MACH_CONFIG_H
 #include __MACH_TRAITS_H
+#include __MACH_CONFIG_H
 
 __BEGIN_SYS
 

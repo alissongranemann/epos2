@@ -223,6 +223,38 @@ private:
     static Time_Stamp read() { return Engine::read_ts(); }
     static Time_Stamp _offset;
 };
+/*
+class TSTP_Timer
+{
+public:
+    static const unsigned int FREQUENCY = 1;
+    static unsigned int frequency() { return FREQUENCY; }
+    typedef void (* Interrupt_Handler)();
+
+    typedef int Time_Stamp;
+    typedef int Microsecond;
+
+    static Time_Stamp now() { return 1; }
+    static Time_Stamp sfd() { return 1; }
+
+    static void adjust(const Time_Stamp & offset) { }
+    static void set(const Time_Stamp & value) { }
+
+    static void interrupt(const Time_Stamp & when, Interrupt_Handler handler) { }
+    static void cancel_interrupt() { }
+
+    TSTP_Timer() { }
+
+    static void start() { }
+    static void stop() { }
+
+    static Time_Stamp us_to_ts(Microsecond us) { return 1; }
+    static Microsecond ts_to_us(Time_Stamp ts) { return 1; }
+
+private:
+    static Time_Stamp read() { return 1; }
+};
+*/
 
 __END_SYS
 

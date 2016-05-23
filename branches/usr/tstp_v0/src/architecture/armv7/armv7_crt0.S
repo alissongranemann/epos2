@@ -1,75 +1,77 @@
-	.file "armv7_crt0.S"
+        .file "armv7_crt0.S"
 
-        .section .init
         // Interrupt Vector Table
+        .section .init
         .type   _vector_table, object
 _vector_table:
         .word   MEM_TOP  + 1            // Stack pointer at reset (set by sed in the makefile)
         .word   _start + 1              // Reset  (lsb must be 1 in thumb mode)
-        .word   _int_dispatch + 1       // NMI
-        .word   _int_dispatch + 1       // Hard fault
-        .word   _int_dispatch + 1       // Memory management fault
-        .word   _int_dispatch + 1       // Bus fault
-        .word   _int_dispatch + 1       // Usage fault
-        .word   _int_dispatch + 1       // Reserved
-        .word   _int_dispatch + 1       // Reserved
-        .word   _int_dispatch + 1       // Reserved
-        .word   _int_dispatch + 1       // Reserved
-        .word   _int_dispatch + 1       // SVCall
-        .word   _int_dispatch + 1       // Reserved
-        .word   _int_dispatch + 1       // Reserved
-        .word   _int_dispatch + 1       // PendSV
-        .word   _int_dispatch + 1       // Systick
-        .word   _int_dispatch + 1       // IRQ0
-        .word   _int_dispatch + 1       // IRQ1
-        .word   _int_dispatch + 1       // IRQ2
-        .word   _int_dispatch + 1       // IRQ3
-        .word   _int_dispatch + 1       // IRQ4
-        .word   _int_dispatch + 1       // IRQ5
-        .word   _int_dispatch + 1       // IRQ6
-        .word   _int_dispatch + 1       // IRQ7
-        .word   _int_dispatch + 1       // IRQ8
-        .word   _int_dispatch + 1       // IRQ9
-        .word   _int_dispatch + 1       // IRQ10
-        .word   _int_dispatch + 1       // IRQ11
-        .word   _int_dispatch + 1       // IRQ12
-        .word   _int_dispatch + 1       // IRQ13
-        .word   _int_dispatch + 1       // IRQ14
-        .word   _int_dispatch + 1       // IRQ15
-        .word   _int_dispatch + 1       // IRQ16
-        .word   _int_dispatch + 1       // IRQ17
-        .word   _int_dispatch + 1       // IRQ18
-        .word   _int_dispatch + 1       // IRQ19
-        .word   _int_dispatch + 1       // IRQ20
-        .word   _int_dispatch + 1       // IRQ21
-        .word   _int_dispatch + 1       // IRQ22
-        .word   _int_dispatch + 1       // IRQ23
-        .word   _int_dispatch + 1       // IRQ24
-        .word   _int_dispatch + 1       // IRQ25
-        .word   _int_dispatch + 1       // IRQ26
-        .word   _int_dispatch + 1       // IRQ27
-        .word   _int_dispatch + 1       // IRQ28
-        .word   _int_dispatch + 1       // IRQ29
-        .word   _int_dispatch + 1       // IRQ30
-        .word   _int_dispatch + 1       // IRQ31
-        .word   _int_dispatch + 1       // IRQ32
-        .word   _int_dispatch + 1       // IRQ33
-        .word   _int_dispatch + 1       // IRQ34
-        .word   _int_dispatch + 1       // IRQ35
-        .word   _int_dispatch + 1       // IRQ36
-        .word   _int_dispatch + 1       // IRQ37
-        .word   _int_dispatch + 1       // IRQ38
-        .word   _int_dispatch + 1       // IRQ39
-        .word   _int_dispatch + 1       // IRQ40
-        .word   _int_dispatch + 1       // IRQ41
-        .word   _int_dispatch + 1       // IRQ42
-        .word   _int_dispatch + 1       // IRQ43
-        .word   _int_dispatch + 1       // IRQ44
-        .word   _int_dispatch + 1       // IRQ45
-	.section .init
-	.align  2
-	.global _start
-	.type   _start, function
+        .word   _int_entry + 1          // NMI
+        .word   _int_entry + 1          // Hard fault
+        .word   _int_entry + 1          // Memory management fault
+        .word   _int_entry + 1          // Bus fault
+        .word   _int_entry + 1          // Usage fault
+        .word   _int_entry + 1          // Reserved
+        .word   _int_entry + 1          // Reserved
+        .word   _int_entry + 1          // Reserved
+        .word   _int_entry + 1          // Reserved
+        .word   _int_entry + 1          // SVCall
+        .word   _int_entry + 1          // Reserved
+        .word   _int_entry + 1          // Reserved
+        .word   _int_entry + 1          // PendSV
+        .word   _int_entry + 1          // Systick
+        .word   _int_entry + 1          // IRQ0
+        .word   _int_entry + 1          // IRQ1
+        .word   _int_entry + 1          // IRQ2
+        .word   _int_entry + 1          // IRQ3
+        .word   _int_entry + 1          // IRQ4
+        .word   _int_entry + 1          // IRQ5
+        .word   _int_entry + 1          // IRQ6
+        .word   _int_entry + 1          // IRQ7
+        .word   _int_entry + 1          // IRQ8
+        .word   _int_entry + 1          // IRQ9
+        .word   _int_entry + 1          // IRQ10
+        .word   _int_entry + 1          // IRQ11
+        .word   _int_entry + 1          // IRQ12
+        .word   _int_entry + 1          // IRQ13
+        .word   _int_entry + 1          // IRQ14
+        .word   _int_entry + 1          // IRQ15
+        .word   _int_entry + 1          // IRQ16
+        .word   _int_entry + 1          // IRQ17
+        .word   _int_entry + 1          // IRQ18
+        .word   _int_entry + 1          // IRQ19
+        .word   _int_entry + 1          // IRQ20
+        .word   _int_entry + 1          // IRQ21
+        .word   _int_entry + 1          // IRQ22
+        .word   _int_entry + 1          // IRQ23
+        .word   _int_entry + 1          // IRQ24
+        .word   _int_entry + 1          // IRQ25
+        .word   _int_entry + 1          // IRQ26
+        .word   _int_entry + 1          // IRQ27
+        .word   _int_entry + 1          // IRQ28
+        .word   _int_entry + 1          // IRQ29
+        .word   _int_entry + 1          // IRQ30
+        .word   _int_entry + 1          // IRQ31
+        .word   _int_entry + 1          // IRQ32
+        .word   _int_entry + 1          // IRQ33
+        .word   _int_entry + 1          // IRQ34
+        .word   _int_entry + 1          // IRQ35
+        .word   _int_entry + 1          // IRQ36
+        .word   _int_entry + 1          // IRQ37
+        .word   _int_entry + 1          // IRQ38
+        .word   _int_entry + 1          // IRQ39
+        .word   _int_entry + 1          // IRQ40
+        .word   _int_entry + 1          // IRQ41
+        .word   _int_entry + 1          // IRQ42
+        .word   _int_entry + 1          // IRQ43
+        .word   _int_entry + 1          // IRQ44
+        .word   _int_entry + 1          // IRQ45
+
+        // Entry point
+        .section .text
+        .align  2
+        .global _start
+        .type   _start, function
 _start:
         // Clear BSS
         eor     r0, r0
@@ -90,8 +92,8 @@ _start:
         .globl  __epos_app_entry
         .type   __epos_app_entry, function
 __epos_app_entry:
-        mov     r0, #1
-        msr     CONTROL, r0
+//        mov     r0, #1
+//        msr     CONTROL, r0
         bl      __pre_main
         bl      main
         push    {r0}         // save main's return value to be used by exit()

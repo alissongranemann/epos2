@@ -8,10 +8,6 @@
 
 __BEGIN_SYS
 
-class USB_Common
-{
-};
-
 // Definitions from USB2.0 Standard.
 // using camelCase to keep the same names as the standard.
 class USB_2_0
@@ -26,7 +22,7 @@ public:
         CONFIGURED,
         SUSPENDED,
     };
-        
+
 private:
     typedef CPU::Reg16 Reg16;
     static void swap(char & a, char & b) { a ^= b; b ^= a; a ^= b; }
@@ -111,32 +107,30 @@ public:
             unsigned iProduct : 8;           // Product string index
             unsigned iSerialNumber : 8;      // Serial number string index
             unsigned bNumConfigurations : 8; // Number of possible configurations
-            char& operator[](unsigned int idx) 
-            { return (reinterpret_cast<char*>(this))[idx]; };
-            const char& operator[](unsigned int idx) const 
-            { return (reinterpret_cast<const char*>(this))[idx]; };
+
+            char & operator[](unsigned int idx) { return (reinterpret_cast<char*>(this))[idx]; };
+            const char & operator[](unsigned int idx) const { return (reinterpret_cast<const char*>(this))[idx]; };
         } __attribute__((packed));
 
         struct Configuration
         {
-            unsigned bLength : 8;            // Descriptor length
-            unsigned bDescriptorType : 8;    // Descriptor type (DESC_DEVICE)
+            unsigned bLength : 8;             // Descriptor length
+            unsigned bDescriptorType : 8;     // Descriptor type (DESC_DEVICE)
             unsigned wTotalLength  : 16;      // Total length of data returned for this configuration
             unsigned bNumInterfaces : 8;      // Number of interfaces supported by this configuration
             unsigned bConfigurationValue : 8; // Value to use as an argument to the SetConfiguration() request to select this configuration
             unsigned iConfiguration : 8;      // Index of string descriptor describing this configuration
             unsigned bmAttributes : 8;        // Configuration characteristics
             unsigned bMaxPower : 8;           // Maximum power consumption from the bus in this specific configuration. Expressed in 2 mA units
-            char& operator[](unsigned int idx) 
-            { return (reinterpret_cast<char*>(this))[idx]; };
-            const char& operator[](unsigned int idx) const 
-            { return (reinterpret_cast<const char*>(this))[idx]; };
+
+            char& operator[](unsigned int idx) { return (reinterpret_cast<char*>(this))[idx]; };
+            const char& operator[](unsigned int idx) const { return (reinterpret_cast<const char*>(this))[idx]; };
         } __attribute__((packed));
 
         struct Interface
         {
-            unsigned bLength : 8;            // Descriptor length
-            unsigned bDescriptorType : 8;    // Descriptor type (DESC_DEVICE)
+            unsigned bLength : 8;             // Descriptor length
+            unsigned bDescriptorType : 8;     // Descriptor type (DESC_DEVICE)
             unsigned bInterfaceNumber : 8;    // Number of this interface
             unsigned bAlternateSetting : 8;   // Number Value used to select this alternate setting
             unsigned bNumEndpoints : 8;       // Number of endpoints used by this interface (excluding endpoint zero)
@@ -144,10 +138,9 @@ public:
             unsigned bInterfaceSubClass : 8;  // Subclass code (assigned by the USB-IF)
             unsigned bInterfaceProtocol : 8;  // Protocol code (assigned by the USB)
             unsigned iInterface : 8;          // Index of string descriptor describing this interface
-            char& operator[](unsigned int idx) 
-            { return (reinterpret_cast<char*>(this))[idx]; };
-            const char& operator[](unsigned int idx) const 
-            { return (reinterpret_cast<const char*>(this))[idx]; };
+
+            char& operator[](unsigned int idx) { return (reinterpret_cast<char*>(this))[idx]; };
+            const char& operator[](unsigned int idx) const { return (reinterpret_cast<const char*>(this))[idx]; };
         } __attribute__((packed));
 
         struct Endpoint
@@ -158,10 +151,9 @@ public:
             unsigned bmAttributes : 8;     // Endpoint attributes
             unsigned wMaxPacketSize : 16;  // Maximum packet size this endpoint is capable of sending or receiving at once 
             unsigned bInterval : 8;        // Interval for polling endpoint for data transfers. Expressed in frames or microframes
-            char& operator[](unsigned int idx) 
-            { return (reinterpret_cast<char*>(this))[idx]; };
-            const char& operator[](unsigned int idx) const 
-            { return (reinterpret_cast<const char*>(this))[idx]; };
+
+            char& operator[](unsigned int idx) { return (reinterpret_cast<char*>(this))[idx]; };
+            const char& operator[](unsigned int idx) const { return (reinterpret_cast<const char*>(this))[idx]; };
         } __attribute__((packed));
 
         //struct String //TODO
@@ -189,6 +181,9 @@ public:
             unsigned wIndex : 16;
             unsigned wLength : 16;
 
+            char& operator[](unsigned int idx) { return (reinterpret_cast<char*>(this))[idx]; };
+            const char& operator[](unsigned int idx) const { return (reinterpret_cast<const char*>(this))[idx]; };
+
             template<typename T>
             const T* morph() const { return reinterpret_cast<const T*>(T::check(*this) ? this : 0); }
 
@@ -199,8 +194,6 @@ public:
                 db << "Device_Request:{bmRequestType=" << d.bmRequestType << ",bRequest=" << d.bRequest << ",wValue=" << d.wValue << ",wIndex=" << d.wIndex << ",wLength=" << d.wLength << "}";
                 return db;
             }
-            char& operator[](unsigned int idx) { return (reinterpret_cast<char*>(this))[idx]; };
-            const char& operator[](unsigned int idx) const { return (reinterpret_cast<const char*>(this))[idx]; };
         } __attribute__((packed));    
 
         struct Set_Address
@@ -220,14 +213,15 @@ public:
             unsigned wIndex : 16;
             unsigned wLength : 16;
 
+            char& operator[](unsigned int idx) { return (reinterpret_cast<char*>(this))[idx]; };
+            const char& operator[](unsigned int idx) const { return (reinterpret_cast<const char*>(this))[idx]; };
+
             static bool check(const Device_Request & data) { return (data.bRequest == SET_ADDRESS) && (data.bmRequestType == 0); }
 
             friend OStream & operator<<(OStream & db, const Set_Address & d) {
                 db << "Set_Address:{bmRequestType=" << d.bmRequestType << ",bRequest=" << d.bRequest << ",device_address=" << d.device_address << ",wIndex=" << d.wIndex << ",wLength=" << d.wLength << "}";
                 return db;
             }
-            char& operator[](unsigned int idx) { return (reinterpret_cast<char*>(this))[idx]; };
-            const char& operator[](unsigned int idx) const { return (reinterpret_cast<const char*>(this))[idx]; };
         } __attribute__((packed));    
 
         struct Get_Descriptor
@@ -248,14 +242,15 @@ public:
             unsigned language_id : 16;
             unsigned descriptor_length : 16;
 
+            char& operator[](unsigned int idx) { return (reinterpret_cast<char*>(this))[idx]; };
+            const char& operator[](unsigned int idx) const { return (reinterpret_cast<const char*>(this))[idx]; };
+
             static bool check(const Device_Request & data) { return (data.bRequest == GET_DESCRIPTOR) && (data.bmRequestType == 128); }
 
             friend OStream & operator<<(OStream & db, const Get_Descriptor & d) {
                 db << "Get_Descriptor:{bmRequestType=" << d.bmRequestType << ",bRequest=" << d.bRequest << ",descriptor_index=" << d.descriptor_index << ",descriptor_type=" << d.descriptor_type << ",language_id=" << d.language_id << ",descriptor_length=" << d.descriptor_length << "}";
                 return db;
             }
-            char& operator[](unsigned int idx) { return (reinterpret_cast<char*>(this))[idx]; };
-            const char& operator[](unsigned int idx) const { return (reinterpret_cast<const char*>(this))[idx]; };
         } __attribute__((packed));    
 
         struct Set_Configuration
@@ -275,14 +270,15 @@ public:
             unsigned wIndex : 16;
             unsigned wLength : 16;
 
+            char& operator[](unsigned int idx) { return (reinterpret_cast<char*>(this))[idx]; };
+            const char& operator[](unsigned int idx) const { return (reinterpret_cast<const char*>(this))[idx]; };
+
             static bool check(const Device_Request & data) { return (data.bRequest == SET_CONFIGURATION) && (data.bmRequestType == 0) && (data.wIndex == 0) && (data.wLength == 0); }
 
             friend OStream & operator<<(OStream & db, const Set_Configuration & d) {
                 db << "Set_Configuration:{bmRequestType=" << d.bmRequestType << ",bRequest=" << d.bRequest << ",configuration_number=" << d.configuration_number << ",wIndex=" << d.wIndex << ",wLength=" << d.wLength << "}";
                 return db;
             }
-            char& operator[](unsigned int idx) { return (reinterpret_cast<char*>(this))[idx]; };
-            const char& operator[](unsigned int idx) const { return (reinterpret_cast<const char*>(this))[idx]; };
         } __attribute__((packed));    
     };
 
@@ -356,11 +352,10 @@ public:
                 unsigned bFunctionLength : 8;    // Descriptor length
                 unsigned bDescriptorType : 8;    // Descriptor type (DESC_ENDPOINT)
                 unsigned bDescriptorSubType : 8; // Descriptor subtype
-                unsigned bcdCDC : 16; // CDC specification release number
-                char& operator[](unsigned int idx) 
-                { return (reinterpret_cast<char*>(this))[idx]; };
-                const char& operator[](unsigned int idx) const 
-                { return (reinterpret_cast<const char*>(this))[idx]; };
+                unsigned bcdCDC : 16;            // CDC specification release number
+
+                char& operator[](unsigned int idx) { return (reinterpret_cast<char*>(this))[idx]; };
+                const char& operator[](unsigned int idx) const { return (reinterpret_cast<const char*>(this))[idx]; };
             } __attribute__((packed));
 
             /// USB CDC call management functional descriptor
@@ -369,12 +364,11 @@ public:
                 unsigned bFunctionLength : 8;    // Descriptor length
                 unsigned bDescriptorType : 8;    // Descriptor type (DESC_ENDPOINT)
                 unsigned bDescriptorSubType : 8; // Descriptor subtype
-                unsigned bmCapabilities : 8; // Capabilities supported
-                unsigned bDataInterface : 8; // Interface number of Data Class interface optionally used for call management
-                char& operator[](unsigned int idx) 
-                { return (reinterpret_cast<char*>(this))[idx]; };
-                const char& operator[](unsigned int idx) const 
-                { return (reinterpret_cast<const char*>(this))[idx]; };
+                unsigned bmCapabilities : 8;     // Capabilities supported
+                unsigned bDataInterface : 8;     // Interface number of Data Class interface optionally used for call management
+
+                char& operator[](unsigned int idx) { return (reinterpret_cast<char*>(this))[idx]; };
+                const char& operator[](unsigned int idx) const { return (reinterpret_cast<const char*>(this))[idx]; };
             } __attribute__((packed));
 
             /// USB CDC abstract control management functional descriptor
@@ -383,11 +377,10 @@ public:
                 unsigned bFunctionLength : 8;    // Descriptor length
                 unsigned bDescriptorType : 8;    // Descriptor type (DESC_ENDPOINT)
                 unsigned bDescriptorSubType : 8; // Descriptor subtype
-                unsigned bmCapabilities : 8; // Capabilities supported
-                char& operator[](unsigned int idx) 
-                { return (reinterpret_cast<char*>(this))[idx]; };
-                const char& operator[](unsigned int idx) const 
-                { return (reinterpret_cast<const char*>(this))[idx]; };
+                unsigned bmCapabilities : 8;     // Capabilities supported
+
+                char& operator[](unsigned int idx) { return (reinterpret_cast<char*>(this))[idx]; };
+                const char& operator[](unsigned int idx) const  { return (reinterpret_cast<const char*>(this))[idx]; };
             } __attribute__((packed));
 
             /// USB CDC union interface functional descriptor
@@ -396,12 +389,11 @@ public:
                 unsigned bFunctionLength : 8;    // Descriptor length
                 unsigned bDescriptorType : 8;    // Descriptor type (DESC_ENDPOINT)
                 unsigned bDescriptorSubType : 8; // Descriptor subtype
-                unsigned bMasterInterface : 8; // Interface number of the Communication or Data Class interface, designated as the master or controlling interface for the union
-                unsigned bSlaveInterface0 : 8; // Interface number of first slave or associated interface in the union
-                char& operator[](unsigned int idx) 
-                { return (reinterpret_cast<char*>(this))[idx]; };
-                const char& operator[](unsigned int idx) const 
-                { return (reinterpret_cast<const char*>(this))[idx]; };
+                unsigned bMasterInterface : 8;   // Interface number of the Communication or Data Class interface, designated as the master or controlling interface for the union
+                unsigned bSlaveInterface0 : 8;   // Interface number of first slave or associated interface in the union
+
+                char& operator[](unsigned int idx) { return (reinterpret_cast<char*>(this))[idx]; };
+                const char& operator[](unsigned int idx) const { return (reinterpret_cast<const char*>(this))[idx]; };
             } __attribute__((packed));
         };
 
@@ -427,14 +419,17 @@ public:
 
                 struct Data_Format
                 {
-                    unsigned dwDTERate : 32; // Data terminal rate, in bits per second.
-                    unsigned bCharFormat : 8;// Stop bits
-                                             // 0 - 1 Stop bit
-                                             // 1 - 1.5 Stop bits
-                                             // 2 - 2 Stop bits
+                    unsigned dwDTERate : 32;  // Data terminal rate, in bits per second.
+                    unsigned bCharFormat : 8; // Stop bits
+                    // 0 - 1 Stop bit
+                    // 1 - 1.5 Stop bits
+                    // 2 - 2 Stop bits
                     unsigned bParityType : 8; //0-None 1-Odd 2-Even 3-Mark 4-Space 
-                    unsigned bDataBits : 8; // 5,6,7,8 or 16
+                    unsigned bDataBits : 8;   // 5,6,7,8 or 16
                 }__attribute__((packed));
+
+                char& operator[](unsigned int idx) { return (reinterpret_cast<char*>(this))[idx]; };
+                const char& operator[](unsigned int idx) const { return (reinterpret_cast<const char*>(this))[idx]; };
 
                 static bool check(const USB_2_0::Request::Device_Request & data) { return (data.bRequest == GET_LINE_CODING) && (data.bmRequestType == 161) && (data.wValue == 0); }
 
@@ -442,8 +437,6 @@ public:
                     db << "Get_Line_Coding:{bmRequestType=" << d.bmRequestType << ",bRequest=" << d.bRequest << ",wValue=" << d.wValue << ",interface_number=" << d.interface_number << ",size_of_data=" << d.size_of_data << "}";
                     return db;
                 }
-                char& operator[](unsigned int idx) { return (reinterpret_cast<char*>(this))[idx]; };
-                const char& operator[](unsigned int idx) const { return (reinterpret_cast<const char*>(this))[idx]; };
             } __attribute__((packed));
 
 
@@ -466,14 +459,15 @@ public:
                 unsigned interface_number : 16;
                 unsigned wLength : 16;
 
+                char& operator[](unsigned int idx) { return (reinterpret_cast<char*>(this))[idx]; };
+                const char& operator[](unsigned int idx) const { return (reinterpret_cast<const char*>(this))[idx]; };
+
                 static bool check(const USB_2_0::Request::Device_Request & data) { return (data.bRequest == SET_CONTROL_LINE_STATE) && (data.bmRequestType == 33) && (data.wLength == 0); }
 
                 friend OStream & operator<<(OStream & db, const Set_Control_Line_State & d) {
                     db << "Set_Control_Line_State:{bmRequestType=" << d.bmRequestType << ",bRequest=" << d.bRequest << ",reserved=" << d.reserved << ",carrier_control=" << d.carrier_control << ",DTE_present=" << d.DTE_present << ",interface_number=" << d.interface_number << ",wLength=" << d.wLength << "}";
                     return db;
                 }
-                char& operator[](unsigned int idx) { return (reinterpret_cast<char*>(this))[idx]; };
-                const char& operator[](unsigned int idx) const { return (reinterpret_cast<const char*>(this))[idx]; };
             } __attribute__((packed));
         };
     };

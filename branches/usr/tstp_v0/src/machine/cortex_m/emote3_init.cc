@@ -26,7 +26,7 @@ void eMote3::init_clock()
     // Since the clock is configured in traits and never changes,
     // this needs to be done only once, but this method will be 
     // called at least twice during EPOS' initialization 
-    // (in eMote3::config_UART() and Cortex_M::init())
+    // (in eMote3::uart_config() and Cortex_M::init())
     if(_init_clock_done)
         return;
 

@@ -154,19 +154,17 @@ private:
     };
 
 public:
-    typedef EPOS::S::U::Observer Observer;
-    typedef EPOS::S::U::Observed Observed;
+    typedef _UTIL::Observer Observer;
+    typedef _UTIL::Observed Observed;
 
 public:
     PC_Keyboard() {}
 
-    static char getc();
-    static char try_getc();
+    static char get();
+    static bool ready_to_get() { return (status() & OUT_BUF_FULL); }
 
     using Engine::int_enable;
     using Engine::int_disable;
-
-    static void reboot();
 
     static void attach(Observer * obs) { _observed.attach(obs); }
     static void detach(Observer * obs) { _observed.detach(obs); }
@@ -178,6 +176,8 @@ private:
     static bool notify() { return _observed.notify(); }
 
     static void int_handler(const IC::Interrupt_Id & i);
+
+    static void reboot();
 
     static void init();
 

@@ -211,13 +211,16 @@ protected:
 };
 
 // Standalone IEEE 802.15.4 PHY mediator
-class eMote3_IEEE802_15_4_PHY : protected CC2538RF, public IEEE802_15_4_PHY
+class eMote3_IEEE802_15_4_PHY : protected CC2538RF, public IEEE802_15_4_PHY, private Cortex_M_Model
 {
     friend class One_Hop_MAC;
     friend class TSTP_MAC;
 
 protected:
     typedef CPU::IO_Irq IO_Irq;
+    typedef CPU::Reg8 Reg8;
+    typedef CPU::Reg16 Reg16;
+    typedef CPU::Reg32 Reg32;
 
 public:
     typedef IEEE802_15_4_PHY::Frame Frame;

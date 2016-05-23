@@ -19,7 +19,6 @@ protected:
 
 
 public:
-    static const unsigned int MTU = 1500;
     typedef NIC_Common::Address<6> Address;
 
     typedef unsigned short Protocol;
@@ -33,9 +32,10 @@ public:
         PTP    = 0x88F7
     };
 
+    static const unsigned int MTU = 1500;
     typedef unsigned char Data[MTU];
-    typedef NIC_Common::CRC32 CRC;
 
+    typedef NIC_Common::CRC32 CRC;
 
     // The Ethernet Header (RFC 894)
     class Header

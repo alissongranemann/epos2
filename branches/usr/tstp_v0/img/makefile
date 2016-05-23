@@ -33,9 +33,7 @@ debug:		$(IMAGE)
 flash:		$(FLASH)
 
 strip:		$(SYSTEM) $(APPLICATION)
-ifeq ($(GDB),0)
-        @for file in $^; do $(STRIP) "$${file}"; done;
-endif
+		@for file in $^; do $(STRIP) "$${file}"; done;
 		
 clean:
 		$(CLEAN) $(SYSTEM) $(APPLICATION)

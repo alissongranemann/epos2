@@ -20,16 +20,16 @@ template<> struct Traits<Build>
     enum {LIBRARY, BUILTIN, KERNEL};
     static const unsigned int MODE = LIBRARY;
 
-    enum {IA32};
-    static const unsigned int ARCHITECTURE = IA32;
+    enum {IA32, ARMv7};
+    static const unsigned int ARCHITECTURE = ARMv7;
 
-    enum {PC};
-    static const unsigned int MACHINE = PC;
+    enum {PC, Cortex_M, Cortex_A};
+    static const unsigned int MACHINE = Cortex_M;
 
-    enum {Legacy};
-    static const unsigned int MODEL = Legacy;
+    enum {Legacy, eMote3, LM3S811};
+    static const unsigned int MODEL = eMote3;
 
-    static const unsigned int CPUS = 4;
+    static const unsigned int CPUS = 1;
     static const unsigned int NODES = 1; // > 1 => NETWORKING
 };
 
@@ -77,6 +77,8 @@ template<> struct Traits<Init>: public Traits<void>
 template<> struct Traits<Serial_Display>: public Traits<void>
 {
     static const bool enabled = true;
+    enum {UART, USB};
+    static const int ENGINE = USB;
     static const int COLUMNS = 80;
     static const int LINES = 24;
     static const int TAB_SIZE = 8;
@@ -85,8 +87,8 @@ template<> struct Traits<Serial_Display>: public Traits<void>
 __END_SYS
 
 #include __ARCH_TRAITS_H
-#include __MACH_CONFIG_H
 #include __MACH_TRAITS_H
+#include __MACH_CONFIG_H
 
 __BEGIN_SYS
 
@@ -170,6 +172,21 @@ template<> struct Traits<Network>: public Traits<void>
 
     // This list is positional, with one network for each NIC in traits<NIC>::NICS
     typedef LIST<IP> NETWORKS;
+};
+
+template<> struct Traits<TSTP>: public Traits<Network>
+{
+    typedef TSTPOE MAC;
+
+    typedef PTS<false> No_Time_Synchronization;
+    typedef PTS<true> Time_Synchronization;
+    typedef No_Time_Synchronization Time_Manager;
+
+    typedef NIC_Locator Locator;
+
+    class DISABLED {};
+    typedef DISABLED Security;
+    typedef DISABLED Router;
 };
 
 template<> struct Traits<IP>: public Traits<Network>

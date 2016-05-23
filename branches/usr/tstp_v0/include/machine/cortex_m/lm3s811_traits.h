@@ -35,26 +35,6 @@ template <> struct Traits<Cortex_M>: public Traits<Cortex_M_Common>
     static const unsigned int SYS_CODE  = 0x00200000; // Library mode only => APP + SYS
     static const unsigned int SYS_DATA  = 0x20000000; // Library mode only => APP + SYS
 
-    // Bootloader Memory Map (not supported for this model)
-    // Word in RAM reserved for the bootloader
-    static const unsigned int BOOTLOADER_STATUS_ADDRESS = 0x20001ffc;
-
-    // Physical Memory
-    static const unsigned int BOOTLOADER_MEM_BASE  = 0x20000000;
-    static const unsigned int BOOTLOADER_MEM_TOP   = 0x20001ff7; // (MAX for 32-bit is 0x70000000 / 1792 MB)
-
-    // Logical Memory Map
-    static const unsigned int BOOTLOADER_APP_LOW   = 0x20000000;
-    static const unsigned int BOOTLOADER_APP_CODE  = 0x00000000;
-    static const unsigned int BOOTLOADER_APP_DATA  = 0x20000000;
-    static const unsigned int BOOTLOADER_APP_HIGH  = 0x20001ff7;
-
-    static const unsigned int BOOTLOADER_PHY_MEM   = 0x20000000;
-
-    static const unsigned int BOOTLOADER_SYS       = 0x00200000;
-    static const unsigned int BOOTLOADER_SYS_CODE  = 0x00200000; // Library mode only => APP + SYS
-    static const unsigned int BOOTLOADER_SYS_DATA  = 0x20000000; // Library mode only => APP + SYS
-
     // Default Sizes and Quantities
     static const unsigned int STACK_SIZE = 512;
     static const unsigned int HEAP_SIZE = 512;
@@ -64,7 +44,6 @@ template <> struct Traits<Cortex_M>: public Traits<Cortex_M_Common>
 template <> struct Traits<Cortex_M_IC>: public Traits<Cortex_M_Common>
 {
     static const bool hysterically_debugged = false;
-    static const bool reboot_on_hard_fault = true;
 };
 
 template <> struct Traits<Cortex_M_Timer>: public Traits<Cortex_M_Common>
@@ -89,22 +68,11 @@ template <> struct Traits<Cortex_M_UART>: public Traits<Cortex_M_Common>
     static const unsigned int DEF_STOP_BITS = 1;
 };
 
-template<> struct Traits<Cortex_M_Display>: public Traits<Cortex_M_Common>
-{
-    enum Engine {null, uart};
-    static const Engine ENGINE = uart;
-
-    static const int COLUMNS = 80;
-    static const int LINES = 25;
-    static const int TAB_SIZE = 8;
-};
-
-template<> struct Traits<Cortex_M_USB_Serial_Display>: public Traits<Cortex_M_Display> { };
-
 template <> struct Traits<Cortex_M_USB>: public Traits<Cortex_M_Common>
 {
     static const bool enabled = false;
-    static const bool blocking = false;
+    static const unsigned int UNITS = 0;
+    static const bool blocking = true;
 };
 
 template <> struct Traits<Cortex_M_Radio>: public Traits<Cortex_M_Common>

@@ -108,25 +108,10 @@ private:
     Statistics _statistics;
 
     IO_Irq _irq;
-
     DMA_Buffer * _dma_buf;
 
-    /*
-    Init_Block * _iblock;
-    Phy_Addr  _iblock_phy;
-    */
-
     int _rx_cur;
-    /*
-    Rx_Desc * _rx_ring;
-    Phy_Addr _rx_ring_phy;
-    */
-
     int _tx_cur;
-    /*
-    Tx_Desc * _tx_ring;
-    Phy_Addr _tx_ring_phy;
-    */
 
     Buffer * _rx_buffer[RX_BUFS];
     Buffer * _tx_buffer[TX_BUFS];

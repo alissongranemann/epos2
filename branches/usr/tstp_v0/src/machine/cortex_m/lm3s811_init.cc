@@ -33,7 +33,7 @@ void LM3S811::init()
     scr(RCC) = rcc;
 
     // wait for the PLL to lock by polling PLLLRIS
-    while(not (scr(RIS) & RIS_PLLLRIS));
+    while(!(scr(RIS) & RIS_PLLLRIS));
 
     // enable use of PLL by clearing BYPASS
     rcc &= ~RCC_BYPASS;

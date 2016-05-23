@@ -84,19 +84,19 @@ class PC_Keyboard;
 class PC_Scratchpad;
 class PC_NIC;
 class PC_Ethernet;
+class PC_FPGA;
 
 class Cortex_M;
 class Cortex_M_IC;
 class Cortex_M_Timer;
 class Cortex_M_RTC;
 class Cortex_M_UART;
-class Cortex_M_EEPROM;
-class Cortex_M_Display;
-class Cortex_M_USB_Serial_Display;
-class Cortex_M_Scratchpad;
-class Cortex_M_Radio;
 class Cortex_M_USB;
 class Cortex_M_GPIO;
+class Cortex_M_EEPROM;
+class Cortex_M_Display;
+class Cortex_M_Scratchpad;
+class Cortex_M_Radio;
 class eMote3_IEEE802_15_4_PHY;
 class eMote3_MAC_Timer;
 
@@ -128,8 +128,6 @@ class IEEE802_15_4;
 class AT86RF;
 
 class Serial_Display;
-class Null_Display;
-
 class Serial_Keyboard;
 
 // Abstractions
@@ -171,9 +169,9 @@ class Chronometer;
 class Alarm;
 class Delay;
 
-template<typename NIC, typename Network, unsigned int HTYPE>
-class ARP;
 class Network;
+
+class ELP;
 
 class TSTPOE;
 class TSTPOTM;
@@ -186,16 +184,23 @@ class NIC_Locator;
 template<typename S>
 class Smart_Data;
 
+template<typename NIC, typename Network, unsigned int HTYPE>
+class ARP;
 class IP;
 class ICMP;
 class UDP;
 class TCP;
 class DHCP;
+
 class IPC;
+
 template<typename Channel, bool connectionless = Channel::connectionless>
 class Link;
 template<typename Channel, bool connectionless = Channel::connectionless>
 class Port;
+
+template<typename S>
+class Smart_Data;
 
 // Framework
 class Framework;

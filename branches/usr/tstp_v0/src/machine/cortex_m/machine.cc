@@ -15,4 +15,11 @@ void Cortex_M::panic()
     else
         CPU::halt();
 }
+
+void Cortex_M::reboot()
+{
+    db<Machine>(WRN) << "Machine::reboot()" << endl;
+    Cortex_M_Model::reboot();
+}
+
 __END_SYS

@@ -21,8 +21,9 @@
 #define __UART_H        __HEADER_MACH(uart)
 #define __DISPLAY_H     __HEADER_MACH(display)
 #define __KEYBOARD_H    __HEADER_MACH(keyboard)
-#define __NIC_H         __HEADER_MACH(nic)
 #define __SCRATCHPAD_H  __HEADER_MACH(scratchpad)
+#define __NIC_H         __HEADER_MACH(nic)
+#define __FPGA_H        __HEADER_MACH(fpga)
 
 __BEGIN_SYS
 
@@ -39,10 +40,12 @@ typedef PC_Timer        Timer;
 typedef PC_RTC          RTC;
 typedef PC_EEPROM       EEPROM;
 typedef PC_UART         UART;
+typedef void            USB;
 typedef IF<Traits<Serial_Display>::enabled, Serial_Display, PC_Display>::Result Display;
 typedef IF<Traits<Serial_Keyboard>::enabled, Serial_Keyboard, PC_Keyboard>::Result Keyboard;
-typedef PC_Ethernet     NIC;
 typedef PC_Scratchpad   Scratchpad;
+typedef PC_Ethernet     NIC;
+typedef PC_FPGA         FPGA;
 
 __END_SYS
 

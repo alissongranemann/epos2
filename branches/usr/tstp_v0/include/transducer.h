@@ -29,7 +29,10 @@ public:
     Keyboard_Sensor() {}
 
     static void sense(unsigned int dev, Smart_Data<Keyboard_Sensor> * data) {
-        data->_value = try_getc();
+        if(ready_to_get())
+            data->_value = get();
+        else
+            data->_value = -1;
     }
 
     static void actuate(unsigned int dev, Smart_Data<Keyboard_Sensor> * data, void * command) {}

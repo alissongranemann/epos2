@@ -1,6 +1,7 @@
 // EPOS eMote3 USB Mediator Declarations
 
 #include <usb.h>
+#include <cpu.h>
 
 #ifndef __cortex_m_usb_h
 #define __cortex_m_usb_h
@@ -183,8 +184,10 @@ protected:
     };
 };
 
-class Cortex_M_USB : private eMote3_USB, private Cortex_M_Model, public USB_2_0
+class Cortex_M_USB: private eMote3_USB, private Cortex_M_Model, public USB_2_0
 {
+    friend class Cortex_M;
+
 private:
     typedef CPU::Reg32 Reg32;
     typedef CPU::Reg8 Reg8;
@@ -227,25 +230,59 @@ private:
     static const char * _send_buffer;
     static unsigned int _send_buffer_size;
 
-    static void do_flush() { reg(CS0_CSIL) |= CSIL_INPKTRDY; }
+    static void flush() { reg(CS0_CSIL) |= CSIL_INPKTRDY; }
 
     static volatile USB_2_0::STATE _state;
-    static volatile bool _ready_to_print;
+    static volatile bool _ready_to_put;
+    static bool _ready_to_put_next;
+    static bool _was_locked;
 
 public:
     Cortex_M_USB() { }
 
     static USB_2_0::STATE state() { return _state; }
 
-    static void init();
-    static void disable();
-    static bool ready() { return state() >= USB_2_0::STATE::CONFIGURED; }
-
-    static bool has_data();
-    static unsigned int get_data(char * out, unsigned int max_size);
-    static void put(char c);
     static char get();
-    static void flush(unsigned int index = 3);
+    static void put(char c);
+    static void put(const char * c, unsigned int size);
+
+    static bool ready_to_get() {
+        if(!configured()) 
+            return false;
+        lock();
+        input(); 
+        bool ret = reg(CSOL) & CSOL_OUTPKTRDY; 
+        unlock();
+        return ret;
+    }
+
+    static bool ready_to_put() { return _ready_to_put; }
+
+    static void disable();
+
+    static unsigned int get(char * out, unsigned int max_size);
+
+private:
+    static bool configured() { return state() >= USB_2_0::STATE::CONFIGURED; }
+
+    static void endpoint(int index) { reg(INDEX) = index; }
+    static int endpoint() { return reg(INDEX); }
+    static void control() { endpoint(0); }
+    static void output() { endpoint(3); }
+    static void input() { endpoint(4); }
+
+    static void init();
+
+    static void lock() {
+        _was_locked = CPU::int_disabled();
+        // If a rescheduling happens between these two lines, it might lead to an inconsistent state
+        CPU::int_disable(); 
+    }
+    static void unlock() {
+        if(!_was_locked)
+            CPU::int_enable();
+    }
+
 
 protected:
     static volatile Reg32 & reg (unsigned int offset) { return *(reinterpret_cast<volatile Reg32*>(USB_BASE + offset)); }

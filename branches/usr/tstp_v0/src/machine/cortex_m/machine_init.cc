@@ -12,12 +12,8 @@ void Cortex_M::init()
 
     if(Traits<Cortex_M_IC>::enabled)
         Cortex_M_IC::init();
-//    if(Traits<Cortex_M_Bus>::enabled)
-//        Cortex_M_Bus::init();
     if(Traits<Cortex_M_Timer>::enabled)
         Cortex_M_Timer::init();
-//    if(Traits<Cortex_M_Scratchpad>::enabled)
-//        Cortex_M_Scratchpad::init();
     if(Traits<Cortex_M_USB>::enabled)
         Cortex_M_USB::init();
 #ifndef __no_networking__

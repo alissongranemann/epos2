@@ -19,7 +19,7 @@ template <> struct Traits<Cortex_M>: public Traits<Cortex_M_Common>
 
     // Physical Memory
     static const unsigned int MEM_BASE  = 0x20000004;
-    static const unsigned int MEM_TOP   = 0x20007ff7; // (MAX for 32-bit is 0x70000000 / 1792 MB)
+    static const unsigned int MEM_TOP   = 0x20007ff7; // 32 KB (MAX for 32-bit is 0x70000000 / 1792 MB)
 
     // Logical Memory Map
     static const unsigned int APP_LOW   = 0x20000004;
@@ -64,7 +64,6 @@ template <> struct Traits<Cortex_M>: public Traits<Cortex_M_Common>
 template <> struct Traits<Cortex_M_IC>: public Traits<Cortex_M_Common>
 {
     static const bool hysterically_debugged = false;
-    static const bool reboot_on_hard_fault = true;
 };
 
 template <> struct Traits<Cortex_M_Timer>: public Traits<Cortex_M_Common>
@@ -89,24 +88,17 @@ template <> struct Traits<Cortex_M_UART>: public Traits<Cortex_M_Common>
     static const unsigned int DEF_STOP_BITS = 1;
 };
 
-template<> struct Traits<Cortex_M_Display>: public Traits<Cortex_M_Common>
-{
-    enum Engine {null, uart, usb};
-    static const Engine ENGINE = usb;
-
-    static const int COLUMNS = 80;
-    static const int LINES = 25;
-    static const int TAB_SIZE = 8;
-};
-
-template<> struct Traits<Cortex_M_USB_Serial_Display>: public Traits<Cortex_M_Display> { };
-
 template <> struct Traits<Cortex_M_USB>: public Traits<Cortex_M_Common>
 {
-    static const bool enabled = Traits<Cortex_M_Display>::ENGINE == Traits<Cortex_M_Display>::Engine::usb;
-    static const bool blocking = false;
+    static const unsigned int UNITS = 1;
+    static const bool blocking = true;
 
     static const bool debugged = false;
+};
+
+template <> struct Traits<Cortex_M_Scratchpad>: public Traits<Cortex_M_Common>
+{
+    static const bool enabled = false;
 };
 
 template <> struct Traits<Cortex_M_Radio>: public Traits<Cortex_M_Common>
@@ -148,11 +140,6 @@ template <> struct Traits<eMote3_TSTP_MAC>: public Traits<Cortex_M_Radio>
     static const unsigned int SEND_BUFFERS = 16;
     static const unsigned int RECEIVE_BUFFERS = 16;
     static const unsigned int DEFAULT_CHANNEL = 15; // From 11 to 26
-};
-
-template <> struct Traits<Cortex_M_Scratchpad>: public Traits<Cortex_M_Common>
-{
-    static const bool enabled = false;
 };
 
 __END_SYS

@@ -84,6 +84,8 @@ template<> struct Traits<Init>: public Traits<void>
 template<> struct Traits<Serial_Display>: public Traits<void>
 {
     static const bool enabled = true;
+    enum {UART, USB};
+    static const int ENGINE = UART;
     static const int COLUMNS = 80;
     static const int LINES = 24;
     static const int TAB_SIZE = 8;
@@ -197,6 +199,12 @@ template<> struct Traits<TSTP>: public Traits<Network>
     class DISABLED {};
     typedef DISABLED Security;
     typedef DISABLED Router;
+};
+
+template<> struct Traits<ELP>: public Traits<Network>
+{
+    static const bool acknowledged = true;
+    static const bool avoid_collisions = true;
 };
 
 template<> template <typename S> struct Traits<Smart_Data<S>>: public Traits<Network>
