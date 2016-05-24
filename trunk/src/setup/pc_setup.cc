@@ -70,8 +70,8 @@ private:
     static const unsigned int MEM_TOP = Memory_Map<PC>::MEM_TOP;
     static const unsigned int APIC_PHY = APIC::LOCAL_APIC_PHY_ADDR;
     static const unsigned int APIC_SIZE = APIC::LOCAL_APIC_SIZE;
-    static const unsigned int VGA_PHY = Traits<PC_Display>::FRAME_BUFFER_ADDRESS;
-    static const unsigned int VGA_SIZE = Traits<PC_Display>::FRAME_BUFFER_SIZE;
+    static const unsigned int VGA_PHY = PC_Display::FB_PHY_ADDR;
+    static const unsigned int VGA_SIZE = PC_Display::FB_SIZE;
 
     // Logical memory map
     static const unsigned int IDT = Memory_Map<PC>::IDT;
