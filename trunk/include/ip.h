@@ -150,7 +150,7 @@ public:
 
 
     // IP Packet
-    static const unsigned int MFS = sizeof(NIC::Data) - sizeof(Header); // Maximum Fragment Size (1480 for Ethernet)
+    static const unsigned int MFS = (sizeof(NIC::Data) - sizeof(Header)) & (~7u); // Maximum Fragment Size (1480 for Ethernet). Must be multiple of 8, since offset in Header ignores the 3 LSbits.
     static const unsigned int MTU = 65535 - sizeof(Header);
     typedef unsigned char Data[MTU];
 
