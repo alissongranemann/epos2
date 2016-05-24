@@ -82,14 +82,12 @@ _start:
         cmp     r1, r2
         blt         .L1
 
-	    bl      _init
+	bl      _init
 
         .align  2
         .globl  __epos_app_entry
         .type   __epos_app_entry, function
 __epos_app_entry:
-        mov     r0, #1
-        msr     CONTROL, r0
         bl      __pre_main
         bl      main
         push    {r0}         // save main's return value to be used by exit()
