@@ -11,25 +11,25 @@
 
 __BEGIN_SYS
 
-class Cortex_M_Radio: public Traits<Cortex_M_Radio>::MAC
+class Cortex_M_IEEE802_15_4: public IEEE802_15_4
 {
     friend class Cortex_M;
 
 private:
-    typedef Traits<Cortex_M_Radio>::NICS NICS;
+    typedef Traits<Cortex_M_IEEE802_15_4>::NICS NICS;
     static const unsigned int UNITS = NICS::Length;
 
 public:
-    typedef Traits<Cortex_M_Radio>::MAC MAC;
+    typedef Traits<Cortex_M_IEEE802_15_4>::MAC MAC;
     typedef MAC::Observed Observed;
     typedef MAC::Observer Observer;
 
     template<unsigned int UNIT = 0>
-    Cortex_M_Radio(unsigned int u = UNIT) {
+    Cortex_M_IEEE802_15_4(unsigned int u = UNIT) {
         _dev = Meta_NIC<NICS>::Get<UNIT>::Result::get(u);
-        db<Cortex_M_Radio>(TRC) << "NIC::NIC(u=" << UNIT << ",d=" << _dev << ") => " << this << endl;
+        db<NIC>(TRC) << "NIC::NIC(u=" << UNIT << ",d=" << _dev << ") => " << this << endl;
     }
-    ~Cortex_M_Radio() { _dev = 0; }
+    ~Cortex_M_IEEE802_15_4() { _dev = 0; }
     
     Buffer * alloc(NIC * nic, const Address & dst, const Protocol & prot, unsigned int once, unsigned int always, unsigned int payload) {
         return _dev->alloc(nic, dst, prot, once, always, payload);
@@ -59,11 +59,7 @@ public:
 
     void attach(Observer * obs, const Protocol & prot) { _dev->attach(obs, prot); }
     void detach(Observer * obs, const Protocol & prot) { _dev->detach(obs, prot); }
-    void notify(const Protocol & prot, Buffer * buf)
-    { 
-        db<Cortex_M_Radio>(TRC) << "NIC::notify(prot=" << prot << ",buf=" << buf << endl;
-        _dev->notify(prot, buf); 
-    }
+    void notify(const Protocol & prot, Buffer * buf) { _dev->notify(prot, buf); }
 
 private:
     static void init();

@@ -1,10 +1,10 @@
-// EPOS EPOSMoteIII (Cortex-M4) MCU Mediator Declarations
+// EPOS EPOSMoteIII (Cortex-M3) MCU Mediator Declarations
+
 #ifndef __emote3_h
 #define __emote3_h
 
 #include <cpu.h>
 #include <tsc.h>
-#include "emote3_rom.h"
 
 __BEGIN_SYS
 
@@ -579,6 +579,7 @@ public:
         ANA = 0x1,// analog enable
         DIS = 0x0 // override disable
     };
+
 
     // Base address for memory-mapped System Control Space
     enum {

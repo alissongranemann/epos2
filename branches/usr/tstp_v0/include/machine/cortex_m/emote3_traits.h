@@ -35,26 +35,6 @@ template <> struct Traits<Cortex_M>: public Traits<Cortex_M_Common>
     static const unsigned int SYS_CODE  = 0x00204000; // Library mode only => APP + SYS
     static const unsigned int SYS_DATA  = 0x20000004; // Library mode only => APP + SYS
 
-    // Bootloader Memory Map
-    // Word in RAM reserved for the bootloader
-    static const unsigned int BOOTLOADER_STATUS_ADDRESS = 0x20007ffc;
-
-    // Physical Memory
-    static const unsigned int BOOTLOADER_MEM_BASE  = 0x20000000;
-    static const unsigned int BOOTLOADER_MEM_TOP   = 0x20007ff7; // (MAX for 32-bit is 0x70000000 / 1792 MB)
-
-    // Logical Memory Map
-    static const unsigned int BOOTLOADER_APP_LOW   = 0x20000000;
-    static const unsigned int BOOTLOADER_APP_CODE  = 0x00200000;
-    static const unsigned int BOOTLOADER_APP_DATA  = 0x20000000;
-    static const unsigned int BOOTLOADER_APP_HIGH  = 0x20007ff7;
-
-    static const unsigned int BOOTLOADER_PHY_MEM   = 0x20000000;
-
-    static const unsigned int BOOTLOADER_SYS       = 0x00200000;
-    static const unsigned int BOOTLOADER_SYS_CODE  = 0x00200000; // Library mode only => APP + SYS
-    static const unsigned int BOOTLOADER_SYS_DATA  = 0x20000000; // Library mode only => APP + SYS
-
     // Default Sizes and Quantities
     static const unsigned int STACK_SIZE = 3 * 1024;
     static const unsigned int HEAP_SIZE = 3 * 1024;
@@ -63,7 +43,6 @@ template <> struct Traits<Cortex_M>: public Traits<Cortex_M_Common>
 
 template <> struct Traits<Cortex_M_IC>: public Traits<Cortex_M_Common>
 {
-    static const bool hysterically_debugged = false;
 };
 
 template <> struct Traits<Cortex_M_Timer>: public Traits<Cortex_M_Common>
@@ -101,18 +80,18 @@ template <> struct Traits<Cortex_M_Scratchpad>: public Traits<Cortex_M_Common>
     static const bool enabled = false;
 };
 
-template <> struct Traits<Cortex_M_Radio>: public Traits<Cortex_M_Common>
+template <> struct Traits<Cortex_M_IEEE802_15_4>: public Traits<Cortex_M_Common>
 {
     static const bool enabled = (Traits<Build>::NODES > 1);
 
-    typedef TSTP_MAC MAC;
+    typedef IEEE802_15_4 MAC;
 
-    typedef LIST<eMote3_TSTP_MAC> NICS;
+    typedef LIST<eMote3_IEEE802_15_4> NICS;
 
     static const unsigned int UNITS = NICS::Length;
 };
 
-template <> struct Traits<eMote3_IEEE802_15_4>: public Traits<Cortex_M_Radio>
+template <> struct Traits<eMote3_IEEE802_15_4>: public Traits<Cortex_M_IEEE802_15_4>
 {
     static const unsigned int UNITS = NICS::Count<eMote3_IEEE802_15_4>::Result;
     static const unsigned int SEND_BUFFERS = 16;
@@ -134,7 +113,7 @@ template <> struct Traits<eMote3_IEEE802_15_4>: public Traits<Cortex_M_Radio>
     static const unsigned int ACK_TIMEOUT = 3 * 832; // us
 };
 
-template <> struct Traits<eMote3_TSTP_MAC>: public Traits<Cortex_M_Radio>
+template <> struct Traits<eMote3_TSTP_MAC>: public Traits<Cortex_M_IEEE802_15_4>
 {
     static const unsigned int UNITS = NICS::Count<eMote3_TSTP_MAC>::Result;
     static const unsigned int SEND_BUFFERS = 16;

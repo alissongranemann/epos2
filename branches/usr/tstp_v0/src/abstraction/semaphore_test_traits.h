@@ -20,16 +20,16 @@ template<> struct Traits<Build>
     enum {LIBRARY, BUILTIN, KERNEL};
     static const unsigned int MODE = LIBRARY;
 
-    enum {IA32, ARMv7};
-    static const unsigned int ARCHITECTURE = ARMv7;
+    enum {IA32};
+    static const unsigned int ARCHITECTURE = IA32;
 
-    enum {PC, Cortex_M, Cortex_A};
-    static const unsigned int MACHINE = Cortex_M;
+    enum {PC};
+    static const unsigned int MACHINE = PC;
 
-    enum {Legacy, eMote3, LM3S811};
-    static const unsigned int MODEL = eMote3;
+    enum {Legacy};
+    static const unsigned int MODEL = Legacy;
 
-    static const unsigned int CPUS = 1;
+    static const unsigned int CPUS = 4;
     static const unsigned int NODES = 1; // > 1 => NETWORKING
 };
 
@@ -78,7 +78,7 @@ template<> struct Traits<Serial_Display>: public Traits<void>
 {
     static const bool enabled = true;
     enum {UART, USB};
-    static const int ENGINE = USB;
+    static const int ENGINE = UART;
     static const int COLUMNS = 80;
     static const int LINES = 24;
     static const int TAB_SIZE = 8;

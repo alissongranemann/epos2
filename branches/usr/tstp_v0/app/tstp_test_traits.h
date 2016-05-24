@@ -21,13 +21,13 @@ template<> struct Traits<Build>
     static const unsigned int MODE = LIBRARY;
 
     enum {IA32, ARMv7};
-    static const unsigned int ARCHITECTURE = IA32;
+    static const unsigned int ARCHITECTURE = ARMv7;
 
     enum {PC, Cortex_M, Cortex_A};
-    static const unsigned int MACHINE = PC;
+    static const unsigned int MACHINE = Cortex_M;
 
     enum {Legacy, eMote3, LM3S811};
-    static const unsigned int MODEL = Legacy;
+    static const unsigned int MODEL = eMote3;
 
     static const unsigned int CPUS = 1;
     static const unsigned int NODES = 2; // > 1 => NETWORKING
@@ -39,8 +39,8 @@ template<> struct Traits<Debug>
 {
     static const bool error   = true;
     static const bool warning = true;
-    static const bool info    = true;
-    static const bool trace   = true;
+    static const bool info    = false;
+    static const bool trace   = false;
 };
 
 template<> struct Traits<Lists>: public Traits<void>
@@ -183,12 +183,12 @@ template<> struct Traits<Network>: public Traits<void>
     static const unsigned int TIMEOUT = 10; // s
 
     // This list is positional, with one network for each NIC in Traits<NIC>::NICS
-    typedef LIST<TSTPOE> NETWORKS;
+    typedef LIST<TSTPOTM> NETWORKS;
 };
 
 template<> struct Traits<TSTP>: public Traits<Network>
 {
-    typedef Traits<Network>::NETWORKS::Get<0>::Result MAC;
+    typedef TSTPOTM MAC;
 
     typedef PTS<false> No_Time_Synchronization;
     typedef PTS<true> Time_Synchronization;

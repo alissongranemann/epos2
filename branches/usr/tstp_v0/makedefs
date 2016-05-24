@@ -69,7 +69,11 @@ avr8_COMP_PREFIX        := /usr/local/avr/gcc-4.4.4/bin/avr-
 COMP_PREFIX		= $($(ARCH)_COMP_PREFIX)
 
 # Boot Memory Map
-MACH_TRAITS	= $(INCLUDE)/machine/$(MACH)/$(MMOD)_traits.h 
+ifeq ($(words $(call GETTK,MEM_BASE,$(TRAITS))),1)
+MACH_TRAITS	= $(TRAITS) 
+else
+MACH_TRAITS     = $(INCLUDE)/machine/$(MACH)/$(MMOD)_traits.h 
+endif
 MEM_BASE	= $(call GETTK,MEM_BASE,$(MACH_TRAITS))
 MEM_TOP		= $(call GETTK,MEM_TOP,$(MACH_TRAITS))
 MEM_SIZE	= $(shell echo "(`printf "%d" $(MEM_TOP)` + 1 - `printf "%d" $(MEM_BASE)`) / 1024"|bc)
@@ -88,24 +92,27 @@ pc_CC_FLAGS             := -Wa,--32
 pc_AS_FLAGS             := --32
 pc_LD_FLAGS             := 
 pc_EMULATOR             = qemu-system-i386 -smp $(CPUS) -m $(MEM_SIZE)k -nographic -no-reboot -fda
-pc_GDB                  := gdb
+pc_DEBUGGER             := gdb
 
 cortex_m_CC_FLAGS       := -mcpu=cortex-m3 -mthumb -mno-thumb-interwork -mfpu=fpa #-Wa,-mimplicit-it=arm -marm 
 cortex_m_AS_FLAGS       := -mcpu=cortex-m3 -mthumb -mfpu=fpa
 cortex_m_LD_FLAGS       := 
-cortex_m_EMULATOR       := qemu-system-arm -cpu cortex-m3 -machine lm3s811evb -m $(MEM_SIZE)k -nographic -no-reboot -kernel
-cortex_m_GDB            := arm-none-eabi-gdb
-
-emote3_DEPLOYER         := $(TOP)/tools/emote3_programmer/jtag.sh
+cortex_m_EMULATOR       = qemu-system-arm -cpu cortex-m3 -machine lm3s811evb -m $(MEM_SIZE)k -nographic -no-reboot -kernel
+cortex_m_DEBUGGER       := arm-none-eabi-gdb
+ifndef FLASHER_FLAGS
+FLASHER_FLAGS           := -d /dev/ttyACM0
+endif
+cortex_m_FLASHER        = $(TOOLS)/eposflash/eposflash-$(MMOD) $(FLASHER_FLAGS) -f 
 
 atmega_CC_FLAGS         := -mmcu=atmega128 -Wno-inline
 atmega_AS_FLAGS         := -mmcu=atmega128
 atmega_LD_FLAGS         := -m avr5
 atmega_EMULATOR         = 
+atmega_DEBUGGER         =
+atmega_FLASHER          = $(TOOLS)/eposflash/eposflash-$(MMOD)
 
 $(MACH)_CODE_NAME       := .init
-$(MACH)_DATA_NAME       := .bss
-#$(MACH)_DATA_NAME       := .ctors TODO
+$(MACH)_DATA_NAME       := .data
 ifeq ($(GDB),1)
 MACH_CC_FLAGS           := -g -feliminate-unused-debug-symbols $($(MACH)_CC_FLAGS)
 MACH_AS_FLAGS           := -g $($(MACH)_AS_FLAGS)
@@ -121,7 +128,7 @@ MACH_EMULATOR           = $(subst -m ,-s -S -m ,$($(MACH)_EMULATOR))
 else
 MACH_EMULATOR           = $($(MACH)_EMULATOR)
 endif
-MACH_DEBUGGER           = $(TERM) $($(MACH)_GDB) -ex "target remote:1234" -ex "set confirm off"
+MACH_DEBUGGER           = $(TERM) $($(MACH)_DEBUGGER) -ex "target remote:1234" -ex "set confirm off"
 ifneq ($(wildcard $(IMG)/$(MACH)_setup),) 
 MACH_DEBUGGER           := $(MACH_DEBUGGER) -ex "add-symbol-file $(call DBSEC,$(SRC)/setup/$(MACH)_setup,.text)"
 endif
@@ -131,8 +138,7 @@ endif
 ifneq ($(wildcard $(IMG)/$(MACH)_system),) 
 MACH_DEBUGGER           := $(MACH_DEBUGGER) -ex "add-symbol-file $(call DBSEC,$(SRC)/system/$(MACH)_system,.text)"
 endif
-
-MMOD_DEPLOYER           := $($(MMOD)_DEPLOYER)
+MACH_FLASHER            := $($(MACH)_FLASHER)
 
 # Architecture specifics
 ARCH_LITTLE	:= little
@@ -188,7 +194,7 @@ DEBUGGER	= $(MACH_DEBUGGER)
 
 EMULATOR	= $(MACH_EMULATOR) 
 
-DEPLOYER	= $(MMOD_DEPLOYER) 
+FLASHER 	= $(MACH_FLASHER) 
 
 INSTALL		:= install
 

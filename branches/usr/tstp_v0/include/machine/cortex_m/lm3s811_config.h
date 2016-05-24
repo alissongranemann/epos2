@@ -35,7 +35,7 @@ typedef Cortex_M_USB            USB;
 typedef IF<Traits<Serial_Display>::enabled, Serial_Display, Cortex_M_Display>::Result Display;
 typedef Serial_Keyboard         Keyboard;
 typedef Cortex_M_Scratchpad     Scratchpad;
-typedef Cortex_M_Radio          NIC;
+typedef Cortex_M_IEEE802_15_4   NIC;
 typedef Cortex_M_GPIO           GPIO;
 
 __END_SYS

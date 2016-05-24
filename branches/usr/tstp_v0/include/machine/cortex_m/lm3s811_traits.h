@@ -43,7 +43,6 @@ template <> struct Traits<Cortex_M>: public Traits<Cortex_M_Common>
 
 template <> struct Traits<Cortex_M_IC>: public Traits<Cortex_M_Common>
 {
-    static const bool hysterically_debugged = false;
 };
 
 template <> struct Traits<Cortex_M_Timer>: public Traits<Cortex_M_Common>
@@ -75,7 +74,12 @@ template <> struct Traits<Cortex_M_USB>: public Traits<Cortex_M_Common>
     static const bool blocking = true;
 };
 
-template <> struct Traits<Cortex_M_Radio>: public Traits<Cortex_M_Common>
+template <> struct Traits<Cortex_M_Scratchpad>: public Traits<Cortex_M_Common>
+{
+    static const bool enabled = false;
+};
+
+template <> struct Traits<Cortex_M_IEEE802_15_4>: public Traits<Cortex_M_Common>
 {
     static const bool enabled = false;
 
@@ -83,7 +87,7 @@ template <> struct Traits<Cortex_M_Radio>: public Traits<Cortex_M_Common>
     static const unsigned int UNITS = NICS::Length;
 };
 
-template <> struct Traits<eMote3_IEEE802_15_4>: public Traits<Cortex_M_Radio>
+template <> struct Traits<eMote3_IEEE802_15_4>: public Traits<Cortex_M_IEEE802_15_4>
 {
     static const unsigned int UNITS = NICS::Count<eMote3_IEEE802_15_4>::Result;
     static const unsigned int SEND_BUFFERS = 1;
@@ -103,11 +107,6 @@ template <> struct Traits<eMote3_IEEE802_15_4>: public Traits<Cortex_M_Radio>
     static const bool ACK = false;
     static const unsigned int RETRANSMISSIONS = 3;
     static const unsigned int ACK_TIMEOUT = 3 * 832; // us
-};
-
-template <> struct Traits<Cortex_M_Scratchpad>: public Traits<Cortex_M_Common>
-{
-    static const bool enabled = false;
 };
 
 __END_SYS

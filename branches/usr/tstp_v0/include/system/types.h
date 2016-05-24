@@ -96,7 +96,8 @@ class Cortex_M_GPIO;
 class Cortex_M_EEPROM;
 class Cortex_M_Display;
 class Cortex_M_Scratchpad;
-class Cortex_M_Radio;
+class Cortex_M_NIC;
+class Cortex_M_IEEE802_15_4;
 class eMote3_IEEE802_15_4_PHY;
 class eMote3_MAC_Timer;
 
@@ -296,7 +297,7 @@ template<> struct Type<Cortex_M_UART> { static const Type_Id ID = UART_ID; };
 template<> struct Type<Cortex_M_RTC> { static const Type_Id ID = RTC_ID; };
 template<> struct Type<Cortex_M_Display> { static const Type_Id ID = DISPLAY_ID; };
 template<> struct Type<Cortex_M_Scratchpad> { static const Type_Id ID = SCRATCHPAD_ID; };
-template<> struct Type<Cortex_M_Radio> { static const Type_Id ID = NIC_ID; };
+template<> struct Type<Cortex_M_IEEE802_15_4> { static const Type_Id ID = NIC_ID; };
 
 
 template<> struct Type<Thread> { static const Type_Id ID = THREAD_ID; };

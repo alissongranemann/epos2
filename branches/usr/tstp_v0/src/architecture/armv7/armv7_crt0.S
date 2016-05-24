@@ -75,13 +75,9 @@ _vector_table:
 _start:
         // Clear BSS
         eor     r0, r0
-// Loading 0x20000000 into r1
-// FIXME: This value should not be hardcoded, but __bss_start__ is pointing to the wrong address!
-        mov     r1, #32
-        lsl     r1, r1, #24
-//        ldr     r1, =__bss_start__
+        ldr     r1, =__bss_start__
         ldr     r2, =__bss_end__
-  .L1:  str     r0, [r1]
+.L1:    str     r0, [r1]
         add     r1, #4
         cmp     r1, r2
         blt     .L1
@@ -92,8 +88,6 @@ _start:
         .globl  __epos_app_entry
         .type   __epos_app_entry, function
 __epos_app_entry:
-//        mov     r0, #1
-//        msr     CONTROL, r0
         bl      __pre_main
         bl      main
         push    {r0}         // save main's return value to be used by exit()

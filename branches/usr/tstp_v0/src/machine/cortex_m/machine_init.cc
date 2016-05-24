@@ -17,8 +17,8 @@ void Cortex_M::init()
     if(Traits<Cortex_M_USB>::enabled)
         Cortex_M_USB::init();
 #ifndef __no_networking__
-    if(Traits<Cortex_M_Radio>::enabled)
-        Cortex_M_Radio::init();
+    if(Traits<Cortex_M_IEEE802_15_4>::enabled)
+        Cortex_M_IEEE802_15_4::init();
 #endif
 }
 

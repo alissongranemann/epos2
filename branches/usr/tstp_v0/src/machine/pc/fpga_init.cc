@@ -10,7 +10,7 @@ void PC_FPGA::init()
     db<Init, PC_FPGA>(TRC) << "PC_FPGA::init()" << endl;
 
     // Scan the PCI bus for device
-    PC_PCI::Locator loc = PC_PCI::scan(PCI_VENDOR_ID, PCI_DEVICE_ID);
+    PC_PCI::Locator loc = PC_PCI::scan(PCI_VENDOR_ID, PCI_DEVICE_ID, 0);
     if(!loc) {
         db<Init, PC_FPGA>(WRN) << "PC_FPGA::init: PCI scan failed!" << endl;
         return;
