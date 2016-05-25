@@ -75,7 +75,8 @@ template <> struct Traits<Cortex_M_USB>: public Traits<Cortex_M_Common>
     static const bool debugged = false;
     
     static const unsigned int UNITS = 1;
-    static const bool blocking = true;
+    static const bool blocking = false;
+    static const bool enabled = Traits<Serial_Display>::enabled && (Traits<Serial_Display>::ENGINE == Traits<Serial_Display>::USB);
 };
 
 template <> struct Traits<Cortex_M_Scratchpad>: public Traits<Cortex_M_Common>
@@ -94,8 +95,7 @@ template <> struct Traits<Cortex_M_IEEE802_15_4>: public Traits<Cortex_M_Common>
 template <> struct Traits<CC2538>: public Traits<Cortex_M_IEEE802_15_4>
 {
     static const unsigned int UNITS = NICS::Count<CC2538>::Result;
-    static const unsigned int SEND_BUFFERS = 64; // per unit
-    static const unsigned int RECEIVE_BUFFERS = 256; // per unit
+    static const unsigned int RECEIVE_BUFFERS = 8; // per unit
 };
 
 __END_SYS

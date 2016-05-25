@@ -9,58 +9,52 @@
 
 __BEGIN_SYS
 
-CC2538::CC2538(unsigned int unit, IO_Irq irq, DMA_Buffer * dma_buf)
+CC2538::CC2538(unsigned int unit, IO_Irq irq, DMA_Buffer * dma_buf) 
+    : _unit(unit), _irq(irq), _dma_buf(dma_buf), _rx_cur(0)
 {
     db<CC2538>(TRC) << "CC2538(unit=" << unit << ",irq=" << irq << ",dma=" << dma_buf << ")" << endl;
 
-    _unit = unit;
-    _irq = irq;
-    _dma_buf = dma_buf;
+    // Allocate RX buffers
+    auto log = _dma_buf->log_address();
+    for (auto i = 0u; i < RX_BUFS; ++i) {
+        _rx_buffer[i] = new (log) Buffer(0);
+        log += sizeof(Buffer);
+    }
 
-//    // Distribute the DMA_Buffer allocated by init()
-//    Log_Addr log = _dma_buf->log_address();
-//    Phy_Addr phy = _dma_buf->phy_address();
-//
-//    // Rx_Desc Ring
-//    _rx_cur = 0;
-//    _rx_ring = log;
-//    _rx_ring_phy = phy;
-//    log += RX_BUFS * align128(sizeof(Rx_Desc));
-//    phy += RX_BUFS * align128(sizeof(Rx_Desc));
-//
-//    // Tx_Desc Ring
-//    _tx_cur = 0;
-//    _tx_ring = log;
-//    _tx_ring_phy = phy;
-//    log += TX_BUFS * align128(sizeof(Tx_Desc));
-//    phy += TX_BUFS * align128(sizeof(Tx_Desc));
-//
-//    // Rx_Buffer Ring
-//    for(unsigned int i = 0; i < RX_BUFS; i++) {
-//        _rx_buffer[i] = new (log) Buffer(&_rx_ring[i]);
-//        _rx_ring[i].phy_addr = phy;
-//        _rx_ring[i].size = Reg16(-sizeof(Frame)); // 2's comp.
-//        _rx_ring[i].misc = 0;
-//        _rx_ring[i].status = Desc::OWN; // Owned by NIC
-//
-//        log += align128(sizeof(Buffer));
-//        phy += align128(sizeof(Buffer));
-//    }
-//
-//    // Tx_Buffer Ring
-//    for(unsigned int i = 0; i < TX_BUFS; i++) {
-//        _tx_buffer[i] = new (log) Buffer(&_tx_ring[i]);
-//        _tx_ring[i].phy_addr = phy;
-//        _tx_ring[i].size = 0;
-//        _tx_ring[i].misc = 0;
-//        _tx_ring[i].status = 0; // Owned by host
-//
-//        log += align128(sizeof(Buffer));
-//        phy += align128(sizeof(Buffer));
-//    }
+    // Set Address
+    ffsm(SHORT_ADDR0) = _address[0];
+    ffsm(SHORT_ADDR1) = _address[1];
+    _address[0] = ffsm(SHORT_ADDR0);
+    _address[1] = ffsm(SHORT_ADDR1);
 
-    // Reset device
+    // Enable frame filtering
+    xreg(FRMFILT0) |= FRAME_FILTER_EN;
+    xreg(FRMFILT1) &= ~ACCEPT_FT2_ACK; // ACK frames are handled only when expected
+
+    // Enable automatic source address matching
+    xreg(SRCMATCH) |= SRC_MATCH_EN;
+
+	// Enable auto-CRC
+	xreg(FRMCTRL0) |= AUTO_CRC;
+
+    channel(15);
+
+    // Enable auto ACK
+    xreg(FRMCTRL0) |= AUTO_ACK;
+
+    // Reset statistics
     reset();
+
+    xreg(FRMCTRL1) |= SET_RXENMASK_ON_TX; // Enter receive mode after TX
+
+    // Enable useful device interrupts
+    // WARNING: do not enable INT_TXDONE, because _send_and_wait handles it
+    xreg(RFIRQM0) = INT_FIFOP;
+    xreg(RFIRQM1) = 0;
+    xreg(RFERRM) = 0;
+
+    // Issue the listen command
+    rx();
 }
 
 
@@ -71,7 +65,7 @@ void CC2538::init(unsigned int unit)
     // Allocate a DMA Buffer for init block, rx and tx rings
     DMA_Buffer * dma_buf = new (SYSTEM) DMA_Buffer(DMA_BUFFER_SIZE);
 
-    IO_Irq irq = 10; // Fixme: this cannot be right
+    IO_Irq irq = IC::IRQ_RFTXRX;
 
     // Initialize the device
     CC2538 * dev = new (SYSTEM) CC2538(unit, irq, dma_buf);
@@ -84,7 +78,7 @@ void CC2538::init(unsigned int unit)
     IC::int_vector(_devices[unit].interrupt, &int_handler);
 
     // Enable interrupts for device
-    IC::enable(_devices[unit].interrupt);
+    IC::enable(irq);
 }
 
 __END_SYS

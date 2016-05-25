@@ -91,6 +91,12 @@ public:
         PTP    = 1
     };
 
+    enum Frame_Version
+    {
+        IEEE802_15_4_2003 = 0,
+        IEEE802_15_4_2006 = 1,
+    };
+
     // Addresses
     enum Addressing_Mode
     {
@@ -114,34 +120,35 @@ public:
         class Frame_Control
         {
         public:
-            Frame_Control()
-            : _fc(DATA << 13 | 0 << 12 | 0 << 11 | 0 << 10 | 1 << 9 | SHORT_ADDRESS << 4 | SHORT_ADDRESS) {}
-            Frame_Control(unsigned short type, bool se, bool fp, bool ar, bool pic, unsigned short dam, unsigned short sam)
-            : _fc(type << 13 | se << 12 | fp << 11 | ar << 10 | pic << 9 | dam << 4 | sam) {}
+            Frame_Control(unsigned short type = DATA, bool se = 0, bool fp = 0, bool ar = 0, bool pic = 1, unsigned short dam = SHORT_ADDRESS, unsigned short fv = Frame_Version::IEEE802_15_4_2006, unsigned short sam = SHORT_ADDRESS)
+            : _fc(type | se << 3 | fp << 4 | ar << 5 | pic << 6 | dam << 10 | fv << 12 | sam << 14) {}
 
-            unsigned short type() const { return (_fc >> 13) & 0x0007; }
-            void type(unsigned short t) { _fc = (_fc & 0x1fff) | ((t & 0x0007) << 13); }
+            unsigned short type() const { return _fc & 0x0007; }
+            void type(unsigned short t) { _fc = (_fc & (~0x0007)) | (t & 0x0007); }
 
-            bool se() const { return (_fc >> 12) & 0x0001; }
-            void se(bool b) { _fc = (_fc & 0xefff) | (b << 12); }
+            bool se() const { return (_fc >> 3) & 0x0001; }
+            void se(bool b) { _fc = (_fc & (~(1 << 3))) | (b << 3); }
 
-            bool fp() const { return (_fc >> 11) & 0x0001; }
-            void fp(bool b) { _fc = (_fc & 0xf7ff) | (b << 11); }
+            bool fp() const { return (_fc >> 4) & 0x0001; }
+            void fp(bool b) { _fc = (_fc & (~(1 << 4))) | (b << 4); }
 
-            bool ar() const { return (_fc >> 10) & 0x0001; }
-            void ar(bool b) { _fc = (_fc & 0xfbff) | (b << 10); }
+            bool ar() const { return (_fc >> 5) & 0x0001; }
+            void ar(bool b) { _fc = (_fc & (~(1 << 5))) | (b << 5); }
 
-            bool pic() const { return (_fc >> 9) & 0x0001; }
-            void pic(bool b) { _fc = (_fc & 0xfdff) | (b << 9); }
+            bool pic() const { return (_fc >> 6) & 0x0001; }
+            void pic(bool b) { _fc = (_fc & (~(1 << 6))) | (b << 6); }
 
-            unsigned short dam() const { return (_fc >> 4) & 0x0003; }
-            void dam(unsigned short m) { _fc = (_fc & 0xffcf) | ((m & 0x003) << 4); }
+            unsigned short dam() const { return (_fc >> 10) & 0x0003; }
+            void dam(unsigned short m) { _fc = (_fc & (~(3 << 10))) | ((m & 0x0003) << 10); }
+
+            unsigned short fv() const { return (_fc >> 12) & 0x0003; }
+            void fv(unsigned short v) { _fc = (_fc & (~(3 << 12))) | ((v & 0x0003) << 12); }
 
             unsigned short sam() const { return (_fc & 0x0003); }
-            void sam(unsigned short m) { _fc = (_fc & 0xfffc) | (m & 0x0003); }
+            void sam(unsigned short m) { _fc = (_fc & (~(3 << 14))) | ((m & 0x0003) << 14); }
 
             friend Debug & operator<<(Debug & db, const Frame_Control & fc) {
-                db << "{type=" << fc.type() << ",se=" << fc.se() << ",fp=" << fc.fp() << ",ar=" << fc.ar() << ",pic=" << fc.pic() << ",dam=" << fc.dam() << ",sam=" << fc.sam() << "}";
+                db << "{type=" << fc.type() << ",se=" << fc.se() << ",fp=" << fc.fp() << ",ar=" << fc.ar() << ",pic=" << fc.pic() << ",dam=" << fc.dam() << ",fv=" << fc.fv() << ",sam=" << fc.sam() << "}";
                 return db;
             }
 
@@ -151,17 +158,20 @@ public:
 
     public:
         Header() {}
+
         Header(const Type & type, const Reg8 & len)
-        : Phy_Header(len + sizeof(Header) - sizeof(Phy_Header)) {};
+        : Phy_Header(len + sizeof(Header) - sizeof(Phy_Header)), _frame_control(), _sequence_number(0), _dst_pan_id(PAN_ID_BROADCAST) {};
+
         Header(const Type & type, const Address & src, const Address & dst)
-        : Phy_Header(0 + sizeof(Header) - sizeof(Phy_Header)), _frame_control(), _dst(dst), _src(src) {}
+        : Phy_Header(0 + sizeof(Header) - sizeof(Phy_Header)), _frame_control(), _sequence_number(0), _dst_pan_id(PAN_ID_BROADCAST), _dst(dst), _src(src) { ack_request(dst != broadcast()); }
+
         Header(const Type & type, const Address & src, const Address & dst, const Reg8 & len)
-        : Phy_Header(len + sizeof(Header) - sizeof(Phy_Header)), _frame_control(), _sequence_number(0), _dst_pan_id(PAN_ID_BROADCAST), _dst(dst), _src(src) {}
+        : Phy_Header(len + sizeof(Header) - sizeof(Phy_Header)), _frame_control(), _sequence_number(0), _dst_pan_id(PAN_ID_BROADCAST), _dst(dst), _src(src) { ack_request(dst != broadcast());}
 
         const Address & src() const { return _src; }
         const Address & dst() const { return _dst; }
 
-//        void sequence_number(Reg8 seq) { _sequence_number = seq; }
+        void sequence_number(Reg8 seq) { _sequence_number = seq; }
         const Reg8 & sequence_number() { return _sequence_number; }
 
         bool pending() const { return _frame_control.fp(); }
@@ -170,7 +180,7 @@ public:
         bool ack_request() { return _frame_control.ar(); }
 
         friend Debug & operator<<(Debug & db, const Header & h) {
-            db << "{fc=" << ",sn=" << h._sequence_number << ",pid=" << h._dst_pan_id << ",dst=" << h._dst << ",src=" << h._src << "," << "}";
+            db << "{ph=" << reinterpret_cast<const Phy_Header &>(h) << ",fc=" << h._frame_control << ",sn=" << h._sequence_number << ",pid=" << h._dst_pan_id << ",dst=" << h._dst << ",src=" << h._src << "," << "}";
             return db;
         }
 

@@ -80,7 +80,7 @@ _start:
 .L1:    str     r0, [r1]
         add     r1, #4
         cmp     r1, r2
-        blt         .L1
+        blt     .L1
 
 	bl      _init
 
@@ -91,5 +91,5 @@ __epos_app_entry:
         bl      __pre_main
         bl      main
         push    {r0}         // save main's return value to be used by exit()
-    	bl		_fini
-    	bl		_exit
+    	bl	_fini
+    	bl	_exit

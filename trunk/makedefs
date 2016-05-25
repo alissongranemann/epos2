@@ -99,7 +99,10 @@ cortex_m_AS_FLAGS       := -mcpu=cortex-m3 -mthumb -mfpu=fpa
 cortex_m_LD_FLAGS       := 
 cortex_m_EMULATOR       = qemu-system-arm -cpu cortex-m3 -machine lm3s811evb -m $(MEM_SIZE)k -nographic -no-reboot -kernel
 cortex_m_DEBUGGER       := arm-none-eabi-gdb
-cortex_m_FLASHER        = $(TOOLS)/eposflash/eposflash-$(MMOD)
+ifndef FLASHER_FLAGS
+FLASHER_FLAGS           := -d /dev/ttyACM0
+endif
+cortex_m_FLASHER        = $(TOOLS)/eposflash/eposflash-$(MMOD) $(FLASHER_FLAGS) -f 
 
 atmega_CC_FLAGS         := -mmcu=atmega128 -Wno-inline
 atmega_AS_FLAGS         := -mmcu=atmega128
@@ -135,7 +138,7 @@ endif
 ifneq ($(wildcard $(IMG)/$(MACH)_system),) 
 MACH_DEBUGGER           := $(MACH_DEBUGGER) -ex "add-symbol-file $(call DBSEC,$(SRC)/system/$(MACH)_system,.text)"
 endif
-MACH_FLASHER            := $(MACH_FLASHER)
+MACH_FLASHER            := $($(MACH)_FLASHER)
 
 # Architecture specifics
 ARCH_LITTLE	:= little

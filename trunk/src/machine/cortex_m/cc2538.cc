@@ -28,9 +28,9 @@ int CC2538::send(const Address & dst, const Type & type, const void * data, unsi
     if(size > Frame::MTU)
         size = Frame::MTU;
 
-    Buffer * buf = alloc(reinterpret_cast<NIC *>(this), dst, type, 0, 0, size);
-
     db<CC2538>(TRC) << "Radio::send(s=" << _address << ",d=" << dst << ",p=" << hex << type << dec << ",d=" << data << ",s=" << size << ")" << endl;
+
+    Buffer * buf = alloc(reinterpret_cast<NIC *>(this), dst, type, 0, 0, size);
 
     // Assemble the frame
     new (buf->frame()) Frame(type, _address, dst, data, size);
@@ -91,7 +91,6 @@ int CC2538::receive(Address * src, Type * type, void * data, unsigned int size)
 }
 
 
-// Allocated buffers must be sent or release IN ORDER as assumed by the Radio
 CC2538::Buffer * CC2538::alloc(NIC * nic, const Address & dst, const Type & type, unsigned int once, unsigned int always, unsigned int payload)
 {
     db<CC2538>(TRC) << "CC2538::alloc(s=" << _address << ",d=" << dst << ",p=" << hex << type << dec << ",on=" << once << ",al=" << always << ",ld=" << payload << ")" << endl;
@@ -104,34 +103,28 @@ CC2538::Buffer * CC2538::alloc(NIC * nic, const Address & dst, const Type & type
 int CC2538::send(Buffer * buf)
 {
     db<CC2538>(TRC) << "Radio::send(buf=" << buf << ")" << endl;
+    db<CC2538>(TRC) << "frame=" << *(buf->frame()) << ")" << endl;
 
-    unsigned int size = buf->size();
+    int ret = buf->size();
 
-    // TODO: Memory in the fifos is padded: you can only write one byte every 4bytes.
-    // For now, we'll just copy using the RFDATA register
-    char * frame = reinterpret_cast<char *>(buf->frame());
-
-    sfr(RFST) = ISFLUSHTX; // Clear TXFIFO
-    while(xreg(TXFIFOCNT) != 0);
-
-    // First field is length of MAC
-    // CRC is inserted by hardware (assuming auto-CRC is enabled)
-    for(unsigned int i = 0; i < frame[0] + 1 - sizeof(CRC); i++)
-        sfr(RFDATA) = frame[i];
+    clear_txfifo();
+    setup_tx(buf->frame());
 
     // Trigger an immediate send
-    bool ok = send_and_wait(buf->frame()->dst() != broadcast());
+    bool ok = send_and_wait(buf->frame()->ack_request());
 
     if(ok) {
         db<CC2538>(INF) << "CC2538::send done" << endl;
         _statistics.tx_packets++;
-        _statistics.tx_bytes += size;
-    } else
+        _statistics.tx_bytes += ret;
+    } else {
         db<CC2538>(INF) << "CC2538::send failed!" << endl;
+        ret = 0;
+    }
 
     delete buf;
 
-    return size;
+    return ret;
 }
 
 
@@ -158,10 +151,15 @@ void CC2538::handle_int()
 {
     Reg32 irqrf0 = sfr(RFIRQF0);
     Reg32 irqrf1 = sfr(RFIRQF1);
+    Reg32 errf = sfr(RFERRF);
+    sfr(RFIRQF0) = 0; 
+    sfr(RFIRQF1) = 0;
+    sfr(RFERRF) = 0;
 
     if(irqrf0 & INT_FIFOP) { // Frame received
         sfr(RFIRQF0) &= ~INT_FIFOP;
         if(frame_in_rxfifo()) {
+            db<CC2538>(TRC) << "frame_in_rxfifo()" << endl;
             Buffer * buf = 0;
             for(unsigned int i = 0; !buf && (i < RX_BUFS); ++i, ++_rx_cur %= RX_BUFS) {
                 if(_rx_buffer[_rx_cur]->lock()) {
@@ -196,13 +194,15 @@ void CC2538::handle_int()
     //if(irqrf0 & INT_SFD) db<CC2538>(TRC) << "SFD" << endl;
     //if(irqrf0 & INT_ACT_UNUSED) db<CC2538>(TRC) << "ACT_UNUSED" << endl;
 
-    db<CC2538>(TRC) << "CC2538::RFIRQF1 = " << hex << irqrf1 << endl;
+    db<CC2538>(TRC) << "RFIRQF1 = " << hex << irqrf1 << endl;
     //if(irqrf1 & INT_CSP_WAIT) db<CC2538>(TRC) << "CSP_WAIT" << endl;
     //if(irqrf1 & INT_CSP_STOP) db<CC2538>(TRC) << "CSP_STOP" << endl;
     //if(irqrf1 & INT_CSP_MANINT) db<CC2538>(TRC) << "CSP_MANINT" << endl;
     //if(irqrf1 & INT_RFIDLE) db<CC2538>(TRC) << "RFIDLE" << endl;
     //if(irqrf1 & INT_TXDONE) db<CC2538>(TRC) << "TXDONE" << endl;
     //if(irqrf1 & INT_TXACKDONE) db<CC2538>(TRC) << "TXACKDONE" << endl;
+
+    db<CC2538>(TRC) << "RFERRF = " << hex << errf << endl;
 }
 
 
@@ -316,8 +316,7 @@ bool CC2538::send_and_wait(bool ack)
         return acked;
     }
     else if(sent) {
-        while(!(sfr(RFIRQF1) & INT_TXDONE));
-        sfr(RFIRQF1) &= ~INT_TXDONE;
+        while(!tx_ok());
     }
 
     return sent;
@@ -338,10 +337,12 @@ bool CC2538::backoff_and_send()
         unsigned int trials;
         for(trials = 0u; trials < CSMA_CA_MAX_TRANSMISSION_TRIALS; trials++) {
             const auto ubp = CSMA_CA_UNIT_BACKOFF_PERIOD;
-            auto delay_time = (Random::random() % (two_raised_to_be - 1)) * ubp;
+            auto delay_time = (Random::random() % two_raised_to_be) * ubp;
             delay_time = delay_time < ubp ? ubp : delay_time;
 
 //            eMote3_GPTM::delay(delay_time, 2);
+            for(volatile unsigned int i = 0; i < delay_time; i++); //TODO: replace with timer
+            while(!cca_valid());
             if(tx_if_cca()) {
                 break; // Success
             }

@@ -16,7 +16,7 @@ protected:
 
 public:
     static const unsigned int IRQS = 64;
-    static const unsigned int TIMERS = 6;
+    static const unsigned int TIMERS = 4;
     static const unsigned int GPIO_PORTS = 4;
     static const bool supports_gpio_power_up = true;
 
@@ -1012,6 +1012,7 @@ protected:
     {
         scr(RCGCRFC) |= RCGCRFC_RFC0;
         scr(SCGCRFC) |= RCGCRFC_RFC0;
+        scr(DCGCRFC) |= RCGCRFC_RFC0;
     }
     // Disable clock to the RF CORE module
     static void radio_disable()

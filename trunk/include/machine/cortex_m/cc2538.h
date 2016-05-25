@@ -64,6 +64,7 @@ public:
         RXLAST_PTR  = 0x078,
         RFIRQM0     = 0x08c,
         RFIRQM1     = 0x090,
+        RFERRM      = 0x094,
         CSPT        = 0x194,
         AGCCTRL1    = 0x0c8,
         TXFILTCFG   = 0x1e8,
@@ -433,6 +434,9 @@ public:
 
         rx_mode(RX_MODE_NORMAL);
 
+        // Disable counting of MAC overflows
+        xreg(CSPT) = 0xff;
+
         // Clear interrupts
         sfr(RFIRQF0) = 0;
         sfr(RFIRQF1) = 0;
@@ -450,10 +454,11 @@ public:
     void end_cca() { rx_mode(RX_MODE_NORMAL); }
     bool valid_frame() { return frame_in_rxfifo(); }
 
-    void setup_tx(char * f, unsigned int size) {
-        sfr(RFDATA) = size + sizeof(IEEE802_15_4::CRC);
-        for(auto i=0u; i < size; i++)
-            sfr(RFDATA) = f[i];
+    void setup_tx(const IEEE802_15_4::Frame * frame) {
+        const char * f = reinterpret_cast<const char *>(frame);
+        sfr(RFDATA) = f[0];
+        for(auto i=0u; i < f[0] - sizeof(IEEE802_15_4::CRC); i++)
+            sfr(RFDATA) = f[i+1];
     }
     volatile bool tx_ok() {
         volatile bool ret = (sfr(RFIRQF1) & INT_TXDONE);
@@ -512,10 +517,9 @@ class CC2538: public IEEE802_15_4, public IEEE802_15_4::Observed, private CC2538
 private:
     // Transmit and Receive Ring sizes
     static const unsigned int UNITS = Traits<CC2538>::UNITS;
-    static const unsigned int TX_BUFS = Traits<CC2538>::SEND_BUFFERS;
     static const unsigned int RX_BUFS = Traits<CC2538>::RECEIVE_BUFFERS;
 
-    static const unsigned int DMA_BUFFER_SIZE = RX_BUFS * sizeof(Buffer) + TX_BUFS * sizeof(Buffer);
+    static const unsigned int DMA_BUFFER_SIZE = RX_BUFS * sizeof(Buffer);
 
     static const unsigned int CSMA_CA_MIN_BACKOFF_EXPONENT = 3;
     static const unsigned int CSMA_CA_MAX_BACKOFF_EXPONENT = 5;
