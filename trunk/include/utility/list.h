@@ -474,12 +474,9 @@ public:
     using Base::empty;
     using Base::size;
     using Base::head;
-    using Base::tail;
     using Base::begin;
     using Base::end;
     using Base::remove_head;
-    using Base::remove_tail;
-    using Base::search;
     
     void insert(Element * e) {
         if(empty())
@@ -507,12 +504,7 @@ public:
         }
     }
     
-    Element * remove() {
-        Element * e = remove_head();
-        if(e && relative && e->next())
-            e->next()->rank(e->next()->rank() + e->rank());
-        return e;
-    }
+    Element * remove() { return remove_head(); }
 
     Element * remove(Element * e) {
         Base::remove(e);
@@ -581,6 +573,12 @@ public:
         return e;
     }
     
+    Element * search_left(const Object_Type * obj) {
+        Element * e = head();
+        for(; e && (e->object() + e->size() != obj); e = e->next());
+        return e;
+    }
+    
     void insert_merging(Element * e, Element ** m1, Element ** m2) {
         _grouped_size += e->size();
         *m1 = *m2 = 0;
@@ -609,13 +607,6 @@ public:
         return e;
     }
     
-private:
-    Element * search_left(const Object_Type * obj) {
-        Element * e = head();
-        for(; e && (e->object() + e->size() != obj); e = e->next());
-        return e;
-    }
-
 private:
     unsigned int _grouped_size;
 };
@@ -929,10 +920,8 @@ public:
     
     Element * remove() { 
         db<Lists>(TRC) << "Ordered_List::remove()" << endl;
-        Element * e = Base::remove_head();
-        if(e && relative && e->next())
-            e->next()->rank(e->next()->rank() + e->rank());
-        return e;
+
+        return Base::remove_head();
     }
 
     Element * remove(Element * e) {
@@ -1312,6 +1301,12 @@ public:
         return e;
     }
     
+    Element * search_left(const Object_Type * obj) {
+        Element * e = head();
+        for(; e && (e->object() + e->size() != obj); e = e->next());
+        return e;
+    }
+    
     void insert_merging(Element * e, Element ** m1, Element ** m2) {
         db<Lists>(TRC) << "Grouping_List::insert_merging(e=" << e << ")" << endl;
 
@@ -1349,13 +1344,6 @@ public:
         return e;
     }
     
-private:
-    Element * search_left(const Object_Type * obj) {
-        Element * e = head();
-        for(; e && (e->object() + e->size() != obj); e = e->next());
-        return e;
-    }
-
 private:
     unsigned int _grouped_size;
 };
