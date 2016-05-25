@@ -235,18 +235,11 @@ public:
 };
 
 
-// PC_Timer
-class PC_Timer: public Timer_Common
+// Tick timer used by the system
+class PC_Timer: private Timer_Common
 {
     friend class PC;
     friend class Init_System;
-
-public:
-    enum {
-        SCHEDULER,
-        ALARM,
-        USER
-    };
 
 protected:
     typedef IF<Traits<System>::multicore, APIC_Timer, i8253>::Result Engine;
@@ -257,6 +250,19 @@ protected:
     static const unsigned int FREQUENCY = Traits<PC_Timer>::FREQUENCY;
 
 public:
+    enum {
+        SCHEDULER,
+        ALARM,
+        USER
+    };
+
+    using Timer_Common::Hertz;
+    using Timer_Common::Tick;
+    using Timer_Common::Microsecond;
+    using Timer_Common::Handler;
+    using Timer_Common::Channel;
+
+protected:
     PC_Timer(const Hertz & frequency, const Handler & handler, const Channel & channel, bool retrigger = true)
     : _channel(channel), _initial(FREQUENCY / frequency), _retrigger(retrigger), _handler(handler) {
         db<Timer>(TRC) << "Timer(f=" << frequency << ",h=" << reinterpret_cast<void*>(handler)
@@ -271,6 +277,7 @@ public:
             _current[i] = _initial;
     }
 
+public:
     ~PC_Timer() {
         db<Timer>(TRC) << "~Timer(f=" << frequency() << ",h=" << reinterpret_cast<void*>(_handler)
         	       << ",ch=" << _channel << ") => {count=" << _initial << "}" << endl;
@@ -321,33 +328,23 @@ protected:
 // Timer used by Thread::Scheduler
 class Scheduler_Timer: public PC_Timer
 {
-private:
-    typedef RTC::Microsecond Microsecond;
-
 public:
     Scheduler_Timer(const Microsecond & quantum, const Handler & handler): PC_Timer(1000000 / quantum, handler, SCHEDULER) {}
 };
-
 
 // Timer used by Alarm
 class Alarm_Timer: public PC_Timer
 {
 public:
-    static const unsigned int FREQUENCY = Timer::FREQUENCY;
-
-public:
     Alarm_Timer(const Handler & handler): PC_Timer(FREQUENCY, handler, ALARM) {}
 };
-
 
 // Timer available for users
 class User_Timer: public PC_Timer
 {
-private:
-    typedef RTC::Microsecond Microsecond;
-
 public:
-    User_Timer(const Microsecond & quantum, const Handler & handler): PC_Timer(1000000 / quantum, handler, USER, true) {}
+    User_Timer(const Microsecond & time, const Handler & handler, const Channel & channel, bool retrigger = false)
+    : PC_Timer(1000000 / time, handler, USER, retrigger) {}
 };
 
 __END_SYS

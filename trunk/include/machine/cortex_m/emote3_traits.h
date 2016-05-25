@@ -1,7 +1,7 @@
 // EPOS EPOSMoteIII (Cortex-M3) MCU Metainfo and Configuration
 
-#ifndef __emote3_traits_h
-#define __emote3_traits_h
+#ifndef __machine_traits_h
+#define __machine_traits_h
 
 #include <system/config.h>
 
@@ -43,6 +43,7 @@ template <> struct Traits<Cortex_M>: public Traits<Cortex_M_Common>
 
 template <> struct Traits<Cortex_M_IC>: public Traits<Cortex_M_Common>
 {
+    static const bool debugged = hysterically_debugged;
 };
 
 template <> struct Traits<Cortex_M_Timer>: public Traits<Cortex_M_Common>
@@ -69,6 +70,10 @@ template <> struct Traits<Cortex_M_UART>: public Traits<Cortex_M_Common>
 
 template <> struct Traits<Cortex_M_USB>: public Traits<Cortex_M_Common>
 {
+    // Some observed objects are created before initializing the Display, which may use the USB.
+    // Enabling debug may cause trouble in some Machines
+    static const bool debugged = false;
+    
     static const unsigned int UNITS = 1;
     static const bool blocking = true;
 };

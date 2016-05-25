@@ -30,8 +30,6 @@ debug:		$(IMAGE)
 		$(EMULATOR) $(IMAGE) | $(TEE) $(OUTPUT) &
 		$(DEBUGGER) $(APP)/$(APPLICATION)
 
-flash:		$(FLASH)
-
 strip:		$(SYSTEM) $(APPLICATION)
 		@for file in $^; do $(STRIP) "$${file}"; done;
 		

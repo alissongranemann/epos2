@@ -15,6 +15,7 @@ protected:
 
 public:
     static const unsigned int IRQS = 30;
+    static const unsigned int TIMERS = 6;
     static const unsigned int GPIO_PORTS = 5;
     static const bool supports_gpio_power_up = false;
 

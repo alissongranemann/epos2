@@ -1,7 +1,7 @@
 // EPOS LM3S811 (Cortex-M3) MCU Mediators Configuration
 
-#ifndef __cortex_m_config_h
-#define __cortex_m_config_h
+#ifndef __machine_config_h
+#define __machine_config_h
 
 #include <system/meta.h>
 #include __APPL_TRAITS_H

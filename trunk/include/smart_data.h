@@ -121,7 +121,7 @@ public:
         }
         if(d._thread) db << "ReTT";
         if(d._responsive) db << "ReED";
-        if(d._interested) db << "In" << ((d._period) ? "TT" : "ED");
+        if(d._interested) db << "In" << ((d._interested->period()) ? "TT" : "ED");
         db << ":u=" << d._unit << ",v=" << d._value << ",e=" << int(d._error) << ",c=" << d._coordinates << ",t=" << d._time << ",x=" << d._expiry << "}";
         return db;
     }

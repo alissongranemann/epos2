@@ -1,7 +1,7 @@
 // EPOS LM3S811 (Cortex-M3) MCU Metainfo and Configuration
 
-#ifndef __lm3s811_traits_h
-#define __lm3s811_traits_h
+#ifndef __machine_traits_h
+#define __machine_traits_h
 
 #include <system/config.h>
 
@@ -43,6 +43,7 @@ template <> struct Traits<Cortex_M>: public Traits<Cortex_M_Common>
 
 template <> struct Traits<Cortex_M_IC>: public Traits<Cortex_M_Common>
 {
+    static const bool debugged = hysterically_debugged;
 };
 
 template <> struct Traits<Cortex_M_Timer>: public Traits<Cortex_M_Common>

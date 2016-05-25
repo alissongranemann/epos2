@@ -8,6 +8,7 @@
 #include <mmu.h>
 #include <tsc.h>
 #include <machine.h>
+#include <rtc.h>
 #include __MODEL_H
 #include "info.h"
 #include "memory_map.h"
@@ -22,29 +23,35 @@ class Cortex_M: private Machine_Common, private Cortex_M_Model
 public:
     Cortex_M() {}
 
-    static unsigned int cpu_id() { return 0; }
-    static unsigned int n_cpus() { return 1; }
+    static void delay(const RTC::Microsecond & time) {
+//        eMote3_GPTM g(3, time_microseconds);
+//        g.enable();
+//        while(g.running());
+    }
 
     static void panic();
     static void reboot();
     static void poweroff() { reboot(); }
 
+    static unsigned int n_cpus() { return 1; }
+    static unsigned int cpu_id() { return 0; }
+
     static void smp_barrier() {};
     static void smp_init(unsigned int) {};
-
-    using Cortex_M_Model::uart_config;
-    using Cortex_M_Model::uart_enable;
-    using Cortex_M_Model::uart_disable;
-
-    using Cortex_M_Model::usb_config;
-    using Cortex_M_Model::usb_enable;
-    using Cortex_M_Model::usb_disable;
-
-    using Cortex_M_Model::gpio_pull_up;
-    using Cortex_M_Model::gpio_pull_down;
-
-    using Cortex_M_Model::radio_enable;
-    using Cortex_M_Model::radio_disable;
+//
+//    using Cortex_M_Model::uart_config;
+//    using Cortex_M_Model::uart_enable;
+//    using Cortex_M_Model::uart_disable;
+//
+//    using Cortex_M_Model::usb_config;
+//    using Cortex_M_Model::usb_enable;
+//    using Cortex_M_Model::usb_disable;
+//
+//    using Cortex_M_Model::gpio_pull_up;
+//    using Cortex_M_Model::gpio_pull_down;
+//
+//    using Cortex_M_Model::radio_enable;
+//    using Cortex_M_Model::radio_disable;
 
 private:
     static void init();

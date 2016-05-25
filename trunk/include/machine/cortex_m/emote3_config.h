@@ -1,7 +1,7 @@
 // EPOS EPOSMoteIII (Cortex-M4) Mediators Configuration
 
-#ifndef __emote3_config_h
-#define __emote3_config_h
+#ifndef __machine_config_h
+#define __machine_config_h
 
 #include <system/meta.h>
 #include __APPL_TRAITS_H

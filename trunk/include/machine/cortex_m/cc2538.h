@@ -4,12 +4,13 @@
 #define __cc2538_h
 
 #include <ieee802_15_4.h>
+#include <machine.h>
 #include <ic.h>
 
 __BEGIN_SYS
 
 // IT CC2538 IEEE 802.15.4 RF Transceiver
-class CC2538RF
+class CC2538RF: private Cortex_M_Model
 {
     friend class One_Hop_MAC;
     friend class TSTP_MAC;
@@ -403,7 +404,7 @@ public:
 public:
     CC2538RF() {
         // Enable clock to the RF CORE module
-        Machine::radio_enable();
+        radio_enable();
 
         // Disable device interrupts
         xreg(RFIRQM0) = 0;
