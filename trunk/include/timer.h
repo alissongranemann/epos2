@@ -13,7 +13,7 @@ class Timer_Common
 {
 public:
     typedef TSC::Hertz Hertz;
-    typedef TSC::Hertz Tick;
+    typedef int Tick;
     typedef RTC::Microsecond Microsecond;
     typedef IC::Interrupt_Handler Handler;
     typedef unsigned int Channel;
