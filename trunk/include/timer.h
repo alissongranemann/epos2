@@ -11,7 +11,7 @@ __BEGIN_SYS
 
 class Timer_Common
 {
-protected:
+public:
     typedef TSC::Hertz Hertz;
     typedef TSC::Hertz Tick;
     typedef RTC::Microsecond Microsecond;

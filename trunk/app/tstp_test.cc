@@ -51,15 +51,15 @@ void sink(const NIC::Address & mac)
     cout << "My location is " << TSTP::here() << " and the time now is " << TSTP::now() << endl;
     cout << "I'll now declare my interests ..." << endl;
 
-    Acceleration a0(Region(Coordinates(5, 5, 5), 10, 0, 3000000000UL), 10000000); // Remote, from a region centered at (1, 1, 1), with radius 10, from time 20 to 30, updated on each event, with expiration time of 10s.
-    Acceleration a1(Region(Coordinates(5, 5, 5), 10, 0, 3000000000UL), 1000000, 1000000); // Remote, from a region centered at (1, 1, 1), with radius 10, from time 20 to 30, updated every ten seconds, with expiration time of 1s.
+    Acceleration a0(Region(Coordinates(5, 5, 5), 10, 0, TSTP::now() + 3000000000UL), 10000000); // Remote, from a region centered at (1, 1, 1), with radius 10, from time 20 to 30, updated on each event, with expiration time of 10s.
+    Acceleration a1(Region(Coordinates(5, 5, 5), 10, 0, TSTP::now() + 3000000000UL), 1000000, 1000000); // Remote, from a region centered at (1, 1, 1), with radius 10, from time 20 to 30, updated every ten seconds, with expiration time of 1s.
 
     Delay(5000000);
 
     while((a0 != 'a') && (a1 != 'a')) {
         cout << "a0=" << a0 << endl;
         cout << "a1=" << a1 << endl;
-        Delay (50000);
+        Delay (500000);
     }
 }
 

@@ -102,8 +102,8 @@ CC2538::Buffer * CC2538::alloc(NIC * nic, const Address & dst, const Type & type
 
 int CC2538::send(Buffer * buf)
 {
-    db<CC2538>(TRC) << "Radio::send(buf=" << buf << ")" << endl;
-    db<CC2538>(TRC) << "frame=" << *(buf->frame()) << ")" << endl;
+    db<CC2538>(TRC) << "CC2538::send(buf=" << buf << ")" << endl;
+    db<CC2538>(INF) << "CC2538::send:frame=" << buf->frame() << " => " << *(buf->frame()) << endl;
 
     int ret = buf->size();
 
@@ -159,7 +159,7 @@ void CC2538::handle_int()
     if(irqrf0 & INT_FIFOP) { // Frame received
         sfr(RFIRQF0) &= ~INT_FIFOP;
         if(frame_in_rxfifo()) {
-            db<CC2538>(TRC) << "frame_in_rxfifo()" << endl;
+            db<CC2538>(TRC) << "CC2538::handle_int: frame in rxfifo" << endl;
             Buffer * buf = 0;
             for(unsigned int i = 0; !buf && (i < RX_BUFS); ++i, ++_rx_cur %= RX_BUFS) {
                 if(_rx_buffer[_rx_cur]->lock()) {
@@ -176,8 +176,8 @@ void CC2538::handle_int()
                 copy_from_rxfifo(frame);
                 buf->size(frame->length() - (sizeof(Header) + sizeof(CRC) - sizeof(Phy_Header))); // Phy_Header is included in Header, but is already discounted in frame_length
 
-                db<CC2538>(TRC) << "CC2538::int:receive(s=" << frame->src() << ",p=" << hex << frame->header()->type() << dec << ",d=" << frame->data<void>() << ",s=" << buf->size() << ")" << endl;
-                db<CC2538>(INF) << "CC2538::handle_int[" << _rx_cur << "]" << endl;
+                db<CC2538>(TRC) << "CC2538::handle_int:receive(s=" << frame->src() << ",p=" << hex << frame->header()->type() << dec << ",d=" << frame->data<void>() << ",s=" << buf->size() << ")" << endl;
+                db<CC2538>(INF) << "CC2538::handle_int:rx_cur=" << _rx_cur << endl;
 
                 if(!notify(frame->header()->type(), buf)) // No one was waiting for this frame, so let it free for receive()
                     free(buf);
@@ -185,7 +185,7 @@ void CC2538::handle_int()
         }
     }
 
-    db<CC2538>(TRC) << "CC2538::int: " << endl << "RFIRQF0 = " << hex << irqrf0 << endl;
+    db<CC2538>(TRC) << "CC2538::handle_int:RFIRQF0=" << hex << irqrf0 << endl;
     //if(irqrf0 & INT_RXMASKZERO) db<CC2538>(TRC) << "RXMASKZERO" << endl;
     //if(irqrf0 & INT_RXPKTDONE) db<CC2538>(TRC) << "RXPKTDONE" << endl;
     //if(irqrf0 & INT_FRAME_ACCEPTED) db<CC2538>(TRC) << "FRAME_ACCEPTED" << endl;
@@ -194,7 +194,7 @@ void CC2538::handle_int()
     //if(irqrf0 & INT_SFD) db<CC2538>(TRC) << "SFD" << endl;
     //if(irqrf0 & INT_ACT_UNUSED) db<CC2538>(TRC) << "ACT_UNUSED" << endl;
 
-    db<CC2538>(TRC) << "RFIRQF1 = " << hex << irqrf1 << endl;
+    db<CC2538>(TRC) << "CC2538::handle_int:RFIRQF1=" << hex << irqrf1 << endl;
     //if(irqrf1 & INT_CSP_WAIT) db<CC2538>(TRC) << "CSP_WAIT" << endl;
     //if(irqrf1 & INT_CSP_STOP) db<CC2538>(TRC) << "CSP_STOP" << endl;
     //if(irqrf1 & INT_CSP_MANINT) db<CC2538>(TRC) << "CSP_MANINT" << endl;
@@ -202,7 +202,7 @@ void CC2538::handle_int()
     //if(irqrf1 & INT_TXDONE) db<CC2538>(TRC) << "TXDONE" << endl;
     //if(irqrf1 & INT_TXACKDONE) db<CC2538>(TRC) << "TXACKDONE" << endl;
 
-    db<CC2538>(TRC) << "RFERRF = " << hex << errf << endl;
+    db<CC2538>(TRC) << "CC2538::handle_int:RFERRF=" << hex << errf << endl;
 }
 
 
