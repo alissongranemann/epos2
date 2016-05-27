@@ -18,11 +18,8 @@ void GPIO::handle_int(const IC::Interrupt_Id & i)
         const bool regular_interrupt = gpio(port, MIS) & (1 << i);
         const bool power_up_interrupt = gpio(port, IRQ_DETECT_ACK) & ((1 << i) << (8 * port));
         if(regular_interrupt || power_up_interrupt) {
-            kout << regular_interrupt << " " << power_up_interrupt << endl;
-            kout << i << endl;
             GPIO * dev = _devices[port][i];
             if(dev && dev->_handler) {
-                kout << "Calling handler" << endl;
                 dev->_handler(i);
             }
         }
