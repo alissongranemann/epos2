@@ -20,7 +20,6 @@ public:
     static const unsigned int GPIO_PORTS = 4;
     static const bool supports_gpio_power_up = true;
 
-
     // Base address for memory-mapped System Control Registers
     enum {
         SSI0_BASE       = 0x40008000,
@@ -38,7 +37,7 @@ public:
         I2CM_SA         = 0x00,
         I2CM_CTRL       = 0x04,
         I2CM_STAT       = I2CM_CTRL,
-        I2CM_DR         = 0X08,
+        I2CM_DR         = 0x08,
         I2CM_TPR        = 0x0C,
         I2CM_IMR        = 0x10,
         I2CM_RIS        = 0x14,
@@ -48,151 +47,166 @@ public:
     };
 
     // I2C slave offsets
-    enum {                              // Description
-        I2CS_OAR        = 0x00,         // Own Address
-        I2CS_STAT       = 0x04,         // Control and Status
-        I2CS_CTRL       = I2CS_STAT,    // Control and Status
-        I2CS_DR         = 0x08,         // Data
-        I2CS_IMR        = 0x0C,         // Interrupt Mask
-        I2CS_RIS        = 0x10,         // Raw Interrupt Status
-        I2CS_MIS        = 0x14,         // Masked Interrupt Status
-        I2CS_ICR        = 0x18,         // Interrupt Clear
+    enum {                           // Description
+        I2CS_OAR        = 0x00,      // Own Address
+        I2CS_CTRL       = 0x04,      // Control and Status
+        I2CS_STAT       = I2CS_CTRL, // Control and Status
+        I2CS_DR         = 0x08,      // Data
+        I2CS_IMR        = 0x0C,      // Interrupt Mask
+        I2CS_RIS        = 0x10,      // Raw Interrupt Status
+        I2CS_MIS        = 0x14,      // Masked Interrupt Status
+        I2CS_ICR        = 0x18,      // Interrupt Clear
+    };
+
+    // Unified I2C Master-Slave offsets
+    enum {
+        I2C_SA         = 0x00,
+        I2C_OAR        = I2C_SA,
+        I2C_CTRL       = 0x04,
+        I2C_STAT       = I2C_CTRL,
+        I2C_DR         = 0x08,
+        I2C_TPR        = 0x0C,
+        I2C_IMR        = 0x10,
+        I2C_RIS        = 0x14,
+        I2C_MIS        = 0x18,
+        I2C_ICR        = 0x1C,
+        I2C_CR         = 0x20,
     };
 
     // Useful bits in the I2CM_SA register
     enum {
-        RS              = 0x01,
+        I2C_SA_RS              = 0x01,
     };
 
     // Useful bits in the I2CM_CTRL register
     enum {
-        ACK             = 1 << 3,
-        STOP            = 1 << 2,
-        START           = 1 << 1,
-        RUN             = 1 << 0,
+        I2C_CTRL_ACK   = 1 << 3,
+        I2C_CTRL_STOP  = 1 << 2,
+        I2C_CTRL_START = 1 << 1,
+        I2C_CTRL_RUN   = 1 << 0,
     };
 
     // Useful bits in the I2CM_STAT register
-    enum {                              // Description (type)
-        BUSBSY          = 1 << 6,       // Bus Busy (RO)
-        IDLE            = 1 << 5,       // I2C Idle (RO)
-        ARBLST          = 1 << 4,       // Arbitration Lost (RO)
-        DATACK          = 1 << 3,       // Acknowledge Data (RO)
-        ADRACK          = 1 << 2,       // Acknowledge Address (RO)
-        ERROR           = 1 << 1,       // Error (RO)
-        BUSY            = 1 << 0,       // I2C Busy (RO)
+    enum {                         // Description (type)
+        I2C_STAT_BUSBSY = 1 << 6, // Bus Busy (RO)
+        I2C_STAT_IDLE   = 1 << 5, // I2C Idle (RO)
+        I2C_STAT_ARBLST = 1 << 4, // Arbitration Lost (RO)
+        I2C_STAT_DATACK = 1 << 3, // Acknowledge Data (RO)
+        I2C_STAT_ADRACK = 1 << 2, // Acknowledge Address (RO)
+        I2C_STAT_ERROR  = 1 << 1, // Error (RO)
+        I2C_STAT_BUSY   = 1 << 0, // I2C Busy (RO)
     };
 
     // Useful bits in the I2CM_IMR register
-    enum {                              // Description (type)
-        I2CM_IMR_IM     = 0x01,         // Interrupt Mask (RW)
+    enum {                  // Description (type)
+        I2C_IMR_IM = 0x01, // Interrupt Mask (RW)
     };
 
     // Useful bits in the I2CM_RIS register
-    enum {                              // Description (type)
-        I2CM_RIS_BIT    = 0x01,         // Raw Interrupt Status (RO)
+    enum {                   // Description (type)
+        I2C_RIS_BIT = 0x01, // Raw Interrupt Status (RO)
     };
 
     // Useful bits in the I2CM_MIS register
-    enum {                              // Description (type)
-        I2CM_MIS_MIS    = 0x01,         // Masked Interrupt Status (RO)
+    enum {                   // Description (type)
+        I2C_MIS_MIS = 0x01, // Masked Interrupt Status (RO)
     };
 
     // Useful bits in the I2CM_ICR register
-    enum {                              // Description (type)
-        I2CM_ICR_IC     = 0x01,         // Interrupt Clear (WO)
+    enum {                  // Description (type)
+        I2C_ICR_IC = 0x01, // Interrupt Clear (WO)
     };
 
     // Useful bits in the I2CM_CR register
-    enum {                              // Description (type)
-        SFE             = 1 << 5,       // I2C Slave Function Enable (RW)
-        MFE             = 1 << 4,       // I2C Master Function Enable (RW)
-        LPBK            = 1 << 0,       // I2C Loopback (RW)
+    enum {                     // Description (type)
+        I2C_CR_SFE  = 1 << 5, // I2C Slave Function Enable (RW)
+        I2C_CR_MFE  = 1 << 4, // I2C Master Function Enable (RW)
+        I2C_CR_LPBK = 1 << 0, // I2C Loopback (RW)
     };
 
     // Useful bits in the I2CS_STAT register
-    enum {                              // Description (type)
-        FBR             = 1 << 2,       // First Byte Received (RO)
-        TREQ            = 1 << 1,       // Transmit Request (RO)
-        RREQ            = 1 << 0,       // Receive Request (RO)
+    enum {                      // Description (type)
+        I2C_STAT_FBR  = 1 << 2, // First Byte Received (RO)
+        I2C_STAT_TREQ = 1 << 1, // Transmit Request (RO)
+        I2C_STAT_RREQ = 1 << 0, // Receive Request (RO)
     };
 
     // Useful bits in the I2CS_CTRL register
-    enum {                              // Description (type)
-        DA              = 0x01,         // Device Active (WO)
+    enum {                   // Description (type)
+        I2C_CTRL_DA = 0x01, // Device Active (WO)
     };
 
     // Useful bits in the I2CS_IMR register
-    enum {                              // Description (type)
-        STOPIM          = 1 << 2,       // Stop Condition Interrupt Mask (RO)
-        STARTIM         = 1 << 1,       // Start Condition Interrupt Mask (RO)
-        DATAIM          = 1 << 0,       // Data Interrupt Mask (RW)
+    enum {                         // Description (type)
+        I2C_IMR_STOPIM  = 1 << 2, // Stop Condition Interrupt Mask (RO)
+        I2C_IMR_STARTIM = 1 << 1, // Start Condition Interrupt Mask (RO)
+        I2C_IMR_DATAIM  = 1 << 0, // Data Interrupt Mask (RW)
     };
 
     // Useful bits in the I2CS_RIS register
-    enum {                              // Description (type)
-        STOPRIS         = 1 << 2,       // Stop Condition Raw Interrupt Status (RO)
-        STARTRIS        = 1 << 1,       // Start Condition Raw Interrupt Status (RO)
-        DATARIS         = 1 << 0,       // Data Interrupt Status (RO)
+    enum {                          // Description (type)
+        I2C_RIS_STOPRIS  = 1 << 2, // Stop Condition Raw Interrupt Status (RO)
+        I2C_RIS_STARTRIS = 1 << 1, // Start Condition Raw Interrupt Status (RO)
+        I2C_RIS_DATARIS  = 1 << 0, // Data Interrupt Status (RO)
     };
 
     // Useful bits in the I2CS_MIS register
-    enum {                              // Description (type)
-        STOPMIS         = 1 << 2,       // Stop Condition Masked Interrupt Status (RO)
-        STARTMIS        = 1 << 1,       // Start Condition Masked Interrupt Status (RO)
-        DATAMIS         = 1 << 0,       // Data Masked Interrupt Status (RO)
+    enum {                          // Description (type)
+        I2C_MIS_STOPMIS  = 1 << 2, // Stop Condition Masked Interrupt Status (RO)
+        I2C_MIS_STARTMIS = 1 << 1, // Start Condition Masked Interrupt Status (RO)
+        I2C_MIS_DATAMIS  = 1 << 0, // Data Masked Interrupt Status (RO)
     };
 
     // Useful bits in the I2CS_ICR register
-    enum {                              // Description (type)
-        STOPIC          = 1 << 2,       // Stop Condition Interrupt Clear (WO)
-        STARTIC         = 1 << 1,       // Start Condition Interrupt Clear (WO)
-        DATAIC          = 1 << 0,       // Data Interrupt Clear (WO)
+    enum {                          // Description (type)
+        I2C_ICR_STOPIC   = 1 << 2, // Stop Condition Interrupt Clear (WO)
+        I2C_ICR_STARTIC  = 1 << 1, // Start Condition Interrupt Clear (WO)
+        I2C_ICR_DATAIC   = 1 << 0, // Data Interrupt Clear (WO)
     };
 
     // Synchronous Serial Interface (SSI) offsets
     enum {
-        SSI_CR0         = 0x000,
-        SSI_CR1         = 0x004,
-        SSI_DR          = 0x008,
-        SSI_SR          = 0x00C,
-        SSI_CPSR        = 0x010,
-        SSI_IM          = 0x014,
-        SSI_RIS         = 0x018,
-        SSI_MIS         = 0x01C,
-        SSI_ICR         = 0x020,
-        SSI_DMACTL      = 0x024,
-        SSI_CC          = 0xFC8,
+        SSI_CR0    = 0x000,
+        SSI_CR1    = 0x004,
+        SSI_DR     = 0x008,
+        SSI_SR     = 0x00C,
+        SSI_CPSR   = 0x010,
+        SSI_IM     = 0x014,
+        SSI_RIS    = 0x018,
+        SSI_MIS    = 0x01C,
+        SSI_ICR    = 0x020,
+        SSI_DMACTL = 0x024,
+        SSI_CC     = 0xFC8,
 
     };
 
     // Useful bits in the SSI CR0 register
-    enum {                          // Description                   Type    Value after reset
-        CR0_SCR         = 1 << 8,   // serial clock rate              RW      0x00
-        SPH             = 1 << 7,   // serial clock phase high        RW      0x0
-                                    // applicable only to the Motorola SPI format
-        SPO             = 1 << 6,   // serial clock phase low         RW      0x0
-                                    // applicable only to the Motorola SPI format
-        FRF             = 1 << 4,   // frame format selection         RW      0x0
-                                    // 00: Motorola SPI format
-                                    // 01: TI synchronous serial frame format
-                                    // 10: National microwave frame format
-                                    // 11: Reserved
-        DSS             = 1 << 0,   // data size select              RW      0x0
-                                    // 0000-0010: Reserved
-                                    // 0011: 4-bit data
-                                    // 0100: 5-bit data
-                                    // 0101: 6-bit data
-                                    // 0110: 7-bit data
-                                    // 0111: 8-bit data
-                                    // 1000: 9-bit data
-                                    // 1001: 10-bit data
-                                    // 1010: 11-bit data
-                                    // 1011: 12-bit data
-                                    // 1100: 13-bit data
-                                    // 1101: 14-bit data
-                                    // 1110: 15-bit data
-                                    // 1111: 16-bit data
+    enum {                         // Description                   Type    Value after reset
+        CR0_SCR         = 1 << 8,  // serial clock rate              RW      0x00
+        SPH             = 1 << 7,  // serial clock phase high        RW      0x0
+                                   // applicable only to the Motorola SPI format
+        SPO             = 1 << 6,  // serial clock phase low         RW      0x0
+                                   // applicable only to the Motorola SPI format
+        FRF             = 1 << 4,  // frame format selection         RW      0x0
+                                   // 00: Motorola SPI format
+                                   // 01: TI synchronous serial frame format
+                                   // 10: National microwave frame format
+                                   // 11: Reserved
+        DSS             = 1 << 0,  // data size select              RW      0x0
+                                   // 0000-0010: Reserved
+                                   // 0011: 4-bit data
+                                   // 0100: 5-bit data
+                                   // 0101: 6-bit data
+                                   // 0110: 7-bit data
+                                   // 0111: 8-bit data
+                                   // 1000: 9-bit data
+                                   // 1001: 10-bit data
+                                   // 1010: 11-bit data
+                                   // 1011: 12-bit data
+                                   // 1100: 13-bit data
+                                   // 1101: 14-bit data
+                                   // 1110: 15-bit data
+                                   // 1111: 16-bit data
     };
 
     //Frame format
@@ -1008,34 +1022,29 @@ protected:
     }
 
     // Enable clock to the RF CORE module
-    static void radio_enable()
-    {
+    static void radio_enable() {
         scr(RCGCRFC) |= RCGCRFC_RFC0;
         scr(SCGCRFC) |= RCGCRFC_RFC0;
         scr(DCGCRFC) |= RCGCRFC_RFC0;
     }
     // Disable clock to the RF CORE module
-    static void radio_disable()
-    {
+    static void radio_disable() {
         scr(RCGCRFC) &= ~RCGCRFC_RFC0;
         scr(SCGCRFC) &= ~RCGCRFC_RFC0;
     }
 
-    static void timer_enable(unsigned int timer)
-    {
+    static void timer_enable(unsigned int timer) {
         assert(timer < TIMERS);
         scr(RCGCGPT) |= 1 << timer;
         scr(SCGCGPT) |= 1 << timer;
     }
-    static void timer_disable(unsigned int timer)
-    {
+    static void timer_disable(unsigned int timer) {
         assert(timer < TIMERS);
         scr(RCGCGPT) &= ~(1 << timer);
         scr(SCGCGPT) &= ~(1 << timer);
     }
 
-    static void config_PWM(unsigned int which_timer, char gpio_port, unsigned int gpio_pin)
-    {
+    static void config_PWM(unsigned int which_timer, char gpio_port, unsigned int gpio_pin) {
         timer_enable(which_timer);
 
         if((gpio_port >= 'A') && (gpio_port <= 'D'))
@@ -1137,24 +1146,19 @@ protected:
         gpioa(AFSEL) |= (PIN2) + (PIN3) + (PIN4) + (PIN5);
     }
 
-    static void config_I2C(volatile Log_Addr * base, char gpio_port_sda, unsigned int gpio_pin_sda, char gpio_port_scl, unsigned int gpio_pin_scl)
+    static void i2c_config(char gpio_port_sda, unsigned int gpio_pin_sda, char gpio_port_scl, unsigned int gpio_pin_scl)
     {
-        // Enable the I2C clock using the SYS_CTRL_RCGCI2C register
-        scr(RCGCI2C) = 0x1; // When the CPU is in active (run) mode
-
-        if((gpio_port_sda >= 'A') && (gpio_port_sda <= 'D'))
-            gpio_port_sda += ('a'-'A');
-        assert((gpio_port_sda >= 'a') && (gpio_port_sda <= 'd'));
+        assert((gpio_port_sda >= 'A') && (gpio_port_sda <= 'D'));
         assert(gpio_pin_sda <= 7);
-
-        if((gpio_port_scl >= 'A') && (gpio_port_scl <= 'D'))
-            gpio_port_scl += ('a'-'A');
-        assert((gpio_port_scl >= 'a') && (gpio_port_scl <= 'd'));
+        assert((gpio_port_scl >= 'A') && (gpio_port_scl <= 'D'));
         assert(gpio_pin_scl <= 7);
 
+        // Enable the I2C clock using the SYS_CTRL_RCGCI2C register
+        scr(RCGCI2C) |= 0x1; // When the CPU is in active (run) mode
+
         // Calculate the offset for the GPIO's IOC_Pxx_SEL
-        auto n_sda = gpio_port_sda - 'a';
-        auto n_scl = gpio_port_scl - 'a';
+        auto n_sda = gpio_port_sda - 'A';
+        auto n_scl = gpio_port_scl - 'A';
         auto sel_sda = PA0_SEL + 0x20*n_sda + 0x4*gpio_pin_sda;
         auto sel_scl = PA0_SEL + 0x20*n_scl + 0x4*gpio_pin_scl;
 
@@ -1162,22 +1166,12 @@ protected:
         auto over_scl = sel_scl + 0x80;
 
         unsigned int pin_bit_sda = 1 << gpio_pin_sda;
-        switch(gpio_port_sda)
-        {
-            case 'a': gpioa(AFSEL) |= pin_bit_sda; gpioa(DIR) &= ~pin_bit_sda; break;
-            case 'b': gpiob(AFSEL) |= pin_bit_sda; gpiob(DIR) &= ~pin_bit_sda; break;
-            case 'c': gpioc(AFSEL) |= pin_bit_sda; gpioc(DIR) &= ~pin_bit_sda; break;
-            case 'd': gpiod(AFSEL) |= pin_bit_sda; gpiod(DIR) &= ~pin_bit_sda; break;
-        }
+        gpio(n_sda, AFSEL) |= pin_bit_sda;
+        gpio(n_sda, DIR) &= ~pin_bit_sda;
 
         unsigned int pin_bit_scl = 1 << gpio_pin_scl;
-        switch(gpio_port_scl)
-        {
-            case 'a': gpioa(AFSEL) |= pin_bit_scl; gpioa(DIR) &= ~pin_bit_scl; break;
-            case 'b': gpiob(AFSEL) |= pin_bit_scl; gpiob(DIR) &= ~pin_bit_scl; break;
-            case 'c': gpioc(AFSEL) |= pin_bit_scl; gpioc(DIR) &= ~pin_bit_scl; break;
-            case 'd': gpiod(AFSEL) |= pin_bit_scl; gpiod(DIR) &= ~pin_bit_scl; break;
-        }
+        gpio(n_scl, AFSEL) |= pin_bit_scl;
+        gpio(n_scl, DIR) &= ~pin_bit_scl;
 
         ioc(over_sda) = DIS;
         ioc(over_scl) = DIS;

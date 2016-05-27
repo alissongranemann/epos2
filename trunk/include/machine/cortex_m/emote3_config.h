@@ -20,7 +20,7 @@
 #define __NIC_H                 __HEADER_MACH(nic)
 #define __USB_H                 __HEADER_MACH(usb)
 //#define __SPI_H               __HEADER_MACH(spi)
-//#define __I2C_H               __HEADER_MACH(i2c)
+#define __I2C_H                 __HEADER_MACH(i2c)
 #define __GPIO_H                __HEADER_MACH(gpio)
 //#define __ADC_H               __HEADER_MACH(adc)
 //#define __FLASH_H             __HEADER_MACH(flash)
@@ -43,6 +43,7 @@ typedef Serial_Keyboard         Keyboard;
 typedef Cortex_M_Scratchpad     Scratchpad;
 typedef Cortex_M_IEEE802_15_4   NIC;
 typedef Cortex_M_GPIO           GPIO;
+typedef Cortex_M_I2C            I2C;
 
 __END_SYS
 

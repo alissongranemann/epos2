@@ -98,6 +98,7 @@ class Cortex_M_Display;
 class Cortex_M_Scratchpad;
 class Cortex_M_NIC;
 class Cortex_M_IEEE802_15_4;
+class Cortex_M_I2C;
 
 class ATmega;
 class ATmega_IC;
