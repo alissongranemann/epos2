@@ -1,5 +1,4 @@
 // EPOS Cortex_M USB Mediator Implementation
-// TODO: this code seems to have been copied from somewhere else. It does not conform to EPOS coding quality, although it is functional. A carefull EPOS programmer should clean it up in the future!
 
 #include <usb.h>
 #include <ic.h>
@@ -10,92 +9,83 @@ __USING_SYS
 const char * Cortex_M_USB::_send_buffer = reinterpret_cast<const char *>(0);
 unsigned int Cortex_M_USB::_send_buffer_size = 0;
 
-
 // Class methods
 void Cortex_M_USB::disable()
 {
-    flush();
     reg(CTRL) &= ~USBEN;
     Cortex_M_Model::usb_disable();
 }
 
 char Cortex_M_USB::get()
 {
-    char ret = 0;
-    while(Cortex_M_USB::get_data(&ret, 1) == 0);
+    lock();
+    input();
+    while(!(reg(CSOL) & CSOL_OUTPKTRDY));
+    unsigned int sz = (reg(CNTH) << 8) | reg(CNT0_CNTL);
+    char ret = reg(F4);
+    if(sz == 1) {
+        reg(CSOL) &= ~CSOL_OUTPKTRDY;
+    }
+    unlock();
     return ret;
 }
 
-unsigned int Cortex_M_USB::get_data(char * out, unsigned int max_size)
+unsigned int Cortex_M_USB::get(char * out, unsigned int max_size)
 {
-    if(Traits<Cortex_M_USB>::blocking) {
-        while(!ready_to_get());
-
-        unsigned int i;
-        unsigned int sz = (reg(CNTH) << 8) | reg(CNT0_CNTL);
-        for(i = 0; (i<sz) && (i<max_size); i++)
-            out[i] = reg(F4);
-        if(i>=sz)
-            reg(CSOL) &= ~CSOL_OUTPKTRDY;
-        return i;
-    }
-    else {
-        if(ready_to_get()) // Sets index to 4
-        {
-            unsigned int i;
-            unsigned int sz = (reg(CNTH) << 8) | reg(CNT0_CNTL);
-            for(i = 0; (i<sz) && (i<max_size); i++)
-                out[i] = reg(F4);
-            if(i>=sz)
-                reg(CSOL) &= ~CSOL_OUTPKTRDY;
-            return i;
-        }
-        else
-            return 0;
-    }
-}
-
-void Cortex_M_USB::flush(unsigned int index/*=3*/)
-{
-    Reg32 old_index = reg(INDEX);
-    reg(INDEX) = index;
-    do_flush();
-    reg(INDEX) = old_index;
+    lock();
+    input();
+    while(!(reg(CSOL) & CSOL_OUTPKTRDY));
+    unsigned int i;
+    unsigned int sz = (reg(CNTH) << 8) | reg(CNT0_CNTL);
+    for(i = 0; (i<sz) && (i<max_size); i++)
+        out[i] = reg(F4);
+    if(i>=sz)
+        reg(CSOL) &= ~CSOL_OUTPKTRDY;
+    unlock();
+    return i;
 }
 
 void Cortex_M_USB::put(char c)
 {
-    if(not ready()) {
-        if(Traits<Cortex_M_USB>::blocking) {
-            while(not ready());
-            flush();
-        }
-        else {
+    if(Traits<Cortex_M_USB>::blocking) {
+        while(!ready_to_put());
+    } else {
+        if(!ready_to_put())
             return;
-        }
     }
 
-    Reg32 old_index = reg(INDEX);
-    reg(INDEX) = 3;
-    while(reg(CS0_CSIL) & CSIL_INPKTRDY) {
-        if(Traits<Cortex_M_USB>::blocking) {
-            while(!ready());
-        }
-        else if(!ready()) {
-            reg(INDEX) = old_index;
-            return;
-        }
-    }
+    lock();
+    output();
     reg(F3) = c;
-    // If newline, signal that a packet is ready. Otherwise, let the hardware signal when the FIFO is full
-    if(c == '\n') {
-        do_flush();
+    flush();
+    // It looks like the update of the CSIL_INPKTRDY bit takes a while to 
+    // take effect, so we're better off just delaying and not even checking it.
+    for(volatile int i = 0; i < 0xff; i++);
+    unlock();
+}
+
+void Cortex_M_USB::put(const char * c, unsigned int size)
+{
+    if(Traits<Cortex_M_USB>::blocking) {
+        while(!ready_to_put());
+    } else {
+        if(!ready_to_put())
+            return;
     }
-    reg(INDEX) = old_index;
+
+    lock();
+    output();
+    for(unsigned int i = 0; (i < _max_packet_ep3) and (i < size); i++)
+        reg(F3) = c[i];
+    flush();
+    // It looks like the update of the CSIL_INPKTRDY bit takes a while to 
+    // take effect, so we're better off just delaying and not even checking it.
+    for(volatile int i = 0; i < 0xff; i++);
+    unlock();
 }
 
 bool Cortex_M_USB::handle_ep0(const USB_2_0::Request::Device_Request & data)
-{    
+{
     switch(data.bRequest)
     {
         case SET_ADDRESS:
@@ -169,7 +159,7 @@ bool Cortex_M_USB::handle_ep0(const USB_2_0::Request::Device_Request & data)
             if(auto d = data.morph<CDC::Request::Set_Control_Line_State>())
             {
                 db<Cortex_M_USB>(TRC) << *d << endl;
-                _ready_to_print = d->DTE_present;
+                _ready_to_put_next = d->DTE_present;
                 return true;
             }
             break;
@@ -183,7 +173,7 @@ bool Cortex_M_USB::handle_ep0(const USB_2_0::Request::Device_Request & data)
 
 void Cortex_M_USB::int_handler(const IC::Interrupt_Id & interrupt)
 {
-    Reg32 index = reg(INDEX); // Save old index
+    Reg32 index = endpoint(); // Save old index
 
     //db<Cortex_M_USB>(TRC) << "Cortex_M_USB::int_handler" << endl;
     //db<Cortex_M_USB>(TRC) << "CS0_CSIL = " << reg(CS0_CSIL) << endl;
@@ -203,7 +193,12 @@ void Cortex_M_USB::int_handler(const IC::Interrupt_Id & interrupt)
     {
         if(flags & (1 << 0)) // Endpoint 0 interrupt
         {
-            reg(INDEX) = 0;
+            if((not _ready_to_put) and _ready_to_put_next) {
+                _ready_to_put = true;
+                put(' '); // For some reason the first put() is not shown in minicom
+            }
+
+            control();
             if(reg(CS0_CSIL) & CS0_OUTPKTRDY) // Data present
             {
                 db<Cortex_M_USB>(TRC) << "Endpoint 0 command received:";
@@ -219,17 +214,18 @@ void Cortex_M_USB::int_handler(const IC::Interrupt_Id & interrupt)
 
                 db<Cortex_M_USB>(TRC) << data << endl;
 
-                reg(CS0_CSIL) |= CS0_CLROUTPKTRDY; // Signal that the command was read
                 if(handle_ep0(data))
                 {
-                    if(!_send_buffer)
-                        reg(CS0_CSIL) |= CS0_DATAEND;                    
+                    if(_send_buffer)
+                        reg(CS0_CSIL) |= CS0_CLROUTPKTRDY;
+                    else
+                        reg(CS0_CSIL) |= CS0_CLROUTPKTRDY | CS0_DATAEND;                    
                     db<Cortex_M_USB>(TRC) << "command processed" << endl;
                 }
                 else
                 {
                     // Signal that the command could not be executed
-                    reg(CS0_CSIL) |= CS0_SENDSTALL;
+                    reg(CS0_CSIL) |= CS0_CLROUTPKTRDY | CS0_SENDSTALL;
                     db<Cortex_M_USB>(WRN) << "Cortex_M_USB::int_handler: command NOT processed" << endl;
                 }
             }
@@ -259,5 +255,5 @@ void Cortex_M_USB::int_handler(const IC::Interrupt_Id & interrupt)
     {
         db<Cortex_M_USB>(TRC) << "OIF = " << flags << endl;
     }
-    reg(INDEX) = index; // Restore old index
+    endpoint(index); // Restore old index
 }

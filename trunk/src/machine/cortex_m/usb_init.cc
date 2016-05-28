@@ -6,7 +6,9 @@
 __USING_SYS
 
 volatile USB_2_0::STATE Cortex_M_USB::_state = USB_2_0::STATE::ATTACHED;
-volatile bool Cortex_M_USB::_ready_to_print = false;
+volatile bool Cortex_M_USB::_ready_to_put = false;
+bool Cortex_M_USB::_ready_to_put_next = false;
+bool Cortex_M_USB::_was_locked = false;
 
 const USB_2_0::Descriptor::Device Cortex_M_USB::_device_descriptor = 
 {
@@ -125,26 +127,31 @@ const Cortex_M_USB::Full_Config Cortex_M_USB::_config =
 // Configurations that need to be done at every USB reset
 void Cortex_M_USB::reset()
 {
+    _ready_to_put = false;
+    _ready_to_put_next = false;
     _state = USB_2_0::STATE::DEFAULT;
     _send_buffer = reinterpret_cast<const char *>(0);
     _send_buffer_size = 0;
 
     // Set up endpoints
-    reg(INDEX) = 2;
-    reg(MAXI) = _max_packet_ep2 / 8; // Endpoint 2, IN
-    reg(INDEX) = 3;
+    output();
     // The two lines below make the USB automatically signal that a packet is ready every 32 characters.
     reg(MAXI) = 32 / 8; // Endpoint 3, IN.
-    reg(CSIH) |= AUTISET; // Let the hardware signal that the packet is ready when the FIFO is full
-    reg(INDEX) = 4;
+    reg(MAXO) = 0;
+    reg(CS0_CSIL) |= CSIL_CLRDATATOG; // From cc2538 User Guide: When a Bulk IN endpoint is first configured, USB_CSIL.CLRDATATOG should be set.
+    // if there are any data packets in the FIFO, they should be flushed. It may be necessary to set this bit twice in succession if double buffering is enabled.
+    reg(CS0_CSIL) |= CSIL_FLUSHPACKET;
+    reg(CS0_CSIL) |= CSIL_FLUSHPACKET;
+
+    input();
+    reg(MAXI) = 0;
     reg(MAXO) = _max_packet_ep4 / 8; // Endpoint 4, OUT 
     reg(CSOL) |= CSOL_CLRDATATOG; // From cc2538 User Guide: When a Bulk OUT endpoint is first configured, USB_CSOL.CLRDATATOG should be set.
     // if there are any data packets in the FIFO, they should be flushed
-    if(reg(CSOL) & CSOL_OUTPKTRDY)
-        reg(CSOL) |= CSOL_FLUSHPACKET;
+    reg(CSOL) |= CSOL_FLUSHPACKET;
 
     // Only enable IN interrupts for endpoints 0 and 2
-    reg(IIE) = (1 << 0) | (1 << 2);
+    reg(IIE) = (1 << 0);// | (1 << 2);
     // Only enable OUT interrupts for endpoint 0
     reg(OIE) = (1 << 0);
     // Only enable RESET common interrupt (disable start-of-frame, resume and suspend)
