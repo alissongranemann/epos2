@@ -1,7 +1,7 @@
 // EPOS PC Machine Metainfo and Configuration
 
-#ifndef __pc_traits_h
-#define __pc_traits_h
+#ifndef __machine_traits_h
+#define __machine_traits_h
 
 #include <system/config.h>
 
@@ -107,8 +107,6 @@ template<> struct Traits<PC_Display>: public Traits<PC_Common>
     static const int COLUMNS = 80;
     static const int LINES = 25;
     static const int TAB_SIZE = 8;
-    static const unsigned int FRAME_BUFFER_ADDRESS = 0xb8000;
-    static const unsigned int FRAME_BUFFER_SIZE = 64 * 1024; // 64 KB
 };
 
 template<> struct Traits<PC_Keyboard>: public Traits<PC_Common>
@@ -119,8 +117,8 @@ template<> struct Traits<PC_Keyboard>: public Traits<PC_Common>
 template<> struct Traits<PC_Scratchpad>: public Traits<PC_Common>
 {
     static const bool enabled = false;
-    static const unsigned int ADDRESS = Traits<PC_Display>::FRAME_BUFFER_ADDRESS;
-    static const unsigned int SIZE = Traits<PC_Display>::FRAME_BUFFER_SIZE;
+    static const unsigned int ADDRESS = 0xa0000; // VGA Graphic mode frame buffer
+    static const unsigned int SIZE = 96 * 1024;
 };
 
 template<> struct Traits<PC_Ethernet>: public Traits<PC_Common>

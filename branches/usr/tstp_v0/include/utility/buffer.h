@@ -53,6 +53,10 @@ public:
         return db;
     }
 
+    // Set by any TSTP component
+    bool relevant() const { return _relevant; }
+    void relevant(bool r) { _relevant = r; }
+
     // Set by TSTP MAC
     int rssi() const { return _rssi; }
     void rssi(int r) { _rssi = r; }
@@ -73,22 +77,18 @@ public:
     bool destined_to_me() const { return _destined_to_me; }
     void destined_to_me(bool d) { _destined_to_me = d; }
 
-    // Set by any TSTP component
-    bool relevant() const { return _relevant; }
-    void relevant(bool r) { _relevant = r; }
+    // Set by TSTP Router
+    long my_distance() const { return _my_distance; }
+    void my_distance(long d) { _my_distance = d; }
 
     // Set by TSTP Time Manager
     long long deadline() const { return _deadline; }
     void deadline(long long t) { _deadline = t; }
 
     // Set by TSTP Time Manager on reception 
-    // Set by TSTP on creation transmission 
+    // Set by TSTP on creation (transmission)
     long long origin_time() const { return _origin_time; }
     void origin_time(long long t) { _origin_time = t; }
-
-    // Set by TSTP Router
-    long my_distance() const { return _my_distance; }
-    void my_distance(long d) { _my_distance = d; }
 
     // Set by TSTP MAC or TSTPOE
     bool is_microframe() { return _is_microframe; }
@@ -102,6 +102,9 @@ public:
     bool is_rx() { return !is_tx(); }
     void is_rx(bool t) { is_tx(!t); }
 
+    // Set by TSTP Security
+    bool trusted() { return _trusted; }
+    void trusted(bool t) { _trusted = t; }
 
 private:
     volatile bool _lock;
@@ -122,6 +125,7 @@ private:
     bool _is_tx;
     bool _is_microframe;
     bool _relevant;
+    bool _trusted;
 };
 
 __END_UTIL

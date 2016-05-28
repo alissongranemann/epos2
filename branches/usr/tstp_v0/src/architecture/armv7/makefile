@@ -9,10 +9,6 @@ CRTSI := $(subst .S,.s,$(shell find *.S | grep crt))
 INITS := $(subst .cc,.o,$(shell find *.cc | grep _init))
 
 all:		crts $(LIBARCH) $(LIBINIT)
-
-armv7_crt0.o:	armv7_crt0.s
-		sed -e 's/MEM_TOP/$(call GETTK,MEM_TOP,$(MACH_TRAITS))/' -i $<
-		$(AS) $(ASFLAGS) -o $@ $<
 		
 crts:		$(CRTS)
 		$(INSTALL) $^ $(LIB)

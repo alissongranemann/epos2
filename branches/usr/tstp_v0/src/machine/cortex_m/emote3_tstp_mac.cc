@@ -4,7 +4,6 @@
 #ifndef __no_networking__
 
 #include <machine/cortex_m/machine.h>
-#include <machine/cortex_m/emote3_gptm.h>
 #include "../../../include/machine/cortex_m/emote3_tstp_mac.h"
 #include <utility/malloc.h>
 #include <utility/random.h>

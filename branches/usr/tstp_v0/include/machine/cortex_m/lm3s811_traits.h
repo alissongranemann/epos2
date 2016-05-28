@@ -1,7 +1,7 @@
 // EPOS LM3S811 (Cortex-M3) MCU Metainfo and Configuration
 
-#ifndef __lm3s811_traits_h
-#define __lm3s811_traits_h
+#ifndef __machine_traits_h
+#define __machine_traits_h
 
 #include <system/config.h>
 
@@ -43,6 +43,7 @@ template <> struct Traits<Cortex_M>: public Traits<Cortex_M_Common>
 
 template <> struct Traits<Cortex_M_IC>: public Traits<Cortex_M_Common>
 {
+    static const bool debugged = hysterically_debugged;
 };
 
 template <> struct Traits<Cortex_M_Timer>: public Traits<Cortex_M_Common>
@@ -81,32 +82,17 @@ template <> struct Traits<Cortex_M_Scratchpad>: public Traits<Cortex_M_Common>
 
 template <> struct Traits<Cortex_M_IEEE802_15_4>: public Traits<Cortex_M_Common>
 {
-    static const bool enabled = false;
+    static const bool enabled = (Traits<Build>::NODES > 1);
 
-    typedef LIST<eMote3_IEEE802_15_4> NICS;
+    typedef LIST<CC2538> NICS;
     static const unsigned int UNITS = NICS::Length;
 };
 
-template <> struct Traits<eMote3_IEEE802_15_4>: public Traits<Cortex_M_IEEE802_15_4>
+template <> struct Traits<CC2538>: public Traits<Cortex_M_IEEE802_15_4>
 {
-    static const unsigned int UNITS = NICS::Count<eMote3_IEEE802_15_4>::Result;
-    static const unsigned int SEND_BUFFERS = 1;
-    static const unsigned int RECEIVE_BUFFERS = 1;
-    static const unsigned int DEFAULT_CHANNEL = 15; // From 11 to 26
-
-    // There is no listen command on the radio interface yet,
-    // so the only way to receive data is setting this flag
-    static const bool auto_listen = false;
-
-    static const bool CSMA_CA = false;
-    static const unsigned int CSMA_CA_MIN_BACKOFF_EXPONENT = 3;
-    static const unsigned int CSMA_CA_MAX_BACKOFF_EXPONENT = 5;
-    static const unsigned int CSMA_CA_UNIT_BACKOFF_PERIOD = 320; // us
-    static const unsigned int CSMA_CA_MAX_TRANSMISSION_TRIALS = 4;
-
-    static const bool ACK = false;
-    static const unsigned int RETRANSMISSIONS = 3;
-    static const unsigned int ACK_TIMEOUT = 3 * 832; // us
+    static const unsigned int UNITS = NICS::Count<CC2538>::Result;
+    static const unsigned int SEND_BUFFERS = 64; // per unit
+    static const unsigned int RECEIVE_BUFFERS = 256; // per unit
 };
 
 __END_SYS

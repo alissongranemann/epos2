@@ -15,10 +15,24 @@ private:
     static const bool supports_power_up = Cortex_M_Model::supports_gpio_power_up;
 
 public:
+    enum Level {
+        HIGH,
+        LOW,
+    };
+    enum Edge {
+        RISING,
+        FALLING,
+        BOTH,
+    };
+    enum Direction {
+        INPUT,
+        OUTPUT,
+    };
+
     Cortex_M_GPIO(char port, unsigned int pin, const Direction & dir, const IC::Interrupt_Handler & handler = 0)
-    : _port(port), _pin(pin), _pin_bit(1 << pin), _data(&gpio(port, _pin_bit << 2)), _handler(handler) {
+    : _port(port - 'A'), _pin(pin), _pin_bit(1 << pin), _data(&gpio(_port, _pin_bit << 2)), _handler(handler) {
         assert((port >= 'A') && (port <= 'A' + GPIO_PORTS));
-        gpio(port, AFSEL) &= ~_pin_bit; // Set pin as software controlled
+        gpio(_port, AFSEL) &= ~_pin_bit; // Set pin as software controlled
         if(dir == OUTPUT)
             output();
         else
@@ -37,8 +51,8 @@ public:
     void pull_up() { gpio_pull_up(_port, _pin); }
     void pull_down() { gpio_pull_down(_port, _pin); }
 
-    void int_enable();
-    void int_enable(const Level & level, bool power_up = false, const Level & power_up_level = HIGH);
+    void int_enable() { gpio(_port, IM) |= _pin_bit; }
+    //void int_enable(const Level & level, bool power_up = false, const Level & power_up_level = HIGH); // TODO
     void int_enable(const Edge & edge, bool power_up = false, const Edge & power_up_edge = RISING);
     void int_disable() { gpio(_port, IM) &= ~_pin_bit; }
     void int_handler(const IC::Interrupt_Handler & h) {
@@ -52,11 +66,11 @@ private:
         gpio(_port, IRQ_DETECT_ACK) &= ~(_pin_bit << (8 * _port));
     }
 
-    static void int_handler(const IC::Interrupt_Id & i);
+    static void handle_int(const IC::Interrupt_Id & i);
 
 private:
-    unsigned int _port;
-    unsigned int _pin;
+    unsigned char _port;
+    unsigned char _pin;
     unsigned int _pin_bit;
     volatile Reg32 * _data;
     IC::Interrupt_Handler _handler;

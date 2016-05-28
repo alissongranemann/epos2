@@ -33,6 +33,8 @@ int main()
 
     NIC nic;
     NIC::Address mac = nic.address();
+    sink(mac);
+    while(true);
 
     if(mac[5] % 2)
         sink(mac);
@@ -75,6 +77,6 @@ void sensor(const NIC::Address & mac)
 
     while(a0 != 'a') {
         cout << "a0=" << a0 << endl;
-        Delay(50000);
+        Delay(500000);
     }
 }

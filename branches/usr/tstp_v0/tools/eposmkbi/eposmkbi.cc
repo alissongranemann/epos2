@@ -552,7 +552,7 @@ template<typename T> int put_number(int fd, T num)
     if((CONFIG.endianess != lil_endian()) && (sizeof(T) > 1))
     	invert(num);
     if(write(fd, &num, sizeof(T)) < 0) {
-        fprintf(stderr, "Error: can't wirte to file!\n");
+        fprintf(stderr, "Error: can't write to file!\n");
         return 0;
     }
     return sizeof(T);

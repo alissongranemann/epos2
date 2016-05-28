@@ -46,14 +46,14 @@ void Network::init()
 
     // If TSTP's MAC was initialized, initialize also the rest of the stack
     if(Traits<TSTP>::enabled and Traits<Network>::NETWORKS::Count<Traits<TSTP>::MAC>::Result) {
-        if(not EQUAL<Traits<TSTP>::Time_Manager, Traits<TSTP>::DISABLED>::Result)
-            new (SYSTEM) Traits<TSTP>::Time_Manager;
-        if(not EQUAL<Traits<TSTP>::Security, Traits<TSTP>::DISABLED>::Result)
-            new (SYSTEM) Traits<TSTP>::Security;
-        if(not EQUAL<Traits<TSTP>::Locator, Traits<TSTP>::DISABLED>::Result)
-            new (SYSTEM) Traits<TSTP>::Locator;
-        if(not EQUAL<Traits<TSTP>::Router, Traits<TSTP>::DISABLED>::Result)
-            new (SYSTEM) Traits<TSTP>::Router;
+        //if(Traits<TSTP>::Time_Manager != Traits<TSTP>::DISABLED) // TODO: PTS<false> still needs to start the timer and attach itself to the NIC to update origin_time
+            new (SYSTEM) TSTP::Time_Manager;
+        if(Traits<TSTP>::Security != Traits<TSTP>::DISABLED)
+            new (SYSTEM) TSTP::Security;
+        if(Traits<TSTP>::Locator != Traits<TSTP>::DISABLED)
+            new (SYSTEM) TSTP::Locator;
+        if(Traits<TSTP>::Router != Traits<TSTP>::DISABLED)
+            new (SYSTEM) TSTP::Router;
 
         new (SYSTEM) TSTP;
     }

@@ -16,9 +16,9 @@ protected:
 
 public:
     static const unsigned int IRQS = 64;
+    static const unsigned int TIMERS = 4;
     static const unsigned int GPIO_PORTS = 4;
     static const bool supports_gpio_power_up = true;
-
 
     // Base address for memory-mapped System Control Registers
     enum {
@@ -37,7 +37,7 @@ public:
         I2CM_SA         = 0x00,
         I2CM_CTRL       = 0x04,
         I2CM_STAT       = I2CM_CTRL,
-        I2CM_DR         = 0X08,
+        I2CM_DR         = 0x08,
         I2CM_TPR        = 0x0C,
         I2CM_IMR        = 0x10,
         I2CM_RIS        = 0x14,
@@ -47,151 +47,166 @@ public:
     };
 
     // I2C slave offsets
-    enum {                              // Description
-        I2CS_OAR        = 0x00,         // Own Address
-        I2CS_STAT       = 0x04,         // Control and Status
-        I2CS_CTRL       = I2CS_STAT,    // Control and Status
-        I2CS_DR         = 0x08,         // Data
-        I2CS_IMR        = 0x0C,         // Interrupt Mask
-        I2CS_RIS        = 0x10,         // Raw Interrupt Status
-        I2CS_MIS        = 0x14,         // Masked Interrupt Status
-        I2CS_ICR        = 0x18,         // Interrupt Clear
+    enum {                           // Description
+        I2CS_OAR        = 0x00,      // Own Address
+        I2CS_CTRL       = 0x04,      // Control and Status
+        I2CS_STAT       = I2CS_CTRL, // Control and Status
+        I2CS_DR         = 0x08,      // Data
+        I2CS_IMR        = 0x0C,      // Interrupt Mask
+        I2CS_RIS        = 0x10,      // Raw Interrupt Status
+        I2CS_MIS        = 0x14,      // Masked Interrupt Status
+        I2CS_ICR        = 0x18,      // Interrupt Clear
+    };
+
+    // Unified I2C Master-Slave offsets
+    enum {
+        I2C_SA         = 0x00,
+        I2C_OAR        = I2C_SA,
+        I2C_CTRL       = 0x04,
+        I2C_STAT       = I2C_CTRL,
+        I2C_DR         = 0x08,
+        I2C_TPR        = 0x0C,
+        I2C_IMR        = 0x10,
+        I2C_RIS        = 0x14,
+        I2C_MIS        = 0x18,
+        I2C_ICR        = 0x1C,
+        I2C_CR         = 0x20,
     };
 
     // Useful bits in the I2CM_SA register
     enum {
-        RS              = 0x01,
+        I2C_SA_RS              = 0x01,
     };
 
     // Useful bits in the I2CM_CTRL register
     enum {
-        ACK             = 1 << 3,
-        STOP            = 1 << 2,
-        START           = 1 << 1,
-        RUN             = 1 << 0,
+        I2C_CTRL_ACK   = 1 << 3,
+        I2C_CTRL_STOP  = 1 << 2,
+        I2C_CTRL_START = 1 << 1,
+        I2C_CTRL_RUN   = 1 << 0,
     };
 
     // Useful bits in the I2CM_STAT register
-    enum {                              // Description (type)
-        BUSBSY          = 1 << 6,       // Bus Busy (RO)
-        IDLE            = 1 << 5,       // I2C Idle (RO)
-        ARBLST          = 1 << 4,       // Arbitration Lost (RO)
-        DATACK          = 1 << 3,       // Acknowledge Data (RO)
-        ADRACK          = 1 << 2,       // Acknowledge Address (RO)
-        ERROR           = 1 << 1,       // Error (RO)
-        BUSY            = 1 << 0,       // I2C Busy (RO)
+    enum {                         // Description (type)
+        I2C_STAT_BUSBSY = 1 << 6, // Bus Busy (RO)
+        I2C_STAT_IDLE   = 1 << 5, // I2C Idle (RO)
+        I2C_STAT_ARBLST = 1 << 4, // Arbitration Lost (RO)
+        I2C_STAT_DATACK = 1 << 3, // Acknowledge Data (RO)
+        I2C_STAT_ADRACK = 1 << 2, // Acknowledge Address (RO)
+        I2C_STAT_ERROR  = 1 << 1, // Error (RO)
+        I2C_STAT_BUSY   = 1 << 0, // I2C Busy (RO)
     };
 
     // Useful bits in the I2CM_IMR register
-    enum {                              // Description (type)
-        I2CM_IMR_IM     = 0x01,         // Interrupt Mask (RW)
+    enum {                  // Description (type)
+        I2C_IMR_IM = 0x01, // Interrupt Mask (RW)
     };
 
     // Useful bits in the I2CM_RIS register
-    enum {                              // Description (type)
-        I2CM_RIS_BIT    = 0x01,         // Raw Interrupt Status (RO)
+    enum {                   // Description (type)
+        I2C_RIS_BIT = 0x01, // Raw Interrupt Status (RO)
     };
 
     // Useful bits in the I2CM_MIS register
-    enum {                              // Description (type)
-        I2CM_MIS_MIS    = 0x01,         // Masked Interrupt Status (RO)
+    enum {                   // Description (type)
+        I2C_MIS_MIS = 0x01, // Masked Interrupt Status (RO)
     };
 
     // Useful bits in the I2CM_ICR register
-    enum {                              // Description (type)
-        I2CM_ICR_IC     = 0x01,         // Interrupt Clear (WO)
+    enum {                  // Description (type)
+        I2C_ICR_IC = 0x01, // Interrupt Clear (WO)
     };
 
     // Useful bits in the I2CM_CR register
-    enum {                              // Description (type)
-        SFE             = 1 << 5,       // I2C Slave Function Enable (RW)
-        MFE             = 1 << 4,       // I2C Master Function Enable (RW)
-        LPBK            = 1 << 0,       // I2C Loopback (RW)
+    enum {                     // Description (type)
+        I2C_CR_SFE  = 1 << 5, // I2C Slave Function Enable (RW)
+        I2C_CR_MFE  = 1 << 4, // I2C Master Function Enable (RW)
+        I2C_CR_LPBK = 1 << 0, // I2C Loopback (RW)
     };
 
     // Useful bits in the I2CS_STAT register
-    enum {                              // Description (type)
-        FBR             = 1 << 2,       // First Byte Received (RO)
-        TREQ            = 1 << 1,       // Transmit Request (RO)
-        RREQ            = 1 << 0,       // Receive Request (RO)
+    enum {                      // Description (type)
+        I2C_STAT_FBR  = 1 << 2, // First Byte Received (RO)
+        I2C_STAT_TREQ = 1 << 1, // Transmit Request (RO)
+        I2C_STAT_RREQ = 1 << 0, // Receive Request (RO)
     };
 
     // Useful bits in the I2CS_CTRL register
-    enum {                              // Description (type)
-        DA              = 0x01,         // Device Active (WO)
+    enum {                   // Description (type)
+        I2C_CTRL_DA = 0x01, // Device Active (WO)
     };
 
     // Useful bits in the I2CS_IMR register
-    enum {                              // Description (type)
-        STOPIM          = 1 << 2,       // Stop Condition Interrupt Mask (RO)
-        STARTIM         = 1 << 1,       // Start Condition Interrupt Mask (RO)
-        DATAIM          = 1 << 0,       // Data Interrupt Mask (RW)
+    enum {                         // Description (type)
+        I2C_IMR_STOPIM  = 1 << 2, // Stop Condition Interrupt Mask (RO)
+        I2C_IMR_STARTIM = 1 << 1, // Start Condition Interrupt Mask (RO)
+        I2C_IMR_DATAIM  = 1 << 0, // Data Interrupt Mask (RW)
     };
 
     // Useful bits in the I2CS_RIS register
-    enum {                              // Description (type)
-        STOPRIS         = 1 << 2,       // Stop Condition Raw Interrupt Status (RO)
-        STARTRIS        = 1 << 1,       // Start Condition Raw Interrupt Status (RO)
-        DATARIS         = 1 << 0,       // Data Interrupt Status (RO)
+    enum {                          // Description (type)
+        I2C_RIS_STOPRIS  = 1 << 2, // Stop Condition Raw Interrupt Status (RO)
+        I2C_RIS_STARTRIS = 1 << 1, // Start Condition Raw Interrupt Status (RO)
+        I2C_RIS_DATARIS  = 1 << 0, // Data Interrupt Status (RO)
     };
 
     // Useful bits in the I2CS_MIS register
-    enum {                              // Description (type)
-        STOPMIS         = 1 << 2,       // Stop Condition Masked Interrupt Status (RO)
-        STARTMIS        = 1 << 1,       // Start Condition Masked Interrupt Status (RO)
-        DATAMIS         = 1 << 0,       // Data Masked Interrupt Status (RO)
+    enum {                          // Description (type)
+        I2C_MIS_STOPMIS  = 1 << 2, // Stop Condition Masked Interrupt Status (RO)
+        I2C_MIS_STARTMIS = 1 << 1, // Start Condition Masked Interrupt Status (RO)
+        I2C_MIS_DATAMIS  = 1 << 0, // Data Masked Interrupt Status (RO)
     };
 
     // Useful bits in the I2CS_ICR register
-    enum {                              // Description (type)
-        STOPIC          = 1 << 2,       // Stop Condition Interrupt Clear (WO)
-        STARTIC         = 1 << 1,       // Start Condition Interrupt Clear (WO)
-        DATAIC          = 1 << 0,       // Data Interrupt Clear (WO)
+    enum {                          // Description (type)
+        I2C_ICR_STOPIC   = 1 << 2, // Stop Condition Interrupt Clear (WO)
+        I2C_ICR_STARTIC  = 1 << 1, // Start Condition Interrupt Clear (WO)
+        I2C_ICR_DATAIC   = 1 << 0, // Data Interrupt Clear (WO)
     };
 
     // Synchronous Serial Interface (SSI) offsets
     enum {
-        SSI_CR0         = 0x000,
-        SSI_CR1         = 0x004,
-        SSI_DR          = 0x008,
-        SSI_SR          = 0x00C,
-        SSI_CPSR        = 0x010,
-        SSI_IM          = 0x014,
-        SSI_RIS         = 0x018,
-        SSI_MIS         = 0x01C,
-        SSI_ICR         = 0x020,
-        SSI_DMACTL      = 0x024,
-        SSI_CC          = 0xFC8,
+        SSI_CR0    = 0x000,
+        SSI_CR1    = 0x004,
+        SSI_DR     = 0x008,
+        SSI_SR     = 0x00C,
+        SSI_CPSR   = 0x010,
+        SSI_IM     = 0x014,
+        SSI_RIS    = 0x018,
+        SSI_MIS    = 0x01C,
+        SSI_ICR    = 0x020,
+        SSI_DMACTL = 0x024,
+        SSI_CC     = 0xFC8,
 
     };
 
     // Useful bits in the SSI CR0 register
-    enum {                          // Description                   Type    Value after reset
-        CR0_SCR         = 1 << 8,   // serial clock rate              RW      0x00
-        SPH             = 1 << 7,   // serial clock phase high        RW      0x0
-                                    // applicable only to the Motorola SPI format
-        SPO             = 1 << 6,   // serial clock phase low         RW      0x0
-                                    // applicable only to the Motorola SPI format
-        FRF             = 1 << 4,   // frame format selection         RW      0x0
-                                    // 00: Motorola SPI format
-                                    // 01: TI synchronous serial frame format
-                                    // 10: National microwave frame format
-                                    // 11: Reserved
-        DSS             = 1 << 0,   // data size select              RW      0x0
-                                    // 0000-0010: Reserved
-                                    // 0011: 4-bit data
-                                    // 0100: 5-bit data
-                                    // 0101: 6-bit data
-                                    // 0110: 7-bit data
-                                    // 0111: 8-bit data
-                                    // 1000: 9-bit data
-                                    // 1001: 10-bit data
-                                    // 1010: 11-bit data
-                                    // 1011: 12-bit data
-                                    // 1100: 13-bit data
-                                    // 1101: 14-bit data
-                                    // 1110: 15-bit data
-                                    // 1111: 16-bit data
+    enum {                         // Description                   Type    Value after reset
+        CR0_SCR         = 1 << 8,  // serial clock rate              RW      0x00
+        SPH             = 1 << 7,  // serial clock phase high        RW      0x0
+                                   // applicable only to the Motorola SPI format
+        SPO             = 1 << 6,  // serial clock phase low         RW      0x0
+                                   // applicable only to the Motorola SPI format
+        FRF             = 1 << 4,  // frame format selection         RW      0x0
+                                   // 00: Motorola SPI format
+                                   // 01: TI synchronous serial frame format
+                                   // 10: National microwave frame format
+                                   // 11: Reserved
+        DSS             = 1 << 0,  // data size select              RW      0x0
+                                   // 0000-0010: Reserved
+                                   // 0011: 4-bit data
+                                   // 0100: 5-bit data
+                                   // 0101: 6-bit data
+                                   // 0110: 7-bit data
+                                   // 0111: 8-bit data
+                                   // 1000: 9-bit data
+                                   // 1001: 10-bit data
+                                   // 1010: 11-bit data
+                                   // 1011: 12-bit data
+                                   // 1100: 13-bit data
+                                   // 1101: 14-bit data
+                                   // 1110: 15-bit data
+                                   // 1111: 16-bit data
     };
 
     //Frame format
@@ -772,10 +787,161 @@ public:
         scs(IWE) = e;
     }
 
-protected:
-    static void init();
-    static void init_clock();
-    static bool _init_clock_done;
+
+    // CC2538's General Purpose Timer definitions
+    class Timer
+    {
+    protected:
+        enum Base
+        {
+            GPTIMER0_BASE = 0x40030000,
+            GPTIMER1_BASE = 0x40031000,
+            GPTIMER2_BASE = 0x40032000,
+            GPTIMER3_BASE = 0x40033000
+        };
+
+        enum Offset
+        {
+            //Register Name  Offset  Type  Width  Reset Value
+            CFG           =   0x00,  //RW    32    0x00000000
+            TAMR          =   0x04,  //RW    32    0x00000000
+            TBMR          =   0x08,  //RW    32    0x00000000
+            CTL           =   0x0C,  //RW    32    0x00000000
+            SYNC          =   0x10,  //RW    32    0x00000000
+            IMR           =   0x18,  //RW    32    0x00000000
+            RIS           =   0x1C,  //RO    32    0x00000000
+            MIS           =   0x20,  //RO    32    0x00000000
+            ICR           =   0x24,  //RW    32    0x00000000
+            TAILR         =   0x28,  //RW    32    0xFFFFFFFF
+            TBILR         =   0x2C,  //RW    32    0x0000FFFF
+            TAMATCHR      =   0x30,  //RW    32    0xFFFFFFFF
+            TBMATCHR      =   0x34,  //RW    32    0x0000FFFF
+            TAPR          =   0x38,  //RW    32    0x00000000
+            TBPR          =   0x3C,  //RW    32    0x00000000
+            TAPMR         =   0x40,  //RW    32    0x00000000
+            TBPMR         =   0x44,  //RW    32    0x00000000
+            TAR           =   0x48,  //RO    32    0xFFFFFFFF
+            TBR           =   0x4C,  //RO    32    0x0000FFFF
+            TAV           =   0x50,  //RW    32    0xFFFFFFFF
+            TBV           =   0x54,  //RW    32    0x0000FFFF
+            TAPS          =   0x5C,  //RO    32    0x00000000
+            TBPS          =   0x60,  //RO    32    0x00000000
+            TAPV          =   0x64,  //RO    32    0x00000000
+            TBPV          =   0x68,  //RO    32    0x00000000
+            PP            =  0xFC0,  //RO    32    0x00000000
+        };
+
+        enum CTL
+        {
+            TBPWML = 1 << 14,   // GPTM Timer B PWM output level
+            // 0: Output is unaffected.
+            // 1: Output is inverted. RW 0
+            TBOTE = 1 << 13,    // GPTM Timer B output trigger enable
+            // 0: The ADC trigger of output Timer B is disabled.
+            // 1: The ADC trigger of output Timer B is enabled.
+            TBEVENT = 1 << 10,  // GPTM Timer B event mode
+            // 0x0: Positive edge
+            // 0x1: Negative edge
+            // 0x2: Reserved
+            // 0x3: Both edges RW 0x0
+            TBSTALL = 1 << 9,   // GPTM Timer B stall enable
+            // 0: Timer B continues counting while the processor is halted by the
+            // debugger.
+            // 1: Timer B freezes counting while the processor is halted by the
+            // debugger. RW 0
+            TBEN = 1 << 8,      // GPTM Timer B enable
+            // 0: Timer B is disabled.
+            // 1: Timer B is enabled and begins counting or the capture logic is
+            // enabled based on the GPTMCFG register. RW 0
+            TAPWML = 1 << 6,    // GPTM Timer A PWM output level
+            // 0: Output is unaffected.
+            // 1: Output is inverted. RW 0
+            TAOTE = 1 << 5,     // GPTM Timer A output trigger enable
+            // 0: The ADC trigger of output Timer A is disabled.
+            // 1: The ADC trigger of output Timer A is enabled. RW 0
+            TAEVENT = 1 << 2,   // GPTM Timer A event mode
+            // 0x0: Positive edge
+            // 0x1: Negative edge
+            // 0x2: Reserved
+            // 0x3: Both edges RW 0x0
+            TASTALL = 1 << 1,   // GPTM Timer A stall enable
+            // 0: Timer A continues counting while the processor is halted by the
+            // debugger.
+            // 1: Timer A freezes counting while the processor is halted by the
+            // debugger. RW 0
+            TAEN = 1 << 0,      // GPTM Timer A enable
+            // 0: Timer A is disabled.
+            // 1: Timer A is enabled and begins counting or the capture logic is
+            // enabled based on the GPTMCFG register.
+        };
+
+        enum TAMR
+        {
+            TAPLO = 1 << 11,    // Legacy PWM operation
+            // 0: Legacy operation
+            // 1: CCP is set to 1 on time-out. RW 0
+            TAMRSU = 1 << 10,   // Timer A match register update mode
+            // 0: Update GPTMAMATCHR and GPTMAPR if used on the next
+            // cycle.
+            // 1: Update GPTMAMATCHR and GPTMAPR if used on the next
+            // time-out. If the timer is disabled (TAEN is clear) when this bit is set,
+            // GPTMTAMATCHR and GPTMTAPR are updated when the timer is
+            // enabled. If the timer is stalled (TASTALL is set), GPTMTAMATCHR
+            // and GPTMTAPR are updated according to the configuration of this
+            // bit. RW 0
+            TAPWMIE = 1 << 9,   // GPTM Timer A PWM interrupt enable
+            // This bit enables interrupts in PWM mode on rising, falling, or both
+            // edges of the CCP output.
+            // 0: Interrupt is disabled.
+            // 1: Interrupt is enabled.
+            // This bit is valid only in PWM mode. RW 0
+            TAILD = 1 << 8,     // GPTM Timer A PWM interval load write
+            // 0: Update the GPTMTAR register with the value in the GPTMTAILR
+            // register on the next cycle. If the prescaler is used, update the
+            // GPTMTAPS register with the value in the GPTMTAPR register on
+            // the next cycle.
+            // 1: Update the GPTMTAR register with the value in the GPTMTAILR
+            // register on the next cycle. If the prescaler is used, update the
+            // GPTMTAPS register with the value in the GPTMTAPR register on
+            // the next time-out. RW 0
+            TASNAPS = 1 << 7,   // GPTM Timer A snap-shot mode
+            // 0: Snap-shot mode is disabled.
+            // 1: If Timer A is configured in periodic mode, the actual free-running
+            // value of Timer A is loaded at the time-out event into the GPTM
+            // Timer A (GPTMTAR) register. RW 0
+            TAWOT = 1 << 6,     // GPTM Timer A wait-on-trigger
+            // 0: Timer A begins counting as soon as it is enabled.
+            // 1: If Timer A is enabled (TAEN is set in the GPTMCTL register),
+            // Timer A does not begin counting until it receives a trigger from the
+            // Timer in the previous position in the daisy-chain. This bit must be
+            // clear for GP Timer module 0, Timer A. RW 0
+            TAMIE = 1 << 5,     // GPTM Timer A match interrupt enable
+            // 0: The match interrupt is disabled.
+            // 1: An interrupt is generated when the match value in the
+            // GPTMTAMATCHR register is reached in the one-shot and periodic
+            // modes. RW 0
+            TACDIR = 1 << 4,    // GPTM Timer A count direction
+            // 0: The timer counts down.
+            // 1: The timer counts up. When counting up, the timer starts from a
+            // value of 0x0. RW 0
+            TAAMS = 1 << 3,     // GPTM Timer A alternate mode
+            // 0: Capture mode is enabled.
+            // 1: PWM mode is enabled.
+            // Note: To enable PWM mode, the TACM bit must be cleared and the
+            // TAMR field must be configured to 0x2. RW 0
+            TACMR = 1 << 2,     // GPTM Timer A capture mode
+            // 0: Edge-count mode
+            // 1: Edge-time mode
+            TAMR_TAMR = 1 << 0, // GPTM Timer A mode
+            // 0x0: Reserved
+            // 0x1: One-shot mode
+            // 0x2: Periodic mode
+            // 0x3: Capture mode
+            // The timer mode is based on the timer configuration defined by bits
+            // [2:0] in the GPTMCFG register.
+        };
+    };
+
 protected:
     eMote3() {}
 
@@ -856,28 +1022,30 @@ protected:
     }
 
     // Enable clock to the RF CORE module
-    static void radio_enable()
-    {
+    static void radio_enable() {
         scr(RCGCRFC) |= RCGCRFC_RFC0;
         scr(SCGCRFC) |= RCGCRFC_RFC0;
+        scr(DCGCRFC) |= RCGCRFC_RFC0;
     }
     // Disable clock to the RF CORE module
-    static void radio_disable()
-    {
+    static void radio_disable() {
         scr(RCGCRFC) &= ~RCGCRFC_RFC0;
         scr(SCGCRFC) &= ~RCGCRFC_RFC0;
     }
 
-    static void config_GPTM(unsigned int which_timer)
-    {
-        assert(which_timer < 4);
-        scr(RCGCGPT) |= 1 << which_timer;
-        scr(SCGCGPT) |= 1 << which_timer;
+    static void timer_enable(unsigned int timer) {
+        assert(timer < TIMERS);
+        scr(RCGCGPT) |= 1 << timer;
+        scr(SCGCGPT) |= 1 << timer;
+    }
+    static void timer_disable(unsigned int timer) {
+        assert(timer < TIMERS);
+        scr(RCGCGPT) &= ~(1 << timer);
+        scr(SCGCGPT) &= ~(1 << timer);
     }
 
-    static void config_PWM(unsigned int which_timer, char gpio_port, unsigned int gpio_pin)
-    {
-        config_GPTM(which_timer);
+    static void config_PWM(unsigned int which_timer, char gpio_port, unsigned int gpio_pin) {
+        timer_enable(which_timer);
 
         if((gpio_port >= 'A') && (gpio_port <= 'D'))
             gpio_port += ('a'-'A');
@@ -978,24 +1146,19 @@ protected:
         gpioa(AFSEL) |= (PIN2) + (PIN3) + (PIN4) + (PIN5);
     }
 
-    static void config_I2C(volatile Log_Addr * base, char gpio_port_sda, unsigned int gpio_pin_sda, char gpio_port_scl, unsigned int gpio_pin_scl)
+    static void i2c_config(char gpio_port_sda, unsigned int gpio_pin_sda, char gpio_port_scl, unsigned int gpio_pin_scl)
     {
-        // Enable the I2C clock using the SYS_CTRL_RCGCI2C register
-        scr(RCGCI2C) = 0x1; // When the CPU is in active (run) mode
-
-        if((gpio_port_sda >= 'A') && (gpio_port_sda <= 'D'))
-            gpio_port_sda += ('a'-'A');
-        assert((gpio_port_sda >= 'a') && (gpio_port_sda <= 'd'));
+        assert((gpio_port_sda >= 'A') && (gpio_port_sda <= 'D'));
         assert(gpio_pin_sda <= 7);
-
-        if((gpio_port_scl >= 'A') && (gpio_port_scl <= 'D'))
-            gpio_port_scl += ('a'-'A');
-        assert((gpio_port_scl >= 'a') && (gpio_port_scl <= 'd'));
+        assert((gpio_port_scl >= 'A') && (gpio_port_scl <= 'D'));
         assert(gpio_pin_scl <= 7);
 
+        // Enable the I2C clock using the SYS_CTRL_RCGCI2C register
+        scr(RCGCI2C) |= 0x1; // When the CPU is in active (run) mode
+
         // Calculate the offset for the GPIO's IOC_Pxx_SEL
-        auto n_sda = gpio_port_sda - 'a';
-        auto n_scl = gpio_port_scl - 'a';
+        auto n_sda = gpio_port_sda - 'A';
+        auto n_scl = gpio_port_scl - 'A';
         auto sel_sda = PA0_SEL + 0x20*n_sda + 0x4*gpio_pin_sda;
         auto sel_scl = PA0_SEL + 0x20*n_scl + 0x4*gpio_pin_scl;
 
@@ -1003,22 +1166,12 @@ protected:
         auto over_scl = sel_scl + 0x80;
 
         unsigned int pin_bit_sda = 1 << gpio_pin_sda;
-        switch(gpio_port_sda)
-        {
-            case 'a': gpioa(AFSEL) |= pin_bit_sda; gpioa(DIR) &= ~pin_bit_sda; break;
-            case 'b': gpiob(AFSEL) |= pin_bit_sda; gpiob(DIR) &= ~pin_bit_sda; break;
-            case 'c': gpioc(AFSEL) |= pin_bit_sda; gpioc(DIR) &= ~pin_bit_sda; break;
-            case 'd': gpiod(AFSEL) |= pin_bit_sda; gpiod(DIR) &= ~pin_bit_sda; break;
-        }
+        gpio(n_sda, AFSEL) |= pin_bit_sda;
+        gpio(n_sda, DIR) &= ~pin_bit_sda;
 
         unsigned int pin_bit_scl = 1 << gpio_pin_scl;
-        switch(gpio_port_scl)
-        {
-            case 'a': gpioa(AFSEL) |= pin_bit_scl; gpioa(DIR) &= ~pin_bit_scl; break;
-            case 'b': gpiob(AFSEL) |= pin_bit_scl; gpiob(DIR) &= ~pin_bit_scl; break;
-            case 'c': gpioc(AFSEL) |= pin_bit_scl; gpioc(DIR) &= ~pin_bit_scl; break;
-            case 'd': gpiod(AFSEL) |= pin_bit_scl; gpiod(DIR) &= ~pin_bit_scl; break;
-        }
+        gpio(n_scl, AFSEL) |= pin_bit_scl;
+        gpio(n_scl, DIR) &= ~pin_bit_scl;
 
         ioc(over_sda) = DIS;
         ioc(over_scl) = DIS;
@@ -1040,6 +1193,12 @@ public:
     static volatile Reg32 & gpiob(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(GPIOB_BASE)[o / sizeof(Reg32)]; }
     static volatile Reg32 & gpioc(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(GPIOC_BASE)[o / sizeof(Reg32)]; }
     static volatile Reg32 & gpiod(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(GPIOD_BASE)[o / sizeof(Reg32)]; }
+
+    static void init();
+    static void init_clock();
+
+protected:
+    static bool _init_clock_done;
 };
 
 typedef eMote3 Cortex_M_Model;

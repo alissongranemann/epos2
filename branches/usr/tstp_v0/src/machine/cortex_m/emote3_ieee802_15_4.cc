@@ -4,7 +4,7 @@
 #ifndef __no_networking__
 
 #include <machine/cortex_m/machine.h>
-#include <machine/cortex_m/emote3_gptm.h>
+#include <timer.h>
 #include "../../../include/machine/cortex_m/emote3_ieee802_15_4.h"
 #include <utility/malloc.h>
 #include <utility/random.h>
@@ -249,8 +249,7 @@ bool eMote3_IEEE802_15_4::wait_for_ack()
     }
 
     bool acked = false;
-    eMote3_GPTM timer(2, Traits<eMote3_IEEE802_15_4>::ACK_TIMEOUT);
-    timer.enable();
+    User_Timer timer(0, 2, Traits<eMote3_IEEE802_15_4>::ACK_TIMEOUT);
     while(timer.running() and not (acked = (sfr(RFIRQF0) & INT_FIFOP)));
 
     return acked;
@@ -317,7 +316,8 @@ bool eMote3_IEEE802_15_4::backoff_and_send()
             auto delay_time = (Random::random() % (two_raised_to_be - 1)) * ubp;
             delay_time = delay_time < ubp ? ubp : delay_time;
 
-            eMote3_GPTM::delay(delay_time, 2);
+            User_Timer t(0, 2, delay_time);
+            while(t.running());
             if(tx_if_cca()) {
                 break; // Success
             }

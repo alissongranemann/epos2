@@ -1,5 +1,4 @@
 // EPOS Cortex_M USB Mediator Implementation
-// TODO: this code does not conform to EPOS coding quality, although it is functional. A careful EPOS programmer should clean it up in the future!
 
 #include <usb.h>
 #include <ic.h>

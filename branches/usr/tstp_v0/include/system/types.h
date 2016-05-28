@@ -98,13 +98,7 @@ class Cortex_M_Display;
 class Cortex_M_Scratchpad;
 class Cortex_M_NIC;
 class Cortex_M_IEEE802_15_4;
-class eMote3_IEEE802_15_4_PHY;
-class eMote3_MAC_Timer;
-
-class User_Timer_0;
-class User_Timer_1;
-class User_Timer_2;
-class User_Timer_3;
+class Cortex_M_I2C;
 
 class ATmega;
 class ATmega_IC;
@@ -123,6 +117,7 @@ class ATmega_Radio;
 class PCNet32;
 class C905;
 class E100;
+class eMote3_IEEE802_15_4_PHY;
 class eMote3_IEEE802_15_4;
 class eMote3_TSTP_MAC;
 class IEEE802_15_4;
@@ -179,9 +174,6 @@ class TSTPOTM;
 class TSTP_MAC;
 class TSTP_Timer;
 class TSTP;
-template<bool S>
-class PTS;
-class NIC_Locator;
 template<typename S>
 class Smart_Data;
 

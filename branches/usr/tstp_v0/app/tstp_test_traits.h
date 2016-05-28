@@ -190,15 +190,19 @@ template<> struct Traits<TSTP>: public Traits<Network>
 {
     typedef TSTPOTM MAC;
 
-    typedef PTS<false> No_Time_Synchronization;
-    typedef PTS<true> Time_Synchronization;
-    typedef No_Time_Synchronization Time_Manager;
+    enum {DISABLED};
 
-    typedef NIC_Locator Locator;
+    enum {PTS};
+    static const unsigned int Time_Manager = DISABLED;
 
-    class DISABLED {};
-    typedef DISABLED Security;
-    typedef DISABLED Router;
+    enum {NIC_Locator, HECOPS, Ultrasound_Locator};
+    static const unsigned int Locator = DISABLED;
+
+    enum {TSTP_Security};
+    static const unsigned int Security = DISABLED;
+
+    enum {Greedy_Geographic_Router};
+    static const unsigned int Router = DISABLED;
 };
 
 template<> struct Traits<ELP>: public Traits<Network>

@@ -275,7 +275,11 @@ private:
 
     static void lock() {
         _was_locked = CPU::int_disabled();
-        // If a rescheduling happens between these two lines, it might lead to an inconsistent state
+        // Concerning the correctness of _was_locked if a rescheduling happens between these two lines:
+        // 1) If _was_locked was true, no rescheduling happens. OK.
+        // 2) If _was_locked was false and interrupts are still enabled when execution returns, we're OK.
+        // 3) It seems like an error if _was_locked was false and execution comes back with interrupts disabled.
+        // So _was_locked should be correct.
         CPU::int_disable(); 
     }
     static void unlock() {

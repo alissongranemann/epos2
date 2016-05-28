@@ -57,6 +57,9 @@ class PTS : public TSTP_Common, private TSTPNIC::Observer
     static const typename IF<(do_synchronize and (not EQUAL<TSTPNIC, TSTPOTM>::Result)), void, bool>::Result _time_sync_requirement_check; // Synchronization is only available with TSTP MAC
 public:
     PTS() {
+        if(!do_synchronize) {
+            _synced = true;
+        }
         _timer.start();
         TSTPNIC::attach(this);
     }
@@ -74,7 +77,6 @@ public:
         return true; 
     }
 
-    // Called by Observer
     void update(TSTPNIC::Observed * obs, Buffer * buf) {
         db<TSTP>(TRC) << "PTS::update(obs=" << obs << ",buf=" << buf << endl;
         if(buf->is_frame()) {
@@ -99,6 +101,9 @@ public:
                 buf->origin_time(ts_to_us(buf->sfd_time_stamp() - tx_delay - packet->elapsed()));
             }
         }
+        else if(buf->is_rx()) {
+            buf->relevant((!_synced) || buf->relevant());
+        }
     }
 
 private:
@@ -119,18 +124,120 @@ public:
     static Coordinates here() { return (TSTPNIC::nic()->address())[5] % 2 ? Coordinates(0, 0, 0) : Coordinates(10, 10, 10); }
 };
 
+class HECOPS : public TSTP_Common, private TSTPNIC::Observer {
+    typedef TSTPNIC::Buffer Buffer;
+    typedef TSTP_Packet Packet;
+public:
+    HECOPS() {
+        TSTPNIC::attach(this);
+    }
+    ~HECOPS() {
+        TSTPNIC::detach(this);
+    }
+
+    static Coordinates here() { return Coordinates(0,0,0); }
+
+    static bool bootstrap() {
+        return true; 
+    }
+
+    void update(TSTPNIC::Observed * obs, Buffer * buf) {
+        db<TSTP>(TRC) << "HECOPS::update(obs=" << obs << ",buf=" << buf << endl;
+    }
+};
+
+class Ultrasound_Locator : public TSTP_Common, private TSTPNIC::Observer {
+    typedef TSTPNIC::Buffer Buffer;
+    typedef TSTP_Packet Packet;
+public:
+    Ultrasound_Locator() {
+        TSTPNIC::attach(this);
+    }
+    ~Ultrasound_Locator() {
+        TSTPNIC::detach(this);
+    }
+
+    static Coordinates here() { return Coordinates(0,0,0); }
+
+    static bool bootstrap() {
+        return true; 
+    }
+
+    void update(TSTPNIC::Observed * obs, Buffer * buf) {
+        db<TSTP>(TRC) << "HECOPS::update(obs=" << obs << ",buf=" << buf << endl;
+    }
+};
+
+// Security
+class TSTP_Security : public TSTP_Common, private TSTPNIC::Observer {
+    typedef TSTPNIC::Buffer Buffer;
+    typedef TSTP_Packet Packet;
+public:
+    TSTP_Security() {
+        TSTPNIC::attach(this);
+    }
+    ~TSTP_Security() {
+        TSTPNIC::detach(this);
+    }
+
+    static bool bootstrap() {
+        return true; 
+    }
+
+    void update(TSTPNIC::Observed * obs, Buffer * buf) {
+        db<TSTP>(TRC) << "HECOPS::update(obs=" << obs << ",buf=" << buf << endl;
+    }
+};
+
+// Routers
+class Greedy_Geographic_Router : public TSTP_Common, private TSTPNIC::Observer {
+    typedef TSTPNIC::Buffer Buffer;
+    typedef TSTP_Packet Packet;
+public:
+    Greedy_Geographic_Router() {
+        TSTPNIC::attach(this);
+    }
+    ~Greedy_Geographic_Router() {
+        TSTPNIC::detach(this);
+    }
+
+    static bool bootstrap() {
+        return true; 
+    }
+
+    void update(TSTPNIC::Observed * obs, Buffer * buf) {
+        db<TSTP>(TRC) << "HECOPS::update(obs=" << obs << ",buf=" << buf << endl;
+    }
+};
+
 class TSTP: public TSTP_Common, private TSTPNIC::Observer
 {
     template<typename> friend class Smart_Data;
 
-private:
-    typedef TSTPNIC NIC;
-    typedef Traits<TSTP>::Time_Manager Time_Manager;
-    typedef Traits<TSTP>::Security Security;
-    typedef Traits<TSTP>::Locator Locator;
-    typedef Traits<TSTP>::Router Router;
+    class Disabled : public TSTP_Common {
+    public:
+        static Coordinates here() { return Coordinates(0,0,0); }
+        static bool bootstrap() { return true; }
+    };
 
 public:
+    typedef TSTPNIC NIC;
+    typedef PTS<Traits<TSTP>::Time_Manager == Traits<TSTP>::PTS> Time_Manager;
+    typedef SWITCH<Traits<TSTP>::Locator, 
+            CASE<Traits<TSTP>::NIC_Locator, NIC_Locator, 
+            CASE<Traits<TSTP>::HECOPS, HECOPS, 
+            CASE<Traits<TSTP>::Ultrasound_Locator, Ultrasound_Locator, 
+            CASE<Traits<TSTP>::DISABLED, Disabled>
+            >>>>::Result Locator;
+    typedef SWITCH<Traits<TSTP>::Security, 
+            CASE<Traits<TSTP>::TSTP_Security, TSTP_Security, 
+            CASE<Traits<TSTP>::DISABLED, Disabled>
+            >>::Result Security;
+    typedef SWITCH<Traits<TSTP>::Router, 
+            CASE<Traits<TSTP>::Greedy_Geographic_Router, Greedy_Geographic_Router, 
+            CASE<Traits<TSTP>::DISABLED, Disabled>
+            >>::Result Router;
+
     // Buffers received from the NIC
     typedef TSTPNIC::Buffer Buffer;
 

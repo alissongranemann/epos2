@@ -57,8 +57,9 @@ class PC_Display: public Display_Common, private MC6845
     friend class First_Object;
 
 public:
-    static const unsigned int FB_PHY_ADDR = Traits<PC_Display>::FRAME_BUFFER_ADDRESS;
+    static const unsigned int FB_PHY_ADDR = 0xb8000;
     static const unsigned int FB_LOG_ADDR = Memory_Map<PC>::VGA;
+    static const unsigned int FB_SIZE = 32 * 1024; // 32 KB
 
     static const int LINES = Traits<PC_Display>::LINES;
     static const int COLUMNS = Traits<PC_Display>::COLUMNS;
