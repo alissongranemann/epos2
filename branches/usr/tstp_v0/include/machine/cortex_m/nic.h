@@ -11,7 +11,7 @@
 
 __BEGIN_SYS
 
-class Cortex_M_IEEE802_15_4: public IEEE802_15_4
+class Cortex_M_IEEE802_15_4: public Traits<Cortex_M_IEEE802_15_4>::MAC
 {
     friend class Cortex_M;
 

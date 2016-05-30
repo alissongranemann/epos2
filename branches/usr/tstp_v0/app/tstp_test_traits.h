@@ -10,7 +10,7 @@ template<typename T>
 struct Traits
 {
     static const bool enabled = true;
-    static const bool debugged = true;
+    static const bool debugged = false;
     static const bool hysterically_debugged = false;
     typedef TLIST<> ASPECTS;
 };
@@ -21,13 +21,13 @@ template<> struct Traits<Build>
     static const unsigned int MODE = LIBRARY;
 
     enum {IA32, ARMv7};
-    static const unsigned int ARCHITECTURE = ARMv7;
+    static const unsigned int ARCHITECTURE = IA32;
 
     enum {PC, Cortex_M, Cortex_A};
-    static const unsigned int MACHINE = Cortex_M;
+    static const unsigned int MACHINE = PC;
 
     enum {Legacy, eMote3, LM3S811};
-    static const unsigned int MODEL = eMote3;
+    static const unsigned int MODEL = Legacy;
 
     static const unsigned int CPUS = 1;
     static const unsigned int NODES = 2; // > 1 => NETWORKING
@@ -39,8 +39,8 @@ template<> struct Traits<Debug>
 {
     static const bool error   = true;
     static const bool warning = true;
-    static const bool info    = false;
-    static const bool trace   = false;
+    static const bool info    = true;
+    static const bool trace   = true;
 };
 
 template<> struct Traits<Lists>: public Traits<void>
@@ -190,19 +190,27 @@ template<> struct Traits<TSTP>: public Traits<Network>
 {
     typedef TSTPOTM MAC;
 
-    enum {DISABLED};
+    enum {
+        DISABLED,
+        // Time Managers
+        PTS,
+        // Locators
+        NIC_Locator,
+        HECOPS,
+        Ultrasound_Locator,
+        // Security Managers
+        TSTP_Security,
+        // Routers
+        Greedy_Geographic_Router
+    };
 
-    enum {PTS};
     static const unsigned int Time_Manager = DISABLED;
 
-    enum {NIC_Locator, HECOPS, Ultrasound_Locator};
     static const unsigned int Locator = DISABLED;
 
-    enum {TSTP_Security};
     static const unsigned int Security = DISABLED;
 
-    enum {Greedy_Geographic_Router};
-    static const unsigned int Router = DISABLED;
+    static const unsigned int Router = Greedy_Geographic_Router;
 };
 
 template<> struct Traits<ELP>: public Traits<Network>

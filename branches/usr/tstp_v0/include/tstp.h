@@ -10,6 +10,7 @@
 #include <network.h>
 #include <tstp_net.h>
 #include <timer.h>
+#include <utility/random.h>
 
 __BEGIN_SYS
 
@@ -60,15 +61,13 @@ public:
         if(!do_synchronize) {
             _synced = true;
         }
-        _timer.start();
         TSTPNIC::attach(this);
     }
     ~PTS() {
-        _timer.stop();
         TSTPNIC::detach(this);
     }
 
-    static Time now() { return ts_to_us(_timer.now()); }
+    static Time now() { return ts_to_us(Timer::now()); }
 
     static bool bootstrap() {
         if(do_synchronize) {
@@ -91,7 +90,7 @@ public:
                         Time_Stamp diff1 = sfd - to_set;
                         Time_Stamp diff2 = to_set - sfd;
                         Time_Stamp adjust = _UTIL::abs(diff1) < _UTIL::abs(diff2) ? diff1 : diff2;
-                        _timer.adjust(adjust);
+                        //Timer::adjust(adjust);
                         buf->sfd_time_stamp(buf->sfd_time_stamp() + adjust);
                         _synced = true;
                     } break;
@@ -107,14 +106,12 @@ public:
     }
 
 private:
-    static Time ts_to_us(const Time_Stamp & ts) { return _timer.ts_to_us(ts); }
-    static Time_Stamp us_to_ts(const Time & us) { return _timer.us_to_ts(us); }
+    static Time ts_to_us(const Time_Stamp & ts) { return Timer::ts_to_us(ts); }
+    static Time_Stamp us_to_ts(const Time & us) { return Timer::us_to_ts(us); }
 
-    static Timer _timer;
     static volatile bool _synced;
 };
 
-template<bool S> typename PTS<S>::Timer PTS<S>::_timer;
 template<bool S> volatile bool PTS<S>::_synced;
 
 
@@ -164,7 +161,7 @@ public:
     }
 
     void update(TSTPNIC::Observed * obs, Buffer * buf) {
-        db<TSTP>(TRC) << "HECOPS::update(obs=" << obs << ",buf=" << buf << endl;
+        db<TSTP>(TRC) << "Ultrasound_Locator::update(obs=" << obs << ",buf=" << buf << endl;
     }
 };
 
@@ -185,7 +182,7 @@ public:
     }
 
     void update(TSTPNIC::Observed * obs, Buffer * buf) {
-        db<TSTP>(TRC) << "HECOPS::update(obs=" << obs << ",buf=" << buf << endl;
+        db<TSTP>(TRC) << "TSTP_Security::update(obs=" << obs << ",buf=" << buf << endl;
     }
 };
 
@@ -194,9 +191,8 @@ class Greedy_Geographic_Router : public TSTP_Common, private TSTPNIC::Observer {
     typedef TSTPNIC::Buffer Buffer;
     typedef TSTP_Packet Packet;
 public:
-    Greedy_Geographic_Router() {
-        TSTPNIC::attach(this);
-    }
+    Greedy_Geographic_Router(); 
+
     ~Greedy_Geographic_Router() {
         TSTPNIC::detach(this);
     }
@@ -206,8 +202,14 @@ public:
     }
 
     void update(TSTPNIC::Observed * obs, Buffer * buf) {
-        db<TSTP>(TRC) << "HECOPS::update(obs=" << obs << ",buf=" << buf << endl;
+        db<TSTP>(TRC) << "Greedy_Geographic_Router::update(obs=" << obs << ",buf=" << buf << endl;
+        if(buf->is_tx() and buf->is_frame()) {
+            buf->offset((Random::random() % (_period - 4096)) + 4096);
+        }
     }
+
+private:
+    const Time_Stamp _period;
 };
 
 class TSTP: public TSTP_Common, private TSTPNIC::Observer
@@ -426,6 +428,7 @@ public:
             Buffer * buf = NIC::alloc(sizeof(Interest));
             memcpy(buf->frame()->data<Interest>(), this, sizeof(Interest));
             buf->origin_time(TSTP::now());
+            buf->deadline(buf->origin_time() + expiry());
             NIC::send(buf);
         }
 
@@ -463,6 +466,7 @@ public:
             memcpy(buf->frame()->data<Response>(), this, _size);
             buf->origin_time(_time);
             buf->frame()->data<Response>()->expiry(expiry);
+            buf->deadline(buf->origin_time() + expiry);
             db<TSTP>(INF) << "TSTP::Responsive::send:response=" << this << " => " << reinterpret_cast<const Response &>(*this) << endl;
             NIC::send(buf);
         }

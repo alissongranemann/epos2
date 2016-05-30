@@ -13,6 +13,8 @@ __BEGIN_SYS
 eMote3_TSTP_MAC::eMote3_TSTP_MAC(unsigned int unit, IO_Irq irq, DMA_Buffer * dma_buf):
     _unit(unit), _irq(irq), _dma_buf(dma_buf), _rx_cur(0), _tx_cur(0), _tx_pending(0)
 {
+    _mf_period = TSTP_Timer::us_to_ts(TIME_BETWEEN_MICROFRAMES + MICROFRAME_TIME) + MF_TX_DELAY;
+
     db<eMote3_TSTP_MAC>(TRC) << "eMote3_TSTP_MAC(unit=" << unit << ",irq=" << irq << ")" << endl;
 
     auto log = _dma_buf->log_address();
@@ -47,10 +49,16 @@ eMote3_TSTP_MAC::eMote3_TSTP_MAC(unsigned int unit, IO_Irq irq, DMA_Buffer * dma
     // Enable FIFOP (frame received) interrupt
     xreg(RFIRQM0) = INT_FIFOP;
     xreg(RFIRQM1) = 0;
+
+    TSTP_Timer::start();
+    // Start state machine
+    next_state(&trigger_check_tx_schedule, TSTP_Timer::now() + TSTP_Timer::us_to_ts(SLEEP_PERIOD));
 }
 
 void eMote3_TSTP_MAC::init(unsigned int unit)
 {
+    new (SYSTEM) TSTP_Timer;
+
     db<Init, eMote3_TSTP_MAC>(TRC) << "eMote3_TSTP_MAC::init(unit=" << unit << ")" << endl;
 
     // Allocate a DMA Buffer for init block, rx and tx rings

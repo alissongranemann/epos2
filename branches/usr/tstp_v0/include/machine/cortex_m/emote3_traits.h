@@ -88,9 +88,9 @@ template <> struct Traits<Cortex_M_IEEE802_15_4>: public Traits<Cortex_M_Common>
 {
     static const bool enabled = (Traits<Build>::NODES > 1);
 
-    typedef IEEE802_15_4 MAC;
+    typedef TSTP_MAC MAC;
 
-    typedef LIST<eMote3_IEEE802_15_4> NICS;
+    typedef LIST<eMote3_TSTP_MAC> NICS;
 
     static const unsigned int UNITS = NICS::Length;
 };
@@ -98,8 +98,8 @@ template <> struct Traits<Cortex_M_IEEE802_15_4>: public Traits<Cortex_M_Common>
 template <> struct Traits<eMote3_IEEE802_15_4>: public Traits<Cortex_M_IEEE802_15_4>
 {
     static const unsigned int UNITS = NICS::Count<eMote3_IEEE802_15_4>::Result;
-    static const unsigned int SEND_BUFFERS = 16;
-    static const unsigned int RECEIVE_BUFFERS = 16;
+    static const unsigned int SEND_BUFFERS = 8;
+    static const unsigned int RECEIVE_BUFFERS = 8;
     static const unsigned int DEFAULT_CHANNEL = 15; // From 11 to 26
 
     // There is no listen command on the radio interface yet,
@@ -119,9 +119,10 @@ template <> struct Traits<eMote3_IEEE802_15_4>: public Traits<Cortex_M_IEEE802_1
 
 template <> struct Traits<eMote3_TSTP_MAC>: public Traits<Cortex_M_IEEE802_15_4>
 {
+    static const bool debugged = true;
     static const unsigned int UNITS = NICS::Count<eMote3_TSTP_MAC>::Result;
-    static const unsigned int SEND_BUFFERS = 16;
-    static const unsigned int RECEIVE_BUFFERS = 16;
+    static const unsigned int SEND_BUFFERS = 8;
+    static const unsigned int RECEIVE_BUFFERS = 8;
     static const unsigned int DEFAULT_CHANNEL = 15; // From 11 to 26
 };
 

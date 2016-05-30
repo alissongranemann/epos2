@@ -117,6 +117,14 @@ protected:
         Distance hint() const { return _hint; }
         void hint(const Distance & h) { _hint = h; }
 
+        friend OStream & operator<<(OStream & db, const Microframe & m) {
+            db << "{al=" << m.all_listen() << ",id=" << m.id() << ",c=" << m._count << ",h=" << m._hint << ",crc=" << m._crc << "}";
+            return db;
+        }
+        friend Debug & operator<<(Debug & db, const Microframe & m) {
+            db << "{al=" << m.all_listen() << ",id=" << m.id() << ",c=" << m._count << ",h=" << m._hint << ",crc=" << m._crc << "}";
+            return db;
+        }
     private:
         unsigned short _al_id; // all_listen : 1 
                                // id : 15

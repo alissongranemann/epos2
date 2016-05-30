@@ -16,22 +16,22 @@ __BEGIN_SYS
 
 // Class attributes
 eMote3_TSTP_MAC::Device eMote3_TSTP_MAC::_devices[UNITS];
-unsigned int eMote3_TSTP_MAC::_timer_int_unit;
-
+eMote3_TSTP_MAC::State_Handler eMote3_TSTP_MAC::_scheduled_state;
+eMote3_TSTP_MAC * eMote3_TSTP_MAC::_timer_int_requester;
 
 // Methods
 eMote3_TSTP_MAC::~eMote3_TSTP_MAC() { db<eMote3_TSTP_MAC>(TRC) << "~Radio(unit=" << _unit << ")" << endl; }
 
-void eMote3_TSTP_MAC::next_state(const STATE & s, const Time & when)
-{
-    _timer_int_unit = _unit;
-    TSTP_Timer::interrupt(when, &state_machine);
+void eMote3_TSTP_MAC::next_state(const State_Handler & s, const Time & when) {
+    _scheduled_state = s;
+    _timer_int_requester = this;
+    //TSTP_Timer::interrupt(when, _scheduled_state);
+    eMote3_MAC_Timer::interrupt_ts(when, _scheduled_state);
 }
 
 int eMote3_TSTP_MAC::send(const Address & dst, const Protocol & prot, const void * data, unsigned int size)
 {
     if(auto b = alloc(reinterpret_cast<NIC*>(this), dst, prot, 0, 0, size)) {
-        memcpy(b->frame(), data, size);
         return send(b);
     } else {
         return 0;
@@ -51,13 +51,17 @@ eMote3_TSTP_MAC::Buffer * eMote3_TSTP_MAC::alloc(NIC * nic, const Address & dst,
         locked = _tx_buffer[_tx_cur]->lock();
         if(!locked) ++_tx_cur %= TX_BUFS;
     }
+
     Buffer * buf = _tx_buffer[_tx_cur];
 
     // Initialize the buffer
     auto sz = once + always + payload;
-    new (buf) Buffer(nic, sz);
+    buf->size(sz);
+    buf->nic(nic);
     buf->id(Random::random() & 0x7fff);// TODO
     buf->sfd_time_stamp(TSTP_Timer::now());
+    buf->is_tx(true);
+    buf->is_frame(true);
 
     db<eMote3_TSTP_MAC>(INF) << "eMote3_TSTP_MAC::alloc[" << _tx_cur << "]" << endl;
 
@@ -79,7 +83,8 @@ eMote3_TSTP_MAC::Buffer * eMote3_TSTP_MAC::alloc_mf(bool all_listen, const Frame
     Buffer * buf = _tx_buffer[_tx_cur];
 
     // Initialize the buffer
-    new (buf) Buffer(reinterpret_cast<NIC*>(this), sizeof(Microframe));
+    buf->nic(reinterpret_cast<NIC*>(this));
+    buf->size(sizeof(Microframe));
     auto mf = new (buf->frame()) Microframe(all_listen, id, N_MICROFRAMES, 0);
 
     buf->id(mf->id());
@@ -163,8 +168,9 @@ void eMote3_TSTP_MAC::handle_int()
                     if(_rx_state == RX_MF) {
                         buf->is_microframe(true);
                         process_mf(buf);
+                    } else {
+                        free(buf);
                     }
-                    free(buf);
                 } else {
                     if(_rx_state == RX_DATA) {
                         buf->is_microframe(false);
@@ -199,10 +205,9 @@ void eMote3_TSTP_MAC::process_mf(Buffer * buf)
     //_tx_pin.clear();
     off();
     TSTP_Timer::cancel_interrupt();
-    db<eMote3_TSTP_MAC>(TRC) << "eMote3_TSTP_MAC::process_mf()" << endl;
     auto mf = buf->frame()->data<Microframe>();
 
-    auto data_time = buf->sfd_time_stamp() + (mf->count() + 1) * (TIME_BETWEEN_MICROFRAMES + MICROFRAME_TIME);
+    auto data_time = buf->sfd_time_stamp() + (mf->count() + 1) * (_mf_period);
 
     if(_tx_pending and (_tx_pending->id() == mf->id())) {
         free(_tx_pending);
@@ -220,9 +225,11 @@ void eMote3_TSTP_MAC::process_mf(Buffer * buf)
     }
     if(mf->all_listen() or buf->relevant()) {
         _receiving_data_id = mf->id();
-        next_state(STATE::RX_DATA, data_time - TSTP_Timer::us_to_ts(DATA_LISTEN_MARGIN));
+        free(buf);
+        next_state(&trigger_rx_data, data_time);// - TSTP_Timer::us_to_ts(DATA_LISTEN_MARGIN));
     } else {
-        next_state(STATE::CHECK_TX_SCHEDULE, data_time + TSTP_Timer::us_to_ts(SLEEP_PERIOD));
+        free(buf);
+        next_state(&trigger_check_tx_schedule, data_time + TSTP_Timer::us_to_ts(SLEEP_PERIOD));
     }
 }
 
@@ -247,14 +254,14 @@ void eMote3_TSTP_MAC::check_tx_schedule()
     lock();
     off();
     auto t = TSTP_Timer::now();
-    if(_tx_pending and (_tx_pending->deadline() < t)) {
+    if(_tx_pending and (TSTP_Timer::us_to_ts(_tx_pending->deadline()) < t)) {
         free(_tx_pending); // sets _tx_pending = 0
     }
 
     Buffer::Element * head;
     while((not _tx_pending) and (head = _tx_schedule.remove_head())) {
         Buffer * buf = head->object();
-        if(buf->deadline() > t) {
+        if(TSTP_Timer::us_to_ts(buf->deadline()) > t) {
             _tx_pending = buf;
         } else {
             free(buf);
@@ -262,9 +269,10 @@ void eMote3_TSTP_MAC::check_tx_schedule()
     }
 
     if(_tx_pending) {
-        next_state(STATE::CCA, t + TSTP_Timer::us_to_ts(_tx_pending->offset()));
+        notify(PROTOCOL::TSTP, _tx_pending);
+        next_state(&trigger_cca, t + TSTP_Timer::us_to_ts(_tx_pending->offset()));
     } else {
-        next_state(STATE::RX_MF, t + TSTP_Timer::us_to_ts(SLEEP_PERIOD));
+        next_state(&trigger_rx_mf, t + TSTP_Timer::us_to_ts(SLEEP_PERIOD));
     }
     unlock();
 }
@@ -306,19 +314,20 @@ void eMote3_TSTP_MAC::prepare_tx_mf()
     // TODO: Other message types
 
     clear_txfifo();
+    _mf_time = TSTP_Timer::now();
     tx_mf();
 }
 
 void eMote3_TSTP_MAC::tx_mf()
 {
-    const auto period = TSTP_Timer::us_to_ts(TIME_BETWEEN_MICROFRAMES + MICROFRAME_TIME);
-    if(_sending_microframe->frame()->data<Microframe>()->dec_count() > 0) {
-        next_state(STATE::TX_MF, TSTP_Timer::now() + period);
+    _mf_time += _mf_period;
+    if(_sending_microframe->frame()->data<Microframe>()->dec_count() > 1) {
+        next_state(&trigger_tx_mf, _mf_time);
     } else {
-        next_state(STATE::TX_DATA, TSTP_Timer::now() + period);
+        next_state(&trigger_tx_data, _mf_time);
     }
 
-    setup_tx(reinterpret_cast<char *>(&_sending_microframe), sizeof(Microframe) - sizeof(CRC));
+    setup_tx(reinterpret_cast<char *>(_sending_microframe->frame()->data<Microframe>()), sizeof(Microframe) - sizeof(CRC));
     //_tx_pin.set();
     tx();
     while(not tx_ok());
@@ -329,7 +338,7 @@ void eMote3_TSTP_MAC::tx_mf()
 void eMote3_TSTP_MAC::tx_data() 
 { 
     lock();
-	auto hdr = _tx_pending->frame()->header();
+    auto hdr = _tx_pending->frame()->header();
     const auto sz = _tx_pending->size();
     auto f = reinterpret_cast<char *>(_tx_pending->frame());
 
@@ -345,13 +354,16 @@ void eMote3_TSTP_MAC::tx_data()
     unlock();
 
     off();
-    next_state(STATE::RX_MF, TSTP_Timer::now() + TSTP_Timer::us_to_ts(SLEEP_PERIOD));
+    free(_sending_microframe);
+    while(true);
+    next_state(&trigger_rx_mf, TSTP_Timer::now() + TSTP_Timer::us_to_ts(SLEEP_PERIOD));
+    db<eMote3_TSTP_MAC>(TRC) << "tx_data() done" << endl;
 }
 
 void eMote3_TSTP_MAC::rx_mf() 
 {
     _rx_state = RX_MF; 
-    next_state(STATE::CHECK_TX_SCHEDULE, TSTP_Timer::now() + TSTP_Timer::us_to_ts(RX_MF_TIMEOUT));
+    next_state(&trigger_check_tx_schedule, TSTP_Timer::now() + TSTP_Timer::us_to_ts(RX_MF_TIMEOUT));
     //_rx_pin.set();
     rx(); 
 }
@@ -359,7 +371,7 @@ void eMote3_TSTP_MAC::rx_mf()
 void eMote3_TSTP_MAC::rx_data() 
 {
     _rx_state = RX_DATA; 
-    next_state(STATE::CHECK_TX_SCHEDULE, TSTP_Timer::now() + TSTP_Timer::us_to_ts(RX_DATA_TIMEOUT));
+    next_state(&trigger_check_tx_schedule, TSTP_Timer::now() + TSTP_Timer::us_to_ts(RX_DATA_TIMEOUT));
     //_rx_pin.set();
     rx(); 
 }

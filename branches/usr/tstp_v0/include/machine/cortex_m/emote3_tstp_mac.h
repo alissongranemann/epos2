@@ -31,6 +31,8 @@ class eMote3_TSTP_MAC: public TSTP_MAC, public TSTP_MAC::Observed, private eMote
     typedef TSTP_MAC::CRC CRC;
 
 private:
+    static const long long MF_TX_DELAY = 11000;
+
     static void lock() { CPU::int_disable(); }
     static void unlock() { CPU::int_enable(); }
 
@@ -81,25 +83,19 @@ private:
 
     static void int_handler(const IC::Interrupt_Id & interrupt);
 
-    static unsigned int _timer_int_unit;
+    static eMote3_TSTP_MAC * _timer_int_requester;
 
-    STATE _scheduled_state;
+    typedef void (*State_Handler)();
+    static State_Handler _scheduled_state;
 
-    void next_state(const STATE & s, const Time & when);
-    static void state_machine() { get_by_unit(_timer_int_unit)->state(); }
+    void next_state(const State_Handler & s, const Time & when);
 
-    void state() { state(_scheduled_state); }
-    void state(const STATE & s) {
-        switch(s) {
-            case STATE::CHECK_TX_SCHEDULE: check_tx_schedule(); break;
-            case STATE::RX_MF: rx_mf(); break;
-            case STATE::RX_DATA: rx_data(); break;
-            case STATE::CCA: cca(); break;
-            case STATE::TX_MF: tx_mf(); break;
-            case STATE::TX_DATA: tx_data(); break;
-            default: break;
-        }
-    }
+    static void trigger_check_tx_schedule() { _timer_int_requester->check_tx_schedule(); }
+    static void trigger_rx_mf() { _timer_int_requester->rx_mf(); }
+    static void trigger_rx_data() { _timer_int_requester->rx_data(); }
+    static void trigger_cca() { _timer_int_requester->cca(); }
+    static void trigger_tx_mf() { _timer_int_requester->tx_mf(); }
+    static void trigger_tx_data() { _timer_int_requester->tx_data(); }
 
     static eMote3_TSTP_MAC * get_by_unit(unsigned int unit) {
         if(unit >= UNITS) {
@@ -151,6 +147,8 @@ private:
     Buffer::List _tx_schedule;
     Buffer * _tx_pending;
     Buffer * _sending_microframe;
+    Time _mf_time;
+    Time _mf_period;
     STATE _rx_state;
     Frame_ID _receiving_data_id;
 };

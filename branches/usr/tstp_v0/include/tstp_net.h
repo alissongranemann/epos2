@@ -130,12 +130,7 @@ public:
     static Buffer * alloc(unsigned int payload) {
         db<TSTPOTM>(TRC) << "TSTPOTM::alloc(pl=" << payload << ")" << endl;
 
-        Buffer * buf = nic()->alloc(nic(), NIC::Address::BROADCAST, NIC::TSTP, 0, 0, payload);
-        if(buf) {
-            buf->is_tx(true);
-            buf->is_frame(true);
-        }
-        return buf;
+        return nic()->alloc(nic(), NIC::Address::BROADCAST, NIC::TSTP, 0, 0, payload);
     }
 
     static int send(Buffer * buf) {
@@ -153,10 +148,8 @@ public:
 
 private:
     void update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf) {
-        db<TSTPOTM>(TRC) << "TSTPOTM::update(obs=" << obs << ",prot=" << hex << prot << dec << ",buf=" << buf << ")" << endl;
         buf->nic(&_nic);
         notify(buf);
-        _nic.free(buf);
     }
 
     static void init(unsigned int unit) {

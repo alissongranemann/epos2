@@ -16,15 +16,15 @@ class eMote3_MAC_Timer
     const static unsigned int CLOCK = 32 * 1000 * 1000; // 32MHz
 
     public:
-    const static unsigned int FREQUENCY = CLOCK;
-    static unsigned int frequency() { return FREQUENCY; }
+    const static long long FREQUENCY = CLOCK;
+    static long long frequency() { return FREQUENCY; }
 
     typedef long long Timestamp;
     typedef Timestamp Microsecond;
     typedef void (* Interrupt_Handler)();
 
-    static Timestamp us_to_ts(Microsecond us) { return us * static_cast<Timestamp>(frequency() / 1000000); }
-    static Microsecond ts_to_us(Timestamp ts) { return ts / static_cast<Timestamp>((frequency() / 1000000)); }
+    static Timestamp us_to_ts(Microsecond us) { return us * static_cast<Timestamp>(FREQUENCY / 1000000ll); }
+    static Microsecond ts_to_us(Timestamp ts) { return ts / static_cast<Timestamp>(FREQUENCY / 1000000ll); }
     static Microsecond read() { return ts_to_us(read_ts()); }
     static void set(Microsecond time) { set_ts(us_to_ts(time)); }
 
@@ -110,12 +110,11 @@ public:
 
         int_clear();
         Timestamp now = read_ts();
-        if(when <= now) {
-            int_enable(INT_OVERFLOW_PER);
-            _user_handler();
-        } else if((when >> 16ll) > (now >> 16ll)) {
+        if((when >> 16ll) > (now >> 16ll)) {
             int_enable(INT_OVERFLOW_COMPARE1 | INT_OVERFLOW_PER);
-        } else if(when > now) {
+        } else {
+            // If when <= now, this will be the case too, 
+            // and interrupt will occur in a little while
             int_enable(INT_COMPARE1 | INT_OVERFLOW_PER);
         }
     }

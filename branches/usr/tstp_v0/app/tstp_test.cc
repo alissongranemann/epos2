@@ -33,8 +33,6 @@ int main()
 
     NIC nic;
     NIC::Address mac = nic.address();
-    sink(mac);
-    while(true);
 
     if(mac[5] % 2)
         sink(mac);
