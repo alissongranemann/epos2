@@ -11,6 +11,7 @@
 #define __MMU_H                     __HEADER_ARCH(mmu)
 
 #define __MACH_H                    __HEADER_MACH(machine)
+#define __MODEL_H                   __HEADER_MACH(MMOD)
 #define __GPIO_H                    __HEADER_MACH(gpio)
 #define __IC_H                      __HEADER_MACH(ic)
 #define __TIMER_H                   __HEADER_MACH(timer)
