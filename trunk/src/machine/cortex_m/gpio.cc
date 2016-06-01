@@ -67,11 +67,10 @@ void GPIO::int_enable(const Edge & edge, bool power_up, const Edge & power_up_ed
 
     if(supports_power_up && power_up) {
         assert(power_up_edge != BOTH);
-        if (power_up_edge == FALLING) {
+        if (power_up_edge == FALLING)
             gpio(_port, P_EDGE_CTRL) |= (_pin_bit << (8 * _port));
-        } else if (power_up_edge == RISING) {
+        else if (power_up_edge == RISING)
             gpio(_port, P_EDGE_CTRL) &= ~(_pin_bit << (8 * _port));
-        }
         gpio(_port, PI_IEN) |= (_pin_bit << (8 * _port));
     }
 

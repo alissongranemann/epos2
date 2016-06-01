@@ -34,31 +34,29 @@ public:
         assert((port >= 'A') && (port <= 'A' + GPIO_PORTS));
         gpio(_port, AFSEL) &= ~_pin_bit; // Set pin as software controlled
         if(dir == OUTPUT)
-            output();
+            gpio(port, DIR) |= _pin_bit;
         else
-            input();
+            gpio(port, DIR) &= ~_pin_bit;
         clear_interrupt();
-        if(handler)
+        if(handler) {
+            _devices[_port][_pin] = this;
             int_enable();
+        }
     }
 
     bool get() const { return *_data; }
     void set(bool value) { *_data = 0xff * value; }
 
-    void output() { gpio(_port, DIR) |= _pin_bit; }
-    void input() { gpio(_port, DIR) &= ~_pin_bit; }
+//    void output() { gpio(_port, DIR) |= _pin_bit; }
+//    void input() { gpio(_port, DIR) &= ~_pin_bit; }
 
     void pull_up() { gpio_pull_up(_port, _pin); }
     void pull_down() { gpio_pull_down(_port, _pin); }
 
     void int_enable() { gpio(_port, IM) |= _pin_bit; }
-    //void int_enable(const Level & level, bool power_up = false, const Level & power_up_level = HIGH); // TODO
+    void int_enable(const Level & level, bool power_up = false, const Level & power_up_level = HIGH);
     void int_enable(const Edge & edge, bool power_up = false, const Edge & power_up_edge = RISING);
     void int_disable() { gpio(_port, IM) &= ~_pin_bit; }
-    void int_handler(const IC::Interrupt_Handler & h) {
-        _handler = h;
-        _devices[_port][_pin] = this;
-    }
 
 private:
     void clear_interrupt() {

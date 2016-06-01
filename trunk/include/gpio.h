@@ -17,11 +17,13 @@ public:
         HIGH,
         LOW,
     };
+
     enum Edge {
         RISING,
         FALLING,
         BOTH,
     };
+
     enum Direction {
         INPUT,
         OUTPUT,

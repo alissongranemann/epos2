@@ -13,7 +13,7 @@ unsigned int Cortex_M_USB::_send_buffer_size = 0;
 void Cortex_M_USB::disable()
 {
     reg(CTRL) &= ~USBEN;
-    Cortex_M_Model::usb_disable();
+    Cortex_M_Model::usb_power(0, OFF);
 }
 
 char Cortex_M_USB::get()

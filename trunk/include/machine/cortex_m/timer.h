@@ -42,6 +42,44 @@ public:
     }
 };
 
+class Cortex_M_GPTM: public Cortex_M_Model
+{
+protected:
+    const static unsigned int CLOCK = Traits<CPU>::CLOCK;
+
+    typedef CPU::Reg32 Count;
+
+protected:
+    Cortex_M_GPTM(int channel, const Count & count, bool interrupt = true, bool periodic = true)
+    : _channel(channel), _base(reinterpret_cast<Reg32 *>(TIMER0_BASE + 0x1000 * channel)) {
+        disable();
+        power(FULL);
+        reg(GPTMCFG) = 0; // 32-bit timer
+        reg(GPTMTAMR) = periodic ? 2 : 1; // 2 -> Periodic, 1 -> One-shot
+        reg(GPTMTAILR) = count;
+        enable();
+    }
+
+public:
+    ~Cortex_M_GPTM() { disable(); power(OFF); }
+
+    unsigned int clock() const { return CLOCK; }
+    bool running() { return !reg(GPTMRIS); }
+
+    Count read() { return reg(GPTMTAR); }
+
+    void enable() { reg(GPTMICR) = -1; reg(GPTMCTL) |= TAEN; } // TODO: Why are pending interrupts discharted?
+    void disable() { reg(GPTMCTL) &= ~TAEN; }
+
+    void power(const Power_Mode & mode) { Cortex_M_Model::timer_power(_channel, mode); }
+
+private:
+    volatile Reg32 & reg(unsigned int o) { return _base[o / sizeof(Reg32)]; }
+
+private:
+    int _channel;
+    Reg32 * _base;
+};
 
 // Tick timer used by the system
 class Cortex_M_Timer: private Timer_Common
@@ -153,55 +191,34 @@ public:
 
 
 // User timer
-class User_Timer: private Timer_Common, private Cortex_M_Model::Timer, private Cortex_M_Model
+class User_Timer: private Timer_Common, private Cortex_M_GPTM
 {
-private:
-    const static unsigned int CLOCK = Traits<CPU>::CLOCK;
-
-    typedef CPU::Reg32 Reg32;
-
 public:
     using Timer_Common::Microsecond;
     using Timer_Common::Handler;
     using Timer_Common::Channel;
 
 public:
-    User_Timer(const Handler & handler, const Channel & channel, const Microsecond & time, bool retrigger = false)
-    : _handler(handler), _channel(channel), _base(reinterpret_cast<Reg32 *>(GPTIMER0_BASE + 0x1000 * channel)) {
-        disable();
-        Cortex_M_Model::timer_enable(channel);
-        reg(CFG) = 0; // 32-bit timer
-        reg(TAMR) = retrigger ? 2 : 1; // 2 -> Periodic, 1 -> One-shot
-        reg(TAILR) = us2count(time);
-        enable();
-    }
-    ~User_Timer() {
-        disable();
-        Cortex_M_Model::timer_disable(_channel);
-    }
+    User_Timer(const Handler & handler, const Channel & channel, const Microsecond & time, bool periodic = false)
+    : Cortex_M_GPTM(channel, us2count(time), handler ? true : false, periodic), _handler(handler) {}
+    ~User_Timer() {}
 
-    bool running() { return !reg(Offset::RIS); }
+    using Cortex_M_GPTM::running;
 
-    Microsecond read() { return count2us(reg(TAV)); }
+    Microsecond read() { return count2us(Cortex_M_GPTM::read()); }
 
-    void enable() {
-        reg(Cortex_M_Model::Timer::ICR) = -1; // Clear interrupts
-        reg(CTL) |= TAEN; // Enable timer A
-    }
-    void disable() {
-        reg(CTL) &= ~TAEN; // Disable timer A
-    }
+    using Cortex_M_GPTM::enable;
+    using Cortex_M_GPTM::disable;
+    using Cortex_M_GPTM::power;
 
 private:
-    volatile Reg32 & reg(unsigned int o) { return _base[o / sizeof(Reg32)]; }
+    static void int_handler(const IC::Interrupt_Id & i);
 
     static Reg32 us2count(const Microsecond & us) { return us * (CLOCK / 1000000); }
     static Microsecond count2us(Reg32 count) { return count / (CLOCK / 1000000); }
 
 private:
     Handler _handler;
-    unsigned int _channel;
-    Reg32 * _base;
 };
 
 __END_SYS

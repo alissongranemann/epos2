@@ -163,7 +163,7 @@ void Cortex_M_USB::init()
     // Make sure that eMote3::init_clock() has been called and 
     // the crystal oscillator is selected as source and stable.
     // Also, set D+ USB pull-up resistor, which is controlled by GPIO pin C2 in eMote3
-    Cortex_M_Model::usb_config();
+    Cortex_M_Model::usb_power(0, FULL);
 
     // Reset USB
     //reg(CTRL) = 0;

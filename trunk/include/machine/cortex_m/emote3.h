@@ -17,6 +17,8 @@ protected:
 public:
     static const unsigned int IRQS = 64;
     static const unsigned int TIMERS = 4;
+    static const unsigned int UARTS = 2;
+    static const unsigned int USBS = 1;
     static const unsigned int GPIO_PORTS = 4;
     static const bool supports_gpio_power_up = true;
 
@@ -750,7 +752,7 @@ public:
 
     enum POWER_MODE {
         ACTIVE = 0,
-        SLEEP,
+        PMSLEEP,
         POWER_MODE_0,
         POWER_MODE_1,
         POWER_MODE_2,
@@ -772,7 +774,7 @@ public:
     // Change in power mode will only be effective when ASM("wfi") is called
     static void power_mode(POWER_MODE p)
     {
-        if(p <= SLEEP) {
+        if(p <= PMSLEEP) {
             scs(SCR) &= ~SLEEPDEEP;
         }
         else {
@@ -788,158 +790,72 @@ public:
     }
 
 
-    // CC2538's General Purpose Timer definitions
-    class Timer
+// GPTM
+    // Base address for memory-mapped GPTM registers
+    enum
     {
-    protected:
-        enum Base
-        {
-            GPTIMER0_BASE = 0x40030000,
-            GPTIMER1_BASE = 0x40031000,
-            GPTIMER2_BASE = 0x40032000,
-            GPTIMER3_BASE = 0x40033000
-        };
+        TIMER0_BASE = 0x40030000,
+        TIMER1_BASE = 0x40031000,
+        TIMER2_BASE = 0x40032000,
+        TIMER3_BASE = 0x40033000
+    };
 
-        enum Offset
-        {
-            //Register Name  Offset  Type  Width  Reset Value
-            CFG           =   0x00,  //RW    32    0x00000000
-            TAMR          =   0x04,  //RW    32    0x00000000
-            TBMR          =   0x08,  //RW    32    0x00000000
-            CTL           =   0x0C,  //RW    32    0x00000000
-            SYNC          =   0x10,  //RW    32    0x00000000
-            IMR           =   0x18,  //RW    32    0x00000000
-            RIS           =   0x1C,  //RO    32    0x00000000
-            MIS           =   0x20,  //RO    32    0x00000000
-            ICR           =   0x24,  //RW    32    0x00000000
-            TAILR         =   0x28,  //RW    32    0xFFFFFFFF
-            TBILR         =   0x2C,  //RW    32    0x0000FFFF
-            TAMATCHR      =   0x30,  //RW    32    0xFFFFFFFF
-            TBMATCHR      =   0x34,  //RW    32    0x0000FFFF
-            TAPR          =   0x38,  //RW    32    0x00000000
-            TBPR          =   0x3C,  //RW    32    0x00000000
-            TAPMR         =   0x40,  //RW    32    0x00000000
-            TBPMR         =   0x44,  //RW    32    0x00000000
-            TAR           =   0x48,  //RO    32    0xFFFFFFFF
-            TBR           =   0x4C,  //RO    32    0x0000FFFF
-            TAV           =   0x50,  //RW    32    0xFFFFFFFF
-            TBV           =   0x54,  //RW    32    0x0000FFFF
-            TAPS          =   0x5C,  //RO    32    0x00000000
-            TBPS          =   0x60,  //RO    32    0x00000000
-            TAPV          =   0x64,  //RO    32    0x00000000
-            TBPV          =   0x68,  //RO    32    0x00000000
-            PP            =  0xFC0,  //RO    32    0x00000000
-        };
+    // GPTM registers offsets
+    enum
+    {                                   //Type  Width  Reset Value
+        GPTMCFG           =   0x00,  //RW    32    0x00000000
+        GPTMTAMR          =   0x04,  //RW    32    0x00000000
+        GPTMTBMR          =   0x08,  //RW    32    0x00000000
+        GPTMCTL           =   0x0C,  //RW    32    0x00000000
+        GPTMSYNC          =   0x10,  //RW    32    0x00000000
+        GPTMIMR           =   0x18,  //RW    32    0x00000000
+        GPTMRIS           =   0x1C,  //RO    32    0x00000000
+        GPTMMIS           =   0x20,  //RO    32    0x00000000
+        GPTMICR           =   0x24,  //RW    32    0x00000000
+        GPTMTAILR         =   0x28,  //RW    32    0xFFFFFFFF
+        GPTMTBILR         =   0x2C,  //RW    32    0x0000FFFF
+        GPTMTAMATCHR      =   0x30,  //RW    32    0xFFFFFFFF
+        GPTMTBMATCHR      =   0x34,  //RW    32    0x0000FFFF
+        GPTMTAPR          =   0x38,  //RW    32    0x00000000
+        GPTMTBPR          =   0x3C,  //RW    32    0x00000000
+        GPTMTAPMR         =   0x40,  //RW    32    0x00000000
+        GPTMTBPMR         =   0x44,  //RW    32    0x00000000
+        GPTMTAR           =   0x48,  //RO    32    0xFFFFFFFF
+        GPTMTBR           =   0x4C,  //RO    32    0x0000FFFF
+        GPTMTAV           =   0x50,  //RW    32    0xFFFFFFFF
+        GPTMTBV           =   0x54,  //RW    32    0x0000FFFF
+        GPTMTAPS          =   0x5C,  //RO    32    0x00000000
+        GPTMTBPS          =   0x60,  //RO    32    0x00000000
+        GPTMTAPV          =   0x64,  //RO    32    0x00000000
+        GPTMTBPV          =   0x68,  //RO    32    0x00000000
+        GPTMPP            =  0xFC0,  //RO    32    0x00000000
+    };
 
-        enum CTL
-        {
-            TBPWML = 1 << 14,   // GPTM Timer B PWM output level
-            // 0: Output is unaffected.
-            // 1: Output is inverted. RW 0
-            TBOTE = 1 << 13,    // GPTM Timer B output trigger enable
-            // 0: The ADC trigger of output Timer B is disabled.
-            // 1: The ADC trigger of output Timer B is enabled.
-            TBEVENT = 1 << 10,  // GPTM Timer B event mode
-            // 0x0: Positive edge
-            // 0x1: Negative edge
-            // 0x2: Reserved
-            // 0x3: Both edges RW 0x0
-            TBSTALL = 1 << 9,   // GPTM Timer B stall enable
-            // 0: Timer B continues counting while the processor is halted by the
-            // debugger.
-            // 1: Timer B freezes counting while the processor is halted by the
-            // debugger. RW 0
-            TBEN = 1 << 8,      // GPTM Timer B enable
-            // 0: Timer B is disabled.
-            // 1: Timer B is enabled and begins counting or the capture logic is
-            // enabled based on the GPTMCFG register. RW 0
-            TAPWML = 1 << 6,    // GPTM Timer A PWM output level
-            // 0: Output is unaffected.
-            // 1: Output is inverted. RW 0
-            TAOTE = 1 << 5,     // GPTM Timer A output trigger enable
-            // 0: The ADC trigger of output Timer A is disabled.
-            // 1: The ADC trigger of output Timer A is enabled. RW 0
-            TAEVENT = 1 << 2,   // GPTM Timer A event mode
-            // 0x0: Positive edge
-            // 0x1: Negative edge
-            // 0x2: Reserved
-            // 0x3: Both edges RW 0x0
-            TASTALL = 1 << 1,   // GPTM Timer A stall enable
-            // 0: Timer A continues counting while the processor is halted by the
-            // debugger.
-            // 1: Timer A freezes counting while the processor is halted by the
-            // debugger. RW 0
-            TAEN = 1 << 0,      // GPTM Timer A enable
-            // 0: Timer A is disabled.
-            // 1: Timer A is enabled and begins counting or the capture logic is
-            // enabled based on the GPTMCFG register.
-        };
+    enum GPTMCTL {                      // Description
+        TAEN            = 1 << 0,       // Timer A enable
+        TASTALL         = 1 << 1,       // Timer A stall enable (0 -> continues counting while the processor is halted by the debugger, 1 -> freezes)
+        TAEVENT         = 1 << 2,       // Timer A event mode (0 -> positive edge, 1 -> negative edge, 2 -> reserved, 3 -> both edges)
+        TAOTE           = 1 << 5,       // Timer A output ADC trigger enable
+        TAPWML          = 1 << 6,       // Timer A PWM output level (0 -> direct, 1 -> inverted)
+        TBEN            = 1 << 8,       // Timer B enable
+        TBSTALL         = 1 << 9,       // Timer B stall enable (0 -> continues counting while the processor is halted by the debugger, 1 -> freezes)
+        TBEVENT         = 1 << 10,      // Timer B event mode (0 -> positive edge, 1 -> negative edge, 2 -> reserved, 3 -> both edges)
+        TBOTE           = 1 << 13,      // Timer B output ADC trigger enable
+        TBPWML          = 1 << 14,      // Timer B PWM output level (0 -> direct, 1 -> inverted)
+    };
 
-        enum TAMR
-        {
-            TAPLO = 1 << 11,    // Legacy PWM operation
-            // 0: Legacy operation
-            // 1: CCP is set to 1 on time-out. RW 0
-            TAMRSU = 1 << 10,   // Timer A match register update mode
-            // 0: Update GPTMAMATCHR and GPTMAPR if used on the next
-            // cycle.
-            // 1: Update GPTMAMATCHR and GPTMAPR if used on the next
-            // time-out. If the timer is disabled (TAEN is clear) when this bit is set,
-            // GPTMTAMATCHR and GPTMTAPR are updated when the timer is
-            // enabled. If the timer is stalled (TASTALL is set), GPTMTAMATCHR
-            // and GPTMTAPR are updated according to the configuration of this
-            // bit. RW 0
-            TAPWMIE = 1 << 9,   // GPTM Timer A PWM interrupt enable
-            // This bit enables interrupts in PWM mode on rising, falling, or both
-            // edges of the CCP output.
-            // 0: Interrupt is disabled.
-            // 1: Interrupt is enabled.
-            // This bit is valid only in PWM mode. RW 0
-            TAILD = 1 << 8,     // GPTM Timer A PWM interval load write
-            // 0: Update the GPTMTAR register with the value in the GPTMTAILR
-            // register on the next cycle. If the prescaler is used, update the
-            // GPTMTAPS register with the value in the GPTMTAPR register on
-            // the next cycle.
-            // 1: Update the GPTMTAR register with the value in the GPTMTAILR
-            // register on the next cycle. If the prescaler is used, update the
-            // GPTMTAPS register with the value in the GPTMTAPR register on
-            // the next time-out. RW 0
-            TASNAPS = 1 << 7,   // GPTM Timer A snap-shot mode
-            // 0: Snap-shot mode is disabled.
-            // 1: If Timer A is configured in periodic mode, the actual free-running
-            // value of Timer A is loaded at the time-out event into the GPTM
-            // Timer A (GPTMTAR) register. RW 0
-            TAWOT = 1 << 6,     // GPTM Timer A wait-on-trigger
-            // 0: Timer A begins counting as soon as it is enabled.
-            // 1: If Timer A is enabled (TAEN is set in the GPTMCTL register),
-            // Timer A does not begin counting until it receives a trigger from the
-            // Timer in the previous position in the daisy-chain. This bit must be
-            // clear for GP Timer module 0, Timer A. RW 0
-            TAMIE = 1 << 5,     // GPTM Timer A match interrupt enable
-            // 0: The match interrupt is disabled.
-            // 1: An interrupt is generated when the match value in the
-            // GPTMTAMATCHR register is reached in the one-shot and periodic
-            // modes. RW 0
-            TACDIR = 1 << 4,    // GPTM Timer A count direction
-            // 0: The timer counts down.
-            // 1: The timer counts up. When counting up, the timer starts from a
-            // value of 0x0. RW 0
-            TAAMS = 1 << 3,     // GPTM Timer A alternate mode
-            // 0: Capture mode is enabled.
-            // 1: PWM mode is enabled.
-            // Note: To enable PWM mode, the TACM bit must be cleared and the
-            // TAMR field must be configured to 0x2. RW 0
-            TACMR = 1 << 2,     // GPTM Timer A capture mode
-            // 0: Edge-count mode
-            // 1: Edge-time mode
-            TAMR_TAMR = 1 << 0, // GPTM Timer A mode
-            // 0x0: Reserved
-            // 0x1: One-shot mode
-            // 0x2: Periodic mode
-            // 0x3: Capture mode
-            // The timer mode is based on the timer configuration defined by bits
-            // [2:0] in the GPTMCFG register.
-        };
+    enum GPTMTMR {                      // Description
+        TMR             = 1 << 0,       // Timer A mode (0 -> reserved, 1 -> one-shot, 2 -> periodic, 3 -> capture)
+        TCMR            = 1 << 2,       // Timer A capture mode (0 -> edge-count, 1 -> edge-time)
+        TAMS            = 1 << 3,       // Timer A alternate mode (0 -> capture, 1 -> PWM) mode is enabled.
+        TCDIR           = 1 << 4,       // Timer A count direction (0 -> descending, 1 -> ascending from 0)
+        TMIE            = 1 << 5,       // Timer A match interrupt enable (GPTMTAMATCHR register is reached)
+        TWOT            = 1 << 6,       // Timer A wait-on-trigger (wait for a trigger from the Timer in the previous position in the daisy-chain to start counting; must be clear for Timer A0)
+        TSNAPS          = 1 << 7,       // Timer A snap-shot mode enable (in periodic mode, the actual free-running value of Timer A is loaded at the time-out event into GPTMTAR
+        TILD            = 1 << 8,       // Timer A PWM interval load write (0 -> next cycle, 1 -> next time-out)
+        TPWMIE          = 1 << 9,       // Timer A PWM interrupt enable (valid only in PWM mode)
+        TMRSU           = 1 << 10,      // Timer A match register update mode (0 -> next cycle, 1 -> next time-out)
+        TPLO            = 1 << 11,      // Legacy PWM operation (0 -> legacy operation, 1 -> CCP is set to 1 on time-out)
     };
 
 protected:
@@ -952,14 +868,33 @@ protected:
         scs(AIRCR) = val;
     }
 
-    void uart_config(volatile Log_Addr * base)
+
+// GPTM
+    static void timer_power(unsigned int unit, const Power_Mode & mode) {
+        assert(timer < TIMERS);
+        switch(mode) {
+        case FULL:
+        case LIGHT:
+        case SLEEP:
+            scr(RCGCGPT) |= 1 << unit;
+            scr(SCGCGPT) |= 1 << unit;
+            break;
+        case OFF:
+            scr(RCGCGPT) &= ~(1 << unit);
+            scr(SCGCGPT) &= ~(1 << unit);
+            break;
+       }
+    }
+
+
+// UART
+    void uart_init(unsigned int unit)
     {
         init_clock(); // Setup the clock first!
-        if(base == reinterpret_cast<Log_Addr *>(UART0_BASE)) {
-            //1. Enable the UART module using the SYS_CTRL_RCGCUART register.
-            scr(RCGCUART) |= UART0; // Enable clock for UART0 while in Running mode
-            scr(SCGCUART) |= UART0; // Enable clock for UART0 while in Sleep mode
 
+        uart_power(unit, FULL);
+
+        if(unit == 0) {
             //2. Set the GPIO pin configuration through the Pxx_SEL registers for the desired output
             ioc(PA1_SEL) = UART0_TXD;
 
@@ -977,9 +912,6 @@ protected:
         }
         else
         {
-            scr(RCGCUART) |= UART1;
-            scr(SCGCUART) |= UART1;
-
             /*ioc(PB3_SEL) = UART1_TXD;
             ioc(PB3_OVER) = OE;
             ioc(PB4_OVER) = 0;
@@ -993,11 +925,27 @@ protected:
            gpiod(AFSEL) |= (PIN0) + (PIN1);
         }
     }
-    static void uart_enable() {};
-    static void uart_disable() {};
 
+    static void uart_power(unsigned int unit, const Power_Mode & mode) {
+        assert(unit < UARTS);
+        switch(mode) {
+        case FULL:
+        case LIGHT:
+        case SLEEP:
+            scr(RCGCUART) |= 1 << unit;                 // Enable clock for UART "unit" while in Running mode
+            scr(SCGCUART) |= 1 << unit;                 // Enable clock for UART "unit" while in Sleep mode
+            break;
+        case OFF:
+            scr(RCGCUART) &= ~(1 << unit);              // Deactivate UART "unit" clock
+            scr(SCGCUART) &= ~(1 << unit);              // Deactivate port "unit" clock
+            break;
+        }
+    }
+
+
+// USB
     // Set D+ USB pull-up resistor, which is controlled by GPIO pin C2 in eMote3
-    static void usb_config()
+    static void usb_init(unsigned int unit)
     {
         init_clock();
         const unsigned int pin_bit = 1 << 2;
@@ -1005,47 +953,55 @@ protected:
         gpioc(DIR) |= pin_bit; // Set pin C2 as output
         gpioc(pin_bit << 2) = 0xff; // Set pin C2 (high)
     }
-    static void usb_enable() {};
-    static void usb_disable()
-    {
-        const unsigned int pin_bit = 1 << 2;
-        gpioc(pin_bit << 2) = 0; // Clear pin C2 (low)
+
+    static void usb_power(unsigned int unit, const Power_Mode & mode) {
+        assert(unit < USBS);
+        switch(mode) {
+        case FULL:
+        case LIGHT:
+        case SLEEP:
+            break;
+        case OFF:
+            const unsigned int pin_bit = 1 << 2;
+            gpioc(pin_bit << 2) = 0; // Clear pin C2 (low)
+            break;
+        }
     }
 
-    void gpio_pull_up(int port, int pin) {
+
+// GPIO
+    void gpio_pull_up(unsigned int port, unsigned int pin) {
         auto over = PA0_OVER + 0x20*port + 0x4*pin;
         ioc(over) = PUE;
     }
-    void gpio_pull_down(int port, int pin) {
+    void gpio_pull_down(unsigned int port, unsigned int pin) {
         auto over = PA0_OVER + 0x20*port + 0x4*pin;
         ioc(over) = PDE;
     }
 
-    // Enable clock to the RF CORE module
-    static void radio_enable() {
-        scr(RCGCRFC) |= RCGCRFC_RFC0;
-        scr(SCGCRFC) |= RCGCRFC_RFC0;
-        scr(DCGCRFC) |= RCGCRFC_RFC0;
-    }
-    // Disable clock to the RF CORE module
-    static void radio_disable() {
-        scr(RCGCRFC) &= ~RCGCRFC_RFC0;
-        scr(SCGCRFC) &= ~RCGCRFC_RFC0;
+
+// IEEE 802.15.4
+    static void ieee802_15_4_power(const Power_Mode & mode) {
+        switch(mode) {
+        case FULL:
+        case LIGHT:
+        case SLEEP:
+            scr(RCGCRFC) |= RCGCRFC_RFC0;
+            scr(SCGCRFC) |= RCGCRFC_RFC0;
+            scr(DCGCRFC) |= RCGCRFC_RFC0;
+            break;
+        case OFF:
+            scr(RCGCRFC) &= ~RCGCRFC_RFC0;
+            scr(SCGCRFC) &= ~RCGCRFC_RFC0;
+            break;
+        }
     }
 
-    static void timer_enable(unsigned int timer) {
-        assert(timer < TIMERS);
-        scr(RCGCGPT) |= 1 << timer;
-        scr(SCGCGPT) |= 1 << timer;
-    }
-    static void timer_disable(unsigned int timer) {
-        assert(timer < TIMERS);
-        scr(RCGCGPT) &= ~(1 << timer);
-        scr(SCGCGPT) &= ~(1 << timer);
-    }
 
-    static void config_PWM(unsigned int which_timer, char gpio_port, unsigned int gpio_pin) {
-        timer_enable(which_timer);
+// PWM
+    static void config_PWM(unsigned int which_timer, char gpio_port, unsigned int gpio_pin)
+    {
+        timer_power(which_timer, FULL);
 
         if((gpio_port >= 'A') && (gpio_port <= 'D'))
             gpio_port += ('a'-'A');

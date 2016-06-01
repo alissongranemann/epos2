@@ -103,29 +103,26 @@ public:
     PL011(unsigned int unit, unsigned int baud_rate, unsigned int data_bits, unsigned int parity, unsigned int stop_bits):
         _base(reinterpret_cast<Log_Addr *>(unit ? UART1_BASE : UART0_BASE)) {
         assert(unit < UNITS);
+        Cortex_M_Model::uart_init(unit);
         config(baud_rate, data_bits, parity, stop_bits);
     }
 
     void config(unsigned int baud_rate, unsigned int data_bits, unsigned int parity, unsigned int stop_bits) {
-
-        Cortex_M_Model::uart_config(_base);
-
         unsigned int lcrh_config = 0;
 
-        //config data bits
-        lcrh_config = data_bits == 8 ? WLEN8 :
-                          data_bits == 7 ? WLEN7 :
-                              data_bits = 6 ? WLEN6 : WLEN5;
-        //always use FIFO
+        // config data bits
+        lcrh_config = data_bits == 8 ? WLEN8 : data_bits == 7 ? WLEN7 : data_bits = 6 ? WLEN6 : WLEN5;
+
+        // always use FIFO
         lcrh_config |= FEN;
 
-        //config stop bits
+        // config stop bits
         lcrh_config |= stop_bits == 2 ? STP2 : 0;
 
-        //config and enable even parity
+        // config and enable even parity
         lcrh_config |= parity == 1 ? EPS | PEN : 0;
 
-        //config and enable odd parity
+        // config and enable odd parity
         lcrh_config |= parity == 2 ? PEN : 0;
 
         reg(UCR) &= ~UEN;                       // Disable UART for configuration

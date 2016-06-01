@@ -405,7 +405,7 @@ public:
 public:
     CC2538RF() {
         // Enable clock to the RF CORE module
-        radio_enable();
+        ieee802_15_4_power(FULL);
 
         // Disable device interrupts
         xreg(RFIRQM0) = 0;

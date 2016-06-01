@@ -26,6 +26,15 @@ void * operator new[](size_t, const EPOS::System_Allocator &);
 void * operator new(size_t, const EPOS::Scratchpad_Allocator &);
 void * operator new[](size_t, const EPOS::Scratchpad_Allocator &);
 
+// Power Management Modes
+enum Power_Mode
+{
+    FULL,
+    LIGHT,
+    SLEEP,
+    OFF
+};
+
 // Utilities
 __BEGIN_UTIL
 class Dummy;

@@ -301,8 +301,6 @@ public:
         return percentage;
     }
 
-    void handler(const Handler & handler) { _handler = handler; }
-
     static void enable() { IC::enable(IC::INT_TIMER); }
     static void disable() { IC::disable(IC::INT_TIMER); }
 
