@@ -3,7 +3,7 @@
 #include <machine/cortex_a/ic.h>
 
 extern "C" { void _exit(int s); }
-extern "C" { void _int_dispatch() __attribute__ ((alias("_ZN4EPOS1S7Cortex_A_IC8dispatchEv"))); }
+extern "C" { void _int_dispatch() __attribute__ ((alias("_ZN4EPOS1S11Cortex_A_IC8dispatchEv"))); }
 
 __BEGIN_SYS
 
