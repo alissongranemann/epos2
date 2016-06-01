@@ -1,5 +1,7 @@
-#ifndef __cortex_a_traits_h
-#define __cortex_a_traits_h
+// EPOS Zynq-7000 (Cortex-A9) Metainfo and Configuration
+
+#ifndef __zynq_traits_h
+#define __zynq_traits_h
 
 #include <system/config.h>
 
