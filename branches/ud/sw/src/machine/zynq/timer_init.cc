@@ -1,11 +1,11 @@
-// EPOS Zynq Timer Mediator Initialization
+// EPOS Cortex-A Timer Mediator Initialization
 
 #include <timer.h>
 #include <ic.h>
 
 __BEGIN_SYS
 
-void Zynq_Timer::init()
+void Cortex_A_Timer::init()
 {
     db<Init, Timer>(TRC) << "Timer::init()" << endl;
 

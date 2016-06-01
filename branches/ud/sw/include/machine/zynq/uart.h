@@ -1,20 +1,20 @@
-#ifndef __zynq_uart_h__
-#define __zynq_uart_h__
+#ifndef __cortex_a_uart_h__
+#define __cortex_a_uart_h__
 
 #include <cpu.h>
 #include <uart.h>
 
 __BEGIN_SYS
 
-class Zynq_UART: public UART_Common
+class Cortex_A_UART: public UART_Common
 {
 public:
-    Zynq_UART(unsigned int baud, unsigned int data_bits, unsigned int parity,
+    Cortex_A_UART(unsigned int baud, unsigned int data_bits, unsigned int parity,
             unsigned int stop_bits, unsigned int unit = 0) {}
 
     // The default unit is 1 because Serial_Display instantiate it without
     // paremeters and we want it to use UART 1
-    Zynq_UART(unsigned int unit = 1) {
+    Cortex_A_UART(unsigned int unit = 1) {
         if(unit == 0)
             _base = UART0_BASE;
         else if(unit == 1)

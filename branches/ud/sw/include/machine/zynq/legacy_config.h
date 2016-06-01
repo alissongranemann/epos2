@@ -1,7 +1,7 @@
-// EPOS Zynq Mediators Configuration
+// EPOS Cortex-A Mediators Configuration
 
-#ifndef __zynq_config_h
-#define __zynq_config_h
+#ifndef __cortex_a_config_h
+#define __cortex_a_config_h
 
 #include <system/meta.h>
 #include __APPL_TRAITS_H
@@ -24,23 +24,23 @@
 
 __BEGIN_SYS
 
-typedef ARMv7                       CPU;
-typedef ARMv7_MMU                   MMU;
-typedef ARMv7_TSC                   TSC;
+typedef ARMv7                           CPU;
+typedef ARMv7_MMU                       MMU;
+typedef ARMv7_TSC                       TSC;
 
-typedef Zynq                        Machine;
-typedef Zynq_GPIO                   GPIO;
-typedef Zynq_IC                     IC;
-typedef Zynq_UART                   UART;
-typedef Zynq_Timer                  Timer;
-typedef Serial_Display              Display;
-typedef Zynq_NIC                    NIC;
-typedef Zynq_RTC                    RTC;
-typedef Zynq_Component_Controller   Component_Controller;
-typedef Zynq_PCAP                   PCAP;
-typedef Zynq_Traffic_Gen            Traffic_Gen;
-typedef Zynq_AXI_Perf_Mon           AXI_Perf_Mon;
-typedef Zynq_Scratchpad             Scratchpad;
+typedef Cortex_A                        Machine;
+typedef Cortex_A_GPIO                   GPIO;
+typedef Cortex_A_IC                     IC;
+typedef Cortex_A_UART                   UART;
+typedef Cortex_A_Timer                  Timer;
+typedef Serial_Display                  Display;
+typedef Cortex_A_NIC                    NIC;
+typedef Cortex_A_RTC                    RTC;
+typedef Cortex_A_Component_Controller   Component_Controller;
+typedef Cortex_A_PCAP                   PCAP;
+typedef Cortex_A_Traffic_Gen            Traffic_Gen;
+typedef Cortex_A_AXI_Perf_Mon           AXI_Perf_Mon;
+typedef Cortex_A_Scratchpad             Scratchpad;
 
 __END_SYS
 

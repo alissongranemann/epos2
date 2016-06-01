@@ -1,14 +1,14 @@
-// EPOS Zynq AXI AXI Performance Monitor Mediator
+// EPOS Cortex-A AXI Performance Monitor Mediator
 
-#ifndef __zynq_axi_perf_mon_h
-#define __zynq_axi_perf_mon_h
+#ifndef __cortex_a_axi_perf_mon_h
+#define __cortex_a_axi_perf_mon_h
 
 #include <cpu.h>
 #include <axi_perf_mon.h>
 
 __BEGIN_SYS
 
-class Zynq_AXI_Perf_Mon: public AXI_Perf_Mon_Common
+class Cortex_A_AXI_Perf_Mon: public AXI_Perf_Mon_Common
 {
 private:
     typedef CPU::Reg32 Reg32;
@@ -48,9 +48,9 @@ private:
     };
 
 public:
-    Zynq_AXI_Perf_Mon() { reset(); }
+    Cortex_A_AXI_Perf_Mon() { reset(); }
 
-    ~Zynq_AXI_Perf_Mon() {}
+    ~Cortex_A_AXI_Perf_Mon() {}
 
     void enable() { apm(CR) |= METRICS_CNT_EN; }
     void disable() { apm(CR) &= ~METRICS_CNT_EN; }

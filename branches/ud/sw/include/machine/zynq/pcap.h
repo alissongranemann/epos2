@@ -1,13 +1,13 @@
-// EPOS Zynq PCAP Mediator
+// EPOS Cortex-A PCAP Mediator
 
-#ifndef __zynq_pcap_h
-#define __zynq_pcap_h
+#ifndef __cortex_a_pcap_h
+#define __cortex_a_pcap_h
 
 #include <pcap.h>
 
 __BEGIN_SYS
 
-class Zynq_PCAP: public PCAP_Common
+class Cortex_A_PCAP: public PCAP_Common
 {
 private:
     typedef CPU::Reg32 Reg32;
@@ -63,7 +63,7 @@ private:
     };
 
 public:
-    Zynq_PCAP() {
+    Cortex_A_PCAP() {
         // Unlock the Device Configuration Interface
         unlock(UNLOCK_DATA);
 
@@ -71,7 +71,7 @@ public:
         ctrl(ctrl() | (1<<PCAP_MODE) | (1<<PCAP_PR));
     }
 
-    ~Zynq_PCAP(){ }
+    ~Cortex_A_PCAP() {}
 
     // Transfer bitstream from DDR memory into FPGA fabric in non secure mode.
     // bitstream_len is the number of 32 bit words to be transfered.

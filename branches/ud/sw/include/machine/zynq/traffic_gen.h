@@ -1,24 +1,24 @@
-// EPOS Zynq AXI Traffic Generator Mediator
+// EPOS Cortex-A AXI Traffic Generator Mediator
 
-#ifndef __zynq_traffic_gen_h
-#define __zynq_traffic_gen_h
+#ifndef __cortex_a_traffic_gen_h
+#define __cortex_a_traffic_gen_h
 
 #include <traffic_gen.h>
 #include "gpio.h"
 
 __BEGIN_SYS
 
-class Zynq_Traffic_Gen: public Traffic_Gen_Common
+class Cortex_A_Traffic_Gen: public Traffic_Gen_Common
 {
 public:
-    Zynq_Traffic_Gen(int start_pin, int stop_pin) {
+    Cortex_A_Traffic_Gen(int start_pin, int stop_pin) {
         _start = new GPIO(start_pin);
         _stop = new GPIO(stop_pin);
         _start->output();
         _stop->output();
     }
 
-    ~Zynq_Traffic_Gen() { disable(); }
+    ~Cortex_A_Traffic_Gen() { disable(); }
 
     // TODO: Sometimes, even after fpga_reset(), enable() doesn't work, check
     // why

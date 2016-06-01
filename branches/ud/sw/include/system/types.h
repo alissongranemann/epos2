@@ -109,19 +109,19 @@ class ATmega_ADC;
 class ATmega_Battery;
 class ATmega_Radio;
 
-class Zynq;
-class Zynq_IC;
-class Zynq_Timer;
-class Zynq_RTC;
-class Zynq_UART;
-class Zynq_GPIO;
-class Zynq_NIC;
-class Zynq_Display;
-class Zynq_Scratchpad;
-class Zynq_Component_Controller;
-class Zynq_PCAP;
-class Zynq_Traffic_Gen;
-class Zynq_AXI_Perf_Mon;
+class Cortex_A;
+class Cortex_A_IC;
+class Cortex_A_Timer;
+class Cortex_A_RTC;
+class Cortex_A_UART;
+class Cortex_A_GPIO;
+class Cortex_A_NIC;
+class Cortex_A_Display;
+class Cortex_A_Scratchpad;
+class Cortex_A_Component_Controller;
+class Cortex_A_PCAP;
+class Cortex_A_Traffic_Gen;
+class Cortex_A_AXI_Perf_Mon;
 
 class PCNet32;
 class C905;
@@ -286,14 +286,14 @@ template<> struct Type<Cortex_M_Display> { static const Type_Id ID = DISPLAY_ID;
 template<> struct Type<Cortex_M_Scratchpad> { static const Type_Id ID = SCRATCHPAD_ID; };
 template<> struct Type<Cortex_M_Radio> { static const Type_Id ID = NIC_ID; };
 
-template<> struct Type<Zynq> { static const Type_Id ID = MACHINE_ID; };
-template<> struct Type<Zynq_IC> { static const Type_Id ID = IC_ID; };
-template<> struct Type<Zynq_Timer> { static const Type_Id ID = TIMER_ID; };
-template<> struct Type<Zynq_UART> { static const Type_Id ID = UART_ID; };
-template<> struct Type<Zynq_RTC> { static const Type_Id ID = RTC_ID; };
-template<> struct Type<Zynq_Display> { static const Type_Id ID = DISPLAY_ID; };
-template<> struct Type<Zynq_Scratchpad> { static const Type_Id ID = SCRATCHPAD_ID; };
-template<> struct Type<Zynq_Component_Controller> { static const Type_Id ID = COMPONENT_CONTROLLER_ID; };
+template<> struct Type<Cortex_A> { static const Type_Id ID = MACHINE_ID; };
+template<> struct Type<Cortex_A_IC> { static const Type_Id ID = IC_ID; };
+template<> struct Type<Cortex_A_Timer> { static const Type_Id ID = TIMER_ID; };
+template<> struct Type<Cortex_A_UART> { static const Type_Id ID = UART_ID; };
+template<> struct Type<Cortex_A_RTC> { static const Type_Id ID = RTC_ID; };
+template<> struct Type<Cortex_A_Display> { static const Type_Id ID = DISPLAY_ID; };
+template<> struct Type<Cortex_A_Scratchpad> { static const Type_Id ID = SCRATCHPAD_ID; };
+template<> struct Type<Cortex_A_Component_Controller> { static const Type_Id ID = COMPONENT_CONTROLLER_ID; };
 
 
 template<> struct Type<Thread> { static const Type_Id ID = THREAD_ID; };

@@ -1,18 +1,18 @@
-// EPOS Zynq NIC Mediator Declarations
+// EPOS Cortex-A NIC Mediator Declarations
 
-#ifndef __zynq_nic_h
-#define __zynq_nic_h
+#ifndef __cortex_a_nic_h
+#define __cortex_a_nic_h
 
 #include <ethernet.h>
 
 __BEGIN_SYS
 
-class Zynq_NIC: public Ethernet
+class Cortex_A_NIC: public Ethernet
 {
 public:
-    Zynq_NIC(unsigned int u = 0) {}
+    Cortex_A_NIC(unsigned int u = 0) {}
 
-    ~Zynq_NIC() {}
+    ~Cortex_A_NIC() {}
 
     // TODO: alloc(), send() and free() implementations are just workarounds to
     // force EPOS compilation

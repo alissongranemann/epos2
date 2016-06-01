@@ -1,17 +1,17 @@
-// EPOS Zynq IC Mediator Implementation
+// EPOS Cortex-A IC Mediator Implementation
 
-#include <machine/zynq/ic.h>
+#include <machine/cortex_a/ic.h>
 
 extern "C" { void _exit(int s); }
-extern "C" { void _int_dispatch() __attribute__ ((alias("_ZN4EPOS1S7Zynq_IC8dispatchEv"))); }
+extern "C" { void _int_dispatch() __attribute__ ((alias("_ZN4EPOS1S7Cortex_A_IC8dispatchEv"))); }
 
 __BEGIN_SYS
 
 // Class attributes
-Zynq_IC::Interrupt_Handler Zynq_IC::_int_vector[Zynq_IC::INTS];
+Cortex_A_IC::Interrupt_Handler Cortex_A_IC::_int_vector[Cortex_A_IC::INTS];
 
 // Class methods
-void Zynq_IC::dispatch()
+void Cortex_A_IC::dispatch()
 {
     unsigned int icciar = cpu_itf(ICCIAR);
     register Interrupt_Id id = icciar & INT_ID_MASK;
@@ -26,7 +26,7 @@ void Zynq_IC::dispatch()
     _int_vector[id](id);
 }
 
-void Zynq_IC::int_not(const Interrupt_Id & i)
+void Cortex_A_IC::int_not(const Interrupt_Id & i)
 {
     db<IC>(WRN) << "IC::int_not(i=" << i << ")" << endl;
 }

@@ -1,7 +1,7 @@
-// EPOS Zynq Timer Mediator Declarations
+// EPOS Cortex-A Timer Mediator Declarations
 
-#ifndef __zynq_timer_h
-#define __zynq_timer_h
+#ifndef __cortex_a_timer_h
+#define __cortex_a_timer_h
 
 #include <cpu.h>
 #include <ic.h>
@@ -10,7 +10,7 @@
 
 __BEGIN_SYS
 
-class Zynq_Global_Timer
+class Cortex_A_Global_Timer
 {
 private:
     typedef TSC::Hertz Hertz;
@@ -62,7 +62,7 @@ public:
     }
 };
 
-class Zynq_Priv_Timer
+class Cortex_A_Priv_Timer
 {
 private:
     typedef TSC::Hertz Hertz;
@@ -95,7 +95,7 @@ public:
     static const unsigned int CLOCK = Traits<CPU>::CLOCK/2;
 
 protected:
-    Zynq_Priv_Timer() {}
+    Cortex_A_Priv_Timer() {}
 
 public:
     static void enable() { priv_timer(PTCLR) |= EN; }
@@ -113,16 +113,16 @@ public:
     }
 };
 
-class Zynq_Timer: public Timer_Common
+class Cortex_A_Timer: public Timer_Common
 {
-    friend class Zynq;
+    friend class Cortex_A;
     friend class Init_System;
 
 protected:
     static const unsigned int CHANNELS = 3;
-    static const unsigned int FREQUENCY = Traits<Zynq_Timer>::FREQUENCY;
+    static const unsigned int FREQUENCY = Traits<Cortex_A_Timer>::FREQUENCY;
 
-    typedef Zynq_Priv_Timer Engine;
+    typedef Cortex_A_Priv_Timer Engine;
     typedef Engine::Count Count;
     typedef IC::Interrupt_Id Interrupt_Id;
 
@@ -140,7 +140,7 @@ public:
     };
 
 public:
-    Zynq_Timer(const Hertz & frequency, const Handler & handler, const Channel & channel, bool retrigger = true):
+    Cortex_A_Timer(const Hertz & frequency, const Handler & handler, const Channel & channel, bool retrigger = true):
         _channel(channel), _initial(FREQUENCY / frequency), _retrigger(retrigger), _handler(handler) {
         db<Timer>(TRC) << "Timer(f=" << frequency << ",h=" << reinterpret_cast<void*>(handler)
                        << ",ch=" << channel << ") => {count=" << _initial << "}" << endl;
@@ -154,7 +154,7 @@ public:
             _current[i] = _initial;
     }
 
-    ~Zynq_Timer() {
+    ~Cortex_A_Timer() {
         db<Timer>(TRC) << "~Timer(f=" << frequency() << ",h=" << reinterpret_cast<void*>(_handler)
                        << ",ch=" << _channel << ") => {count=" << _initial << "}" << endl;
 
@@ -204,41 +204,41 @@ private:
     volatile Count _current[Traits<Machine>::CPUS];
     Handler _handler;
 
-    static Zynq_Timer * _channels[CHANNELS];
+    static Cortex_A_Timer * _channels[CHANNELS];
 };
 
 
 // Timer used by Thread::Scheduler
-class Scheduler_Timer: public Zynq_Timer
+class Scheduler_Timer: public Cortex_A_Timer
 {
 private:
     typedef unsigned long Microsecond;
 
 public:
     Scheduler_Timer(const Microsecond & quantum, const Handler & handler):
-        Zynq_Timer(1000000 / quantum, handler, SCHEDULER) {}
+        Cortex_A_Timer(1000000 / quantum, handler, SCHEDULER) {}
 };
 
 
 // Timer used by Alarm
-class Alarm_Timer: public Zynq_Timer
+class Alarm_Timer: public Cortex_A_Timer
 {
 public:
     static const unsigned int FREQUENCY = Timer::FREQUENCY;
 
 public:
-    Alarm_Timer(const Handler & handler): Zynq_Timer(FREQUENCY, handler, ALARM) {}
+    Alarm_Timer(const Handler & handler): Cortex_A_Timer(FREQUENCY, handler, ALARM) {}
 };
 
 
 // TODO: Use a different timer
-class User_Timer: public Zynq_Timer
+class User_Timer: public Cortex_A_Timer
 {
 private:
     typedef RTC::Microsecond Microsecond;
 
 public:
-    User_Timer(const Microsecond & quantum, const Handler & handler): Zynq_Timer(1000000 / quantum, handler, USER, true) {}
+    User_Timer(const Microsecond & quantum, const Handler & handler): Cortex_A_Timer(1000000 / quantum, handler, USER, true) {}
 };
 
 __END_SYS

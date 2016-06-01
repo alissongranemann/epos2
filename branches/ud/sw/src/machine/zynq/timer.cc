@@ -1,16 +1,16 @@
-// EPOS Zynq Timer Mediator Implementation
+// EPOS Cortex-A Timer Mediator Implementation
 
 #include <machine.h>
 #include <ic.h>
-#include <machine/zynq/timer.h>
+#include <machine/cortex_a/timer.h>
 
 __BEGIN_SYS
 
 // Class attributes
-Zynq_Timer * Zynq_Timer::_channels[CHANNELS];
+Cortex_A_Timer * Cortex_A_Timer::_channels[CHANNELS];
 
 // Class methods
-void Zynq_Timer::int_handler(const Interrupt_Id & i)
+void Cortex_A_Timer::int_handler(const Interrupt_Id & i)
 {
     if(_channels[SCHEDULER] && (--_channels[SCHEDULER]->_current[Machine::cpu_id()] <= 0)) {
         _channels[SCHEDULER]->_current[Machine::cpu_id()] = _channels[SCHEDULER]->_initial;

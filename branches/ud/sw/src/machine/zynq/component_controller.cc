@@ -1,12 +1,12 @@
-// EPOS Zynq Component Controller Implementation
+// EPOS Cortex-A Component Controller Implementation
 
-#include <machine/zynq/component_controller.h>
+#include <machine/cortex_a/component_controller.h>
 
 __BEGIN_SYS
 
-bool Zynq_Component_Controller::alloc_proxy(Buffer * buf)
+bool Cortex_A_Component_Controller::alloc_proxy(Buffer * buf)
 {
-    db<Zynq_Component_Controller>(TRC)
+    db<Cortex_A_Component_Controller>(TRC)
         << "Component_Controller::alloc_proxy(buf=" << *buf << ")" << endl;
 
     // Issue an ALLOC_PROXY command and wait its processing
@@ -23,15 +23,15 @@ bool Zynq_Component_Controller::alloc_proxy(Buffer * buf)
         buf->reg(UNIT) = buf->_unit;
     }
 
-    db<Zynq_Component_Controller>(TRC) << "id=" << buf->_id << endl;
+    db<Cortex_A_Component_Controller>(TRC) << "id=" << buf->_id << endl;
 
     return buf->_id != CMD_RESULT_ERR;
 }
 
 // TODO: Test it!
-bool Zynq_Component_Controller::alloc_agent(Buffer * buf)
+bool Cortex_A_Component_Controller::alloc_agent(Buffer * buf)
 {
-    db<Zynq_Component_Controller>(TRC)
+    db<Cortex_A_Component_Controller>(TRC)
         << "Component_Controller::alloc_agent(buf=" << *buf << ")" << endl;
 
     // Issue an ALLOC_AGENT command and wait its processing
@@ -47,14 +47,14 @@ bool Zynq_Component_Controller::alloc_agent(Buffer * buf)
         buf->reg(UNIT) = buf->_unit;
     }
 
-    db<Zynq_Component_Controller>(TRC) << "id=" << buf->_id << endl;
+    db<Cortex_A_Component_Controller>(TRC) << "id=" << buf->_id << endl;
 
     return buf->_id != CMD_RESULT_ERR;
 }
 
-bool Zynq_Component_Controller::free_buf(Buffer * buf)
+bool Cortex_A_Component_Controller::free_buf(Buffer * buf)
 {
-    db<Zynq_Component_Controller>(TRC)
+    db<Cortex_A_Component_Controller>(TRC)
         << "Component_Controller::free_buf(buf=" << *buf << ")" << endl;
 
     while(!ctrl(IDLE));
@@ -67,18 +67,18 @@ bool Zynq_Component_Controller::free_buf(Buffer * buf)
 }
 
 // Send return data to component associated with buffer buf_id
-void Zynq_Component_Controller::send_return_data(Buffer * buf,
+void Cortex_A_Component_Controller::send_return_data(Buffer * buf,
         unsigned int n_ret, unsigned long * data)
 {
-    db<Zynq_Component_Controller>(TRC)
+    db<Cortex_A_Component_Controller>(TRC)
         << "Component_Controller::send_return_data(buf=" << *buf
         << ",n_ret=" << n_ret << ",data(";
 
     for(unsigned int i = 0; i < n_ret; i++)
-        db<Zynq_Component_Controller>(TRC)
+        db<Cortex_A_Component_Controller>(TRC)
             << reinterpret_cast<void *>(data[i]) << ",";
 
-    db<Zynq_Component_Controller>(TRC) << "))" << endl;
+    db<Cortex_A_Component_Controller>(TRC) << "))" << endl;
 
     while(buf->reg(TX));
     buf->reg(MSG_TYPE) = RTSNoC::RESP_DATA;
@@ -91,9 +91,9 @@ void Zynq_Component_Controller::send_return_data(Buffer * buf,
 }
 
 // Return the operation id of the received call
-unsigned int Zynq_Component_Controller::receive_call(Buffer * buf)
+unsigned int Cortex_A_Component_Controller::receive_call(Buffer * buf)
 {
-    db<Zynq_Component_Controller>(TRC)
+    db<Cortex_A_Component_Controller>(TRC)
         << "Component_Controller::receive_call(buf=" << *buf << ")" << endl;
 
     unsigned int op_id = 0xFFFFFFFF;
@@ -104,21 +104,21 @@ unsigned int Zynq_Component_Controller::receive_call(Buffer * buf)
         if(msg_type == RTSNoC::CALL)
             op_id = buf->reg(DATA);
         else
-            db<Zynq_Component_Controller>(WRN)
+            db<Cortex_A_Component_Controller>(WRN)
                 << "Received wrong msg_type: " << msg_type << endl;
 
         buf->reg(RX) = false;
     }
 
-    db<Zynq_Component_Controller>(TRC) << "op_id=" << op_id << endl;
+    db<Cortex_A_Component_Controller>(TRC) << "op_id=" << op_id << endl;
 
     return op_id;
 }
 
 // Return the received data stored in the buffer buf_id
-unsigned int Zynq_Component_Controller::receive_call_data(Buffer * buf)
+unsigned int Cortex_A_Component_Controller::receive_call_data(Buffer * buf)
 {
-    db<Zynq_Component_Controller>(TRC)
+    db<Cortex_A_Component_Controller>(TRC)
         << "Component_Controller::receive_call_data(buf=" << *buf << ")"
         << endl;
 
@@ -130,22 +130,22 @@ unsigned int Zynq_Component_Controller::receive_call_data(Buffer * buf)
         if(msg_type == RTSNoC::CALL_DATA)
             call_data = buf->reg(DATA);
         else
-            db<Zynq_Component_Controller>(WRN)
+            db<Cortex_A_Component_Controller>(WRN)
                 << "Received wrong msg_type: " << msg_type << endl;
 
         buf->reg(RX) = false;
     }
 
-    db<Zynq_Component_Controller>(TRC) << "= "
+    db<Cortex_A_Component_Controller>(TRC) << "= "
         << reinterpret_cast<void *>(call_data) << endl;
 
     return call_data;
 }
 
-void Zynq_Component_Controller::send_call(Buffer * buf,
+void Cortex_A_Component_Controller::send_call(Buffer * buf,
         unsigned int op_id)
 {
-    db<Zynq_Component_Controller>(TRC)
+    db<Cortex_A_Component_Controller>(TRC)
         << "Component_Controller::send_call(buf=" << *buf << ",op_id=" << op_id
         << ")" << endl;
 
@@ -156,18 +156,18 @@ void Zynq_Component_Controller::send_call(Buffer * buf,
     buf->reg(TX) = true;
 }
 
-void Zynq_Component_Controller::send_call_data(Buffer * buf,
+void Cortex_A_Component_Controller::send_call_data(Buffer * buf,
         unsigned int n_args, unsigned long * data)
 {
-    db<Zynq_Component_Controller>(TRC)
+    db<Cortex_A_Component_Controller>(TRC)
         << "Component_Controller::send_call_data(buf=" << *buf << ",n_args="
         << n_args << ",data(";
 
     for(unsigned int i = 0; i < n_args; i++)
-        db<Zynq_Component_Controller>(TRC) << reinterpret_cast<void *>(data[i])
+        db<Cortex_A_Component_Controller>(TRC) << reinterpret_cast<void *>(data[i])
             << ",";
 
-    db<Zynq_Component_Controller>(TRC) << "))" << endl;
+    db<Cortex_A_Component_Controller>(TRC) << "))" << endl;
 
     while(buf->reg(TX));
     buf->reg(MSG_TYPE) = RTSNoC::CALL_DATA;
@@ -179,10 +179,10 @@ void Zynq_Component_Controller::send_call_data(Buffer * buf,
     }
 }
 
-void Zynq_Component_Controller::receive_return_data(Buffer * buf,
+void Cortex_A_Component_Controller::receive_return_data(Buffer * buf,
         unsigned int n_ret, unsigned long * data)
 {
-    db<Zynq_Component_Controller>(TRC)
+    db<Cortex_A_Component_Controller>(TRC)
         << "Component_Controller::receive_return_data(buf=" << *buf << ",n_ret="
         << n_ret << ")" << endl;
 
@@ -194,24 +194,24 @@ void Zynq_Component_Controller::receive_return_data(Buffer * buf,
         if(msg_type == RTSNoC::RESP_DATA)
             data[i] = buf->reg(DATA);
         else
-            db<Zynq_Component_Controller>(WRN)
+            db<Cortex_A_Component_Controller>(WRN)
                 << "Received wrong msg_type: " << msg_type << ")" << endl;
 
         buf->reg(RX) = false;
     }
 
-    db<Zynq_Component_Controller>(TRC) << "data(";
+    db<Cortex_A_Component_Controller>(TRC) << "data(";
 
     for (unsigned int i = 0; i < n_ret; i++)
-        db<Zynq_Component_Controller>(TRC)
+        db<Cortex_A_Component_Controller>(TRC)
             << reinterpret_cast<void *>(data[i]) << ",";
 
-    db<Zynq_Component_Controller>(TRC) << ")" << endl;
+    db<Cortex_A_Component_Controller>(TRC) << ")" << endl;
 }
 
-//bool Zynq_Component_Controller::agent_has_call(agent_call_info &info)
+//bool Cortex_A_Component_Controller::agent_has_call(agent_call_info &info)
 //{
-    //db<Zynq_Component_Controller>(TRC)
+    //db<Cortex_A_Component_Controller>(TRC)
         //<< "Component_Controller::agent_has_call()" << endl;
 
     //if(ctrl(AGENT_INT)) {
@@ -227,12 +227,12 @@ void Zynq_Component_Controller::receive_return_data(Buffer * buf,
 //}
 
 // TODO: Implement me
-void Zynq_Component_Controller::enable_agent_receive_int(IC::Interrupt_Handler h)
+void Cortex_A_Component_Controller::enable_agent_receive_int(IC::Interrupt_Handler h)
 {
 }
 
 // TODO: Implement me
-void Zynq_Component_Controller::disable_agent_receive_int()
+void Cortex_A_Component_Controller::disable_agent_receive_int()
 {
 }
 

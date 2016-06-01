@@ -1,4 +1,4 @@
-// EPOS Zynq Interrupt Controller Initialization
+// EPOS Cortex-A Interrupt Controller Initialization
 
 #include <cpu.h>
 #include <ic.h>
@@ -6,7 +6,7 @@
 
 __BEGIN_SYS
 
-void Zynq_IC::init()
+void Cortex_A_IC::init()
 {
     db<Init, IC>(TRC) << "IC::init()" << endl;
 

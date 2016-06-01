@@ -24,8 +24,8 @@ template<> struct Traits<Build>
     enum {IA32, ARMv7};
     static const unsigned int ARCHITECTURE = ARMv7;
 
-    enum {PC, Zynq, Cortex_M, Cortex_A};
-    static const unsigned int MACHINE = Zynq;
+    enum {PC, Cortex_M, Cortex_A};
+    static const unsigned int MACHINE = Cortex_A;
 
     enum {Legacy, eMote3, LM3S811};
     static const unsigned int MODEL = Legacy;

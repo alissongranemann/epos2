@@ -1,17 +1,17 @@
-#ifndef __zynq_traits_h
-#define __zynq_traits_h
+#ifndef __cortex_a_traits_h
+#define __cortex_a_traits_h
 
 #include <system/config.h>
 
 __BEGIN_SYS
 
-class Zynq_Common;
-template <> struct Traits<Zynq_Common>: public Traits<void>
+class Cortex_A_Common;
+template <> struct Traits<Cortex_A_Common>: public Traits<void>
 {
     static const bool debugged = Traits<void>::debugged;
 };
 
-template <> struct Traits<Zynq>: public Traits<Zynq_Common>
+template <> struct Traits<Cortex_A>: public Traits<Cortex_A_Common>
 {
     static const unsigned int CPUS = Traits<Build>::CPUS;
 
@@ -43,11 +43,11 @@ template <> struct Traits<Zynq>: public Traits<Zynq_Common>
     static const unsigned int MAX_THREADS = 16;
 };
 
-template <> struct Traits<Zynq_IC>: public Traits<Zynq_Common>
+template <> struct Traits<Cortex_A_IC>: public Traits<Cortex_A_Common>
 {
 };
 
-template <> struct Traits<Zynq_Timer>: public Traits<Zynq_Common>
+template <> struct Traits<Cortex_A_Timer>: public Traits<Cortex_A_Common>
 {
     static const bool debugged = hysterically_debugged;
 
@@ -57,17 +57,17 @@ template <> struct Traits<Zynq_Timer>: public Traits<Zynq_Common>
     static const int FREQUENCY = 1000; // Hz
 };
 
-template <> struct Traits<Zynq_UART>: public Traits<Zynq_Common>
+template <> struct Traits<Cortex_A_UART>: public Traits<Cortex_A_Common>
 {
     static const unsigned int BAUD_RATE = 115200;
 };
 
-template <> struct Traits<Zynq_NIC>: public Traits<Zynq_Common>
+template <> struct Traits<Cortex_A_NIC>: public Traits<Cortex_A_Common>
 {
     static const unsigned int UNITS = 0;
 };
 
-template<> struct Traits<Zynq_Scratchpad>: public Traits<Zynq_Common>
+template<> struct Traits<Cortex_A_Scratchpad>: public Traits<Cortex_A_Common>
 {
     static const bool enabled = false;
 };

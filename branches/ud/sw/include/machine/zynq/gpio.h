@@ -1,7 +1,7 @@
-// EPOS Zynq GPIO Mediator Declarations
+// EPOS Cortex-A GPIO Mediator Declarations
 
-#ifndef __zynq_gpio_h
-#define __zynq_gpio_h
+#ifndef __cortex_a_gpio_h
+#define __cortex_a_gpio_h
 
 #include <gpio.h>
 #include <machine.h>
@@ -9,7 +9,7 @@
 __BEGIN_SYS
 
 // Based on Linux's zynq-gpio device driver
-class Zynq_GPIO: public GPIO_Common
+class Cortex_A_GPIO: public GPIO_Common
 {
 public:
     // The GPIOs have no alternate functions in Zynq
@@ -18,9 +18,9 @@ public:
     };
 
 public:
-    Zynq_GPIO(unsigned int pin, GPIO_Functions func = FUNC_DFLT);
+    Cortex_A_GPIO(unsigned int pin, GPIO_Functions func = FUNC_DFLT);
 
-    ~Zynq_GPIO() {};
+    ~Cortex_A_GPIO() {};
 
     void put(bool value);
     bool get();

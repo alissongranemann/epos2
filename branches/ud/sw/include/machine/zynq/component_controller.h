@@ -1,7 +1,7 @@
-// EPOS Zynq Component Controller Mediator
+// EPOS Cortex-A Component Controller Mediator
 
-#ifndef __zynq_component_controller_h
-#define __zynq_component_controller_h
+#ifndef __cortex_a_component_controller_h
+#define __cortex_a_component_controller_h
 
 #include <cpu.h>
 #include <ic.h>
@@ -12,7 +12,7 @@
 
 __BEGIN_SYS
 
-class Zynq_Component_Controller: public Component_Controller_Common
+class Cortex_A_Component_Controller: public Component_Controller_Common
 {
 private:
     typedef CPU::Log_Addr Log_Addr;
@@ -33,7 +33,7 @@ public:
     // Internal buffers used to implement RTSNoC's handshake
     class Buffer
     {
-        friend class Zynq_Component_Controller;
+        friend class Cortex_A_Component_Controller;
 
     public:
         // Proxy

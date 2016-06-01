@@ -1,7 +1,7 @@
-// EPOS Zynq IC Mediator Declarations
+// EPOS Cortex-A IC Mediator Declarations
 
-#ifndef __zynq_ic_h
-#define __zynq_ic_h
+#ifndef __cortex_a_ic_h
+#define __cortex_a_ic_h
 
 #include <cpu.h>
 #include <ic.h>
@@ -77,9 +77,9 @@ protected:
     static volatile Reg32 & dist(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(DIST_BASE)[o / sizeof(Reg32)]; }
 };
 
-class Zynq_IC: private IC_Common, private GIC_PL390
+class Cortex_A_IC: private IC_Common, private GIC_PL390
 {
-    friend class Zynq;
+    friend class Cortex_A;
 
 protected:
     typedef GIC_PL390 Engine;
@@ -95,7 +95,7 @@ public:
     };
 
 public:
-    Zynq_IC() {}
+    Cortex_A_IC() {}
 
     static Interrupt_Handler int_vector(const Interrupt_Id & i) {
         assert(i < INTS);

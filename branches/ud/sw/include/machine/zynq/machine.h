@@ -1,7 +1,7 @@
-// EPOS Zynq Mediator Declarations
+// EPOS Cortex-A Mediator Declarations
 
-#ifndef __zynq_h
-#define __zynq_h
+#ifndef __cortex_a_h
+#define __cortex_a_h
 
 #include <machine.h>
 #include <cpu.h>
@@ -10,7 +10,7 @@
 
 __BEGIN_SYS
 
-class Zynq: public Machine_Common
+class Cortex_A: public Machine_Common
 {
 private:
     friend class Init_System;
@@ -37,7 +37,7 @@ private:
     };
 
 public:
-    Zynq() {}
+    Cortex_A() {}
 
     static unsigned int n_cpus() { return Traits<Machine>::CPUS; }
     static unsigned int cpu_id() {

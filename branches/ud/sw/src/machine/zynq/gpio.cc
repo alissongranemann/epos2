@@ -1,17 +1,17 @@
-// EPOS Zynq GPIO Mediator Implementation
+// EPOS Cortex-A GPIO Mediator Implementation
 
-#include <machine/zynq/gpio.h>
+#include <machine/cortex_a/gpio.h>
 
 __BEGIN_SYS
 
-const unsigned int Zynq_GPIO::PIN_TABLE[BANK_NUM] = {
+const unsigned int Cortex_A_GPIO::PIN_TABLE[BANK_NUM] = {
     31, // 0 - 31
     53, // 32 - 53
     85, // 54 - 85
     117 // 86 - 117
 };
 
-Zynq_GPIO::Zynq_GPIO(unsigned int pin, GPIO_Functions func) {
+Cortex_A_GPIO::Cortex_A_GPIO(unsigned int pin, GPIO_Functions func) {
     // Discover pin's bank number
     for (_bank = 0; _bank < BANK_NUM; _bank++)
         if (pin <= PIN_TABLE[_bank])
@@ -25,7 +25,7 @@ Zynq_GPIO::Zynq_GPIO(unsigned int pin, GPIO_Functions func) {
 }
 
 // Set pin direction as input
-void Zynq_GPIO::input() {
+void Cortex_A_GPIO::input() {
     Reg32 reg = dirm();
 
     reg &= ~(1<<_bank_pin);
@@ -33,7 +33,7 @@ void Zynq_GPIO::input() {
 }
 
 // Set pin direction as output
-void Zynq_GPIO::output() {
+void Cortex_A_GPIO::output() {
     // Set the GPIO pin as output
     Reg32 reg = dirm();
     reg |= 1<<_bank_pin;
@@ -46,7 +46,7 @@ void Zynq_GPIO::output() {
 }
 
 // Set pin status
-void Zynq_GPIO::put(bool value) {
+void Cortex_A_GPIO::put(bool value) {
     Reg32 reg = data();
 
     if(value)
@@ -58,7 +58,7 @@ void Zynq_GPIO::put(bool value) {
 }
 
 // Read pin status
-bool Zynq_GPIO::get() {
+bool Cortex_A_GPIO::get() {
     return (data_ro()&(1<<_bank_pin) ? true : false);
 }
 

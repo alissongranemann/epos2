@@ -1,14 +1,14 @@
-// EPOS Zynq Run-Time System Information
+// EPOS Cortex-A Run-Time System Information
 
-#ifndef __zynq_info_h
-#define __zynq_info_h
+#ifndef __cortex_a_info_h
+#define __cortex_a_info_h
 
 #include <system/info.h>
 
 __BEGIN_SYS
 
 template<>
-struct System_Info<Zynq>
+struct System_Info<Cortex_A>
 {
 private:
     typedef unsigned int LAddr;

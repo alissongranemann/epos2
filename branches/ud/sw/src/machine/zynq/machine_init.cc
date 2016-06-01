@@ -1,22 +1,22 @@
-// EPOS Zynq Mediator Initialization
+// EPOS Cortex-A Mediator Initialization
 
-#include <machine/zynq/machine.h>
+#include <machine/cortex_a/machine.h>
 
 __BEGIN_SYS
 
-void Zynq::init()
+void Cortex_A::init()
 {
-    db<Init, Zynq>(TRC) << "Zynq::init()" << endl;
+    db<Init, Cortex_A>(TRC) << "Cortex_A::init()" << endl;
 
     // Unlock SLCR and reset FPGA
     CPU::out32(0xF8000008, 0xDF0D);
     CPU::out32(0xF8000240, 0xF);
     CPU::out32(0xF8000240, 0x0);
 
-    if(Traits<Zynq_IC>::enabled)
-        Zynq_IC::init();
-    if(Traits<Zynq_Timer>::enabled)
-        Zynq_Timer::init();
+    if(Traits<Cortex_A_IC>::enabled)
+        Cortex_A_IC::init();
+    if(Traits<Cortex_A_Timer>::enabled)
+        Cortex_A_Timer::init();
 }
 
 __END_SYS
