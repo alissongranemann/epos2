@@ -59,14 +59,15 @@ int CC2538::receive(Address * src, Type * type, void * data, unsigned int size)
     Buffer * buf = _rx_buffer[_rx_cur];
 
     if(frame_in_rxfifo()) {
-        Frame * frame = buf->frame();
+        Phy_Frame * frame = buf->frame();
 
         // Move the frame from the NIC's RXFIFO into memory
         copy_from_rxfifo(frame);
 
         // Disassemble the frame
-        *src = frame->src();
-        *type = frame->type();
+        // Fixme: to MAC
+//        *src = frame->src();
+//        *type = frame->type();
 
         // For the upper layers, size will represent the size of frame->data<T>()
         buf->size(frame->length() - sizeof(Header) - sizeof(CRC) + sizeof(Phy_Header)); // Phy_Header is included in Header, but is already discounted in frame_length
@@ -96,7 +97,7 @@ CC2538::Buffer * CC2538::alloc(NIC * nic, const Address & dst, const Type & type
     db<CC2538>(TRC) << "CC2538::alloc(s=" << _address << ",d=" << dst << ",p=" << hex << type << dec << ",on=" << once << ",al=" << always << ",ld=" << payload << ")" << endl;
 
     // Initialize the buffer and assemble the Ethernet Frame Header
-    return new (SYSTEM) Buffer(nic, once + always + payload, type, _address, dst);
+    return new (SYSTEM) Buffer(nic, once + always + payload);
 }
 
 
@@ -111,7 +112,9 @@ int CC2538::send(Buffer * buf)
     setup_tx(buf->frame());
 
     // Trigger an immediate send
-    bool ok = send_and_wait(buf->frame()->ack_request());
+    // Fixme: to MAC
+//    bool ok = send_and_wait(buf->frame()->ack_request());
+    bool ok = true;
 
     if(ok) {
         db<CC2538>(INF) << "CC2538::send done" << endl;
@@ -172,14 +175,15 @@ void CC2538::handle_int()
                 clear_rxfifo();
             } else {
                 // We have a buffer, so we fetch a packet from the fifo
-                Frame * frame = buf->frame();
+                Phy_Frame * frame = buf->frame();
                 copy_from_rxfifo(frame);
                 buf->size(frame->length() - (sizeof(Header) + sizeof(CRC) - sizeof(Phy_Header))); // Phy_Header is included in Header, but is already discounted in frame_length
 
-                db<CC2538>(TRC) << "CC2538::handle_int:receive(s=" << frame->src() << ",p=" << hex << frame->header()->type() << dec << ",d=" << frame->data<void>() << ",s=" << buf->size() << ")" << endl;
+                db<CC2538>(TRC) << "CC2538::handle_int:receive(s=" /* << frame->src() << ",p=" << hex << frame->header()->type() << dec*/ << ",d=" << frame->data<void>() << ",s=" << buf->size() << ")" << endl;
                 db<CC2538>(INF) << "CC2538::handle_int:rx_cur=" << _rx_cur << endl;
 
-                if(!notify(frame->header()->type(), buf)) // No one was waiting for this frame, so let it free for receive()
+                // Fixme: MAC
+                if(!notify(0, buf)) // No one was waiting for this frame, so let it free for receive()
                     free(buf);
             }
         }
@@ -252,7 +256,7 @@ void CC2538::stop_listening()
 
 // TODO: Memory in the fifos is padded: you can only write one byte every 4bytes.
 // For now, we'll just copy using the RFDATA register
-void CC2538RF::copy_from_rxfifo(IEEE802_15_4::Frame * frame)
+void CC2538RF::copy_from_rxfifo(IEEE802_15_4::Phy_Frame * frame)
 {
     char * buf = reinterpret_cast<char *>(frame);
     unsigned int len = sfr(RFDATA);  // First byte is the length of MAC frame

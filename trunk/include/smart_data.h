@@ -45,6 +45,7 @@ public:
     typedef TSTP::Coordinates Coordinates;
     typedef TSTP::Region Region;
     typedef TSTP::Time Time;
+    typedef TSTP::Time_Offset Time_Offset;
 
     struct DB_Record {
         double value;
@@ -127,7 +128,8 @@ public:
     }
 
 private:
-    void update(TSTP::Observed * obs, int subject, TSTP::Packet * packet) {
+    void update(TSTP::Observed * obs, int subject, TSTP::Buffer * buffer) {
+        TSTP::Packet * packet = buffer->frame()->data<TSTP::Packet>();
         db<Smart_Data>(TRC) << "Smart_Data::update(obs=" << obs << ",cond=" << reinterpret_cast<void *>(subject) << ",data=" << packet << ")" << endl;
         switch(packet->type()) {
         case TSTP::INTEREST: {
@@ -152,7 +154,7 @@ private:
             _value = response->value<Value>();
             _error = response->error();
             _coordinates = response->origin();
-            _time = response->time();
+            _time = buffer->origin_time();
             db<Smart_Data>(INF) << "Smart_Data:update[R]:this=" << this << " => " << *this << endl;
         }
         case TSTP::COMMAND: {
@@ -182,11 +184,12 @@ private:
         }
     }
 
-    static int updater(unsigned int dev, Time expiry, Smart_Data * data) {
+    static int updater(unsigned int dev, Time_Offset expiry, Smart_Data * data) {
         while(1) {
             Transducer::sense(dev, data);
+            data->_time = TSTP::now();
             data->_responsive->value(data->_value);
-            data->_responsive->time(TSTP::now());
+            data->_responsive->time(data->_time);
             data->_responsive->respond(expiry);
             Periodic_Thread::wait_next();
         }

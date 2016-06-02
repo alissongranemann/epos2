@@ -423,8 +423,8 @@ public:
 
 
     // TSTP observer/d conditioned to a message's address (ID)
-    typedef Data_Observer<Packet, int> Observer;
-    typedef Data_Observed<Packet, int> Observed;
+    typedef Data_Observer<Buffer, int> Observer;
+    typedef Data_Observed<Buffer, int> Observed;
 
 
     // Hash to store TSTP Observers by type
@@ -655,7 +655,7 @@ public:
 
     static void attach(Observer * obs, void * subject) { _observed.attach(obs, int(subject)); }
     static void detach(Observer * obs, void * subject) { _observed.detach(obs, int(subject)); }
-    static bool notify(void * subject, Packet * packet) { return _observed.notify(int(subject), packet); }
+    static bool notify(void * subject, Buffer * buf) { return _observed.notify(int(subject), buf); }
 
     static void init(unsigned int unit) {
         db<Init, TSTP>(TRC) << "TSTP::init()" << endl;
@@ -678,7 +678,7 @@ private:
                 for(Responsives::Element * el = list->head(); el; el = el->next()) {
                     Responsive * responsive = el->object();
                     if(interest->region().contains(responsive->origin(), now())) {
-                        notify(responsive, packet);
+                        notify(responsive, buf);
                     }
                 }
         } break;
@@ -691,7 +691,7 @@ private:
                 for(Interests::Element * el = list->head(); el; el = el->next()) {
                     Interested * interested = el->object();
                     if(interested->region().contains(response->origin(), response->time()))
-                        notify(interested, packet);
+                        notify(interested, buf);
                 }
         } break;
         case COMMAND: {
@@ -703,7 +703,7 @@ private:
                 for(Responsives::Element * el = list->head(); el; el = el->next()) {
                     Responsive * responsive = el->object();
                     if(command->region().contains(responsive->origin(), now()))
-                        notify(responsive, packet);
+                        notify(responsive, buf);
                 }
         } break;
         case CONTROL: break;

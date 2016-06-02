@@ -37,7 +37,7 @@ enum Power_Mode
 
 // Utilities
 __BEGIN_UTIL
-class Dummy;
+class Dummy {};
 class Bitmaps;
 class CRC;
 class ELF;

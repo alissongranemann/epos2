@@ -12,9 +12,6 @@ __BEGIN_SYS
 // IT CC2538 IEEE 802.15.4 RF Transceiver
 class CC2538RF: private Cortex_M_Model
 {
-    friend class One_Hop_MAC;
-    friend class TSTP_MAC;
-
 protected:
     typedef CPU::Reg8 Reg8;
     typedef CPU::Reg16 Reg16;
@@ -286,8 +283,8 @@ public:
         static Time_Stamp now() { return read() + _offset; }
         static Time_Stamp sfd() { return last_sfd(); }
 
-        static void adjust(const Time_Stamp & offset) { _offset += offset; }
-        static void set(const Time_Stamp & value) { _offset = value - read(); }
+//        static void adjust(const Time_Stamp & offset) { _offset += offset; }
+//        static void set(const Time_Stamp & value) { _offset = value - read(); }
 
         static void interrupt(const Time_Stamp & when, const IC::Interrupt_Handler & h) {
             int_set(0);
@@ -312,18 +309,18 @@ public:
             }
         }
 
-        static void start() { mactimer(MTCTRL) |= MTCTRL_RUN; }
-        static void stop()  { mactimer(MTCTRL) &= ~MTCTRL_RUN; }
+//        static void start() { mactimer(MTCTRL) |= MTCTRL_RUN; }
+//        static void stop()  { mactimer(MTCTRL) &= ~MTCTRL_RUN; }
 
         static void int_enable(const Reg32 & interrupt) { mactimer(MTIRQM) |= interrupt; }
         static void int_disable() { mactimer(MTIRQM) = INT_OVERFLOW_PER; }
 
-        static Time_Stamp us_to_ts(RTC::Microsecond us) { return us * static_cast<Time_Stamp>(CLOCK / 1000000); }
-        static RTC::Microsecond ts_to_us(Time_Stamp ts) { return ts / static_cast<Time_Stamp>(CLOCK / 1000000); }
+//        static Time_Stamp us_to_ts(RTC::Microsecond us) { return us * static_cast<Time_Stamp>(CLOCK / 1000000); }
+//        static RTC::Microsecond ts_to_us(Time_Stamp ts) { return ts / static_cast<Time_Stamp>(CLOCK / 1000000); }
 
     private:
         static void init() {
-            stop();
+            mactimer(MTCTRL) |= MTCTRL_RUN; // Stop counting
             int_set(0);
             int_clear();
             mactimer(MTCTRL) &= ~MTCTRL_SYNC; // We can't use the sync feature because we want to change the count and overflow values when the timer is stopped
@@ -345,22 +342,22 @@ public:
 
             return ts;
         }
-//        static void set(const Time_Stamp & t) {
-//            bool r = running();
-//            if(r) stop();
-//
-//            mactimer(MSEL) = (OVERFLOW_COUNTER * MSEL_MTMOVFSEL) | (TIMER_COUNTER * MSEL_MTMSEL);
-//
-//            mactimer(MOVF0) = t >> 16ll;
-//            mactimer(MOVF1) = t >> 24ll;
-//            mactimer(MOVF2) = t >> 32ll; // MOVF2 must be written last
-//            _overflow_count_overflow = t >> 40ll;
-//
-//            mactimer(M0) = t; // M0 must be written first
-//            mactimer(M1) = t >> 8ll;
-//
-//            if(r) start();
-//        }
+
+        static void set(const Time_Stamp & t) {
+            mactimer(MTCTRL) |= MTCTRL_RUN; // Stop counting
+
+            mactimer(MTMSEL) = (OVERFLOW_COUNTER * MSEL_MTMOVFSEL) | (TIMER_COUNTER * MSEL_MTMSEL);
+
+            mactimer(MTMOVF0) = t >> 16ll;
+            mactimer(MTMOVF1) = t >> 24ll;
+            mactimer(MTMOVF2) = t >> 32ll; // MOVF2 must be written last
+            _overflow_count_overflow = t >> 40ll;
+
+            mactimer(MTM0) = t; // M0 must be written first
+            mactimer(MTM1) = t >> 8ll;
+
+            mactimer(MTCTRL) &= ~MTCTRL_RUN; // Restart counting
+        }
 
         static Time_Stamp last_sfd() {
             mactimer(MTMSEL) = (TIMER_CAPTURE * MSEL_MTMSEL);
@@ -448,19 +445,19 @@ public:
     void off() { sfr(RFST) = ISRFOFF; clear_rxfifo(); sfr(RFIRQF0) = 0; }
     void rx() { sfr(RFST) = ISRXON; }
     void tx() { sfr(RFST) = ISTXON; }
-    volatile bool cca() { return xreg(FSMSTAT1) & CCA; }
-    volatile bool cca_valid() { return xreg(RSSISTAT) & RSSI_VALID; }
+    bool cca() { return xreg(FSMSTAT1) & CCA; }
+    bool cca_valid() { return xreg(RSSISTAT) & RSSI_VALID; }
     void start_cca() { rx_mode(RX_MODE_NO_SYMBOL_SEARCH); rx(); }
     void end_cca() { rx_mode(RX_MODE_NORMAL); }
     bool valid_frame() { return frame_in_rxfifo(); }
 
-    void setup_tx(const IEEE802_15_4::Frame * frame) {
+    void setup_tx(const IEEE802_15_4::Phy_Frame * frame) {
         const char * f = reinterpret_cast<const char *>(frame);
         sfr(RFDATA) = f[0];
         for(auto i=0u; i < f[0] - sizeof(IEEE802_15_4::CRC); i++)
             sfr(RFDATA) = f[i+1];
     }
-    volatile bool tx_ok() {
+    bool tx_ok() {
         volatile bool ret = (sfr(RFIRQF1) & INT_TXDONE);
         if(ret)
             sfr(RFIRQF1) &= ~INT_TXDONE;
@@ -490,7 +487,7 @@ protected:
     void rx_mode(RX_MODES m) {
         xreg(FRMCTRL0) = (xreg(FRMCTRL0) & ~(3 * RX_MODE)) | (m * RX_MODE);
     }
-    void copy_from_rxfifo(IEEE802_15_4::Frame * c);
+    void copy_from_rxfifo(IEEE802_15_4::Phy_Frame * c);
     bool frame_in_rxfifo();
     void clear_rxfifo() { sfr(RFST) = ISFLUSHRX; }
     void frequency(unsigned int freq) { xreg(FREQCTRL) = freq; }
@@ -508,9 +505,17 @@ protected:
     volatile bool _rx_done() { return (xreg(FSMSTAT1) & FIFOP); }
 };
 
+__END_SYS
+
+#include <machine/common/ieee802_15_4_mac.h>
+#include <machine/common/tstp_mac.h>
+
+__BEGIN_SYS
+
+typedef IEEE802_15_4_MAC<CC2538RF> MAC;
 
 // CC2538 IEEE 802.15.4 EPOSMote III NIC Mediator
-class CC2538: public IEEE802_15_4, public IEEE802_15_4::Observed, private CC2538RF
+class CC2538: public MAC::Observed, public MAC
 {
     template <int unit> friend void call_init();
 

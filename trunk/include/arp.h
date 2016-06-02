@@ -39,9 +39,8 @@ public:
     class Packet
     {
     public:
-        Packet(Oper op, const HA & sha, const PA & spa, const HA & tha, const PA & tpa):
-            _htype(htons(HTYPE)), _ptype(htons(Network::PROTOCOL)), _hlen(sizeof(HA)), _plen(sizeof(PA)),
-            _oper(htons(op)), _sha(sha), _spa(spa), _tha(tha), _tpa(tpa) {}
+        Packet(Oper op, const HA & sha, const PA & spa, const HA & tha, const PA & tpa)
+        : _htype(htons(HTYPE)), _ptype(htons(Network::PROTOCOL)), _hlen(sizeof(HA)), _plen(sizeof(PA)), _oper(htons(op)), _sha(sha), _spa(spa), _tha(tha), _tpa(tpa) {}
         ~Packet() {}
 
         void op(const Oper & o) { _oper = htons(o); }

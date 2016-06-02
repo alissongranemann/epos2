@@ -66,7 +66,7 @@ public:
 
     protected:
         Data _data;
-    } __attribute__((packed, may_alias));
+    } __attribute__((packed));
 
 
     // IEEE 802.15.4 MAC Layer
@@ -219,13 +219,26 @@ public:
         CRC _crc;
     } __attribute__((packed));
 
-
     typedef Frame PDU;
 
+    // Metadata added to physical frames by higher-level protocols
+    struct Metadata {
+        int rssi;
+        long long sfd_time_stamp;
+        unsigned int id;
+        long long offset;
+        bool destined_to_me;
+        long long deadline;
+        long long origin_time;
+        long my_distance;
+        bool is_tx;
+        bool is_microframe;
+        bool relevant;
+        bool trusted;
+    };
 
     // Buffers used to hold frames across a zero-copy network stack
-    typedef _UTIL::Buffer<NIC, Frame, void> Buffer;
-
+    typedef _UTIL::Buffer<NIC, Phy_Frame, void, Metadata> Buffer;
 
     // Observers of a protocol get a also a pointer to the received buffer
     typedef Data_Observer<Buffer, Type> Observer;

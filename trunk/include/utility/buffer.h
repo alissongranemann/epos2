@@ -8,11 +8,11 @@
 
 __BEGIN_UTIL
 
-template<typename Owner, typename Data, typename Shadow = void>
-class Buffer: private Data
+template<typename Owner, typename Data, typename Shadow = void, typename Metadata = Dummy>
+class Buffer: private Data, public Metadata
 {
 public:
-    typedef Simple_List<Buffer<Owner, Data, Shadow> > List;
+    typedef Simple_List<Buffer<Owner, Data, Shadow, Metadata> > List;
     typedef typename List::Element Element;
 
 public:
