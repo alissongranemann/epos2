@@ -220,13 +220,13 @@ public:
     typedef Engine::Timestamp Time_Stamp;
     typedef Engine::Microsecond Microsecond;
 
-    static Time_Stamp now() { if(_offset != 0) {while(true) kout << "AAAAHHH" << endl;}return read() + _offset; }
-    static Time_Stamp sfd() { return Engine::last_sfd_ts() + _offset; }
+    static Time_Stamp now() { return read(); }// + _offset; }
+    static Time_Stamp sfd() { return Engine::last_sfd_ts(); }// + _offset; }
 
     static void adjust(const Time_Stamp & offset) { _offset += offset; }
     static void set(const Time_Stamp & value) { _offset = value - read(); }
 
-    static void interrupt(const Time_Stamp & when, Interrupt_Handler handler) { Engine::interrupt_ts(when - _offset, handler); }
+    static void interrupt(const Time_Stamp & when, Interrupt_Handler handler) { Engine::interrupt_ts(when /*- _offset*/, handler); }
     static void cancel_interrupt() { Engine::int_disable(); }
 
     TSTP_Timer() { _offset = 0; Engine::config(); }

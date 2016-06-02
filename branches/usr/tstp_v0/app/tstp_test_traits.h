@@ -21,13 +21,13 @@ template<> struct Traits<Build>
     static const unsigned int MODE = LIBRARY;
 
     enum {IA32, ARMv7};
-    static const unsigned int ARCHITECTURE = IA32;
+    static const unsigned int ARCHITECTURE = ARMv7;
 
     enum {PC, Cortex_M, Cortex_A};
-    static const unsigned int MACHINE = PC;
+    static const unsigned int MACHINE = Cortex_M;
 
     enum {Legacy, eMote3, LM3S811};
-    static const unsigned int MODEL = Legacy;
+    static const unsigned int MODEL = eMote3;
 
     static const unsigned int CPUS = 1;
     static const unsigned int NODES = 2; // > 1 => NETWORKING
@@ -37,10 +37,10 @@ template<> struct Traits<Build>
 // Utilities
 template<> struct Traits<Debug>
 {
-    static const bool error   = true;
-    static const bool warning = true;
-    static const bool info    = true;
-    static const bool trace   = true;
+    static const bool error   = false;
+    static const bool warning = false;
+    static const bool info    = false;
+    static const bool trace   = false;
 };
 
 template<> struct Traits<Lists>: public Traits<void>

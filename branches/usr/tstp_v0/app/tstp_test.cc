@@ -34,10 +34,10 @@ int main()
     NIC nic;
     NIC::Address mac = nic.address();
 
-    if(mac[5] % 2)
+//    if(mac[5] % 2)
         sink(mac);
-    else
-        sensor(mac);
+//    else
+//        sensor(mac);
 
     cout << "I'm done, bye!" << endl;
 

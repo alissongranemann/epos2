@@ -7,6 +7,7 @@
 #include <cpu.h>
 #include <machine/cortex_m/emote3_ieee802_15_4_phy.h>
 #include <tstp_mac.h>
+#include <gpio.h>
 
 __BEGIN_SYS
 
@@ -31,7 +32,7 @@ class eMote3_TSTP_MAC: public TSTP_MAC, public TSTP_MAC::Observed, private eMote
     typedef TSTP_MAC::CRC CRC;
 
 private:
-    static const long long MF_TX_DELAY = 11000;
+    static const long long MF_TX_DELAY = 0;
 
     static void lock() { CPU::int_disable(); }
     static void unlock() { CPU::int_enable(); }
@@ -151,6 +152,8 @@ private:
     Time _mf_period;
     STATE _rx_state;
     Frame_ID _receiving_data_id;
+    GPIO _tx_pin;
+    GPIO _rx_pin;
 };
 
 __END_SYS

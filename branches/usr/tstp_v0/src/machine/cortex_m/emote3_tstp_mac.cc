@@ -22,7 +22,8 @@ eMote3_TSTP_MAC * eMote3_TSTP_MAC::_timer_int_requester;
 // Methods
 eMote3_TSTP_MAC::~eMote3_TSTP_MAC() { db<eMote3_TSTP_MAC>(TRC) << "~Radio(unit=" << _unit << ")" << endl; }
 
-void eMote3_TSTP_MAC::next_state(const State_Handler & s, const Time & when) {
+void eMote3_TSTP_MAC::next_state(const State_Handler & s, const Time & when) 
+{
     _scheduled_state = s;
     _timer_int_requester = this;
     //TSTP_Timer::interrupt(when, _scheduled_state);
@@ -111,17 +112,13 @@ void eMote3_TSTP_MAC::free(Buffer * buf)
 {
     db<eMote3_TSTP_MAC>(TRC) << "eMote3_TSTP_MAC::free(buf=" << buf << ")" << endl;
 
-    for(Buffer::Element * el = buf->link(); el; el = el->next()) {
-        buf = el->object();
+    _tx_schedule.remove(buf);
+    if(_tx_pending == buf)
+        _tx_pending = 0;
+    // Release the buffer to the OS
+    buf->unlock();
 
-        _tx_schedule.remove(buf);
-        if(_tx_pending == buf)
-            _tx_pending = 0;
-        // Release the buffer to the OS
-        buf->unlock();
-
-        db<eMote3_TSTP_MAC>(INF) << "eMote3_TSTP_MAC::free " << buf << endl;
-    }
+    db<eMote3_TSTP_MAC>(INF) << "eMote3_TSTP_MAC::free " << buf << endl;
 }
 
 void eMote3_TSTP_MAC::reset()
@@ -137,6 +134,7 @@ void eMote3_TSTP_MAC::handle_int()
     Reg32 irqrf0 = sfr(RFIRQF0);
 
     if(irqrf0 & INT_FIFOP) { // Frame received
+        auto sfd = TSTP_Timer::sfd();
         sfr(RFIRQF0) &= ~INT_FIFOP;
         if(frame_in_rxfifo()) {
             Buffer * buf = 0;
@@ -159,7 +157,7 @@ void eMote3_TSTP_MAC::handle_int()
                 auto f = reinterpret_cast<unsigned char *>(buf->frame());
                 auto sz = copy_from_rxfifo(f);
                 buf->size(sz - sizeof(CRC));
-                buf->sfd_time_stamp(TSTP_Timer::sfd());
+                buf->sfd_time_stamp(sfd);
 
                 db<eMote3_TSTP_MAC>(INF) << "eMote3_TSTP_MAC::handle_int[" << _rx_cur << "] => " << buf << endl;
 
@@ -180,7 +178,7 @@ void eMote3_TSTP_MAC::handle_int()
                     }
                 }
             }
-        }
+        } 
     }
 
     db<eMote3_TSTP_MAC>(TRC) << "eMote3_TSTP_MAC::int: " << endl << "RFIRQF0 = " << hex << irqrf0 << endl;
@@ -201,13 +199,13 @@ void eMote3_TSTP_MAC::int_handler(const IC::Interrupt_Id & interrupt)
 
 void eMote3_TSTP_MAC::process_mf(Buffer * buf)
 {
-    //_rx_pin.clear();
-    //_tx_pin.clear();
+    _rx_pin.set(false);
+    _tx_pin.set(false);
     off();
     TSTP_Timer::cancel_interrupt();
     auto mf = buf->frame()->data<Microframe>();
 
-    auto data_time = buf->sfd_time_stamp() + (mf->count() + 1) * (_mf_period);
+    long long data_time = buf->sfd_time_stamp() + (static_cast<long long>(mf->count()) + 1ll) * (_mf_period);
 
     if(_tx_pending and (_tx_pending->id() == mf->id())) {
         free(_tx_pending);
@@ -226,7 +224,7 @@ void eMote3_TSTP_MAC::process_mf(Buffer * buf)
     if(mf->all_listen() or buf->relevant()) {
         _receiving_data_id = mf->id();
         free(buf);
-        next_state(&trigger_rx_data, data_time);// - TSTP_Timer::us_to_ts(DATA_LISTEN_MARGIN));
+        next_state(&trigger_rx_data, data_time - TSTP_Timer::us_to_ts(DATA_LISTEN_MARGIN));
     } else {
         free(buf);
         next_state(&trigger_check_tx_schedule, data_time + TSTP_Timer::us_to_ts(SLEEP_PERIOD));
@@ -249,8 +247,8 @@ void eMote3_TSTP_MAC::process_data(Buffer * buf)
 void eMote3_TSTP_MAC::check_tx_schedule()
 {
     db<eMote3_TSTP_MAC>(TRC) << "eMote3_TSTP_MAC::check_tx_schedule()" << endl;
-    //_rx_pin.clear();
-    //_tx_pin.clear();
+    _rx_pin.set(false);
+    _tx_pin.set(false);
     lock();
     off();
     auto t = TSTP_Timer::now();
@@ -299,8 +297,8 @@ void eMote3_TSTP_MAC::cca()
 
 void eMote3_TSTP_MAC::prepare_tx_mf() 
 {
-    //_tx_pin.clear();
-    //_rx_pin.clear();
+    _tx_pin.set(false);
+    _rx_pin.set(false);
     db<eMote3_TSTP_MAC>(TRC) << "eMote3_TSTP_MAC::prepare_tx_mf()" << endl;
     auto type = _tx_pending->frame()->header()->type();
     if(type == INTEREST) {
@@ -328,15 +326,15 @@ void eMote3_TSTP_MAC::tx_mf()
     }
 
     setup_tx(reinterpret_cast<char *>(_sending_microframe->frame()->data<Microframe>()), sizeof(Microframe) - sizeof(CRC));
-    //_tx_pin.set();
+    _tx_pin.set(true);
     tx();
     while(not tx_ok());
+    _tx_pin.set(false);
     clear_txfifo();
-    //_tx_pin.clear();
 }
 
 void eMote3_TSTP_MAC::tx_data() 
-{ 
+{
     lock();
     auto hdr = _tx_pending->frame()->header();
     const auto sz = _tx_pending->size();
@@ -347,10 +345,10 @@ void eMote3_TSTP_MAC::tx_data()
     hdr->last_hop_time(ts);
     hdr->elapsed(hdr->elapsed() + TSTP_Timer::ts_to_us(ts - _tx_pending->sfd_time_stamp()));
     setup_tx(f, sz);
-    //_tx_pin.set();
+    _tx_pin.set(true);
     tx();
     while(not tx_ok());
-    //_tx_pin.clear();
+    _tx_pin.set(false);
     unlock();
 
     off();
@@ -364,7 +362,7 @@ void eMote3_TSTP_MAC::rx_mf()
 {
     _rx_state = RX_MF; 
     next_state(&trigger_check_tx_schedule, TSTP_Timer::now() + TSTP_Timer::us_to_ts(RX_MF_TIMEOUT));
-    //_rx_pin.set();
+    _rx_pin.set(true);
     rx(); 
 }
 
@@ -372,7 +370,8 @@ void eMote3_TSTP_MAC::rx_data()
 {
     _rx_state = RX_DATA; 
     next_state(&trigger_check_tx_schedule, TSTP_Timer::now() + TSTP_Timer::us_to_ts(RX_DATA_TIMEOUT));
-    //_rx_pin.set();
+    _rx_pin.set(true);
+    _tx_pin.set(true);
     rx(); 
 }
 

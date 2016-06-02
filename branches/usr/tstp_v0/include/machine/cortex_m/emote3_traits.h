@@ -119,7 +119,6 @@ template <> struct Traits<eMote3_IEEE802_15_4>: public Traits<Cortex_M_IEEE802_1
 
 template <> struct Traits<eMote3_TSTP_MAC>: public Traits<Cortex_M_IEEE802_15_4>
 {
-    static const bool debugged = true;
     static const unsigned int UNITS = NICS::Count<eMote3_TSTP_MAC>::Result;
     static const unsigned int SEND_BUFFERS = 8;
     static const unsigned int RECEIVE_BUFFERS = 8;

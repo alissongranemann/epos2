@@ -11,7 +11,7 @@
 __BEGIN_SYS
 
 eMote3_TSTP_MAC::eMote3_TSTP_MAC(unsigned int unit, IO_Irq irq, DMA_Buffer * dma_buf):
-    _unit(unit), _irq(irq), _dma_buf(dma_buf), _rx_cur(0), _tx_cur(0), _tx_pending(0)
+    _unit(unit), _irq(irq), _dma_buf(dma_buf), _rx_cur(0), _tx_cur(0), _tx_pending(0), _tx_pin('C', 3, GPIO::OUTPUT), _rx_pin('C',6,GPIO::OUTPUT)
 {
     _mf_period = TSTP_Timer::us_to_ts(TIME_BETWEEN_MICROFRAMES + MICROFRAME_TIME) + MF_TX_DELAY;
 

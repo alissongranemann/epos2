@@ -21,7 +21,7 @@ public:
     static const unsigned int Tu = 192; // IEEE 802.15.4 TX Turnaround Time
     //static const unsigned int G = 320; // Tu + 8 / symbol_rate
     //static const unsigned int Ts = 480; // Time to send a single microframe (including PHY headers)
-    static const unsigned int Ts = 676 - Tu; // Time to send a single microframe (including PHY headers)
+    static const unsigned int Ts = 580 - Tu; // Time to send a single microframe (including PHY headers)
     static const unsigned int MICROFRAME_TIME = Ts;
     static const unsigned int MIN_Ti = 2*Tu; // Minimum time between consecutive microframes
     static const unsigned int RADIO_RADIUS = 17 * 100; //TODO
