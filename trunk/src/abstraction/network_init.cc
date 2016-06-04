@@ -24,9 +24,7 @@ inline static void call_init()
 };
 
 template <>
-inline void call_init<Traits<Network>::NETWORKS::Length>()
-{
-};
+inline void call_init<Traits<Network>::NETWORKS::Length>() {};
 
 void Network::init()
 {

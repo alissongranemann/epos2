@@ -28,12 +28,12 @@ int CC2538::send(const Address & dst, const Type & type, const void * data, unsi
     if(size > Frame::MTU)
         size = Frame::MTU;
 
-    db<CC2538>(TRC) << "Radio::send(s=" << _address << ",d=" << dst << ",p=" << hex << type << dec << ",d=" << data << ",s=" << size << ")" << endl;
+    db<CC2538>(TRC) << "Radio::send(s=" << address() << ",d=" << dst << ",p=" << hex << type << dec << ",d=" << data << ",s=" << size << ")" << endl;
 
     Buffer * buf = alloc(reinterpret_cast<NIC *>(this), dst, type, 0, 0, size);
 
     // Assemble the frame
-    new (buf->frame()) Frame(type, _address, dst, data, size);
+    new (buf->frame()) Frame(type, address(), dst, data, size);
 
     _statistics.tx_packets++;
     _statistics.tx_bytes += size;
@@ -94,7 +94,7 @@ int CC2538::receive(Address * src, Type * type, void * data, unsigned int size)
 
 CC2538::Buffer * CC2538::alloc(NIC * nic, const Address & dst, const Type & type, unsigned int once, unsigned int always, unsigned int payload)
 {
-    db<CC2538>(TRC) << "CC2538::alloc(s=" << _address << ",d=" << dst << ",p=" << hex << type << dec << ",on=" << once << ",al=" << always << ",ld=" << payload << ")" << endl;
+    db<CC2538>(TRC) << "CC2538::alloc(s=" << address() << ",d=" << dst << ",p=" << hex << type << dec << ",on=" << once << ",al=" << always << ",ld=" << payload << ")" << endl;
 
     // Initialize the buffer and assemble the Ethernet Frame Header
     return new (SYSTEM) Buffer(nic, once + always + payload);
@@ -222,15 +222,13 @@ void CC2538::int_handler(const IC::Interrupt_Id & interrupt)
         dev->handle_int();
 }
 
-void CC2538::address(const Address & address)
+void CC2538RF::address(const NIC::Address & address)
 {
-    _address[0] = address[0];
-    _address[1] = address[1];
-    ffsm(SHORT_ADDR0) = _address[0];
-    ffsm(SHORT_ADDR1) = _address[1];
+    ffsm(SHORT_ADDR0) = address[0];
+    ffsm(SHORT_ADDR1) = address[1];
 }
 
-void CC2538::listen()
+void CC2538RF::listen()
 {
     // Clear interrupts
     sfr(RFIRQF0) = 0;
@@ -242,7 +240,7 @@ void CC2538::listen()
     rx();
 }
 
-void CC2538::stop_listening()
+void CC2538RF::stop_listening()
 {
     // Disable device interrupts
     xreg(RFIRQM0) = 0;
@@ -266,110 +264,6 @@ void CC2538RF::copy_from_rxfifo(IEEE802_15_4::Phy_Frame * frame)
     clear_rxfifo();
 }
 
-bool CC2538::wait_for_ack()
-{
-//    while(!(sfr(RFIRQF1) & INT_TXDONE));
-//    sfr(RFIRQF1) &= ~INT_TXDONE;
-//
-////    if(not Traits<CC2538>::auto_listen) {
-//        xreg(RFST) = ISRXON;
-////    }
-//
-//    bool acked = false;
-//    eMote3_GPTM timer(2, Traits<CC2538>::ACK_TIMEOUT);
-//    timer.enable();
-//    while(timer.running() and not (acked = (sfr(RFIRQF0) & INT_FIFOP)));
-//
-//    return acked;
-    return true;
-}
-
-bool CC2538::send_and_wait(bool ack)
-{
-    bool do_ack = Traits<_API::ELP>::acknowledged && ack;
-    Reg32 saved_filter_settings = 0;
-    if(do_ack) {
-        saved_filter_settings = xreg(FRMFILT1);
-        xreg(RFIRQM0) &= ~INT_FIFOP; // Disable FIFOP int. We'll poll the interrupt flag
-        xreg(FRMFILT1) = ACCEPT_FT2_ACK; // Accept only ACK frames now
-    }
-
-    bool sent = backoff_and_send();
-
-    if(do_ack) {
-        bool acked = sent and wait_for_ack();
-
-        for(unsigned int i = 0; !acked && (i < Traits<_API::ELP>::RETRIES); i++) {
-            db<CC2538>(TRC) << "CC2538::retransmitting" << endl;
-            sent = backoff_and_send();
-            acked = sent && wait_for_ack();
-        }
-
-        if(acked) {
-            sfr(RFIRQF0) &= ~INT_FIFOP; // Clear FIFOP flag
-            clear_rxfifo();
-        }
-
-        // TODO: how does the following maps to higher level protocols?
-//        if(not Traits<CC2538>::auto_listen) {
-//            xreg(RFST) = ISRFOFF;
-//        }
-
-        xreg(FRMFILT1) = saved_filter_settings; // Done with ACKs
-        xreg(RFIRQM0) |= INT_FIFOP; // Enable FIFOP int
-        return acked;
-    }
-    else if(sent) {
-        while(!tx_ok());
-    }
-
-    return sent;
-}
-
-bool CC2538::backoff_and_send()
-{
-    bool ret = true;
-    if(Traits<_API::ELP>::avoid_collisions) {
-        start_cca();
-
-        unsigned int two_raised_to_be = 1;
-        unsigned int BE;
-        for(BE = 0; BE < CSMA_CA_MIN_BACKOFF_EXPONENT; BE++) {
-            two_raised_to_be *= 2;
-        }
-
-        unsigned int trials;
-        for(trials = 0u; trials < CSMA_CA_MAX_TRANSMISSION_TRIALS; trials++) {
-            const auto ubp = CSMA_CA_UNIT_BACKOFF_PERIOD;
-            auto delay_time = (Random::random() % two_raised_to_be) * ubp;
-            delay_time = delay_time < ubp ? ubp : delay_time;
-
-//            eMote3_GPTM::delay(delay_time, 2);
-            for(volatile unsigned int i = 0; i < delay_time; i++); //TODO: replace with timer
-            while(!cca_valid());
-            if(tx_if_cca()) {
-                break; // Success
-            }
-
-            if(BE < CSMA_CA_MAX_BACKOFF_EXPONENT) {
-                BE++;
-                two_raised_to_be *= 2;
-            }
-        }
-
-        end_cca();
-
-        if(trials >= Traits<_API::ELP>::RETRIES) {
-            db<CC2538>(WRN) << "CC2538::backoff_and_send() failed!" << endl;
-            ret = false;
-        }
-    }
-    else {
-        tx();
-    }
-
-    return ret;
-}
 
 bool CC2538RF::frame_in_rxfifo()
 {

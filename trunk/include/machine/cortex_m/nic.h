@@ -28,18 +28,12 @@ public:
     }
     ~Cortex_M_IEEE802_15_4() { _dev = 0; }
     
-    Buffer * alloc(NIC * nic, const Address & dst, const Protocol & prot, unsigned int once, unsigned int always, unsigned int payload) {
-        return _dev->alloc(nic, dst, prot, once, always, payload);
-    }
+    Buffer * alloc(NIC * nic, const Address & dst, const Protocol & prot, unsigned int once, unsigned int always, unsigned int payload) { return _dev->alloc(nic, dst, prot, once, always, payload); }
     int send(Buffer * buf) { return _dev->send(buf); }
     void free(Buffer * buf) { _dev->free(buf); }
 
-    int send(const Address & dst, const Protocol & prot, const void * data, unsigned int size) {
-        return _dev->send(dst, prot, data, size); 
-    }
-    int receive(Address * src, Protocol * prot, void * data, unsigned int size) {
-        return _dev->receive(src, prot, data, size); 
-    }
+    int send(const Address & dst, const Protocol & prot, const void * data, unsigned int size) { return _dev->send(dst, prot, data, size); }
+    int receive(Address * src, Protocol * prot, void * data, unsigned int size) { return _dev->receive(src, prot, data, size); }
 
     const unsigned int mtu() const { return _dev->mtu(); }
     const Address broadcast() const { return _dev->broadcast(); }
@@ -47,7 +41,7 @@ public:
     const Address & address() { return _dev->address(); }
     void address(const Address & address) { _dev->address(address); }
 
-    const unsigned int channel() { return _dev->channel(); }
+    unsigned int channel() { return _dev->channel(); }
     void channel(unsigned int channel) { _dev->channel(channel); }
 
     const Statistics & statistics() { return _dev->statistics(); }

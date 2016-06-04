@@ -7,6 +7,9 @@
 #include <machine.h>
 #include <ic.h>
 
+#include "../common/ieee802_15_4_mac.h"
+#include "../common/tstp_mac.h"
+
 __BEGIN_SYS
 
 // IT CC2538 IEEE 802.15.4 RF Transceiver
@@ -464,6 +467,10 @@ public:
         return ret;
     }
 
+    void address(const IEEE802_15_4::Address & address);
+    void listen();
+    void stop_listening();
+
     void channel(unsigned int c) {
         if((c > 10) and (c < 27)) {
             /*
@@ -505,35 +512,21 @@ protected:
     volatile bool _rx_done() { return (xreg(FSMSTAT1) & FIFOP); }
 };
 
-__END_SYS
-
-#include <machine/common/ieee802_15_4_mac.h>
-#include <machine/common/tstp_mac.h>
-
-__BEGIN_SYS
-
-typedef IEEE802_15_4_MAC<CC2538RF> MAC;
 
 // CC2538 IEEE 802.15.4 EPOSMote III NIC Mediator
-class CC2538: public MAC::Observed, public MAC
+class CC2538: public IF<EQUAL<Traits<Network>::NETWORKS::Get<Traits<Cortex_M_IEEE802_15_4>::NICS::Find<CC2538>::Result>::Result, TSTP>::Result, TSTP_MAC<CC2538RF>, IEEE802_15_4_MAC<CC2538RF>>::Result
 {
     template <int unit> friend void call_init();
 
 private:
+    typedef IF<EQUAL<Traits<Network>::NETWORKS::Get<Traits<Cortex_M_IEEE802_15_4>::NICS::Find<CC2538>::Result>::Result, _SYS::TSTP>::Result, TSTP_MAC<CC2538RF>, IEEE802_15_4_MAC<CC2538RF>>::Result Base;
+
     // Transmit and Receive Ring sizes
     static const unsigned int UNITS = Traits<CC2538>::UNITS;
     static const unsigned int RX_BUFS = Traits<CC2538>::RECEIVE_BUFFERS;
 
+    // Size of the DMA Buffer that will host the ring buffers
     static const unsigned int DMA_BUFFER_SIZE = RX_BUFS * sizeof(Buffer);
-
-    static const unsigned int CSMA_CA_MIN_BACKOFF_EXPONENT = 3;
-    static const unsigned int CSMA_CA_MAX_BACKOFF_EXPONENT = 5;
-    static const unsigned int CSMA_CA_UNIT_BACKOFF_PERIOD = 320; // us
-    static const unsigned int CSMA_CA_MAX_TRANSMISSION_TRIALS = 4;
-
-//    typedef CPU::Log_Addr Log_Addr;
-//    typedef CPU::Phy_Addr Phy_Addr;
-//    static const unsigned int MTU = IEEE802_15_4::MTU;
 
     // Interrupt dispatching binding
     struct Device {
@@ -555,62 +548,49 @@ public:
     int send(Buffer * buf);
 
     const Address & address() { return _address; }
-    void address(const Address & address);
+    void address(const Address & address) { _address = address; Base::address(address); }
+
+    unsigned int channel() { return _channel; }
+    void channel(unsigned int channel) {
+        if((channel > 10) && (channel < 27)) {
+            _channel = channel;
+            Base::channel(_channel);
+        }
+    }
 
     const Statistics & statistics() { return _statistics; }
 
     void reset();
 
-    void listen();
-    void stop_listening();
-    unsigned int channel() const { return _channel; }
-    void channel(unsigned int c) {
-        if((c > 10) && (c < 27)) {
-            _channel = c;
-            CC2538RF::channel(_channel);
-        }
-    }
-
     static CC2538 * get(unsigned int unit = 0) { return get_by_unit(unit); }
 
 private:
-    unsigned int _channel;
     void handle_int();
 
     static void int_handler(const IC::Interrupt_Id & interrupt);
 
     static CC2538 * get_by_unit(unsigned int unit) {
-        if(unit >= UNITS) {
-            db<NIC>(WRN) << "NIC::get: requested unit (" << unit << ") does not exist!" << endl;
-            return 0;
-        } else
-            return _devices[unit].device;
+        assert(unit < UNITS);
+        return _devices[unit].device;
     }
 
     static CC2538 * get_by_interrupt(unsigned int interrupt) {
+        CC2538 * tmp = 0;
         for(unsigned int i = 0; i < UNITS; i++)
-            if(_devices[i].interrupt == interrupt) {
-                return _devices[i].device;
-            }
-
-        return 0;
+            if(_devices[i].interrupt == interrupt)
+                tmp = _devices[i].device;
+        return tmp;
     };
 
     static void init(unsigned int unit);
 
-    // Send a message and wait for it to be correctly sent
-    bool send_and_wait(bool ack);
-
-    bool wait_for_ack();
-
-    bool backoff_and_send();
-
 private:
-    volatile bool _acked;
     unsigned int _unit;
 
     Address _address;
     Statistics _statistics;
+
+    unsigned int _channel;
 
     IO_Irq _irq;
     DMA_Buffer * _dma_buf;

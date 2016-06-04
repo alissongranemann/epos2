@@ -28,18 +28,12 @@ public:
     }
     ~PC_Ethernet() { _dev = 0; }
     
-    Buffer * alloc(NIC * nic, const Address & dst, const Protocol & prot, unsigned int once, unsigned int always, unsigned int payload) {
-        return _dev->alloc(nic, dst, prot, once, always, payload);
-    }
+    Buffer * alloc(NIC * nic, const Address & dst, const Protocol & prot, unsigned int once, unsigned int always, unsigned int payload) { return _dev->alloc(nic, dst, prot, once, always, payload); }
     int send(Buffer * buf) { return _dev->send(buf); }
     void free(Buffer * buf) { _dev->free(buf); }
 
-    int send(const Address & dst, const Protocol & prot, const void * data, unsigned int size) {
-        return _dev->send(dst, prot, data, size); 
-    }
-    int receive(Address * src, Protocol * prot, void * data, unsigned int size) {
-        return _dev->receive(src, prot, data, size); 
-    }
+    int send(const Address & dst, const Protocol & prot, const void * data, unsigned int size) { return _dev->send(dst, prot, data, size); }
+    int receive(Address * src, Protocol * prot, void * data, unsigned int size) { return _dev->receive(src, prot, data, size); }
 
     const unsigned int mtu() const { return _dev->mtu(); }
     const Address broadcast() const { return _dev->broadcast(); }

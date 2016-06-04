@@ -444,19 +444,16 @@ private:
     static void int_handler(const IC::Interrupt_Id & interrupt);
 
     static PCNet32 * get_by_unit(unsigned int unit) {
-        if(unit >= UNITS) {
-            db<PCNet32>(WRN) << "PCNet32::get: requested unit (" << unit << ") does not exist!" << endl;
-            return 0;
-        } else
-            return _devices[unit].device;
+        assert(unit < UNITS);
+        return _devices[unit].device;
     }
 
     static PCNet32 * get_by_interrupt(unsigned int interrupt) {
+        PCNet32 * tmp = 0;
         for(unsigned int i = 0; i < UNITS; i++)
             if(_devices[i].interrupt == interrupt)
-        	return _devices[i].device;
-
-        return 0;
+        	tmp = _devices[i].device;
+        return tmp;
     };
 
     static void init(unsigned int unit);

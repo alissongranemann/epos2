@@ -96,6 +96,14 @@ public:
     struct Get<Index, Current, true>
     { typedef Head Result; };
 
+    template<typename Type, int Start = 0, int Current = 0, bool Stop = ((Current >= Start) && EQUAL<Head, Type>::Result)>
+    struct Find
+    { enum { Result = Tail::template Find<Type, Start, Current + 1>::Result }; };
+
+    template<typename Type, int Start, int Current>
+    struct Find<Type, Start, Current, true>
+    { enum { Result = Current }; };
+
     template<typename Type>
     struct Count
     { enum { Result = EQUAL<Head, Type>::Result + Tail::template Count<Type>::Result }; };
@@ -115,6 +123,10 @@ public:
     template<int Index, int Current = 0>
     struct Get
     { typedef void Result; };
+
+    template<typename Type, int Start = 0, int Current = 0>
+    struct Find
+    { enum { Result = -1 }; };
 
     template<typename Type>
     struct Count
