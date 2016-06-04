@@ -10,7 +10,7 @@
 __BEGIN_SYS
 
 CC2538::CC2538(unsigned int unit, IO_Irq irq, DMA_Buffer * dma_buf) 
-    : _unit(unit), _irq(irq), _dma_buf(dma_buf), _rx_cur(0)
+: _unit(unit), _irq(irq), _dma_buf(dma_buf), _rx_cur(0)
 {
     db<CC2538>(TRC) << "CC2538(unit=" << unit << ",irq=" << irq << ",dma=" << dma_buf << ")" << endl;
 
@@ -34,8 +34,8 @@ CC2538::CC2538(unsigned int unit, IO_Irq irq, DMA_Buffer * dma_buf)
     // Enable automatic source address matching
     xreg(SRCMATCH) |= SRC_MATCH_EN;
 
-	// Enable auto-CRC
-	xreg(FRMCTRL0) |= AUTO_CRC;
+    // Enable auto-CRC
+    xreg(FRMCTRL0) |= AUTO_CRC;
 
     channel(15);
 
@@ -54,7 +54,7 @@ CC2538::CC2538(unsigned int unit, IO_Irq irq, DMA_Buffer * dma_buf)
     xreg(RFERRM) = 0;
 
     // Issue the listen command
-    rx();
+    sfr(RFST) = ISTXON;
 }
 
 
@@ -73,7 +73,7 @@ void CC2538::init(unsigned int unit)
     // Register the device
     _devices[unit].device = dev;
     _devices[unit].interrupt = IC::irq2int(irq);
-    
+
     // Install interrupt handler
     IC::int_vector(_devices[unit].interrupt, &int_handler);
 

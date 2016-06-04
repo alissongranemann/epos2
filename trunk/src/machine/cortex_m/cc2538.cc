@@ -14,6 +14,9 @@
 __BEGIN_SYS
 
 // Class attributes
+CC2538RF::Reg32 CC2538RF::Timer::_overflow_count;
+CC2538RF::Reg32 CC2538RF::Timer::_interrupt_overflow_count;
+
 CC2538::Device CC2538::_devices[UNITS];
 
 // Methods
@@ -21,7 +24,6 @@ CC2538::~CC2538()
 {
     db<CC2538>(TRC) << "~CC2538(unit=" << _unit << ")" << endl;
 }
-
 
 int CC2538::send(const Address & dst, const Type & type, const void * data, unsigned int size)
 {
@@ -33,10 +35,7 @@ int CC2538::send(const Address & dst, const Type & type, const void * data, unsi
     Buffer * buf = alloc(reinterpret_cast<NIC *>(this), dst, type, 0, 0, size);
 
     // Assemble the frame
-    new (buf->frame()) Frame(type, address(), dst, data, size);
-
-    _statistics.tx_packets++;
-    _statistics.tx_bytes += size;
+    MAC::marshal(buf->frame(), address(), dst, type, data, size);
 
     return send(buf);
 }
@@ -62,7 +61,7 @@ int CC2538::receive(Address * src, Type * type, void * data, unsigned int size)
         Phy_Frame * frame = buf->frame();
 
         // Move the frame from the NIC's RXFIFO into memory
-        copy_from_rxfifo(frame);
+        copy_from_nic(frame);
 
         // Disassemble the frame
         // Fixme: to MAC
@@ -106,28 +105,17 @@ int CC2538::send(Buffer * buf)
     db<CC2538>(TRC) << "CC2538::send(buf=" << buf << ")" << endl;
     db<CC2538>(INF) << "CC2538::send:frame=" << buf->frame() << " => " << *(buf->frame()) << endl;
 
-    int ret = buf->size();
+    CC2538RF::copy_to_nic(buf->frame());
+    unsigned int size = MAC::send(buf);
 
-    clear_txfifo();
-    setup_tx(buf->frame());
-
-    // Trigger an immediate send
-    // Fixme: to MAC
-//    bool ok = send_and_wait(buf->frame()->ack_request());
-    bool ok = true;
-
-    if(ok) {
-        db<CC2538>(INF) << "CC2538::send done" << endl;
+    if(size) {
         _statistics.tx_packets++;
-        _statistics.tx_bytes += ret;
-    } else {
-        db<CC2538>(INF) << "CC2538::send failed!" << endl;
-        ret = 0;
-    }
+        _statistics.tx_bytes += size;
+    } else
+        db<CC2538>(WRN) << "CC2538::send(buf=" << buf << ")" << " => failed!" << endl;
 
     delete buf;
-
-    return ret;
+    return size;
 }
 
 
@@ -176,7 +164,7 @@ void CC2538::handle_int()
             } else {
                 // We have a buffer, so we fetch a packet from the fifo
                 Phy_Frame * frame = buf->frame();
-                copy_from_rxfifo(frame);
+                copy_from_nic(frame);
                 buf->size(frame->length() - (sizeof(Header) + sizeof(CRC) - sizeof(Phy_Header))); // Phy_Header is included in Header, but is already discounted in frame_length
 
                 db<CC2538>(TRC) << "CC2538::handle_int:receive(s=" /* << frame->src() << ",p=" << hex << frame->header()->type() << dec*/ << ",d=" << frame->data<void>() << ",s=" << buf->size() << ")" << endl;
@@ -228,33 +216,33 @@ void CC2538RF::address(const NIC::Address & address)
     ffsm(SHORT_ADDR1) = address[1];
 }
 
-void CC2538RF::listen()
-{
-    // Clear interrupts
-    sfr(RFIRQF0) = 0;
-    sfr(RFIRQF1) = 0;
-    // Enable device interrupts
-    xreg(RFIRQM0) = INT_FIFOP;
-    xreg(RFIRQM1) = 0;
-    // Issue the listen command
-    rx();
-}
-
-void CC2538RF::stop_listening()
-{
-    // Disable device interrupts
-    xreg(RFIRQM0) = 0;
-    xreg(RFIRQM1) = 0;
-    // Issue the OFF command
-    off();
-}
+//void CC2538RF::listen()
+//{
+//    // Clear interrupts
+//    sfr(RFIRQF0) = 0;
+//    sfr(RFIRQF1) = 0;
+//    // Enable device interrupts
+//    xreg(RFIRQM0) = INT_FIFOP;
+//    xreg(RFIRQM1) = 0;
+//    // Issue the listen command
+//    rx();
+//}
+//
+//void CC2538RF::stop_listening()
+//{
+//    // Disable device interrupts
+//    xreg(RFIRQM0) = 0;
+//    xreg(RFIRQM1) = 0;
+//    // Issue the OFF command
+//    off();
+//}
 
 
 
 
 // TODO: Memory in the fifos is padded: you can only write one byte every 4bytes.
 // For now, we'll just copy using the RFDATA register
-void CC2538RF::copy_from_rxfifo(IEEE802_15_4::Phy_Frame * frame)
+void CC2538RF::copy_from_nic(IEEE802_15_4::Phy_Frame * frame)
 {
     char * buf = reinterpret_cast<char *>(frame);
     unsigned int len = sfr(RFDATA);  // First byte is the length of MAC frame

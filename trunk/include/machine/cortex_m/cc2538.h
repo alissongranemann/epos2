@@ -55,7 +55,7 @@ public:
         FRMCTRL1    = 0x028,
         RXMASKSET   = 0x030,
         FREQCTRL    = 0x03C,
-        FSMSTAT1    = 0x04C,
+        FSMSTAT1    = 0x04C,    // Radio status register                                        ro      0x00000000
         FIFOPCTRL   = 0x050,
         RXFIRST     = 0x068,
         RXFIFOCNT   = 0x06C,
@@ -72,7 +72,7 @@ public:
         CCACTRL0    = 0x058,
         TXPOWER     = 0x040,
         RSSI        = 0x060,
-        RSSISTAT    = 0x064,
+        RSSISTAT    = 0x064,    // RSSI valid status register                                   ro      0x00000000
     };
 
     // Useful SFR register offsets
@@ -82,7 +82,7 @@ public:
         RFERRF  = 0x2c,
         RFIRQF1 = 0x30,
         RFIRQF0 = 0x34,
-        RFST    = 0x38,
+        RFST    = 0x38,         // RF CSMA-CA/strobe processor                                  rw       0x000000d0
     };
 
     // Useful MACTIMER offsets
@@ -283,68 +283,9 @@ public:
     public:
         Timer() {}
 
+        static Time_Stamp read() { return read((OVERFLOW_COUNTER * MSEL_MTMOVFSEL) | (TIMER_COUNTER * MSEL_MTMSEL)); }
+        static Time_Stamp sfd() { return read(TIMER_CAPTURE * MSEL_MTMSEL); }
         static Time_Stamp now() { return read() + _offset; }
-        static Time_Stamp sfd() { return last_sfd(); }
-
-//        static void adjust(const Time_Stamp & offset) { _offset += offset; }
-//        static void set(const Time_Stamp & value) { _offset = value - read(); }
-
-        static void interrupt(const Time_Stamp & when, const IC::Interrupt_Handler & h) {
-            int_set(0);
-            _handler = h;
-            mactimer(MTMSEL) = (OVERFLOW_COMPARE1 * MSEL_MTMOVFSEL) | (TIMER_COMPARE1 * MSEL_MTMSEL);
-            mactimer(MTM0) = when;
-            mactimer(MTM1) = when >> 8;
-            mactimer(MTMOVF0) = when >> 16;
-            mactimer(MTMOVF1) = when >> 24;
-            mactimer(MTMOVF2) = when >> 32;
-            _int_overflow_count_overflow = when >> 40ll;
-
-            int_clear();
-            Time_Stamp now = read();
-            if(when <= now) {
-                int_enable(INT_OVERFLOW_PER);
-                _handler(49); // FIXME: this cannot be right!
-            } else if((when >> 16ll) > (now >> 16ll)) {
-                int_enable(INT_OVERFLOW_COMPARE1 | INT_OVERFLOW_PER);
-            } else if(when > now) {
-                int_enable(INT_COMPARE1 | INT_OVERFLOW_PER);
-            }
-        }
-
-//        static void start() { mactimer(MTCTRL) |= MTCTRL_RUN; }
-//        static void stop()  { mactimer(MTCTRL) &= ~MTCTRL_RUN; }
-
-        static void int_enable(const Reg32 & interrupt) { mactimer(MTIRQM) |= interrupt; }
-        static void int_disable() { mactimer(MTIRQM) = INT_OVERFLOW_PER; }
-
-//        static Time_Stamp us_to_ts(RTC::Microsecond us) { return us * static_cast<Time_Stamp>(CLOCK / 1000000); }
-//        static RTC::Microsecond ts_to_us(Time_Stamp ts) { return ts / static_cast<Time_Stamp>(CLOCK / 1000000); }
-
-    private:
-        static void init() {
-            mactimer(MTCTRL) |= MTCTRL_RUN; // Stop counting
-            int_set(0);
-            int_clear();
-            mactimer(MTCTRL) &= ~MTCTRL_SYNC; // We can't use the sync feature because we want to change the count and overflow values when the timer is stopped
-            mactimer(MTCTRL) |= MTCTRL_LATCH_MODE; // count and overflow will be latched at once
-            IC::int_vector(IC::INT_MACTIMER, &int_handler);
-            IC::enable(33);
-            int_enable(INT_OVERFLOW_PER);
-        }
-
-        static Time_Stamp read() {
-            mactimer(MTMSEL) = ((OVERFLOW_COUNTER * MSEL_MTMOVFSEL) | (TIMER_COUNTER * MSEL_MTMSEL));
-
-            Time_Stamp ts = mactimer(MTM0); // M0 must be read first
-            ts += mactimer(MTM1) << 8;
-            ts += static_cast<long long>(mactimer(MTMOVF2)) << 32ll;
-            ts += static_cast<long long>(mactimer(MTMOVF1)) << 24ll;
-            ts += static_cast<long long>(mactimer(MTMOVF0)) << 16ll;
-            ts += static_cast<long long>(_overflow_count_overflow) << 40ll;
-
-            return ts;
-        }
 
         static void set(const Time_Stamp & t) {
             mactimer(MTCTRL) |= MTCTRL_RUN; // Stop counting
@@ -354,7 +295,7 @@ public:
             mactimer(MTMOVF0) = t >> 16ll;
             mactimer(MTMOVF1) = t >> 24ll;
             mactimer(MTMOVF2) = t >> 32ll; // MOVF2 must be written last
-            _overflow_count_overflow = t >> 40ll;
+            _overflow_count = t >> 40ll;
 
             mactimer(MTM0) = t; // M0 must be written first
             mactimer(MTM1) = t >> 8ll;
@@ -362,57 +303,88 @@ public:
             mactimer(MTCTRL) &= ~MTCTRL_RUN; // Restart counting
         }
 
-        static Time_Stamp last_sfd() {
-            mactimer(MTMSEL) = (TIMER_CAPTURE * MSEL_MTMSEL);
+        static void interrupt(const Time_Stamp & when, const IC::Interrupt_Handler & h) {
+            mactimer(MTIRQM) = 0; // Mask interrupts
+            _handler = h;
+            mactimer(MTMSEL) = (OVERFLOW_COMPARE1 * MSEL_MTMOVFSEL) | (TIMER_COMPARE1 * MSEL_MTMSEL);
+            mactimer(MTM0) = when;
+            mactimer(MTM1) = when >> 8;
+            mactimer(MTMOVF0) = when >> 16;
+            mactimer(MTMOVF1) = when >> 24;
+            mactimer(MTMOVF2) = when >> 32;
+            _interrupt_overflow_count = when >> 40ll;
 
+            mactimer(MTIRQF) = 0;
+            Time_Stamp now = read();
+            if(when <= now) {
+                int_enable(INT_OVERFLOW_PER);
+                _handler(49); // FIXME: this cannot be right!
+            } else if((when >> 16ll) > (now >> 16ll))
+                int_enable(INT_OVERFLOW_COMPARE1 | INT_OVERFLOW_PER);
+            else if(when > now)
+                int_enable(INT_COMPARE1 | INT_OVERFLOW_PER);
+        }
+
+        static void int_enable(const Reg32 & interrupt) { mactimer(MTIRQM) |= interrupt; }
+        static void int_disable() { mactimer(MTIRQM) = INT_OVERFLOW_PER; }
+
+    private:
+        static Time_Stamp read(unsigned int sel) {
+            mactimer(MTMSEL) = sel;
             Time_Stamp ts = mactimer(MTM0); // M0 must be read first
             ts += mactimer(MTM1) << 8;
             ts += static_cast<long long>(mactimer(MTMOVF2)) << 32ll;
             ts += static_cast<long long>(mactimer(MTMOVF1)) << 24ll;
             ts += static_cast<long long>(mactimer(MTMOVF0)) << 16ll;
-            ts += static_cast<long long>(_overflow_count_overflow) << 40ll;
-
+            ts += static_cast<long long>(_overflow_count) << 40ll;
             return ts;
         }
 
         static void int_handler(const IC::Interrupt_Id & interrupt) {
             Reg32 ints = mactimer(MTIRQF);
-            int_clear();
+            mactimer(MTIRQF) = 0;
             if(ints & INT_OVERFLOW_PER) {
-                _overflow_count_overflow++;
-                if(_int_overflow_count_overflow == _overflow_count_overflow) {
+                _overflow_count++;
+                if(_interrupt_overflow_count == _overflow_count)
                     int_enable(INT_OVERFLOW_COMPARE1);
-                }
             }
-            if(ints & INT_OVERFLOW_COMPARE1) {
-                int_set(INT_COMPARE1 | INT_OVERFLOW_PER);
-            } else if(ints & INT_COMPARE1) {
+            if(ints & INT_OVERFLOW_COMPARE1)
+                mactimer(MTIRQM) = (INT_COMPARE1 | INT_OVERFLOW_PER);
+            else if(ints & INT_COMPARE1) {
                 int_disable();
                 _handler(interrupt);
             }
         }
 
-        static void int_clear() { mactimer(MTIRQF) = 0; }
-        static void int_set(const Reg32 & interrupt) { mactimer(MTIRQM) = interrupt; }
+        static void init() {
+            mactimer(MTCTRL) |= MTCTRL_RUN; // Stop counting
+            mactimer(MTIRQM) = 0; // Mask interrupts
+            mactimer(MTIRQF) = 0; // Clear interrupts
+            mactimer(MTCTRL) &= ~MTCTRL_SYNC; // We can't use the sync feature because we want to change the count and overflow values when the timer is stopped
+            mactimer(MTCTRL) |= MTCTRL_LATCH_MODE; // count and overflow will be latched at once
+            IC::int_vector(IC::INT_MACTIMER, &int_handler);
+            IC::enable(33);
+            int_enable(INT_OVERFLOW_PER);
+        }
 
     private:
         static Time_Stamp _offset;
         static IC::Interrupt_Handler _handler;
-        static Reg32 _overflow_count_overflow;
-        static Reg32 _int_overflow_count_overflow;
+        static Reg32 _overflow_count;
+        static Reg32 _interrupt_overflow_count;
     };
 
 public:
     CC2538RF() {
-        // Enable clock to the RF CORE module
+        // Enable clock to RF module
         ieee802_15_4_power(FULL);
 
-        // Disable device interrupts
+        // Disable interrupts
         xreg(RFIRQM0) = 0;
         xreg(RFIRQM1) = 0;
 
         // Change recommended in the user guide (CCACTRL0 register description)
-        xreg(CCACTRL0) = 0xF8;
+        xreg(CCACTRL0) = 0xf8;
 
         // Changes recommended in the user guide (Section 23.15 Register Settings Update)
         xreg(TXFILTCFG) = 0x09;
@@ -420,8 +392,9 @@ public:
         ana(IVCTRL) = 0x0b;
         xreg(FSCAL1) = 0x01;
 
-        sfr(RFST) = ISFLUSHTX; // Clear TXFIFO
-        sfr(RFST) = ISFLUSHRX; // Clear RXFIFO
+        // Clear FIFOs
+        sfr(RFST) = ISFLUSHTX;
+        sfr(RFST) = ISFLUSHRX;
 
         // Reset result of source matching (value undefined on reset)
         ffsm(SRCRESINDEX) = 0;
@@ -430,9 +403,9 @@ public:
         xreg(FIFOPCTRL) = 0xff;
 
         // Set TXPOWER (this is the value Contiki uses by default)
-        xreg(TXPOWER) = 0xD5;
+        xreg(TXPOWER) = 0xd5;
 
-        rx_mode(RX_MODE_NORMAL);
+        xreg(FRMCTRL0) = (xreg(FRMCTRL0) & ~(3 * RX_MODE)) | (RX_MODE_NORMAL * RX_MODE);
 
         // Disable counting of MAC overflows
         xreg(CSPT) = 0xff;
@@ -445,31 +418,35 @@ public:
         sfr(RFERRF) = 0;
     }
 
-    void off() { sfr(RFST) = ISRFOFF; clear_rxfifo(); sfr(RFIRQF0) = 0; }
-    void rx() { sfr(RFST) = ISRXON; }
-    void tx() { sfr(RFST) = ISTXON; }
-    bool cca() { return xreg(FSMSTAT1) & CCA; }
-    bool cca_valid() { return xreg(RSSISTAT) & RSSI_VALID; }
-    void start_cca() { rx_mode(RX_MODE_NO_SYMBOL_SEARCH); rx(); }
-    void end_cca() { rx_mode(RX_MODE_NORMAL); }
-    bool valid_frame() { return frame_in_rxfifo(); }
+    void address(const IEEE802_15_4::Address & address);
 
-    void setup_tx(const IEEE802_15_4::Phy_Frame * frame) {
-        const char * f = reinterpret_cast<const char *>(frame);
-        sfr(RFDATA) = f[0];
-        for(auto i=0u; i < f[0] - sizeof(IEEE802_15_4::CRC); i++)
-            sfr(RFDATA) = f[i+1];
+    bool cca(const RTC::Microsecond & time) {
+        xreg(FRMCTRL0) = (xreg(FRMCTRL0) & ~(3 * RX_MODE)) | (RX_MODE_NO_SYMBOL_SEARCH * RX_MODE);
+        sfr(RFST) = ISRXON;
+        for(Timer::Time_Stamp final = Timer::read() + time; Timer::read() < final;);
+        xreg(FRMCTRL0) = (xreg(FRMCTRL0) & ~(3 * RX_MODE)) | (RX_MODE_NORMAL * RX_MODE);
+        return (xreg(RSSISTAT) & RSSI_VALID);
     }
-    bool tx_ok() {
+
+    bool wait_for_ack(const RTC::Microsecond & time) {
+        while(!(sfr(RFIRQF1) & INT_TXDONE));
+        sfr(RFIRQF1) &= ~INT_TXDONE;
+        //    if(not Traits<CC2538>::auto_listen) {
+//        xreg(RFST) = ISRXON;
+        //    }
+        bool acked = false;
+        for(Timer::Time_Stamp final = Timer::read() + time; (Timer::read() < final) && !(acked = (sfr(RFIRQF0) & INT_FIFOP)););
+        return acked;
+    }
+
+
+    bool transmit() { sfr(RFST) = ISTXONCCA; return (xreg(FSMSTAT1) & SAMPLED_CCA); }
+    bool tx_done() {
         volatile bool ret = (sfr(RFIRQF1) & INT_TXDONE);
         if(ret)
             sfr(RFIRQF1) &= ~INT_TXDONE;
         return ret;
     }
-
-    void address(const IEEE802_15_4::Address & address);
-    void listen();
-    void stop_listening();
 
     void channel(unsigned int c) {
         if((c > 10) and (c < 27)) {
@@ -485,23 +462,44 @@ public:
                For operation in channel k, the FREQCTRL.FREQ register should therefore be set to
                FREQCTRL.FREQ = 11 + 5 (k – 11).
                */
-            frequency(11+5*(c-11));
+            xreg(FREQCTRL) = 11 + 5 * (c - 11);
         }
     }
 
-protected:
-    bool tx_if_cca() { sfr(RFST) = ISTXONCCA; return (xreg(FSMSTAT1) & SAMPLED_CCA); }
-    void rx_mode(RX_MODES m) {
-        xreg(FRMCTRL0) = (xreg(FRMCTRL0) & ~(3 * RX_MODE)) | (m * RX_MODE);
-    }
-    void copy_from_rxfifo(IEEE802_15_4::Phy_Frame * c);
-    bool frame_in_rxfifo();
+    void clear_txfifo() {  }
     void clear_rxfifo() { sfr(RFST) = ISFLUSHRX; }
-    void frequency(unsigned int freq) { xreg(FREQCTRL) = freq; }
-    void clear_txfifo() {
+
+    void copy_to_nic(IEEE802_15_4::Phy_Frame * frame) {
+        // Wait for TXFIFO to get empty
         sfr(RFST) = ISFLUSHTX;
         while(xreg(TXFIFOCNT) != 0);
+
+        // Copy Frame to TXFIFO
+        const char * f = reinterpret_cast<const char *>(frame);
+        sfr(RFDATA) = f[0]; // len
+        for(unsigned int i = 0; i < f[0] - sizeof(IEEE802_15_4::CRC); i++)
+            sfr(RFDATA) = f[i + 1];
     }
+
+protected:
+//    void off() { sfr(RFST) = ISRFOFF; clear_rxfifo(); sfr(RFIRQF0) = 0; }
+//    void rx() { sfr(RFST) = ISRXON; }
+//    void tx() { sfr(RFST) = ISTXON; }
+//    bool cca() { return xreg(FSMSTAT1) & CCA; }
+//    bool cca_valid() { return xreg(RSSISTAT) & RSSI_VALID; }
+//    void start_cca() { rx_mode(RX_MODE_NO_SYMBOL_SEARCH); rx(); }
+//    void end_cca() { rx_mode(RX_MODE_NORMAL); }
+//    bool valid_frame() { return frame_in_rxfifo(); }
+//   void rx_mode(RX_MODES m) {
+//        xreg(FRMCTRL0) = (xreg(FRMCTRL0) & ~(3 * RX_MODE)) | (m * RX_MODE);
+//    }
+    void copy_from_nic(IEEE802_15_4::Phy_Frame * c);
+    bool frame_in_rxfifo();
+//    void frequency(unsigned int freq) { xreg(FREQCTRL) = freq; }
+//
+//    void listen();
+//    void stop_listening();
+//
 
     static volatile Reg32 & ana     (unsigned int offset) { return *(reinterpret_cast<volatile Reg32 *>(ANA_BASE + offset)); }
     static volatile Reg32 & xreg    (unsigned int offset) { return *(reinterpret_cast<volatile Reg32 *>(XREG_BASE + offset)); }
@@ -519,7 +517,7 @@ class CC2538: public IF<EQUAL<Traits<Network>::NETWORKS::Get<Traits<Cortex_M_IEE
     template <int unit> friend void call_init();
 
 private:
-    typedef IF<EQUAL<Traits<Network>::NETWORKS::Get<Traits<Cortex_M_IEEE802_15_4>::NICS::Find<CC2538>::Result>::Result, _SYS::TSTP>::Result, TSTP_MAC<CC2538RF>, IEEE802_15_4_MAC<CC2538RF>>::Result Base;
+    typedef IF<EQUAL<Traits<Network>::NETWORKS::Get<Traits<Cortex_M_IEEE802_15_4>::NICS::Find<CC2538>::Result>::Result, _SYS::TSTP>::Result, TSTP_MAC<CC2538RF>, IEEE802_15_4_MAC<CC2538RF>>::Result MAC;
 
     // Transmit and Receive Ring sizes
     static const unsigned int UNITS = Traits<CC2538>::UNITS;
@@ -548,13 +546,13 @@ public:
     int send(Buffer * buf);
 
     const Address & address() { return _address; }
-    void address(const Address & address) { _address = address; Base::address(address); }
+    void address(const Address & address) { _address = address; CC2538RF::address(address); }
 
     unsigned int channel() { return _channel; }
     void channel(unsigned int channel) {
         if((channel > 10) && (channel < 27)) {
             _channel = channel;
-            Base::channel(_channel);
+            CC2538RF::channel(_channel);
         }
     }
 

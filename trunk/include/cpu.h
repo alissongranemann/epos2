@@ -109,13 +109,8 @@ public:
     static Reg16 ntohs(Reg16 v) { return htons(v); }
 
 protected:
-    static Reg32 swap32(Reg32 v) {
-        return (v & 0xff000000) >> 24 | (v & 0x00ff0000) >> 8 | (v & 0x0000ff00) << 8 | (v & 0x000000ff) << 24;
-    }
-
-    static Reg16 swap16(Reg16 v) {
-        return (v & 0xff00) >> 8 | (v & 0x00ff) << 8;
-    }
+    static Reg32 swap32(Reg32 v) { return (v & 0xff000000) >> 24 | (v & 0x00ff0000) >> 8 | (v & 0x0000ff00) << 8 | (v & 0x000000ff) << 24; }
+    static Reg16 swap16(Reg16 v) { return (v & 0xff00) >> 8 | (v & 0x00ff) << 8; }
 };
 
 __END_SYS

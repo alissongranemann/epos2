@@ -17,7 +17,7 @@
 #define __mach_xxx__
 #define __mmod_xxx__
 
-#if defined (__arch_avr__) || defined (__mmod_lm3s811__)
+#if defined (__arch_avr__)
 #define __no_networking__
 #endif
 

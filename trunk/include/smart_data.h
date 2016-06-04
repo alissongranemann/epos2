@@ -184,7 +184,7 @@ private:
         }
     }
 
-    static int updater(unsigned int dev, Time_Offset expiry, Smart_Data * data) {
+    static int updater(unsigned int dev, Time expiry, Smart_Data * data) {
         while(1) {
             Transducer::sense(dev, data);
             data->_time = TSTP::now();
