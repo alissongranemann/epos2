@@ -33,11 +33,14 @@ int main()
 
     NIC nic;
     NIC::Address mac = nic.address();
+    //mac[0] = 1; // for sink
+    mac[0] = 0; // for sensor
+    nic.address(mac);
 
-//    if(mac[5] % 2)
+    if(mac[0] % 2)
         sink(mac);
-//    else
-//        sensor(mac);
+    else
+        sensor(mac);
 
     cout << "I'm done, bye!" << endl;
 
@@ -61,6 +64,9 @@ void sink(const NIC::Address & mac)
         cout << "a1=" << a1 << endl;
         Delay (500000);
     }
+
+    cout << "a0=" << a0 << endl;
+    cout << "a1=" << a1 << endl;
 }
 
 void sensor(const NIC::Address & mac)

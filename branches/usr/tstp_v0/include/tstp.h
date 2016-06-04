@@ -116,9 +116,25 @@ template<bool S> volatile bool PTS<S>::_synced;
 
 
 //Locators
-class NIC_Locator : public TSTP_Common {
+class NIC_Locator : public TSTP_Common, private TSTPNIC::Observer {
+    typedef TSTPNIC::Buffer Buffer;
 public:
-    static Coordinates here() { return (TSTPNIC::nic()->address())[5] % 2 ? Coordinates(0, 0, 0) : Coordinates(10, 10, 10); }
+    NIC_Locator() {
+        TSTPNIC::attach(this);
+    }
+    ~NIC_Locator() {
+        TSTPNIC::detach(this);
+    }
+
+    static Coordinates here() { return (TSTPNIC::nic()->address())[0] % 2 ? Coordinates(0, 0, 0) : Coordinates(10, 10, 10); }
+
+    static bool bootstrap() {
+        return true; 
+    }
+
+    void update(TSTPNIC::Observed * obs, Buffer * buf) {
+        db<TSTP>(TRC) << "NIC_Locator::update(obs=" << obs << ",buf=" << buf << endl;
+    }
 };
 
 class HECOPS : public TSTP_Common, private TSTPNIC::Observer {
@@ -191,7 +207,9 @@ class Greedy_Geographic_Router : public TSTP_Common, private TSTPNIC::Observer {
     typedef TSTPNIC::Buffer Buffer;
     typedef TSTP_Packet Packet;
 public:
-    Greedy_Geographic_Router(); 
+    Greedy_Geographic_Router() {
+        TSTPNIC::attach(this);
+    }
 
     ~Greedy_Geographic_Router() {
         TSTPNIC::detach(this);
@@ -201,15 +219,7 @@ public:
         return true; 
     }
 
-    void update(TSTPNIC::Observed * obs, Buffer * buf) {
-        db<TSTP>(TRC) << "Greedy_Geographic_Router::update(obs=" << obs << ",buf=" << buf << endl;
-        if(buf->is_tx() and buf->is_frame()) {
-            buf->offset((Random::random() % (_period - 4096)) + 4096);
-        }
-    }
-
-private:
-    const Time_Stamp _period;
+    void update(TSTPNIC::Observed * obs, Buffer * buf); 
 };
 
 class TSTP: public TSTP_Common, private TSTPNIC::Observer

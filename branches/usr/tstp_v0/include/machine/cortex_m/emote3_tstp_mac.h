@@ -61,7 +61,7 @@ public:
     void free(Buffer * buf);
     int send(Buffer * buf);
 private:
-    Buffer * alloc_mf(bool all_listen, const Frame_ID & id);
+    Buffer * alloc_mf(bool all_listen, const Frame_ID & id, const Distance & hint);
 public:
 
     // Just to comply with EPOS' NIC interface

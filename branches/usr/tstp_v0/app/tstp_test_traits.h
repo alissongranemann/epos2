@@ -37,8 +37,8 @@ template<> struct Traits<Build>
 // Utilities
 template<> struct Traits<Debug>
 {
-    static const bool error   = false;
-    static const bool warning = false;
+    static const bool error   = true;
+    static const bool warning = true;
     static const bool info    = false;
     static const bool trace   = false;
 };
@@ -89,6 +89,16 @@ template<> struct Traits<Serial_Display>: public Traits<void>
     static const int COLUMNS = 80;
     static const int LINES = 24;
     static const int TAB_SIZE = 8;
+};
+
+template<unsigned int N> struct Traits<AES<N>>: public Traits<void>
+{
+    static const unsigned int KEY_LENGTH = 16;
+};
+
+template<unsigned int N> struct Traits<Diffie_Hellman<N>>: public Traits<void>
+{
+    static const unsigned int SECRET_SIZE = Traits<AES<0>>::KEY_LENGTH;
 };
 
 template<> struct Traits<Serial_Keyboard>: public Traits<void>
@@ -206,7 +216,7 @@ template<> struct Traits<TSTP>: public Traits<Network>
 
     static const unsigned int Time_Manager = DISABLED;
 
-    static const unsigned int Locator = DISABLED;
+    static const unsigned int Locator = NIC_Locator;
 
     static const unsigned int Security = DISABLED;
 

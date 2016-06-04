@@ -44,6 +44,7 @@ typedef Cortex_M_Scratchpad     Scratchpad;
 typedef Cortex_M_IEEE802_15_4   NIC;
 typedef Cortex_M_GPIO           GPIO;
 typedef Cortex_M_I2C            I2C;
+typedef AES<Traits<AES<0>>::KEY_LENGTH> Cipher;
 
 __END_SYS
 

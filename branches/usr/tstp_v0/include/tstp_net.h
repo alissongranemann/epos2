@@ -103,7 +103,7 @@ class TSTPOTM: private TSTP_Common, private NIC::Observer
 
 public:
     static const unsigned int MTU = 127;
-    static const unsigned int TX_DELAY = 0; // TODO
+    static const unsigned int TX_DELAY = 391; // TODO: confirm this value. TODO: this is machine-dependent
 
     // Buffers received from the NIC
     typedef NIC::Buffer Buffer;

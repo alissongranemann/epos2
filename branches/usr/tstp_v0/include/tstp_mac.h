@@ -19,14 +19,14 @@ public:
     //TODO: Traits
     static const unsigned int PERIOD = 225000;
     static const unsigned int Tu = 192; // IEEE 802.15.4 TX Turnaround Time
-    //static const unsigned int G = 320; // Tu + 8 / symbol_rate
+    static const unsigned int G = Tu + 128; // Tu + 8 / symbol_rate
     //static const unsigned int Ts = 480; // Time to send a single microframe (including PHY headers)
     static const unsigned int Ts = 580 - Tu; // Time to send a single microframe (including PHY headers)
     static const unsigned int MICROFRAME_TIME = Ts;
     static const unsigned int MIN_Ti = 2*Tu; // Minimum time between consecutive microframes
     static const unsigned int RADIO_RADIUS = 17 * 100; //TODO
     static const unsigned int TX_UNTIL_PROCESS_DATA_DELAY = 0;//5100; //TODO
-    static const unsigned int DATA_SKIP_TIME = Tu + 2032;
+    static const unsigned int DATA_SKIP_TIME = 4500;
 
     // == Calculated parameters ==
     static const unsigned int N_MICROFRAMES = ((PERIOD / (MIN_Ti + Ts)) > 255) ? 255 : (PERIOD / (MIN_Ti + Ts));
@@ -39,7 +39,6 @@ public:
     static const unsigned int DUTY_CYCLE = (RX_MF_TIMEOUT * 100000) / PERIOD; //ppm
 
     static const unsigned int RX_DATA_TIMEOUT = DATA_SKIP_TIME + DATA_LISTEN_MARGIN + 4 * (MICROFRAME_TIME + TIME_BETWEEN_MICROFRAMES);
-    static const unsigned int G = Tu + 128; // Tu + 8 / symbol_rate
     static const unsigned int CCA_TIME = (2 * MICROFRAME_TIME + TIME_BETWEEN_MICROFRAMES) > 256 ? (2 * MICROFRAME_TIME + TIME_BETWEEN_MICROFRAMES) : 256;
 
     typedef NIC_Common::CRC16 CRC;
@@ -92,7 +91,6 @@ public:
 
     typedef NIC_Common::Statistics Statistics;
 
-protected:
     typedef unsigned char Count;
 
     class Microframe {
@@ -133,6 +131,7 @@ protected:
         CRC _crc;
     } __attribute__((packed));
 
+protected:
     enum STATE {
         CHECK_TX_SCHEDULE,
         SLEEP_S,
@@ -145,7 +144,6 @@ protected:
         TX_DATA        
     };
 
-protected:
     TSTP_MAC() {}
 
 public:

@@ -26,8 +26,8 @@ void eMote3_TSTP_MAC::next_state(const State_Handler & s, const Time & when)
 {
     _scheduled_state = s;
     _timer_int_requester = this;
-    //TSTP_Timer::interrupt(when, _scheduled_state);
-    eMote3_MAC_Timer::interrupt_ts(when, _scheduled_state);
+    TSTP_Timer::interrupt(when, _scheduled_state);
+    //eMote3_MAC_Timer::interrupt_ts(when, _scheduled_state);
 }
 
 int eMote3_TSTP_MAC::send(const Address & dst, const Protocol & prot, const void * data, unsigned int size)
@@ -71,7 +71,7 @@ eMote3_TSTP_MAC::Buffer * eMote3_TSTP_MAC::alloc(NIC * nic, const Address & dst,
     return buf;
 }
 
-eMote3_TSTP_MAC::Buffer * eMote3_TSTP_MAC::alloc_mf(bool all_listen, const Frame_ID & id)
+eMote3_TSTP_MAC::Buffer * eMote3_TSTP_MAC::alloc_mf(bool all_listen, const Frame_ID & id, const Distance & hint)
 {
     db<eMote3_TSTP_MAC>(TRC) << "eMote3_TSTP_MAC::alloc_mf(al=" << all_listen << ",id=" << id << ")" << endl;
 
@@ -86,7 +86,7 @@ eMote3_TSTP_MAC::Buffer * eMote3_TSTP_MAC::alloc_mf(bool all_listen, const Frame
     // Initialize the buffer
     buf->nic(reinterpret_cast<NIC*>(this));
     buf->size(sizeof(Microframe));
-    auto mf = new (buf->frame()) Microframe(all_listen, id, N_MICROFRAMES, 0);
+    auto mf = new (buf->frame()) Microframe(all_listen, id, N_MICROFRAMES, hint);
 
     buf->id(mf->id());
     buf->sfd_time_stamp(TSTP_Timer::now());
@@ -112,9 +112,12 @@ void eMote3_TSTP_MAC::free(Buffer * buf)
 {
     db<eMote3_TSTP_MAC>(TRC) << "eMote3_TSTP_MAC::free(buf=" << buf << ")" << endl;
 
-    _tx_schedule.remove(buf);
     if(_tx_pending == buf)
         _tx_pending = 0;
+    else if(buf->is_tx() and buf->is_frame()) {
+        _tx_schedule.remove(buf->link2());
+    }
+
     // Release the buffer to the OS
     buf->unlock();
 
@@ -218,10 +221,9 @@ void eMote3_TSTP_MAC::process_mf(Buffer * buf)
         }
     }
 
-    if(!mf->all_listen()) {
-        notify(PROTOCOL::TSTP, buf);
-    }
-    if(mf->all_listen() or buf->relevant()) {
+    notify(PROTOCOL::TSTP, buf);
+
+    if(buf->relevant()) {
         _receiving_data_id = mf->id();
         free(buf);
         next_state(&trigger_rx_data, data_time - TSTP_Timer::us_to_ts(DATA_LISTEN_MARGIN));
@@ -236,21 +238,19 @@ void eMote3_TSTP_MAC::process_data(Buffer * buf)
     db<eMote3_TSTP_MAC>(TRC) << "eMote3_TSTP_MAC::process_data(buf=" << buf << ")" << endl;
 
     buf->id(_receiving_data_id);
-    if(!notify(PROTOCOL::TSTP, buf)) {
-        // No one was waiting for this frame, so let it free for receive()
-        free(buf);
-    }
+    notify(PROTOCOL::TSTP, buf);
+    free(buf);
     check_tx_schedule();
 }
 
 // TSTP MAC State machine
 void eMote3_TSTP_MAC::check_tx_schedule()
 {
+    lock();
+    off();
     db<eMote3_TSTP_MAC>(TRC) << "eMote3_TSTP_MAC::check_tx_schedule()" << endl;
     _rx_pin.set(false);
     _tx_pin.set(false);
-    lock();
-    off();
     auto t = TSTP_Timer::now();
     if(_tx_pending and (TSTP_Timer::us_to_ts(_tx_pending->deadline()) < t)) {
         free(_tx_pending); // sets _tx_pending = 0
@@ -259,20 +259,25 @@ void eMote3_TSTP_MAC::check_tx_schedule()
     Buffer::Element * head;
     while((not _tx_pending) and (head = _tx_schedule.remove_head())) {
         Buffer * buf = head->object();
-        if(TSTP_Timer::us_to_ts(buf->deadline()) > t) {
-            _tx_pending = buf;
-        } else {
-            free(buf);
+        _tx_pending = buf; // it's important here to make _tx_pending == buf before calling free()
+        if(TSTP_Timer::us_to_ts(buf->deadline()) <= t) {
+            free(buf); // sets _tx_pending = 0
         }
     }
 
     if(_tx_pending) {
         notify(PROTOCOL::TSTP, _tx_pending);
-        next_state(&trigger_cca, t + TSTP_Timer::us_to_ts(_tx_pending->offset()));
+        if(_tx_pending->destined_to_me()) { // just ACK'ing
+            unlock();
+            cca();
+        } else {
+            next_state(&trigger_cca, t + TSTP_Timer::us_to_ts(_tx_pending->offset()));
+            unlock();
+        }
     } else {
         next_state(&trigger_rx_mf, t + TSTP_Timer::us_to_ts(SLEEP_PERIOD));
+        unlock();
     }
-    unlock();
 }
 
 void eMote3_TSTP_MAC::cca() 
@@ -303,11 +308,11 @@ void eMote3_TSTP_MAC::prepare_tx_mf()
     auto type = _tx_pending->frame()->header()->type();
     if(type == INTEREST) {
         db<eMote3_TSTP_MAC>(TRC) << "eMote3_TSTP_MAC::prepare_tx_mf() : interest message" << endl;
-        _sending_microframe = alloc_mf(!_tx_pending->destined_to_me(), _tx_pending->id());
+        _sending_microframe = alloc_mf(!_tx_pending->destined_to_me(), _tx_pending->id(), _tx_pending->my_distance());
     }
     else {
         db<eMote3_TSTP_MAC>(TRC) << "eMote3_TSTP_MAC::prepare_tx_mf() : response message" << endl;
-        _sending_microframe = alloc_mf(false, _tx_pending->id());
+        _sending_microframe = alloc_mf(false, _tx_pending->id(), _tx_pending->my_distance());
     }
     // TODO: Other message types
 
@@ -333,28 +338,35 @@ void eMote3_TSTP_MAC::tx_mf()
     clear_txfifo();
 }
 
-void eMote3_TSTP_MAC::tx_data() 
+void eMote3_TSTP_MAC::tx_data()
 {
-    lock();
-    auto hdr = _tx_pending->frame()->header();
-    const auto sz = _tx_pending->size();
-    auto f = reinterpret_cast<char *>(_tx_pending->frame());
+    if(_tx_pending->destined_to_me()) { // just ACK'ing, no need to actually send data
+        off();
+        free(_tx_pending);
+    } else {
+        lock();
+        auto hdr = _tx_pending->frame()->header();
+        const auto sz = _tx_pending->size();
+        auto f = reinterpret_cast<char *>(_tx_pending->frame());
 
-    // TODO: Measure how long the next lines take to execute
-    auto ts = TSTP_Timer::now();
-    hdr->last_hop_time(ts);
-    hdr->elapsed(hdr->elapsed() + TSTP_Timer::ts_to_us(ts - _tx_pending->sfd_time_stamp()));
-    setup_tx(f, sz);
-    _tx_pin.set(true);
-    tx();
-    while(not tx_ok());
-    _tx_pin.set(false);
-    unlock();
+        // TODO: Measure how long the next lines take to execute
+        auto ts = TSTP_Timer::now();
+        hdr->last_hop_time(ts);
+        hdr->elapsed(hdr->elapsed() + TSTP_Timer::ts_to_us(ts - _tx_pending->sfd_time_stamp()));
+        setup_tx(f, sz);
+        _tx_pin.set(true);
+        tx();
+        while(not tx_ok());
+        _tx_pin.set(false);
+        unlock();
 
-    off();
+        off();
+    }
+
     free(_sending_microframe);
-    while(true);
+
     next_state(&trigger_rx_mf, TSTP_Timer::now() + TSTP_Timer::us_to_ts(SLEEP_PERIOD));
+
     db<eMote3_TSTP_MAC>(TRC) << "tx_data() done" << endl;
 }
 

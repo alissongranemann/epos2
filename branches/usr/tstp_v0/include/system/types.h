@@ -126,6 +126,9 @@ class AT86RF;
 class Serial_Display;
 class Serial_Keyboard;
 
+template <unsigned int KEY_LENGTH> 
+class AES;
+
 // Abstractions
 class System;
 class Application;
@@ -194,6 +197,9 @@ class Port;
 
 template<typename S>
 class Smart_Data;
+
+template <unsigned int SECRET_SIZE>
+class Diffie_Hellman;
 
 // Framework
 class Framework;
