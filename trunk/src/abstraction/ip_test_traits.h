@@ -26,8 +26,8 @@ template<> struct Traits<Build>
     enum {PC};
     static const unsigned int MACHINE = PC;
 
-    enum {Legacy};
-    static const unsigned int MODEL = Legacy;
+    enum {Legacy_PC};
+    static const unsigned int MODEL = Legacy_PC;
 
     static const unsigned int CPUS = 1;
     static const unsigned int NODES = 2; // > 1 => NETWORKING

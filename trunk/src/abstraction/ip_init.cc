@@ -8,8 +8,8 @@
 __BEGIN_SYS
 
 template<unsigned int UNIT>
-IP::IP(unsigned int nic): _nic(nic), _arp(&_nic, this), _address(Traits<IP>::Config<UNIT>::ADDRESS), _netmask(Traits<IP>::Config<UNIT>::NETMASK),
-                          _broadcast((_address & _netmask) | ~_netmask), _gateway(Traits<IP>::Config<UNIT>::GATEWAY)
+IP::IP(unsigned int nic)
+: _nic(nic), _arp(&_nic, this), _address(Traits<IP>::Config<UNIT>::ADDRESS), _netmask(Traits<IP>::Config<UNIT>::NETMASK), _broadcast((_address & _netmask) | ~_netmask), _gateway(Traits<IP>::Config<UNIT>::GATEWAY)
 {
     db<IP>(TRC) << "IP::IP(nic=" << &_nic << ") => " << this << endl;
 

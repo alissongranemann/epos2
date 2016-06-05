@@ -4,6 +4,7 @@
 #ifndef __no_networking__
 
 #include <network.h>
+#include <elp.h>
 #include <icmp.h>
 #include <udp.h>
 #include <tcp.h>
@@ -16,7 +17,6 @@ inline static void call_init()
 {
     typedef typename Traits<Network>::NETWORKS::template Get<unit>::Result NET;
 
-    // TODO: unit should be reset for each different NIC
     if(Traits<NET>::enabled)
         NET::init(unit);
 
@@ -42,10 +42,10 @@ void Network::init()
             new (SYSTEM) TCP;
     }
 
-    // If TSTPOE was initialized, initialize also the rest of the stack
-    if(Traits<Network>::NETWORKS::Count<TSTPOE>::Result) {
-        if(Traits<TSTP>::enabled)
-            new (SYSTEM) TSTP;
+    // If TSTP was initialized, initialize also the rest of the stack
+    if(Traits<Network>::NETWORKS::Count<TSTP>::Result) {
+//        if(Traits<TSTP>::enabled)
+//            new (SYSTEM) TSTP;
     }
 
 }
