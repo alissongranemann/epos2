@@ -21,13 +21,13 @@ template<> struct Traits<Build>
     static const unsigned int MODE = LIBRARY;
 
     enum {IA32, ARMv7};
-    static const unsigned int ARCHITECTURE = ARMv7;
+    static const unsigned int ARCHITECTURE = IA32;
 
     enum {PC, Cortex_M, Cortex_A};
-    static const unsigned int MACHINE = Cortex_M;
+    static const unsigned int MACHINE = PC;
 
-    enum {Legacy, eMote3, LM3S811};
-    static const unsigned int MODEL = LM3S811;
+    enum {Legacy_PC, eMote3, LM3S811};
+    static const unsigned int MODEL = Legacy_PC;
 
     static const unsigned int CPUS = 1;
     static const unsigned int NODES = 2; // > 1 => NETWORKING
@@ -183,25 +183,16 @@ template<> struct Traits<Network>: public Traits<void>
     static const unsigned int TIMEOUT = 10; // s
 
     // This list is positional, with one network for each NIC in Traits<NIC>::NICS
-    typedef LIST<TSTPOE> NETWORKS;
+    typedef LIST<TSTP> NETWORKS;
 };
 
 template<> struct Traits<TSTP>: public Traits<Network>
 {
-    typedef Traits<Network>::NETWORKS::Get<0>::Result MAC;
-
-//    typedef RTC_Time_Manager Time_Manager;
-//    typedef NIC_Locator Locator;
-
-    class DISABLED {};
-    typedef DISABLED Security;
-    typedef DISABLED Router;
 };
 
 template<> struct Traits<ELP>: public Traits<Network>
 {
     static const bool acknowledged = true;
-    static const bool avoid_collisions = true;
 };
 
 template<> template <typename S> struct Traits<Smart_Data<S>>: public Traits<Network>

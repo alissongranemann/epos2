@@ -17,7 +17,6 @@ class Ethernet: private NIC_Common
 protected:
     static const unsigned int HEADER_SIZE = 14;
 
-
 public:
     typedef NIC_Common::Address<6> Address;
 

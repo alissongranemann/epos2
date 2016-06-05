@@ -302,7 +302,7 @@ public:
     typedef Data_Observer<Buffer, Type> Observer;
     typedef Data_Observed<Buffer, Type> Observed;
 
-    // Meaningful statistics for Ethernet
+    // Meaningful statistics for IEEE 802.15.4
     struct Statistics: public NIC_Common::Statistics
     {
         Statistics(): rx_overruns(0), tx_overruns(0), frame_errors(0), carrier_errors(0), collisions(0) {}
@@ -320,7 +320,7 @@ public:
                << "}";
             return db;
         }
-        
+
         unsigned int rx_overruns;
         unsigned int tx_overruns;
         unsigned int frame_errors;

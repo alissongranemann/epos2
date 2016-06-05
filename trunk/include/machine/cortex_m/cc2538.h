@@ -4,9 +4,6 @@
 #define __cc2538_h
 
 #include <ieee802_15_4.h>
-#include <machine.h>
-#include <ic.h>
-
 #include "../common/ieee802_15_4_mac.h"
 #include "../common/tstp_mac.h"
 
@@ -21,6 +18,7 @@ protected:
     typedef CPU::Reg32 Reg32;
     typedef CPU::IO_Irq IO_Irq;
     typedef MMU::DMA_Buffer DMA_Buffer;
+    typedef RTC::Microsecond Microsecond;
 
 public:
     // Bases
@@ -54,12 +52,12 @@ public:
         FRMCTRL0    = 0x024,
         FRMCTRL1    = 0x028,
         RXMASKSET   = 0x030,
-        FREQCTRL    = 0x03C,
+        FREQCTRL    = 0x03C,    // RF carrier frequency (f = 11 + 5 (k – 11), with k [11, 26])  ro      0x0000000b
         FSMSTAT1    = 0x04C,    // Radio status register                                        ro      0x00000000
         FIFOPCTRL   = 0x050,
         RXFIRST     = 0x068,
-        RXFIFOCNT   = 0x06C,
-        TXFIFOCNT   = 0x070,
+        RXFIFOCNT   = 0x06C,    // Number of bytes in RX FIFO                                   ro      0x00000000
+        TXFIFOCNT   = 0x070,    // Number of bytes in TX FIFO                                   ro      0x00000000
         RXFIRST_PTR = 0x074,
         RXLAST_PTR  = 0x078,
         RFIRQM0     = 0x08c,
@@ -328,6 +326,8 @@ public:
         static void int_enable(const Reg32 & interrupt) { mactimer(MTIRQM) |= interrupt; }
         static void int_disable() { mactimer(MTIRQM) = INT_OVERFLOW_PER; }
 
+        static Time_Stamp us_to_ts(const Microsecond & us) { return us * CLOCK / 1000000; }
+
     private:
         static Time_Stamp read(unsigned int sel) {
             mactimer(MTMSEL) = sel;
@@ -418,56 +418,57 @@ public:
         sfr(RFERRF) = 0;
     }
 
-    void address(const IEEE802_15_4::Address & address);
+    void address(const IEEE802_15_4::Address & address) {
+        ffsm(SHORT_ADDR0) = address[0];
+        ffsm(SHORT_ADDR1) = address[1];
+    }
 
-    bool cca(const RTC::Microsecond & time) {
+    bool cca(const Microsecond & time) {
         xreg(FRMCTRL0) = (xreg(FRMCTRL0) & ~(3 * RX_MODE)) | (RX_MODE_NO_SYMBOL_SEARCH * RX_MODE);
         sfr(RFST) = ISRXON;
-        for(Timer::Time_Stamp final = Timer::read() + time; Timer::read() < final;);
+        for(Timer::Time_Stamp final = Timer::read() + Timer::us_to_ts(time); Timer::read() < final;);
         xreg(FRMCTRL0) = (xreg(FRMCTRL0) & ~(3 * RX_MODE)) | (RX_MODE_NORMAL * RX_MODE);
         return (xreg(RSSISTAT) & RSSI_VALID);
     }
 
-    bool wait_for_ack(const RTC::Microsecond & time) {
+    bool transmit() { sfr(RFST) = ISTXONCCA; return (xreg(FSMSTAT1) & SAMPLED_CCA); }
+
+    bool wait_for_ack(const Microsecond & time) {
         while(!(sfr(RFIRQF1) & INT_TXDONE));
         sfr(RFIRQF1) &= ~INT_TXDONE;
         //    if(not Traits<CC2538>::auto_listen) {
 //        xreg(RFST) = ISRXON;
         //    }
         bool acked = false;
-        for(Timer::Time_Stamp final = Timer::read() + time; (Timer::read() < final) && !(acked = (sfr(RFIRQF0) & INT_FIFOP)););
+        for(Timer::Time_Stamp final = Timer::read() + Timer::us_to_ts(time); (Timer::read() < final) && !(acked = (sfr(RFIRQF0) & INT_FIFOP)););
         return acked;
     }
 
-
-    bool transmit() { sfr(RFST) = ISTXONCCA; return (xreg(FSMSTAT1) & SAMPLED_CCA); }
     bool tx_done() {
-        volatile bool ret = (sfr(RFIRQF1) & INT_TXDONE);
+        bool ret = (sfr(RFIRQF1) & INT_TXDONE);
         if(ret)
             sfr(RFIRQF1) &= ~INT_TXDONE;
         return ret;
     }
 
-    void channel(unsigned int c) {
-        if((c > 10) and (c < 27)) {
-            /*
-               The carrier frequency is set by programming the 7-bit frequency word in the FREQ[6:0] bits of the
-               FREQCTRL register. Changes take effect after the next recalibration. Carrier frequencies in the range
-               from 2394 to 2507 MHz are supported. The carrier frequency f C , in MHz, is given by
-               f C = (2394 + FREQCTRL.FREQ[6:0]) MHz, and is programmable in 1-MHz steps.
-               IEEE 802.15.4-2006 specifies 16 channels within the 2.4-GHz band. These channels are numbered 11
-               through 26 and are 5 MHz apart. The RF frequency of channel k is given by Equation 1.
-               f c = 2405 + 5(k –11) [MHz] k [11, 26]
-               (1)
-               For operation in channel k, the FREQCTRL.FREQ register should therefore be set to
-               FREQCTRL.FREQ = 11 + 5 (k – 11).
-               */
-            xreg(FREQCTRL) = 11 + 5 * (c - 11);
-        }
+    void listen()
+    {
+        // Clear interrupts
+        sfr(RFIRQF0) = 0;
+        sfr(RFIRQF1) = 0;
+        // Enable device interrupts
+        xreg(RFIRQM0) = INT_FIFOP;
+        xreg(RFIRQM1) = 0;
+        // Issue the listen command
+        sfr(RFST) = ISRXON;
     }
 
-    void clear_txfifo() {  }
-    void clear_rxfifo() { sfr(RFST) = ISFLUSHRX; }
+    bool rx_done() { return ((xreg(FSMSTAT1) & FIFOP) && (xreg(RXFIFOCNT) > 0)); }
+
+    void channel(unsigned int c) {
+        assert((c > 10) && (c < 27));
+        xreg(FREQCTRL) = 11 + 5 * (c - 11);
+    }
 
     void copy_to_nic(IEEE802_15_4::Phy_Frame * frame) {
         // Wait for TXFIFO to get empty
@@ -477,39 +478,41 @@ public:
         // Copy Frame to TXFIFO
         const char * f = reinterpret_cast<const char *>(frame);
         sfr(RFDATA) = f[0]; // len
-        for(unsigned int i = 0; i < f[0] - sizeof(IEEE802_15_4::CRC); i++)
-            sfr(RFDATA) = f[i + 1];
+        for(unsigned int i = 1; i <= f[0] - sizeof(IEEE802_15_4::CRC); i++)
+            sfr(RFDATA) = f[i];
     }
 
-protected:
-//    void off() { sfr(RFST) = ISRFOFF; clear_rxfifo(); sfr(RFIRQF0) = 0; }
-//    void rx() { sfr(RFST) = ISRXON; }
-//    void tx() { sfr(RFST) = ISTXON; }
-//    bool cca() { return xreg(FSMSTAT1) & CCA; }
-//    bool cca_valid() { return xreg(RSSISTAT) & RSSI_VALID; }
-//    void start_cca() { rx_mode(RX_MODE_NO_SYMBOL_SEARCH); rx(); }
-//    void end_cca() { rx_mode(RX_MODE_NORMAL); }
-//    bool valid_frame() { return frame_in_rxfifo(); }
-//   void rx_mode(RX_MODES m) {
-//        xreg(FRMCTRL0) = (xreg(FRMCTRL0) & ~(3 * RX_MODE)) | (m * RX_MODE);
-//    }
-    void copy_from_nic(IEEE802_15_4::Phy_Frame * c);
-    bool frame_in_rxfifo();
-//    void frequency(unsigned int freq) { xreg(FREQCTRL) = freq; }
-//
-//    void listen();
-//    void stop_listening();
-//
+    void copy_from_nic(IEEE802_15_4::Phy_Frame * frame) {
+        char * f = reinterpret_cast<char *>(frame);
+        f[0] = sfr(RFDATA);  // First byte is the length of MAC frame
+        for(unsigned int i = 1; i <= f[0]; ++i)
+            f[i] = sfr(RFDATA);
+        sfr(RFST) = ISFLUSHRX;
+    }
 
+    static void power(const Power_Mode & mode) {
+         switch(mode) {
+         case FULL:
+         case LIGHT:
+         case SLEEP:
+             break;
+         case OFF:
+             // Disable device interrupts
+             xreg(RFIRQM0) = 0;
+             xreg(RFIRQM1) = 0;
+             // Issue the OFF command
+             sfr(RFST) = ISRFOFF;
+             sfr(RFST) = ISFLUSHRX;
+             sfr(RFIRQF0) = 0;          }
+     }
+
+protected:
     static volatile Reg32 & ana     (unsigned int offset) { return *(reinterpret_cast<volatile Reg32 *>(ANA_BASE + offset)); }
     static volatile Reg32 & xreg    (unsigned int offset) { return *(reinterpret_cast<volatile Reg32 *>(XREG_BASE + offset)); }
     static volatile Reg32 & ffsm    (unsigned int offset) { return *(reinterpret_cast<volatile Reg32 *>(FFSM_BASE + offset)); }
     static volatile Reg32 & sfr     (unsigned int offset) { return *(reinterpret_cast<volatile Reg32 *>(SFR_BASE  + offset)); }
     static volatile Reg32 & mactimer(unsigned int offset) { return *(reinterpret_cast<volatile Reg32 *>(MACTIMER_BASE + offset)); }
-
-    volatile bool _rx_done() { return (xreg(FSMSTAT1) & FIFOP); }
 };
-
 
 // CC2538 IEEE 802.15.4 EPOSMote III NIC Mediator
 class CC2538: public IF<EQUAL<Traits<Network>::NETWORKS::Get<Traits<Cortex_M_IEEE802_15_4>::NICS::Find<CC2538>::Result>::Result, TSTP>::Result, TSTP_MAC<CC2538RF>, IEEE802_15_4_MAC<CC2538RF>>::Result
@@ -533,7 +536,7 @@ private:
     };
 
 protected:
-    CC2538(unsigned int unit, IO_Irq irq, DMA_Buffer * dma_buf);
+    CC2538(unsigned int unit);
 
 public:
     ~CC2538();
@@ -586,15 +589,8 @@ private:
     unsigned int _unit;
 
     Address _address;
-    Statistics _statistics;
-
     unsigned int _channel;
-
-    IO_Irq _irq;
-    DMA_Buffer * _dma_buf;
-
-    int _rx_cur;
-    Buffer * _rx_buffer[RX_BUFS];
+    Statistics _statistics;
 
     static Device _devices[UNITS];
 };

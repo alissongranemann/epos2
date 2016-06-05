@@ -18,9 +18,6 @@ private:
     static const unsigned int CSMA_CA_RETRIES = 4;
 
     static const unsigned int ACK_TIMEOUT = 4;
-//    typedef CPU::Log_Addr Log_Addr;
-//    typedef CPU::Phy_Addr Phy_Addr;
-//    static const unsigned int MTU = IEEE802_15_4::MTU;
 
 public:
     using IEEE802_15_4::Address;
@@ -29,14 +26,28 @@ protected:
     IEEE802_15_4_MAC() {}
 
 public:
-
-    void marshal(IEEE802_15_4::Phy_Frame * frame, const Address & src, const Address & dst, const Type & type, const void * data, unsigned int size) {
+    unsigned int marshal(IEEE802_15_4::Phy_Frame * frame, const Address & src, const Address & dst, const Type & type, const void * data, unsigned int size) {
+        if(size > Frame::MTU)
+            size = Frame::MTU;
         new (frame) Frame(type, src, dst, data, size);
+        return size;
     }
 
-    int send(Buffer * buf) {
-        Frame * frame = reinterpret_cast<Frame *>(buf->data()); // Buffer uses Physical Frames
-        bool do_ack = Traits<_API::ELP>::acknowledged && (frame->dst() != broadcast());
+    unsigned int unmarshal(IEEE802_15_4::Phy_Frame * f, Address * src, Address * dst, Type * type, void * data, unsigned int size) {
+        Frame * frame = reinterpret_cast<Frame *>(f);
+        unsigned int data_size = frame->length() - sizeof(Header) - sizeof(CRC) + sizeof(Phy_Header); // Phy_Header is included in Header, but is already discounted in frame_length
+        if(size > data_size)
+            size = data_size;
+        *src = frame->src();
+        *dst = frame->dst();
+        *type = frame->type();
+        memcpy(data, frame->data<void>(), size);
+        return size;
+    }
+
+    int send() {
+//        Frame * frame = reinterpret_cast<Frame *>(buf->data()); // Buffer uses Physical Frames
+//        bool do_ack = Traits<_API::ELP>::acknowledged && (frame->dst() != broadcast());
 //        Reg32 saved_filter_settings = 0;
 //        if(do_ack) {
 //            saved_filter_settings = xreg(FRMFILT1);
@@ -44,6 +55,7 @@ public:
 //            xreg(FRMFILT1) = ACCEPT_FT2_ACK; // Accept only ACK frames now
 //        }
 
+        bool do_ack = true;
         bool sent = backoff_and_send();
 
         if(do_ack) {
@@ -74,7 +86,9 @@ public:
         return sent;
     }
 
+    void receive() { while(!Radio::rx_done()); }
 
+private:
     bool backoff_and_send() {
         unsigned int exp = 0;
         unsigned int backoff = 1;

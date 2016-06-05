@@ -9,17 +9,9 @@
 
 __BEGIN_SYS
 
-CC2538::CC2538(unsigned int unit, IO_Irq irq, DMA_Buffer * dma_buf) 
-: _unit(unit), _irq(irq), _dma_buf(dma_buf), _rx_cur(0)
+CC2538::CC2538(unsigned int unit): _unit(unit)
 {
-    db<CC2538>(TRC) << "CC2538(unit=" << unit << ",irq=" << irq << ",dma=" << dma_buf << ")" << endl;
-
-    // Allocate RX buffers
-    auto log = _dma_buf->log_address();
-    for (auto i = 0u; i < RX_BUFS; ++i) {
-        _rx_buffer[i] = new (log) Buffer(0);
-        log += sizeof(Buffer);
-    }
+    db<CC2538>(TRC) << "CC2538(unit=" << unit << ")" << endl;
 
     // Set Address
     ffsm(SHORT_ADDR0) = _address[0];
@@ -62,23 +54,18 @@ void CC2538::init(unsigned int unit)
 {
     db<Init, CC2538>(TRC) << "Radio::init(unit=" << unit << ")" << endl;
 
-    // Allocate a DMA Buffer for init block, rx and tx rings
-    DMA_Buffer * dma_buf = new (SYSTEM) DMA_Buffer(DMA_BUFFER_SIZE);
-
-    IO_Irq irq = IC::IRQ_RFTXRX;
-
     // Initialize the device
-    CC2538 * dev = new (SYSTEM) CC2538(unit, irq, dma_buf);
+    CC2538 * dev = new (SYSTEM) CC2538(unit);
 
     // Register the device
     _devices[unit].device = dev;
-    _devices[unit].interrupt = IC::irq2int(irq);
+    _devices[unit].interrupt = IC::irq2int(IC::IRQ_RFTXRX);
 
     // Install interrupt handler
     IC::int_vector(_devices[unit].interrupt, &int_handler);
 
     // Enable interrupts for device
-    IC::enable(irq);
+    IC::enable(IC::IRQ_RFTXRX);
 }
 
 __END_SYS
