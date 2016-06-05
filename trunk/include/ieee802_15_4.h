@@ -221,86 +221,15 @@ public:
 
     typedef Frame PDU;
 
-    // Metadata added to physical frames by higher-level protocols
-    class Metadata
-    {
-    public:
-        Metadata() {}
-
-        // Set by any TSTP component
-        bool relevant() const { return _relevant; }
-        void relevant(bool r) { _relevant = r; }
-
-        // Set by TSTP MAC
-        int rssi() const { return _rssi; }
-        void rssi(int r) { _rssi = r; }
-
-        // Set by TSTP MAC
-        long long sfd_time_stamp() const { return _sfd_time_stamp; }
-        void sfd_time_stamp(long long t) { _sfd_time_stamp = t; }
-
-        // Set by TSTP MAC
-        unsigned int id() const { return _id; }
-        void id(unsigned int i) { _id = i; }
-
-        // Set by TSTP Router
-        long long offset() const { return _offset; }
-        void offset(long long o) { _offset = o; }
-
-        // Set by TSTP Router
-        bool destined_to_me() const { return _destined_to_me; }
-        void destined_to_me(bool d) { _destined_to_me = d; }
-
-        // Set by TSTP Router
-        long my_distance() const { return _my_distance; }
-        void my_distance(long d) { _my_distance = d; }
-
-        // Set by TSTP Time Manager
-        long long deadline() const { return _deadline; }
-        void deadline(long long t) { _deadline = t; }
-
-        // Set by TSTP Time Manager on reception
-        // Set by TSTP on creation (transmission)
-        long long origin_time() const { return _origin_time; }
-        void origin_time(long long t) { _origin_time = t; }
-
-        // Set by TSTP MAC or TSTPOE
-        bool is_microframe() { return _is_microframe; }
-        void is_microframe(bool m) { _is_microframe = m; }
-        bool is_frame() { return !is_microframe(); }
-        void is_frame(bool m) { is_microframe(!m); }
-
-        // Set by TSTP MAC or TSTPOE
-        bool is_tx() { return _is_tx; }
-        void is_tx(bool t) { _is_tx = t; }
-        bool is_rx() { return !is_tx(); }
-        void is_rx(bool t) { is_tx(!t); }
-
-        // Set by TSTP Security
-        bool trusted() { return _trusted; }
-        void trusted(bool t) { _trusted = t; }
-
-    private:
-        int _rssi;
-        long long _sfd_time_stamp;
-        unsigned int _id;
-        long long _offset;
-        bool _destined_to_me;
-        long long _deadline;
-        long long _origin_time;
-        long _my_distance;
-        bool _is_tx;
-        bool _is_microframe;
-        bool _relevant;
-        bool _trusted;
-    };
 
     // Buffers used to hold frames across a zero-copy network stack
-    typedef _UTIL::Buffer<NIC, Phy_Frame, void, Metadata> Buffer;
+    typedef _UTIL::Buffer<NIC, Phy_Frame, void, IF<Traits<_API::TSTP>::enabled, TSTP_Metadata, Dummy>::Result> Buffer;
+
 
     // Observers of a protocol get a also a pointer to the received buffer
     typedef Data_Observer<Buffer, Type> Observer;
     typedef Data_Observed<Buffer, Type> Observed;
+
 
     // Meaningful statistics for IEEE 802.15.4
     struct Statistics: public NIC_Common::Statistics

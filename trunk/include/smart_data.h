@@ -154,7 +154,7 @@ private:
             _value = response->value<Value>();
             _error = response->error();
             _coordinates = response->origin();
-            _time = buffer->origin_time();
+            _time = buffer->origin_time;
             db<Smart_Data>(INF) << "Smart_Data:update[R]:this=" << this << " => " << *this << endl;
         }
         case TSTP::COMMAND: {

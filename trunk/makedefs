@@ -98,7 +98,7 @@ pc_FLASHER              :=
 cortex_m_CC_FLAGS       := -mcpu=cortex-m3 -mthumb -mno-thumb-interwork -mfpu=fpa #-Wa,-mimplicit-it=arm -marm 
 cortex_m_AS_FLAGS       := -mcpu=cortex-m3 -mthumb -mfpu=fpa
 cortex_m_LD_FLAGS       := 
-cortex_m_EMULATOR       = qemu-system-arm -cpu cortex-m3 -machine lm3s811evb -m $(MEM_SIZE)k -nographic -no-reboot -kernel
+cortex_m_EMULATOR       = qemu-system-arm -cpu cortex-m3 -machine lm3s811evb -m $(MEM_SIZE)k -serial stdio -no-reboot -kernel
 cortex_m_DEBUGGER       := arm-none-eabi-gdb
 cortex_m_FLASHER        = $(TOOLS)/eposflash/eposflash-$(MMOD) -d /dev/ttyACM0 -f 
 
@@ -122,11 +122,11 @@ MACH_LD_FLAGS           := $($(MACH)_LD_FLAGS)
 MACH_CODE_NAME          := $($(MACH)_CODE_NAME)
 MACH_DATA_NAME          := $($(MACH)_DATA_NAME)
 ifeq ($(GDB),1)
-MACH_EMULATOR           = $(subst -m ,-s -S -m ,$($(MACH)_EMULATOR))
+MACH_EMULATOR           = $(subst -m ,-gdb tcp::1235 -S -m ,$($(MACH)_EMULATOR))
 else
 MACH_EMULATOR           = $($(MACH)_EMULATOR)
 endif
-MACH_DEBUGGER           = $(TERM) $($(MACH)_DEBUGGER) -ex "target remote:1234" -ex "set confirm off"
+MACH_DEBUGGER           = $(TERM) $($(MACH)_DEBUGGER) -ex "target remote:1235" -ex "set confirm off"
 ifneq ($(wildcard $(IMG)/$(MACH)_setup),) 
 MACH_DEBUGGER           := $(MACH_DEBUGGER) -ex "add-symbol-file $(call DBSEC,$(SRC)/setup/$(MACH)_setup,.text)"
 endif

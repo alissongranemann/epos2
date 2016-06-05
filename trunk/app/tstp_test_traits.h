@@ -186,13 +186,13 @@ template<> struct Traits<Network>: public Traits<void>
     typedef LIST<TSTP> NETWORKS;
 };
 
-template<> struct Traits<TSTP>: public Traits<Network>
-{
-};
-
 template<> struct Traits<ELP>: public Traits<Network>
 {
     static const bool acknowledged = true;
+};
+
+template<> struct Traits<TSTP>: public Traits<Network>
+{
 };
 
 template<> template <typename S> struct Traits<Smart_Data<S>>: public Traits<Network>

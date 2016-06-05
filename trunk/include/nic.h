@@ -151,6 +151,25 @@ public:
         unsigned int tx_bytes;
     };
 
+    // Buffer Metadata added to frames by higher-level protocols
+    struct TSTP_Metadata
+    {
+        TSTP_Metadata() {}
+
+        int rssi;
+        long long sfd_time_stamp;
+        unsigned int id;
+        long long offset;
+        bool destined_to_me;
+        long long deadline;
+        long long origin_time;
+        long my_distance;
+        bool is_tx;
+        bool is_microframe;
+        bool relevant;
+        bool trusted;
+    };
+
     // Polymorphic (or not) NIC wrapper
     template<typename NIC>
     class NIC_Base

@@ -1,5 +1,7 @@
 // EPOS Trustful SpaceTime Protocol Declarations
 
+#include <ieee802_15_4.h>
+
 #ifndef __tstp_common_h
 #define __tstp_common_h
 
@@ -8,7 +10,7 @@
 
 __BEGIN_SYS
 
-class TSTP_Common
+class TSTP_Common: public IEEE802_15_4
 {
 public:
     static const unsigned int PAN = 10; // Nodes
@@ -24,7 +26,8 @@ public:
     };
 
     // Packet Types
-    enum Type {
+    typedef unsigned char Type;
+    enum {
         INTEREST  = 0,
         RESPONSE  = 1,
         COMMAND   = 2,
@@ -128,6 +131,38 @@ public:
         Time_Offset _elapsed;
     } __attribute__((packed));
     typedef _Header<SCALE> Header;
+
+    // Frame
+    template<Scale S>
+    class _Frame: public Header
+    {
+    public:
+        static const unsigned int MTU = 100;
+        typedef unsigned char Data[MTU];
+
+    public:
+        _Frame() {}
+        _Frame(const Type & type, const Address & src, const Address & dst): Header(type) {} // Just for NIC compatibility
+        _Frame(const Type & type, const Address & src, const Address & dst, const void * data, unsigned int size): Header(type) { memcpy(_data, data, size); }
+
+        Header * header() { return this; }
+
+        Reg8 length() const { return MTU; } // Fixme: placeholder
+
+        template<typename T>
+        T * data() { return reinterpret_cast<T *>(&_data); }
+
+        friend Debug & operator<<(Debug & db, const _Frame & p) {
+            db << "{h=" << reinterpret_cast<const Header &>(p) << ",d=" << p._data << "}";
+            return db;
+        }
+
+    private:
+        Data _data;
+    } __attribute__((packed, may_alias));
+    typedef _Frame<SCALE> Frame;
+
+    typedef Frame PDU;
 
 
     // TSTP encodes SI Units similarly to IEEE 1451 TEDs
@@ -379,20 +414,15 @@ __END_SYS
 #include <utility/buffer.h>
 #include <utility/hash.h>
 #include <network.h>
-#include <tstpoe.h>
 
 __BEGIN_SYS
 
-class TSTP: public TSTP_Common, private TSTPNIC::Observer
+class TSTP: public TSTP_Common, private NIC::Observer
 {
     template<typename> friend class Smart_Data;
-
-private:
-    typedef TSTPNIC NIC;
-
 public:
     // Buffers received from the NIC
-    typedef TSTPNIC::Buffer Buffer;
+    typedef NIC::Buffer Buffer;
 
 
     // Packet
@@ -595,9 +625,9 @@ public:
     private:
         void send() {
             db<TSTP>(TRC) << "TSTP::Interested::send() => " << reinterpret_cast<const Interest &>(*this) << endl;
-            Buffer * buf = NIC::alloc(sizeof(Interest));
+            Buffer * buf = _nic->alloc(_nic, NIC::Address::BROADCAST, NIC::TSTP, 0, 0, sizeof(Interest));
             memcpy(buf->frame()->data<Interest>(), this, sizeof(Interest));
-            NIC::send(buf);
+            _nic->send(buf);
         }
 
     private:
@@ -629,10 +659,10 @@ public:
     private:
         void send(const Time & expiry) {
             db<TSTP>(TRC) << "TSTP::Responsive::send(x=" << expiry << ")" << endl;
-            Buffer * buf = NIC::alloc(_size);
+            Buffer * buf = _nic->alloc(_nic, NIC::Address::BROADCAST, NIC::TSTP, 0, 0, _size);
             memcpy(buf->frame()->data<Response>(), this, _size);
             db<TSTP>(INF) << "TSTP::Responsive::send:response=" << this << " => " << reinterpret_cast<const Response &>(*this) << endl;
-            NIC::send(buf);
+            _nic->send(buf);
         }
 
     private:
@@ -640,82 +670,29 @@ public:
         Responsives::Element _link;
     };
 
- public:
-    TSTP() {
-        db<TSTP>(TRC) << "TSTP::TSTP()" << endl;
-        NIC::attach(this);
-    }
-    ~TSTP() {
-        db<TSTP>(TRC) << "TSTP::~TSTP()" << endl;
-        NIC::detach(this);
-    }
+protected:
+    TSTP();
 
-    static Time now() { return NIC::now(); }
-    static Coordinates here() { return NIC::here(); }
+public:
+    ~TSTP();
+
+    static Coordinates here() { return Coordinates(0, 0, 0); }
+    static Time now() { return RTC::seconds_since_epoch(); }
 
     static void attach(Observer * obs, void * subject) { _observed.attach(obs, int(subject)); }
     static void detach(Observer * obs, void * subject) { _observed.detach(obs, int(subject)); }
     static bool notify(void * subject, Buffer * buf) { return _observed.notify(int(subject), buf); }
 
-    static void init(unsigned int unit) {
-        db<Init, TSTP>(TRC) << "TSTP::init()" << endl;
-    }
+    static void init(unsigned int unit);
 
 private:
     static Coordinates absolute(const Coordinates & coordinates) { return coordinates; }
-
-    void update(NIC::Observed * obs, Buffer * buf) {
-        db<TSTP>(TRC) << "TSTP::update(obs=" << obs << ",buf=" << buf << ")" << endl;
-
-        Packet * packet = buf->frame()->data<Packet>();
-        switch(packet->type()) {
-        case INTEREST: {
-            Interest * interest = reinterpret_cast<Interest *>(packet);
-            db<TSTP>(INF) << "TSTP::update:msg=" << interest << " => " << *interest << endl;
-            // Check for local capability to respond and notify interested observers
-            Responsives::List * list = _responsives[interest->unit()]; // TODO: What if sensor can answer multiple formats (e.g. int and float)
-            if(list)
-                for(Responsives::Element * el = list->head(); el; el = el->next()) {
-                    Responsive * responsive = el->object();
-                    if(interest->region().contains(responsive->origin(), now())) {
-                        notify(responsive, buf);
-                    }
-                }
-        } break;
-        case RESPONSE: {
-            Response * response = reinterpret_cast<Response *>(packet);
-            db<TSTP>(INF) << "TSTP::update:msg=" << response << " => " << *response << endl;
-            // Check region inclusion and notify interested observers
-            Interests::List * list = _interested[response->unit()];
-            if(list)
-                for(Interests::Element * el = list->head(); el; el = el->next()) {
-                    Interested * interested = el->object();
-                    if(interested->region().contains(response->origin(), response->time()))
-                        notify(interested, buf);
-                }
-        } break;
-        case COMMAND: {
-            Command * command = reinterpret_cast<Command *>(packet);
-            db<TSTP>(INF) << "TSTP::update:msg=" << command << " => " << *command << endl;
-            // Check for local capability to respond and notify interested observers
-            Responsives::List * list = _responsives[command->unit()]; // TODO: What if sensor can answer multiple formats (e.g. int and float)
-            if(list)
-                for(Responsives::Element * el = list->head(); el; el = el->next()) {
-                    Responsive * responsive = el->object();
-                    if(command->region().contains(responsive->origin(), now()))
-                        notify(responsive, buf);
-                }
-        } break;
-        case CONTROL: break;
-        }
-
-        buf->nic()->free(buf);
-    }
+    void update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf);
 
 private:
+    static NIC * _nic;
     static Interests _interested;
     static Responsives _responsives;
-
     static Observed _observed; // Channel protocols are singletons
  };
 
