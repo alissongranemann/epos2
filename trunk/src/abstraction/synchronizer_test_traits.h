@@ -174,8 +174,27 @@ template<> struct Traits<Network>: public Traits<void>
     typedef LIST<IP> NETWORKS;
 };
 
+template<> struct Traits<ELP>: public Traits<Network>
+{
+    static const bool enabled = NETWORKS::Count<ELP>::Result;
+
+    static const bool acknowledged = true;
+};
+
+template<> struct Traits<TSTP>: public Traits<Network>
+{
+    static const bool enabled = NETWORKS::Count<TSTP>::Result;
+};
+
+template<> template <typename S> struct Traits<Smart_Data<S>>: public Traits<Network>
+{
+    static const bool enabled = NETWORKS::Count<TSTP>::Result;
+};
+
 template<> struct Traits<IP>: public Traits<Network>
 {
+    static const bool enabled = NETWORKS::Count<IP>::Result;
+
     enum {STATIC, MAC, INFO, RARP, DHCP};
 
     struct Default_Config {
