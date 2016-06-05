@@ -172,6 +172,8 @@ template<> struct Traits<Network>: public Traits<void>
 
 template<> struct Traits<IP>: public Traits<Network>
 {
+    static const bool enabled = NETWORKS::Count<IP>::Result;
+
     enum {STATIC, MAC, INFO, RARP, DHCP};
 
     struct Default_Config {

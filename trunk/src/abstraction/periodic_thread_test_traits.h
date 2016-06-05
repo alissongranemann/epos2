@@ -193,6 +193,8 @@ template<> template <typename S> struct Traits<Smart_Data<S>>: public Traits<Net
 
 template<> struct Traits<IP>: public Traits<Network>
 {
+    static const bool enabled = NETWORKS::Count<IP>::Result;
+
     enum {STATIC, MAC, INFO, RARP, DHCP};
 
     struct Default_Config {
