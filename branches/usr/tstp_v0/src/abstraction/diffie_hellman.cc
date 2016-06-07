@@ -1,7 +1,26 @@
 #include <diffie_hellman.h>
 
-__BEGIN_SYS;
+__BEGIN_SYS
 
+// Class attributes
+template<>
+const unsigned char Diffie_Hellman<16>::default_base_point_x[16] = 
+{       
+    0x86, 0x5B, 0x2C, 0xA5,
+    0x7C, 0x60, 0x28, 0x0C,
+    0x2D, 0x9B, 0x89, 0x8B,
+    0x52, 0xF7, 0x1F, 0x16
+};
+template<>
+const unsigned char Diffie_Hellman<16>::default_base_point_y[16] =
+{
+    0x83, 0x7A, 0xED, 0xDD,
+    0x92, 0xA2, 0x2D, 0xC0,
+    0x13, 0xEB, 0xAF, 0x5B,
+    0x39, 0xC8, 0x5A, 0xCF
+};
+
+// Methods
 template <unsigned int SECRET_SIZE>
 void Diffie_Hellman<SECRET_SIZE>::calculate_key(unsigned char * key, const unsigned char * Yb)
 {
@@ -157,4 +176,4 @@ void Diffie_Hellman<SECRET_SIZE>::ECC_Point::jacobian_double()
     y -= B; 
 }
 
-__END_SYS;
+__END_SYS

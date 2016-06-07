@@ -13,8 +13,8 @@ class Diffie_Hellman
 
     typedef _UTIL::Bignum<SECRET_SIZE> Bignum;
 
-	static const unsigned char default_base_point_x[SECRET_SIZE]; //TODO: setup
-	static const unsigned char default_base_point_y[SECRET_SIZE]; //TODO: setup
+	static const unsigned char default_base_point_x[SECRET_SIZE];
+	static const unsigned char default_base_point_y[SECRET_SIZE];
 
 	class ECC_Point
 	{
@@ -23,12 +23,8 @@ class Diffie_Hellman
 
 		void operator*=(const Bignum &b);
 
-		friend OStream &operator<<(OStream &out, const ECC_Point &a) {
-			out << "{x= " << a.x << " ,y= " << a.y, " ,z= " << a.z << endl;
-			return out;
-		}
 		friend Debug &operator<<(Debug &out, const ECC_Point &a) {
-			out << "{x= " << a.x << " ,y= " << a.y, " ,z= " << a.z << endl;
+			out << "{x= " << a.x << ",y= " << a.y << ",z= " << a.z << "}";
 			return out;
 		}
 
@@ -40,6 +36,8 @@ class Diffie_Hellman
 	};
 
 public:
+    typedef ECC_Point Public_Key;
+
 	Diffie_Hellman(const unsigned char base_point_data_x[Bignum::word * Bignum::sz_digit], const unsigned char base_point_data_y[Bignum::word * Bignum::sz_digit]) __attribute__((noinline))
 	{
 		_base_point.x.set_bytes(base_point_data_x, Bignum::word * Bignum::sz_digit);
@@ -56,15 +54,7 @@ public:
 		generate_keypair();
 	}
 
-	int get_public(unsigned char * buffer)
-    {
-        unsigned int i, j;
-        for(i=0, j=0; i<PUBLIC_KEY_SIZE; i++, j++)
-            buffer[j] = _public.x.byte_data[i];
-        for(i=0; i<PUBLIC_KEY_SIZE; i++, j++)
-            buffer[j] = _public.y.byte_data[i];
-        return j;
-    }
+	ECC_Point public_key() { return _public; }
 
 	void generate_keypair()
 	{

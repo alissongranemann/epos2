@@ -73,7 +73,7 @@ public:
         _barrett_u = barrett_u; 
     }   
 
-    friend OStream &operator<< (OStream &out, const Bignum &b) 
+    friend OStream &operator<<(OStream &out, const Bignum &b) 
     {
         unsigned int i;
         out << '[';
@@ -85,7 +85,7 @@ public:
         out << "]";
         return out; 
     }
-    friend Debug &operator<< (Debug &out, const Bignum &b) 
+    friend Debug &operator<<(Debug &out, const Bignum &b) 
     {
         unsigned int i;
         out << '[';
@@ -494,20 +494,6 @@ private:
         Digit data[word];
         unsigned char byte_data[sz_word];
     };
-};
-
-template<> const unsigned char Bignum<16>::default_mod[Bignum<16>::sz_word] = {
-    0xFF, 0xFF, 0xFF, 0xFF,
-    0xFF, 0xFF, 0xFF, 0xFF,
-    0xFF, 0xFF, 0xFF, 0xFF,
-    0xFD, 0xFF, 0xFF, 0xFF
-};
-template<> const unsigned char Bignum<16>::default_barrett_u[Bignum<16>::sz_word + Bignum<16>::sz_digit] = {
-    17, 0, 0, 0, 
-    8, 0, 0, 0, 
-    4, 0, 0, 0, 
-    2, 0, 0, 0, 
-    1, 0, 0, 0
 };
 
 __END_UTIL;

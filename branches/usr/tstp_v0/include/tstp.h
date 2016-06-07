@@ -11,6 +11,7 @@
 #include <tstp_net.h>
 #include <timer.h>
 #include <utility/random.h>
+#include <diffie_hellman.h>
 
 __BEGIN_SYS
 
@@ -382,35 +383,125 @@ public:
         Data _data;
     } __attribute__((packed));
 
-    // Control Message
+    // Control Message extended Header
     class Control: public Header
     {
-    private:
-        typedef unsigned char Data[MTU - sizeof(Region) - sizeof(Unit)];
-
     public:
-        Control(const Unit & unit, const Region & region)
-        : Header(CONTROL, 0, 0, here(), here(), 0, 0), _region(region), _unit(unit) {}
+        enum Type {
+            DH_REQUEST = 0,
+            DH_RESPONSE,
+            AUTH_REQUEST,
+            AUTH_GRANTED,
+        };
 
-        const Region & region() const { return _region; }
-        const Unit & unit() const { return _unit; }
+    protected:
+        static const unsigned int MTU = TSTP::MTU - sizeof(unsigned char);
 
-        template<typename T>
-        T * command() { return reinterpret_cast<T *>(&_data); }
-
-        template<typename T>
-        T * data() { return reinterpret_cast<T *>(&_data); }
+        Control(const Type & t, bool tr, unsigned char c, const Coordinates & o, const Coordinates & l, const Time_Stamp & lht, const Time_Stamp_Offset & e)
+        : Header(CONTROL, tr, c, o, l, lht, e), _type(t) {}
 
         friend Debug & operator<<(Debug & db, const Control & m) {
-            db << reinterpret_cast<const Header &>(m) << ",u=" << m._unit << ",reg=" << m._region;
+            db << reinterpret_cast<const Header &>(m) << ",t=" << m._type;
             return db;
         }
 
-    protected:
-        Region _region;
-        Unit _unit;
-        Data _data;
+        unsigned char _type;
     } __attribute__((packed));
+
+    typedef EPOS::S::Diffie_Hellman<16> Diffie_Hellman;
+
+    // Security Bootstrap Control Messages
+    class DH_Request: public Control
+    {
+    public:
+        DH_Request(const Diffie_Hellman::Public_Key & k) 
+            : Control(DH_REQUEST, 0, 0, here(), here(), 0, 0), _public_key(k) { }
+
+        Diffie_Hellman::Public_Key key() { return _public_key; } 
+        void key(const Diffie_Hellman::Public_Key & k) { _public_key = k; } 
+
+        friend Debug & operator<<(Debug & db, const DH_Request & m) {
+            db << reinterpret_cast<const Control &>(m) << ",k=" << m._public_key;
+            return db;
+        }
+
+    private:
+        Diffie_Hellman::Public_Key _public_key;
+    };
+
+    class DH_Response: public Control
+    {
+    public:
+        DH_Response(const Coordinates & dst, const Diffie_Hellman::Public_Key & k) 
+            : Control(DH_RESPONSE, 0, 0, here(), here(), 0, 0), _destination(dst), _public_key(k) { }
+
+        Coordinates destination() { return _destination; }
+        void destination(const Coordinates  & d) { _destination = d; }
+
+        Diffie_Hellman::Public_Key key() { return _public_key; } 
+        void key(const Diffie_Hellman::Public_Key & k) { _public_key = k; } 
+
+        friend Debug & operator<<(Debug & db, const DH_Response & m) {
+            db << reinterpret_cast<const Control &>(m) << ",d=" << m._destination << ",k=" << m._public_key;
+            return db;
+        }
+
+    private:
+        Coordinates _destination;
+        Diffie_Hellman::Public_Key _public_key;
+    };
+
+    typedef struct Auth { 
+        char auth[16]; 
+        friend Debug & operator<<(Debug & db, const Auth & a) { return db; }
+    } Auth; // TODO
+    typedef struct OTP { 
+        char otp[16]; 
+        friend Debug & operator<<(Debug & db, const OTP & o) { return db; }
+    } OTP; // TODO
+
+    class Auth_Request: public Control
+    {
+        Auth_Request(const Auth & a, const OTP & o) 
+            : Control(AUTH_REQUEST, 0, 0, here(), here(), 0, 0), _auth(a), _otp(o) { }
+
+        Auth auth() { return _auth; } 
+        void auth(const Auth & a) { _auth = a; } 
+
+        OTP otp() { return _otp; } 
+        void otp(const OTP & o) { _otp = o; } 
+
+        friend Debug & operator<<(Debug & db, const Auth_Request & m) {
+            db << reinterpret_cast<const Control &>(m) << ",a=" << m._auth << ",o=" << m._otp;
+            return db;
+        }
+
+    private:
+        Auth _auth;
+        OTP _otp;
+    };
+
+    class Auth_Granted: public Control
+    {
+    public:
+        Auth_Granted(const Coordinates & dst, const Auth & a) 
+            : Control(AUTH_GRANTED, 0, 0, here(), here(), 0, 0), _destination(dst), _auth(a) { }
+
+        Coordinates destination() { return _destination; }
+        void destination(const Coordinates  & d) { _destination = d; }
+
+        Auth auth() { return _auth; } 
+        void auth(const Auth & a) { _auth = a; } 
+
+        friend Debug & operator<<(Debug & db, const Auth_Granted & m) {
+            db << reinterpret_cast<const Control &>(m) << ",d=" << m._destination << ",a=" << m._auth;
+            return db;
+        }
+
+    private:
+        Coordinates _destination;
+        Auth _auth;
+    };
 
     // Interested (binder between Interest messages and Smart Data)
     class Interested: public Interest
