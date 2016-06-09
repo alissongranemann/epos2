@@ -18,7 +18,7 @@ public:
 
     // Version
     // This field is packed first and matches the Frame Type field in the Frame Control in IEEE 802.15.4 MAC.
-    // A version number above 4 renders TSTP into the reserved frame type zone and should avoid interfernce.
+    // A version number above 4 renders TSTP into the reserved frame type zone and should avoid interference.
     enum Version {
         V0 = 4
     };
@@ -29,6 +29,14 @@ public:
         RESPONSE  = 1,
         COMMAND   = 2,
         CONTROL   = 3
+    };
+
+    // Control packet subtypes
+    enum Control_Type {
+        DH_REQUEST = 0,
+        DH_RESPONSE,
+        AUTH_REQUEST,
+        AUTH_GRANTED,
     };
 
     // Scale for local network's geographic coordinates
@@ -135,6 +143,34 @@ public:
         Time_Stamp_Offset _elapsed;
     } __attribute__((packed));
     typedef _Header<SCALE> Header;
+
+    // Control Message extended Header
+    class Control: public Header
+    {
+    public:
+        unsigned char subtype() { return _type; }
+
+    protected:
+        Control(const Control_Type & t, bool tr, unsigned char c, const Coordinates & o, const Coordinates & l, const Time_Stamp & lht, const Time_Stamp_Offset & e)
+        : Header(CONTROL, tr, c, o, l, lht, e), _type(t) {}
+
+        friend Debug & operator<<(Debug & db, const Control & m) {
+            db << reinterpret_cast<const Header &>(m) << ",t=" << m._type;
+            return db;
+        }
+
+        unsigned char _type;
+    } __attribute__((packed));
+
+    typedef EPOS::S::Diffie_Hellman<16> Diffie_Hellman;
+    typedef struct Auth { 
+        char auth[16]; 
+        friend Debug & operator<<(Debug & db, const Auth & a) { return db; }
+    } Auth; // TODO
+    typedef struct OTP { 
+        char otp[16]; 
+        friend Debug & operator<<(Debug & db, const OTP & o) { return db; }
+    } OTP; // TODO
 
 
     // TSTP encodes SI Units similarly to IEEE 1451 TEDs

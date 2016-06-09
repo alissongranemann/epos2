@@ -33,11 +33,14 @@ int main()
 
     NIC nic;
     NIC::Address mac = nic.address();
-    //mac[0] = 1; // for sink
-    mac[0] = 0; // for sensor
-    nic.address(mac);
+    if(Traits<Build>::MODEL == Traits<Build>::eMote3) {
+        mac[0] = 1; // Use this line to run the sink on eMote3
+        //mac[0] = 0; // Use this line to run the sensor on eMote3
 
-    if(mac[0] % 2)
+        nic.address(mac);
+    }
+
+    if(mac[sizeof(NIC::Address) - 1] % 2)
         sink(mac);
     else
         sensor(mac);
@@ -52,6 +55,10 @@ void sink(const NIC::Address & mac)
     cout << "I'm the sink!" << endl;
     cout << "I'm running on a machine whose MAC address is " << mac << "." << endl;
     cout << "My location is " << TSTP::here() << " and the time now is " << TSTP::now() << endl;
+    cout << "I'll now bootstrap TSTP ..." << endl;
+
+    TSTP::bootstrap();
+
     cout << "I'll now declare my interests ..." << endl;
 
     Acceleration a0(Region(Coordinates(5, 5, 5), 10, 0, TSTP::now() + 3000000000UL), 10000000); // Remote, from a region centered at (1, 1, 1), with radius 10, from time 20 to 30, updated on each event, with expiration time of 10s.
@@ -64,9 +71,6 @@ void sink(const NIC::Address & mac)
         cout << "a1=" << a1 << endl;
         Delay (500000);
     }
-
-    cout << "a0=" << a0 << endl;
-    cout << "a1=" << a1 << endl;
 }
 
 void sensor(const NIC::Address & mac)
@@ -78,6 +82,10 @@ void sensor(const NIC::Address & mac)
 
     Acceleration a0(0, 1000000); // Local, private, with expiration time of 1 s.
     Acceleration a1(1, 10000000, Acceleration::COMMANDED); // Local, commanded, with local expiration time of 10 s.
+
+    cout << "I'll now bootstrap TSTP ..." << endl;
+
+    TSTP::bootstrap();
 
     while(a0 != 'a') {
         cout << "a0=" << a0 << endl;

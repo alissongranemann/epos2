@@ -1,7 +1,7 @@
 // EPOS Cipher Mediator Common Package
 
-#ifndef __display_h
-#define __display_h
+#ifndef __cipher_h
+#define __cipher_h
 
 #include <system/config.h>
 

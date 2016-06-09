@@ -54,7 +54,7 @@ public:
     }
 
     bool operator==(const Point & p) const { return x == p.x and y == p.y and z == p.z; }
-    bool operator!=(const Point & p) const { return !operator==(*this, p); }
+    bool operator!=(const Point & p) const { return !(*this == p); }
 
     friend OStream & operator<<(OStream & os, const Point & c) {
         os << "(" << Print_Type(c.x) << "," << Print_Type(c.y) << "," << Print_Type(c.z) << ")";

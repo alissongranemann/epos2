@@ -79,6 +79,8 @@ private:
         buf->nic(&_nic);
         buf->destined_to_me(true);
         buf->rssi(0);
+        buf->is_rx(true);
+        buf->is_frame(true);
         notify(buf);
     }
 

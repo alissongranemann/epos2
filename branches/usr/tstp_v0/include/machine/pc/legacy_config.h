@@ -46,6 +46,7 @@ typedef IF<Traits<Serial_Keyboard>::enabled, Serial_Keyboard, PC_Keyboard>::Resu
 typedef PC_Scratchpad   Scratchpad;
 typedef PC_Ethernet     NIC;
 typedef PC_FPGA         FPGA;
+typedef AES<Traits<AES<0>>::KEY_LENGTH> Cipher;
 
 __END_SYS
 

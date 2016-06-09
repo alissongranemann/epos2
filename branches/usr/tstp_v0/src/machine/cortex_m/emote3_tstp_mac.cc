@@ -27,7 +27,6 @@ void eMote3_TSTP_MAC::next_state(const State_Handler & s, const Time & when)
     _scheduled_state = s;
     _timer_int_requester = this;
     TSTP_Timer::interrupt(when, _scheduled_state);
-    //eMote3_MAC_Timer::interrupt_ts(when, _scheduled_state);
 }
 
 int eMote3_TSTP_MAC::send(const Address & dst, const Protocol & prot, const void * data, unsigned int size)
@@ -181,7 +180,7 @@ void eMote3_TSTP_MAC::handle_int()
                     }
                 }
             }
-        } 
+        }
     }
 
     db<eMote3_TSTP_MAC>(TRC) << "eMote3_TSTP_MAC::int: " << endl << "RFIRQF0 = " << hex << irqrf0 << endl;

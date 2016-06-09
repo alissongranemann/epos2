@@ -8,6 +8,8 @@ __BEGIN_UTIL;
 template<unsigned int SIZE = 16>
 class Bignum
 {
+    friend class Diffie_Hellman<SIZE>;
+
     typedef unsigned int Digit; 
     typedef unsigned long long Double_Digit;
     static const typename IF<sizeof(Digit) * 2 == sizeof(Double_Digit), bool, void>::Result _check_digits_size; // sizeof(Double_Digit) must be == 2*sizeof(Digit)
@@ -112,7 +114,8 @@ public:
     // Convert from unsigned int
     void operator=(unsigned int n) //__attribute__( ( noinline ) )
     {
-        if(sizeof(n) <= sz_digit) {
+        static const bool shift = sizeof(unsigned int) > sz_digit;
+        if(!shift) {
             data[0] = n;
             for(unsigned int i=1;i<word;i++)
                 data[i] = 0;
@@ -120,7 +123,7 @@ public:
             unsigned int i;
             for(i=0; (n != 0) && (i<word); i++) {
                 data[i] = n;
-                n >>= bits_in_digit; //Compiler warning can be ignored because of the 'if'
+                n >>= IF_INT<shift, bits_in_digit, 0>::Result; // Working around wrong compiler warning "right shift count >= width of type"
             }
             for(;i<word;i++)
                 data[i] = 0;

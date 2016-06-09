@@ -10,7 +10,7 @@ template<typename T>
 struct Traits
 {
     static const bool enabled = true;
-    static const bool debugged = false;
+    static const bool debugged = true;
     static const bool hysterically_debugged = false;
     typedef TLIST<> ASPECTS;
 };
@@ -21,13 +21,13 @@ template<> struct Traits<Build>
     static const unsigned int MODE = LIBRARY;
 
     enum {IA32, ARMv7};
-    static const unsigned int ARCHITECTURE = ARMv7;
+    static const unsigned int ARCHITECTURE = IA32;
 
     enum {PC, Cortex_M, Cortex_A};
-    static const unsigned int MACHINE = Cortex_M;
+    static const unsigned int MACHINE = PC;
 
     enum {Legacy, eMote3, LM3S811};
-    static const unsigned int MODEL = eMote3;
+    static const unsigned int MODEL = Legacy;
 
     static const unsigned int CPUS = 1;
     static const unsigned int NODES = 2; // > 1 => NETWORKING
@@ -193,12 +193,12 @@ template<> struct Traits<Network>: public Traits<void>
     static const unsigned int TIMEOUT = 10; // s
 
     // This list is positional, with one network for each NIC in Traits<NIC>::NICS
-    typedef LIST<TSTPOTM> NETWORKS;
+    typedef LIST<TSTPOE> NETWORKS;
 };
 
 template<> struct Traits<TSTP>: public Traits<Network>
 {
-    typedef TSTPOTM MAC;
+    typedef TSTPOE MAC;
 
     enum {
         DISABLED,

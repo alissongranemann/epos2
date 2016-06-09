@@ -12,6 +12,8 @@
 #include <timer.h>
 #include <utility/random.h>
 #include <diffie_hellman.h>
+#include <cipher.h>
+#include <semaphore.h>
 
 __BEGIN_SYS
 
@@ -127,7 +129,7 @@ public:
         TSTPNIC::detach(this);
     }
 
-    static Coordinates here() { return (TSTPNIC::nic()->address())[0] % 2 ? Coordinates(0, 0, 0) : Coordinates(10, 10, 10); }
+    static Coordinates here() { return (TSTPNIC::nic()->address()[sizeof(NIC::Address) - 1] % 2) ? Coordinates(0, 0, 0) : Coordinates(10, 10, 10); }
 
     static bool bootstrap() {
         return true; 
@@ -187,20 +189,30 @@ class TSTP_Security : public TSTP_Common, private TSTPNIC::Observer {
     typedef TSTPNIC::Buffer Buffer;
     typedef TSTP_Packet Packet;
 public:
-    TSTP_Security() {
+    TSTP_Security() : _sem(0) {
+        _instance = this;
         TSTPNIC::attach(this);
     }
     ~TSTP_Security() {
         TSTPNIC::detach(this);
     }
 
-    static bool bootstrap() {
-        return true; 
-    }
+    static bool bootstrap() { return _instance->do_bootstrap(); }
 
-    void update(TSTPNIC::Observed * obs, Buffer * buf) {
-        db<TSTP>(TRC) << "TSTP_Security::update(obs=" << obs << ",buf=" << buf << endl;
-    }
+    void update(TSTPNIC::Observed * obs, Buffer * buf); 
+
+private:
+    bool do_bootstrap();
+    OTP otp() { return OTP(); } // TODO
+
+    static TSTP_Security * _instance;
+
+    Auth _auth;
+    Diffie_Hellman _dh;
+    Cipher _aes;
+    Diffie_Hellman::Shared_Key _master_secret;
+    Semaphore _sem;
+    bool _is_sink;
 };
 
 // Routers
@@ -383,57 +395,12 @@ public:
         Data _data;
     } __attribute__((packed));
 
-    // Control Message extended Header
-    class Control: public Header
-    {
-    public:
-        enum Type {
-            DH_REQUEST = 0,
-            DH_RESPONSE,
-            AUTH_REQUEST,
-            AUTH_GRANTED,
-        };
-
-    protected:
-        static const unsigned int MTU = TSTP::MTU - sizeof(unsigned char);
-
-        Control(const Type & t, bool tr, unsigned char c, const Coordinates & o, const Coordinates & l, const Time_Stamp & lht, const Time_Stamp_Offset & e)
-        : Header(CONTROL, tr, c, o, l, lht, e), _type(t) {}
-
-        friend Debug & operator<<(Debug & db, const Control & m) {
-            db << reinterpret_cast<const Header &>(m) << ",t=" << m._type;
-            return db;
-        }
-
-        unsigned char _type;
-    } __attribute__((packed));
-
-    typedef EPOS::S::Diffie_Hellman<16> Diffie_Hellman;
-
     // Security Bootstrap Control Messages
     class DH_Request: public Control
     {
     public:
-        DH_Request(const Diffie_Hellman::Public_Key & k) 
-            : Control(DH_REQUEST, 0, 0, here(), here(), 0, 0), _public_key(k) { }
-
-        Diffie_Hellman::Public_Key key() { return _public_key; } 
-        void key(const Diffie_Hellman::Public_Key & k) { _public_key = k; } 
-
-        friend Debug & operator<<(Debug & db, const DH_Request & m) {
-            db << reinterpret_cast<const Control &>(m) << ",k=" << m._public_key;
-            return db;
-        }
-
-    private:
-        Diffie_Hellman::Public_Key _public_key;
-    };
-
-    class DH_Response: public Control
-    {
-    public:
-        DH_Response(const Coordinates & dst, const Diffie_Hellman::Public_Key & k) 
-            : Control(DH_RESPONSE, 0, 0, here(), here(), 0, 0), _destination(dst), _public_key(k) { }
+        DH_Request(const Coordinates & dst, const Diffie_Hellman::Public_Key & k) 
+            : Control(DH_REQUEST, 0, 0, here(), here(), 0, 0), _destination(dst), _public_key(k) { }
 
         Coordinates destination() { return _destination; }
         void destination(const Coordinates  & d) { _destination = d; }
@@ -441,7 +408,7 @@ public:
         Diffie_Hellman::Public_Key key() { return _public_key; } 
         void key(const Diffie_Hellman::Public_Key & k) { _public_key = k; } 
 
-        friend Debug & operator<<(Debug & db, const DH_Response & m) {
+        friend Debug & operator<<(Debug & db, const DH_Request & m) {
             db << reinterpret_cast<const Control &>(m) << ",d=" << m._destination << ",k=" << m._public_key;
             return db;
         }
@@ -451,17 +418,27 @@ public:
         Diffie_Hellman::Public_Key _public_key;
     };
 
-    typedef struct Auth { 
-        char auth[16]; 
-        friend Debug & operator<<(Debug & db, const Auth & a) { return db; }
-    } Auth; // TODO
-    typedef struct OTP { 
-        char otp[16]; 
-        friend Debug & operator<<(Debug & db, const OTP & o) { return db; }
-    } OTP; // TODO
+    class DH_Response: public Control
+    {
+    public:
+        DH_Response(const Diffie_Hellman::Public_Key & k) 
+            : Control(DH_RESPONSE, 0, 0, here(), here(), 0, 0), _public_key(k) { }
+
+        Diffie_Hellman::Public_Key key() { return _public_key; } 
+        void key(const Diffie_Hellman::Public_Key & k) { _public_key = k; } 
+
+        friend Debug & operator<<(Debug & db, const DH_Response & m) {
+            db << reinterpret_cast<const Control &>(m) << ",k=" << m._public_key;
+            return db;
+        }
+
+    private:
+        Diffie_Hellman::Public_Key _public_key;
+    };
 
     class Auth_Request: public Control
     {
+    public:
         Auth_Request(const Auth & a, const OTP & o) 
             : Control(AUTH_REQUEST, 0, 0, here(), here(), 0, 0), _auth(a), _otp(o) { }
 
@@ -578,7 +555,7 @@ public:
         Time _time;
     };
 
- public:
+public:
     TSTP() {
         db<TSTP>(TRC) << "TSTP::TSTP()" << endl;
         NIC::attach(this);
@@ -599,6 +576,13 @@ public:
         db<Init, TSTP>(TRC) << "TSTP::init()" << endl;
     }
 
+    static bool bootstrap() {
+        if(!Locator::bootstrap()) return false;
+        if(!Router::bootstrap()) return false;
+        if(!Time_Manager::bootstrap()) return false;
+        if(!Security::bootstrap()) return false;
+        return true;
+    }
 private:
     static Coordinates absolute(const Coordinates & coordinates) { return coordinates; }
 

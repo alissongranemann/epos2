@@ -30,7 +30,7 @@ template<> struct Traits<Build>
     static const unsigned int MODEL = Legacy;
 
     static const unsigned int CPUS = 1;
-    static const unsigned int NODES = 1; // > 1 => NETWORKING
+    static const unsigned int NODES = 2; // > 1 => NETWORKING
 };
 
 
@@ -58,6 +58,13 @@ template<> struct Traits<Heaps>: public Traits<void>
     static const bool debugged = hysterically_debugged;
 };
 
+template<> struct Traits<Observers>: public Traits<void>
+{
+    // Some observed objects are created before initializing the Display
+    // Enabling debug may cause trouble in some Machines
+    static const bool debugged = false;
+
+};
 
 // System Parts (mostly to fine control debugging)
 template<> struct Traits<Boot>: public Traits<void>
@@ -87,6 +94,16 @@ template<> struct Traits<Serial_Display>: public Traits<void>
 template<unsigned int N> struct Traits<AES<N>>: public Traits<void>
 {
     static const unsigned int KEY_LENGTH = 16;
+};
+
+template<unsigned int N> struct Traits<Diffie_Hellman<N>>: public Traits<void>
+{
+    static const unsigned int SECRET_SIZE = Traits<AES<0>>::KEY_LENGTH;
+};
+
+template<> struct Traits<Serial_Keyboard>: public Traits<void>
+{
+    static const bool enabled = false;
 };
 
 __END_SYS
@@ -175,23 +192,45 @@ template<> struct Traits<Network>: public Traits<void>
     static const unsigned int RETRIES = 3;
     static const unsigned int TIMEOUT = 10; // s
 
-    // This list is positional, with one network for each NIC in traits<NIC>::NICS
-    typedef LIST<IP> NETWORKS;
+    // This list is positional, with one network for each NIC in Traits<NIC>::NICS
+    typedef LIST<TSTPOE> NETWORKS;
 };
 
 template<> struct Traits<TSTP>: public Traits<Network>
 {
     typedef TSTPOE MAC;
 
-    typedef PTS<false> No_Time_Synchronization;
-    typedef PTS<true> Time_Synchronization;
-    typedef No_Time_Synchronization Time_Manager;
+    enum {
+        DISABLED,
+        // Time Managers
+        PTS,
+        // Locators
+        NIC_Locator,
+        HECOPS,
+        Ultrasound_Locator,
+        // Security Managers
+        TSTP_Security,
+        // Routers
+        Greedy_Geographic_Router
+    };
 
-    typedef NIC_Locator Locator;
+    static const unsigned int Time_Manager = DISABLED;
 
-    class DISABLED {};
-    typedef DISABLED Security;
-    typedef DISABLED Router;
+    static const unsigned int Locator = DISABLED;
+
+    static const unsigned int Security = DISABLED;
+
+    static const unsigned int Router = Greedy_Geographic_Router;
+};
+
+template<> struct Traits<ELP>: public Traits<Network>
+{
+    static const bool acknowledged = true;
+    static const bool avoid_collisions = true;
+};
+
+template<> template <typename S> struct Traits<Smart_Data<S>>: public Traits<Network>
+{
 };
 
 template<> struct Traits<IP>: public Traits<Network>
