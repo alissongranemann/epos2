@@ -46,4 +46,45 @@ inline void * operator new[](size_t bytes) {
 void operator delete(void * ptr);
 void operator delete[](void * ptr);
 
+
+__BEGIN_SYS
+
+class Page_Coloring
+{
+    friend class System;
+
+    friend void * ::operator new(size_t, const EPOS::Page_Coloring_Allocator &);
+    friend void * ::operator new[](size_t, const EPOS::Page_Coloring_Allocator &);
+
+private:
+    static const unsigned int HEAP_SIZE = Traits<Application>::HEAP_SIZE;
+    static const unsigned int COLORS = Traits<MMU>::COLORS;
+
+    typedef MMU::Color Color;
+
+public:
+    static void * alloc(unsigned int bytes, const EPOS::Page_Coloring_Allocator & allocator) {
+        assert(allocator <= COLORS);
+        return _heap[allocator]->alloc(bytes);
+    }
+
+private:
+    static void init();
+
+protected:
+    static Segment * _segment[COLORS];
+    static Heap * _heap[COLORS];
+};
+
+__END_SYS
+
+inline void * operator new(size_t bytes, const EPOS::Page_Coloring_Allocator & allocator) {
+    return _SYS::Page_Coloring::alloc(bytes, allocator);
+}
+
+inline void * operator new[](size_t bytes, const EPOS::Page_Coloring_Allocator & allocator) {
+    return _SYS::Page_Coloring::alloc(bytes, allocator);
+}
+
 #endif
+

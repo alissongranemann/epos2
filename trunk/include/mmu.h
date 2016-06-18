@@ -7,9 +7,7 @@
 
 __BEGIN_SYS
 
-template<unsigned int DIRECTORY_BITS, 
-          unsigned int PAGE_BITS, 
-          unsigned int OFFSET_BITS>
+template<unsigned int DIRECTORY_BITS, unsigned int PAGE_BITS, unsigned int OFFSET_BITS>
 class MMU_Common
 {
 protected:
@@ -62,6 +60,9 @@ public:
     private:
         unsigned int _flags;
     };
+
+    // Page colors
+    typedef Page_Coloring_Allocator Color;
 
     // Number of entries in Page_Table and Page_Directory
     static const unsigned int PT_ENTRIES = sizeof(Page) / sizeof(PT_Entry);

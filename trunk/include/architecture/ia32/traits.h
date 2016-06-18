@@ -21,6 +21,8 @@ template<> struct Traits<IA32_TSC>: public Traits<void>
 
 template<> struct Traits<IA32_MMU>: public Traits<void>
 {
+    static const bool colorful = false;
+    static const unsigned int COLORS = 1;
 };
 
 template<> struct Traits<IA32_FPU>: public Traits<void>

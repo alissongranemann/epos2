@@ -7,8 +7,17 @@ typedef __SIZE_TYPE__ size_t;
 
 // Memory allocators
 __BEGIN_API
+
 enum System_Allocator { SYSTEM };
 enum Scratchpad_Allocator { SCRATCHPAD };
+enum Page_Coloring_Allocator {
+    COLOR_0,  COLOR_1,  COLOR_2,  COLOR_3,  COLOR_4,  COLOR_5,  COLOR_6,  COLOR_7,
+    COLOR_8,  COLOR_9,  COLOR_10, COLOR_11, COLOR_12, COLOR_13, COLOR_14, COLOR_15,
+    COLOR_16, COLOR_17, COLOR_18, COLOR_19, COLOR_20, COLOR_21, COLOR_22, COLOR_23,
+    COLOR_24, COLOR_25, COLOR_26, COLOR_27, COLOR_28, COLOR_29, COLOR_30, COLOR_31,
+    WHITE = COLOR_0
+};
+
 __END_API
 
 extern "C"
@@ -25,6 +34,9 @@ void * operator new[](size_t, const EPOS::System_Allocator &);
 
 void * operator new(size_t, const EPOS::Scratchpad_Allocator &);
 void * operator new[](size_t, const EPOS::Scratchpad_Allocator &);
+
+void * operator new(size_t, const EPOS::Page_Coloring_Allocator &);
+void * operator new[](size_t, const EPOS::Page_Coloring_Allocator &);
 
 // Power Management Modes
 enum Power_Mode

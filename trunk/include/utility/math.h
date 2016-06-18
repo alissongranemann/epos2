@@ -9,28 +9,29 @@ __BEGIN_UTIL
 
 static const float E = 2.71828183;
 
-inline float logf(float num, float base = E, float epsilon = 1e-12)
+template <typename T>
+inline T logf(T num, float base = E, float epsilon = 1e-12)
 {
-    float integer = 0;
-    if (num == 0) return 1;
+    if(num == 0) return 1;
 
-    if (num < 1  && base < 1) return 0;
+    if(num < 1  && base < 1) return 0;
 
-    while (num < 1) {
+    T integer = 0;
+    while(num < 1) {
         integer--;
         num *= base;
     }
 
-    while (num >= base) {
+    while(num >= base) {
         integer++;
         num /= base;
     }
 
-    float partial = 0.5;
+    T partial = 0.5;
     num *= num;
-    float decimal = 0.0;
-    while (partial > epsilon) {
-        if (num >= base) {
+    T decimal = 0.0;
+    while(partial > epsilon) {
+        if(num >= base) {
             decimal += partial;
             num /= base;
         }
@@ -38,17 +39,17 @@ inline float logf(float num, float base = E, float epsilon = 1e-12)
         num *= num;
     }
 
-    return (integer + decimal);
+    return integer + decimal;
 }
 
-inline float sqrt(float x)
+template <typename T>
+inline T sqrt(const T & x)
 {
-    float xhi = x;
-    float xlo = 0;
-    float guess = x/2;
+    T xhi = x;
+    T xlo = 0;
+    T guess = x/2;
 
-    while (guess * guess != x)
-    {
+    while (guess * guess != x) {
         if (guess * guess > x)
             xhi = guess;
         else
@@ -79,7 +80,7 @@ inline float fast_log2(float val)
 
 inline float fast_log(float val)
 {
-    static const float ln_2 = 0.69314718f;
+    static const float ln_2 = 0.69314718;
     return (fast_log2(val) * ln_2);
 }
 
@@ -100,6 +101,46 @@ T abs(const T & x)
 {
     if(x > 0) return x;
     return -x;
+}
+
+template <typename T>
+T largest(const T array[], int size)
+{
+    T result = array[0];
+    for(int i = 1; i <  size; i++)
+        if(array[i] > result)
+          result = array[i];
+    return result;
+}
+
+template <typename T>
+T smallest(const T array[], int size)
+{
+    T result = array[0];
+    for(int i = 1; i <  size; i++)
+        if(array[i] < result)
+          result = array[i];
+    return result;
+}
+
+template <typename T>
+T mean(const T array[], int size)
+{
+    T sum = 0;
+    for(int i = 0; i < size; i++)
+        sum += array[i];
+    return sum / size;
+}
+
+template <typename T>
+T variance(const T array[], int size, const T & mean)
+{
+    T var = 0;
+    for(int i = 0; i < size; i++) {
+        T tmp = mean - array[i];
+        var = var + (tmp * tmp);
+    }
+    return var / (size - 1);
 }
 
 __END_UTIL

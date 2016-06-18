@@ -13,12 +13,13 @@ private:
     typedef MMU::Chunk Chunk;
 
 public:
-    typedef MMU::Flags Flags;
     typedef CPU::Phy_Addr Phy_Addr;
+    typedef MMU::Flags Flags;
+    typedef MMU::Color Color;
 
 public:
-    Segment(unsigned int bytes, Flags flags = Flags::APP);
-    Segment(Phy_Addr phy_addr, unsigned int bytes, Flags flags);
+    Segment(unsigned int bytes, const Color & color = Color::WHITE, const Flags & flags = Flags::APP);
+    Segment(const Phy_Addr & phy_addr, unsigned int bytes, const Flags & flags);
     ~Segment();
 
     unsigned int size() const;

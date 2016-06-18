@@ -5,7 +5,7 @@
 __BEGIN_SYS
 
 // Class attributes
-IA32_MMU::List IA32_MMU::_free;
+IA32_MMU::List IA32_MMU::_free[colorful * COLORS + 1];
 IA32_MMU::Page_Directory * IA32_MMU::_master;
 
 __END_SYS
