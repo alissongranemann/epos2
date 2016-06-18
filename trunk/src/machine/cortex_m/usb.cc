@@ -58,7 +58,7 @@ void Cortex_M_USB::put(char c)
     output();
     reg(F3) = c;
     flush();
-    // It looks like the update of the CSIL_INPKTRDY bit takes a while to 
+    // It looks like the update of the CSIL_INPKTRDY bit takes a while to
     // take effect, so we're better off just delaying and not even checking it.
     for(volatile int i = 0; i < 0xff; i++);
     unlock();
@@ -78,7 +78,7 @@ void Cortex_M_USB::put(const char * c, unsigned int size)
     for(unsigned int i = 0; (i < _max_packet_ep3) and (i < size); i++)
         reg(F3) = c[i];
     flush();
-    // It looks like the update of the CSIL_INPKTRDY bit takes a while to 
+    // It looks like the update of the CSIL_INPKTRDY bit takes a while to
     // take effect, so we're better off just delaying and not even checking it.
     for(volatile int i = 0; i < 0xff; i++);
     unlock();
@@ -138,7 +138,7 @@ bool Cortex_M_USB::handle_ep0(const USB_2_0::Request::Device_Request & data)
                 static CDC::Request::Get_Line_Coding::Data_Format data;// = new CDC::Request::Get_Line_Coding::Data_Format();
                 data.dwDTERate = 1/Traits<Cortex_M_UART>::DEF_BAUD_RATE;
                 switch(Traits<Cortex_M_UART>::DEF_STOP_BITS)
-                {            
+                {
                     case 1: data.bCharFormat = 0; break;
                     case 2: data.bCharFormat = 2; break;
                     default: return false;
@@ -219,7 +219,7 @@ void Cortex_M_USB::int_handler(const IC::Interrupt_Id & interrupt)
                     if(_send_buffer)
                         reg(CS0_CSIL) |= CS0_CLROUTPKTRDY;
                     else
-                        reg(CS0_CSIL) |= CS0_CLROUTPKTRDY | CS0_DATAEND;                    
+                        reg(CS0_CSIL) |= CS0_CLROUTPKTRDY | CS0_DATAEND;
                     db<Cortex_M_USB>(TRC) << "command processed" << endl;
                 }
                 else
@@ -239,7 +239,7 @@ void Cortex_M_USB::int_handler(const IC::Interrupt_Id & interrupt)
                 if(_send_buffer_size == 0)
                 {
                     // Signal that packet is ready and no further data is expected for this request
-                    reg(CS0_CSIL) |= CS0_INPKTRDY | CS0_DATAEND;                    
+                    reg(CS0_CSIL) |= CS0_INPKTRDY | CS0_DATAEND;
                     _send_buffer = reinterpret_cast<const char *>(0);
                 }
                 else

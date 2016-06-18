@@ -47,7 +47,7 @@ int OStream::itoa(int v, char * s)
     }
 
     return utoa(static_cast<unsigned int>(v), s, i);
-} 
+}
 
 
 int OStream::utoa(unsigned int v, char * s, unsigned int i)
@@ -84,7 +84,7 @@ int OStream::llitoa(long long int v, char * s)
     }
 
     return llutoa(static_cast<unsigned long long int>(v), s, i);
-} 
+}
 
 
 int OStream::llutoa(unsigned long long int v, char * s, unsigned int i)
@@ -123,6 +123,6 @@ int OStream::ptoa(const void * p, char * s)
             = _digits[v & 0xf];
 
     return j + 2;
-}    
+}
 
 __END_UTIL

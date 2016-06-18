@@ -17,7 +17,7 @@ void E100::int_handler(const IC::Interrupt_Id & interrupt)
         	  << ",dev=" << dev << ")" << endl;
     if(!dev)
         db<E100>(WRN) << "E100::int_handler: handler not found\n";
-    else 
+    else
         dev->handle_int();
 }
 
@@ -52,7 +52,7 @@ E100::~E100()
     _devices[_unit].in_use = false;
 }
 
-E100::E100(unsigned int unit, 
+E100::E100(unsigned int unit,
            Log_Addr io_mem, IO_Irq irq, DMA_Buffer * dma_buf)
 {
     db<E100>(TRC) << "E100(unit=" << unit << ",io=" << io_mem << ",irq=" << irq << ",dma=" << dma_buf << ")" << endl;
@@ -117,7 +117,7 @@ E100::E100(unsigned int unit,
         log += align128(sizeof(Tx_Desc));
         phy += align128(sizeof(Tx_Desc));
         _tx_ring[i].command = cb_s | cb_cid;
-        _tx_ring[i].status = cb_complete; 
+        _tx_ring[i].status = cb_complete;
         _tx_ring[i].tbd_array = 0xFFFFFFFF; // simplified mode
         _tx_ring[i].tcb_byte_count = 0;
         _tx_ring[i].threshold = 0xE0;
@@ -358,7 +358,7 @@ unsigned char E100::eeprom_mac_address(Reg16 addr) {
     Reg16 two_words; // two words of 8 bits (one EEPROM word)
     Reg8 which_word; // first or second word of 8 bits
 
-    // try reading with an 8-bit addr len to discover actual addr len 
+    // try reading with an 8-bit addr len to discover actual addr len
     eeprom_read(&addr_len, 0);
 
     which_word = addr % 2; // read the first (0) or second (1) word of 8 bits
@@ -480,7 +480,7 @@ int E100::self_test()
 
     i82559_disable_irq();
 
-    // Check results of self-test 
+    // Check results of self-test
     if(dmadump->selftest.result != 0) {
         db<E100>(WRN) << "E100:self_test() => failed with code " << dmadump->selftest.result << "!" << endl;
         return -1;

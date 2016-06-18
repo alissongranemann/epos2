@@ -43,8 +43,8 @@ public:
         PAddr mem_top;          // Memory top address
         PAddr io_base;          // I/O Memory base address
         PAddr io_top;           // I/O Memory top address
- 	PAddr ext_base;         // Boot Image EXTRA segment base address
- 	PAddr ext_top;          // Boot Image EXTRA segment top address
+        PAddr ext_base;         // Boot Image EXTRA segment base address
+        PAddr ext_top;          // Boot Image EXTRA segment top address
         PAddr idt;              // IDT
         PAddr gdt;              // GDT
         PAddr tss0;             // TSS0 (only for system call)
@@ -110,7 +110,7 @@ public:
         unsigned int cpu_clock;
         unsigned int bus_clock;
     };
-        
+
 public:
     friend Debug & operator<<(Debug & db, const System_Info<PC> & si);
 

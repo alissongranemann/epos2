@@ -165,11 +165,11 @@ void task_16()
 
 int main()
 {
-  	d.clear();  
+  	d.clear();
 
 	cout << "P-EDF application! max cpus = " << Machine::n_cpus() << "\n";
 
-	pollute_buffer = new int[POLLUTE_BUFFER_SIZE];  
+	pollute_buffer = new int[POLLUTE_BUFFER_SIZE];
 
 	for(int i = 0; i < TASKS; i++)
 		array[i] = new int[ARRAY_SIZE];
@@ -178,7 +178,7 @@ int main()
 		cout << "Starting test " << i << "\n";
  		run(i);
   	}
-	  
+	
   	cout << "P-EDF application done!\n";
 
 	delete pollute_buffer;
@@ -223,29 +223,29 @@ int pollute_job(unsigned int repetitions, int id)
     int sum = 0;
     Chronometer c;
     Random * rand;
-    
+
     rand = new Random();
-    
+
     rand->seed(clock.now());
-      
+
 	c.start();
-     
+
 	for(int j = 0; j < repetitions; j++) {
 		for(int k = (rand->random() % (POLLUTE_BUFFER_SIZE - 1) ) % 1000; k < POLLUTE_BUFFER_SIZE; k += 64) {
 			pollute_buffer[k] = j % 64;
 			sum += pollute_buffer[k];
 		}
 	}
-      
+
   	c.stop();
-      
+
   	if(wcet[id] < c.read())
   		wcet[id] = c.read();
-      
+
   	c.reset();
-    
+
     delete rand;
-    
+
     return sum;
 }
 
@@ -263,26 +263,26 @@ int job(unsigned int repetitions, int id)
 	sem.v();
 
     rand = new Random();
-        
+
     rand->seed(clock.now() + id);
-	  
+	
   	//perf.llc_misses();
   	//perf.llc_hit();
   	c.reset();
-      
+
   	c.start();
-      
+
   	for(int j = 0; j < repetitions; j++) {
 		for(int k = 0; k < MEMORY_ACCESS; k++) {
-		    int pos = rand->random() % (ARRAY_SIZE - 1);            
+		    int pos = rand->random() % (ARRAY_SIZE - 1);
 		    sum += array[id][pos];
     		if((k % WRITE_RATIO) == 0)
 	      		array[id][pos] = k + j;
 		}
   	}
-      
+
 	c.stop();
-      
+
 	if(wcet[id] < c.read())
 		wcet[id] = c.read();
 
@@ -291,7 +291,7 @@ int job(unsigned int repetitions, int id)
 	//llc_misses = (llc_misses + perf.get_llc_misses()) / 2;
 	//llc_hit = (llc_hit + perf.get_llc_hit()) / 2;
 
-    
+
 	delete rand;
 
 	//sem.p();

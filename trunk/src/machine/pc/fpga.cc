@@ -13,7 +13,7 @@ MMU::DMA_Buffer * PC_FPGA::Engine::_dma_buf;
 // Class methods
 void PC_FPGA::int_handler(const IC::Interrupt_Id & i)
 {
-    
+
 }
 
 __END_SYS

@@ -32,7 +32,7 @@ RTC_Common::Second RTC_Common::Date::to_offset(unsigned long epoch_days) const
     Date tmp(*this);
 
     tmp._M -= 2;
-    if(tmp._M < 0) {   // 1..12 -> 11,12,1..10 
+    if(tmp._M < 0) {   // 1..12 -> 11,12,1..10
         tmp._M += 12;  // puts Feb last since it may have leap day
         tmp._Y -= 1;
     }

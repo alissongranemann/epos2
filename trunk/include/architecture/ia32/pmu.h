@@ -13,7 +13,7 @@ __BEGIN_SYS
 // Non-Architectural PMU support
 class IA32_PMU: public PMU_Common
 {
-public:  
+public:
     typedef CPU::Reg8  Reg8;
     typedef CPU::Reg16 Reg16;
     typedef CPU::Reg32 Reg32;
@@ -21,16 +21,16 @@ public:
     typedef CPU::Log_Addr Log_Addr;
 public:
     IA32_PMU() {}
-    
+
     static void init();
-    
+
     //Architectural PM Version 1 Section 30.2.1.1
     //MAR address range between 0x40000000 to 0x400000FF
     enum {
 	MSR_BASE = 0x40000000,
 	PERFEVTSEL_BASE = 0x0186
     };
-    
+
     //Performance Monitoring Counters - used as input to the rdpmc instruction
     enum {
 	PMC0 = 0x0000, //PERFCTR0
@@ -42,7 +42,7 @@ public:
 	PMC6 = 0x0006,
 	PMC7 = 0x0007,
     };
-    
+
     //Memory-mapped PMU related registers - Apprendix B - MSRs
     enum {
 	PMC_BASE_ADDR = 0x00C1, //PERFCTR0
@@ -71,7 +71,7 @@ public:
 	GLOBAL_OVF    = 0x0390,
 	PEBS_ENABLE   = 0x03F1
     };
-    
+
     //Flags
     enum {
 	//EVTSEL registers
@@ -87,7 +87,7 @@ public:
 	//CR4 Performance Counter Enable
 	PSE	= 0x0100
     };
-    
+
     /* Pre-defined architectural performance events. From Intel Architecture Software Developer's Manual Section 30.2.
      * Bit Position CPUID.AH.EBX - Event Name - UMask - Event Select
      * 0 - UnHalted Core Cycles - 00H - 3CH
@@ -107,7 +107,7 @@ public:
 	BRANCH_INST		    = 0xC4,
 	BRANCH_MISSES		= 0xC5
     };
-    
+
     static void cpuid(Reg32 op, Reg32 *eax, Reg32 *ebx,
                                 Reg32 *ecx, Reg32 *edx)
     {
@@ -121,19 +121,19 @@ public:
 	    : "0" (*eax), "2" (*ecx));
     }
 
-    
+
     static void config(Reg32 event_reg, Reg32 flags) {
         db<IA32_PMU>(TRC) << "IA32_PMU::config()\n";
         wrmsr(event_reg, flags);
     }
-    
+
     static Reg64 rdmsr(Reg32 reg) {
         db<IA32_PMU>(TRC) << "IA32_PMU::rdmsr()\n";
         Reg64 v;
         asm volatile("rdmsr" : "=A" (v) : "c" (reg));
         return v;
     }
-    
+
     static void wrmsr(Reg32 reg, Reg64 v) {
         db<IA32_PMU>(TRC) << "IA32_PMU::wrmsr()\n";
         Reg32 l, h;
@@ -141,14 +141,14 @@ public:
         (void)((h) = (Reg32)(v >> 32));
         asm volatile("wrmsr" : : "c" (reg), "a"(l), "d" (h) : "memory");
     }
-    
+
     static void reset(Reg32 reg) {
         db<IA32_PMU>(TRC) << "IA32_PMU::reset()\n";
         int l = 0;
         int h = 0;
         asm volatile("wrmsr" : : "c" (reg), "a"(l), "d" (h) : "memory");
     }
-    
+
     /*
      * both i386 and x86_64 returns 64-bit value in edx:eax, but gcc's "A"
      * constraint has different meanings. For i386, "A" means exactly
@@ -161,19 +161,19 @@ public:
             asm volatile("rdpmc" : "=A" (val) : "c" (counter));
             return val;
     }
-    
+
     static void enable(Reg32 reg) {
         db<IA32_PMU>(TRC) << "IA32_PMU::enable()\n";
         wrmsr(reg, (rdmsr(reg) | ENABLE));
     }
-    
+
     static void disable(Reg32 reg) {
         db<IA32_PMU>(TRC) << "IA32_PMU::disable()\n";
         wrmsr(reg, (rdmsr(reg) & ~ENABLE));
     }
-    
+
     static Reg32 num_counters() { return _num_counters; }
-    
+
 private:
     /*
     * Intel "Architectural Performance Monitoring" CPUID
@@ -197,7 +197,7 @@ private:
 	} split;
 	Reg32 full;
     } cpuid10_edx;
-    
+
     typedef union {
         struct {
 	    Reg64 lbr_format    : 6;
@@ -230,7 +230,7 @@ private:
         Reg16                     initial_apicid;
         Reg16                     x86_clflush_size;
     } cpuinfo_x86;
-    
+
     static int _version;
     static int _max_events;
     static Reg32 _num_counters;
@@ -258,7 +258,7 @@ public:
     FIXED_CTR0_ENABLE = (0x1LLU << 32),
     FIXED_CTR1_ENABLE = (0x1LLU << 33),
     FIXED_CTR2_ENABLE = (0x1LLU << 34),
-    
+
     //FIXED_CTR_CTRL0
     FIXED_CTR0_OS           = 0x01,
     FIXED_CTR0_USER         = 0x02,
@@ -274,16 +274,16 @@ public:
     FIXED_CTR2_USER         = (0x02 << 8),
     FIXED_CTR2_ALL          = (0x03 << 8),
     FIXED_CTR2_PMI          = (0x01 << 11),
-    
-    //GLOBAL STATUS 
+
+    //GLOBAL STATUS
     PMC0_OVF = 0x01,
     PMC1_OVF = (1 << 0x01),
     FIXED_CTR0_OVF = (1LLU << 0x20),
     FIXED_CTR1_OVF = (1LLU << 0x21),
     FIXED_CTR2_OVF = (1LLU << 0x22),
-    
+
     };
-  
+
     static int config(Reg32 reg, Reg32 flags) {
         db<IA32_PMU>(TRC) << "Intel_Core_Duo_PMU::config()\n";
         if((reg - EVTSEL0) > num_counters()) {
@@ -293,64 +293,64 @@ public:
         PMU::config(reg, flags);
         return 1;
     }
-    
+
     // TODO enable and disable FIXED registes
     static void enable(Reg32 reg) {
         db<IA32_PMU>(TRC) << "IA32_PMU::enable()\n";
         wrmsr(GLOBAL_OVF, (rdmsr(GLOBAL_OVF) | (reg == EVTSEL0 ? PMC0_OVF : PMC1_OVF))); //clear OVF flag
         wrmsr(GLOBAL_CTRL, (rdmsr(GLOBAL_CTRL) | (reg == EVTSEL0 ?  PMC0_ENABLE :  PMC1_ENABLE)));
     }
-    
+
     static void disable(Reg32 reg) {
         db<IA32_PMU>(TRC) << "IA32_PMU::disable()\n";
         wrmsr(GLOBAL_CTRL, (rdmsr(GLOBAL_CTRL) & ~(reg == EVTSEL0 ?  PMC0_ENABLE :  PMC1_ENABLE)));
     }
-    
+
     static bool overflow(Reg32 reg) {
         db<IA32_PMU>(TRC) << "IA32_PMU::overflow()\n";
         //kout << "GLOBAL_STATUS = " << rdmsr(GLOBAL_STATUS) << "\n";
         return (rdmsr(GLOBAL_STATUS) & (reg == PMC0 ? PMC0_OVF : PMC1_OVF)) != 0;
     }
-    
+
     static bool fixed_ctr0_overflow(void) {
         //long long global_status = rdmsr(GLOBAL_STATUS);
         //kout << "global_status = " << global_status << "\n";
         return (rdmsr(GLOBAL_STATUS) & FIXED_CTR0_OVF) != 0;
     }
-    
+
     static void enable_fixed_ctr0(void) {
         //wrmsr(GLOBAL_OVF, (rdmsr(GLOBAL_OVF) | FIXED_CTR0_OVF)); //clear OVF flag
         wrmsr(FIXED_CTR_CTL, (rdmsr(FIXED_CTR_CTL) | FIXED_CTR0_ALL));
         wrmsr(GLOBAL_CTRL, (rdmsr(GLOBAL_CTRL) | FIXED_CTR0_ENABLE));
     }
-    
+
     static void enable_fixed_ctr1(void) {
         //wrmsr(GLOBAL_OVF, (rdmsr(GLOBAL_OVF) | FIXED_CTR1_OVF)); //clear OVF flag
         wrmsr(FIXED_CTR_CTL, (rdmsr(FIXED_CTR_CTL) | FIXED_CTR1_ALL));
         wrmsr(GLOBAL_CTRL, (rdmsr(GLOBAL_CTRL) | FIXED_CTR1_ENABLE));
     }
-    
+
     static void enable_fixed_ctr2(void) {
         //wrmsr(GLOBAL_OVF, (rdmsr(GLOBAL_OVF) | FIXED_CTR2_OVF)); //clear OVF flag
         wrmsr(FIXED_CTR_CTL, (rdmsr(FIXED_CTR_CTL) | FIXED_CTR2_ALL));
         wrmsr(GLOBAL_CTRL, (rdmsr(GLOBAL_CTRL) | FIXED_CTR2_ENABLE));
     }
-    
+
     static void disable_fixed_ctr0(void) {
         wrmsr(GLOBAL_OVF, (rdmsr(GLOBAL_OVF) | FIXED_CTR0_OVF)); //clear OVF flag
         wrmsr(FIXED_CTR_CTL, (rdmsr(FIXED_CTR_CTL) & ~FIXED_CTR0_ALL));
     }
-    
+
     static void disable_fixed_ctr1(void) {
         wrmsr(GLOBAL_OVF, (rdmsr(GLOBAL_OVF) | FIXED_CTR1_OVF)); //clear OVF flag
         wrmsr(FIXED_CTR_CTL, (rdmsr(FIXED_CTR_CTL) & ~FIXED_CTR1_ALL));
     }
-    
+
     static void disable_fixed_ctr2(void) {
         wrmsr(GLOBAL_OVF, (rdmsr(GLOBAL_OVF) | FIXED_CTR2_OVF)); //clear OVF flag
         wrmsr(FIXED_CTR_CTL, (rdmsr(FIXED_CTR_CTL) & ~FIXED_CTR2_ALL));
     }
-  
+
 };
 
 class Intel_PMU_Version3 : public Intel_PMU_Version2
@@ -360,7 +360,7 @@ public:
     enum {
     // PERFEVTSEL MSR any thread bit figure 18-16
     ANY_THREAD = (0x01 << 21),
-        
+
     //GLOBAL STATUS and GLOBAL OVF STATUS
     PMC0_OVF = 0x01,
     PMC1_OVF = (1 << 0x01),
@@ -376,64 +376,64 @@ public:
     OVF_BUFFER = (1LLU << 0x3E),
     COND_CHGD = (1LLU << 0x3F)
     };
-    
+
     // FIXED_CTR_CTL MSR any thread bit
     enum {
         ANY_THREAD_FIXED0 = (0x01 << 2),
         ANY_THREAD_FIXED1 = (0x01 << 6),
         ANY_THREAD_FIXED2 = (0x01 << 10),
     };
-    
+
     static bool fixed_ctr0_overflow(void) {
         //long long global_status = rdmsr(GLOBAL_STATUS);
         //kout << "global_status = " << global_status << "\n";
         return (rdmsr(GLOBAL_STATUS) & FIXED_CTR0_OVF) != 0;
     }
-    
+
     // INST_RETIRED.ANY
     static void enable_fixed_ctr0(void) {
         //wrmsr(GLOBAL_OVF, (rdmsr(GLOBAL_OVF) | FIXED_CTR0_OVF)); //clear OVF flag
         wrmsr(FIXED_CTR_CTL, (rdmsr(FIXED_CTR_CTL) | FIXED_CTR0_ALL));
         wrmsr(GLOBAL_CTRL, (rdmsr(GLOBAL_CTRL) | FIXED_CTR0_ENABLE));
     }
-    
+
     // CPU_CLK_UNHALTED.THREAD
     static void enable_fixed_ctr1(void) {
         //wrmsr(GLOBAL_OVF, (rdmsr(GLOBAL_OVF) | FIXED_CTR1_OVF)); //clear OVF flag
         wrmsr(FIXED_CTR_CTL, (rdmsr(FIXED_CTR_CTL) | FIXED_CTR1_ALL));
         wrmsr(GLOBAL_CTRL, (rdmsr(GLOBAL_CTRL) | FIXED_CTR1_ENABLE));
     }
-    
+
     // CPU_CLK_UNHALTED.REF
     static void enable_fixed_ctr2(void) {
         //wrmsr(GLOBAL_OVF, (rdmsr(GLOBAL_OVF) | FIXED_CTR2_OVF)); //clear OVF flag
         wrmsr(FIXED_CTR_CTL, (rdmsr(FIXED_CTR_CTL) | FIXED_CTR2_ALL));
         wrmsr(GLOBAL_CTRL, (rdmsr(GLOBAL_CTRL) | FIXED_CTR2_ENABLE));
     }
-    
+
     static void disable_fixed_ctr0(void) {
         wrmsr(GLOBAL_OVF, (rdmsr(GLOBAL_OVF) | FIXED_CTR0_OVF)); //clear OVF flag
         wrmsr(FIXED_CTR_CTL, (rdmsr(FIXED_CTR_CTL) & ~FIXED_CTR0_ALL));
     }
-    
+
     static void disable_fixed_ctr1(void) {
         wrmsr(GLOBAL_OVF, (rdmsr(GLOBAL_OVF) | FIXED_CTR1_OVF)); //clear OVF flag
         wrmsr(FIXED_CTR_CTL, (rdmsr(FIXED_CTR_CTL) & ~FIXED_CTR1_ALL));
     }
-    
+
     static void disable_fixed_ctr2(void) {
         wrmsr(GLOBAL_OVF, (rdmsr(GLOBAL_OVF) | FIXED_CTR2_OVF)); //clear OVF flag
         wrmsr(FIXED_CTR_CTL, (rdmsr(FIXED_CTR_CTL) & ~FIXED_CTR2_ALL));
     }
-  
+
 };
 
 // Intel core solo and Intel core duo microarchitectures PMU support
-class Intel_Core_Duo_PMU : public Intel_PMU_Version2 
+class Intel_Core_Duo_PMU : public Intel_PMU_Version2
 {
 public:
     Intel_Core_Duo_PMU() { }
-    
+
     //UMASK specific to Intel core solo and Intel core duo
     enum {
 	//Core Specificity Encoding within a Non-Architectural Umask bits 15-14
@@ -456,7 +456,7 @@ public:
 	I_STATE		= (0x1 << 8),  //bit 8
 	
     };
-        
+
     //List of all supported events
     enum {
 	LD_BLOCKS 		= 0x03,
@@ -492,7 +492,7 @@ public:
 	EST_TRANS_ALL		= 0x3A,
 	EST_TRANS_ALL_UMASK	= (0x10 << 8), // Intel enhanced SpeedStep frequency transitions,
 	THERMAL_TRIP		= 0xC0, //miss UMASK not completed
-	NONHLT_REF_CYCLES	= 0x3C, 
+	NONHLT_REF_CYCLES	= 0x3C,
     NONHLT_REF_CYCLES_UMASK = (0x01 << 8),
 	SERIAL_EXECUTION_CYCLES = 0x3C,
 	DCACHE_CACHE_LD		= 0x40, //Requires MESI qualification
@@ -524,24 +524,24 @@ public:
 	BUS_LOCKS_CLOCKS	= 0x63, //Requires core specificity and agent specificity
 	BUS_DATA_RCV		= 0x64,
 	BUS_DATA_RCV_UMASK	= (0x40 << 8),
-	BUS_TRANS_BRD		= 0x65, //Requires core specificity 
+	BUS_TRANS_BRD		= 0x65, //Requires core specificity
 	BUS_TRANS_RFO		= 0x66, //Requires core specificity and agent specificity
 	BUS_TRANS_IFETCH	= 0x68, //Requires core specificity and agent specificity
 	BUS_TRANS_INVAL		= 0x69, //Requires core specificity and agent specificity
 	BUS_TRANS_PWR		= 0x6A, //Requires core specificity and agent specificity
 	BUS_TRANS_P		    = 0x6B, //Requires core specificity and agent specificity
 	BUS_TRANS_IO		= 0x6C, //Requires core specificity and agent specificity
-	BUS_TRANS_DEF		= 0x6D, //Requires core specificity 
-	BUS_TRANS_WB		= 0x67, //Requires agent specificity 
-	BUS_TRANS_BURST		= 0x6E, //Requires agent specificity 
-	BUS_TRANS_MEM		= 0x6F, //Requires agent specificity 
-	BUS_TRANS_ANY		= 0x70, //Requires agent specificity 
+	BUS_TRANS_DEF		= 0x6D, //Requires core specificity
+	BUS_TRANS_WB		= 0x67, //Requires agent specificity
+	BUS_TRANS_BURST		= 0x6E, //Requires agent specificity
+	BUS_TRANS_MEM		= 0x6F, //Requires agent specificity
+	BUS_TRANS_ANY		= 0x70, //Requires agent specificity
     BUS_TRANS_ANY_MASK  = (0xC0 << 8),
 	BUS_SNOOPS		    = 0x77, //Requires MESI qualification and Agent specificity
 	DCU_SNOOP_TO_SHARE	= 0x78, //Requires core specificity
 	DCU_SNOOP_TO_SHARE_UMASK = (0x01 << 8),
 	BUS_NOT_IN_USE		= 0x7D, //Requires core specificity
-	BUS_SNOOP_STALL		= 0x7E, 
+	BUS_SNOOP_STALL		= 0x7E,
 	ICACHE_READS		= 0x80,
 	ICACHE_MISSES		= 0x81,
 	ITLB_MISSES		    = 0x85,
@@ -626,49 +626,49 @@ public:
 	PREF_RQSTS_UP		= 0xF0,
 	PREF_RQSTS_DN		= 0xF8,
     };
-    
+
 };
 
 // Intel core microarchitecture PMU support
-class Intel_Core_Micro_PMU : public Intel_PMU_Version2 
+class Intel_Core_Micro_PMU : public Intel_PMU_Version2
 {
 public:
     Intel_Core_Micro_PMU() { }
-    
+
     //UMASK specific to Intel core microarchitecture
     enum {
     //Core Specificity Encoding within a Non-Architectural Umask bits 15-14
     ALL_CORES   = (0x03 << 14),
     //0x2 and 0x0 reserved
     THIS_CORE   = (0x01 << 14),
-    
+
     //Agent Specificity Encoding within a Non-Architectural Umask Bit 13
     THIS_AGENT  = (0x0 << 13),
     ALL_AGENTS  = (0x1 << 13),
-    
+
     //HW Prefetch Qualification Encoding within a Non-Architectural Umask bits 13-12
     ALL_INCLUSIVE   = (0x03 << 12),
     //0x02 reserved
     HW_PREFETCH     = (0x01 << 12),
     EXC_HW_PREFETCH = (0x00 << 12),
-    
+
     //Bus Snoop Qualification Definitions within a Non-Architectural Umask bits 11-8
     HITM            = (0x1 << 11), //bit 11
     //bit 10 reserved
     HIT             = (0x1 << 9),  //bit 9
     CLEAN           = (0x1 << 8),  //bit 8
-    
+
     //MESI Qualification Encoding within a Non-Architectural Umask bits 11-8
     M_STATE     = (0x1 << 11), //bit 11
     E_STATE     = (0x1 << 10), //bit 10
     S_STATE     = (0x1 << 9),  //bit 9
     I_STATE     = (0x1 << 8),  //bit 8
-    
+
     //Snoop Type Qualification Definitions within a Non-Architectural Umask bits 9-8
     CMP2I_SNOOPS = (0x1 << 9),
     CMP2S_SNOOPS = (0x1 << 8),
     };
-    
+
     //List of all supported events - Table A-9
     enum {
     LD_BLOCK_STA                = 0x03 | (0x02 << 8),
@@ -735,7 +735,7 @@ public:
     L1D_SPLIT_STORES            = 0x49 | (0x02 << 8),
     SSE_PRE_MISS_NTA            = 0x4B,
     SSE_PRE_MISS_L1             = 0x4B | (0x01 << 8),
-    SSE_PRE_MISS_L2             = 0x4B | (0x02 << 8),    
+    SSE_PRE_MISS_L2             = 0x4B | (0x02 << 8),
     LOAD_HIT_PRE                = 0x4C,
     L1D_PREFETCH_REQUESTS       = 0x4E | (0x10 << 8),
     BUS_REQUEST_OUTSTANDING     = 0x60, //Requires core specificity and agent specificity
@@ -743,7 +743,7 @@ public:
     BUS_DRDY_CLOCKS             = 0x62, //Requires agent specificity
     BUS_LOCK_CLOCKS             = 0x63, //Requires core specificity and agent specificity
     BUS_DATA_RCV                = 0x64, //Requires core specificity
-    BUS_TRANS_BRD               = 0x65, //Requires core and agent specificity 
+    BUS_TRANS_BRD               = 0x65, //Requires core and agent specificity
     BUS_TRANS_RFO               = 0x66, //Requires core specificity and agent specificity
     BUS_TRANS_WB                = 0x67, //Requires core specificity and agent specificity
     BUS_TRANS_IFETCH            = 0x68, //Requires core specificity and agent specificity
@@ -751,10 +751,10 @@ public:
     BUS_TRANS_PWR               = 0x6A, //Requires core specificity and agent specificity
     BUS_TRANS_P                 = 0x6B, //Requires core specificity and agent specificity
     BUS_TRANS_IO                = 0x6C, //Requires core specificity and agent specificity
-    BUS_TRANS_DEF               = 0x6D, //Requires core and agent specificity 
-    BUS_TRANS_BURST             = 0x6E, //Requires core and agent specificity 
-    BUS_TRANS_MEM               = 0x6F, //Requires core and agent specificity 
-    BUS_TRANS_ANY               = 0x70, //Requires core and agent specificity 
+    BUS_TRANS_DEF               = 0x6D, //Requires core and agent specificity
+    BUS_TRANS_BURST             = 0x6E, //Requires core and agent specificity
+    BUS_TRANS_MEM               = 0x6F, //Requires core and agent specificity
+    BUS_TRANS_ANY               = 0x70, //Requires core and agent specificity
     EXT_SNOOPS                  = 0x77, //Requires agent specificity and snoop response
     CMP_SNOOP                   = 0x78, //Requires core specificity and snoop type
     BUS_HIT_DRV                 = 0x7A, //Requires agent specificity
@@ -767,7 +767,7 @@ public:
     ITLB_SMALL_MISS             = 0x82 | (0x02 << 8),
     ITLB_LARGE_MISS             = 0x82 | (0x10 << 8),
     ITLB_FLUSH                  = 0x82 | (0x40 << 8),
-    ITLB_MISSES                 = 0x82 | (0x12 << 8),   
+    ITLB_MISSES                 = 0x82 | (0x12 << 8),
     INST_QUEUE_FULL             = 0x83 | (0x02 << 8),
     CYCLES_L1I_MEM_STALLED      = 0x86,
     ILD_STALL                   = 0x87,
@@ -880,14 +880,14 @@ public:
 };
 
 // Intel Atom microarchitecture
-class Intel_Atom_PMU : public PMU 
+class Intel_Atom_PMU : public PMU
 {
 public:
     Intel_Atom_PMU() { }
 };
 
 // Intel microarchitecture code name Nehalem and Westmere
-class Intel_Nehalem_PMU : public PMU 
+class Intel_Nehalem_PMU : public PMU
 {
 public:
     Intel_Nehalem_PMU() { }
@@ -898,7 +898,7 @@ class Intel_Sandy_Bridge_PMU : public Intel_PMU_Version3
 {
 public:
     Intel_Sandy_Bridge_PMU() { }
-    
+
     //Layout of IA32_PEBS_ENABLE MSR figure 18-28
     enum {
         PS_EN = (0x01LLU << 63),
@@ -912,14 +912,14 @@ public:
         PEBS_EN_PMC0 = 0x01LLU,
         RESET_PEBS = 0x00LLU
     };
-    
+
     // the two uncore MSR addresses
     enum {
         OFFCORE_RSP_0 = 0x1A6,
         OFFCORE_RSP_1 = 0x1A7,
         RESET_VALUE = 0x00000000
     };
-    
+
     // Request type fields bits for OFFCORE_RSP_x
     // bits 15:0
     enum {
@@ -935,10 +935,10 @@ public:
         PF_LLC_IFETCH  = 0x0000000200LLU, // bit 9
         BUS_LOCKS      = 0x0000000400LLU, // bit 10
         STRM_ST        = 0x0000000800LLU, // bit 11
-        //bits 12-14 are reserved 
+        //bits 12-14 are reserved
         OTHER          = 0x0000008000LLU // bit 15
     };
-    
+
     // Response supplier and snoop info field bits for OFFCORE_RSP_x
     // bits 30:16
     enum {
@@ -958,13 +958,13 @@ public:
       HITM           = 0x1000000000LLU, // bit 36 RSPNS_SNOOP
       NON_DRAM       = 0x2000000000LLU, // bit 37 RSPNS_SNOOP
     };
-    
+
     //off-core response event enconding (table 18-24)
     enum {
         PMC0_UNCORE = 0xB7 | (0x1 << 8), //requires OFFCORE_RSP_0
         PMC3_UNCORE = 0xBB | (0x1 << 8), //requires OFFCORE_RSP_1
     };
-    
+
     static void config_uncore(int pmc, Reg64 uncore_flags) {
         if(pmc == 0 ) {
             //wrmsr(OFFCORE_RSP_0, uncore_flags);
@@ -975,59 +975,59 @@ public:
             config(PMU::EVTSEL3, PMC3_UNCORE | OS | USR | ENABLE);
         }
     }
-    
+
     static void enable_pebs_pmc0() {
         wrmsr(PEBS_ENABLE, rdmsr(PEBS_ENABLE) | PEBS_EN_PMC0);
     }
-    
+
     static void enable_pebs_pmc1() {
         wrmsr(PEBS_ENABLE, rdmsr(PEBS_ENABLE) | PEBS_EN_PMC1);
     }
-    
+
     static void enable_pebs_pmc2() {
         wrmsr(PEBS_ENABLE, rdmsr(PEBS_ENABLE) | PEBS_EN_PMC2);
     }
-    
+
     static void enable_pebs_pmc3() {
         wrmsr(PEBS_ENABLE, rdmsr(PEBS_ENABLE) | PEBS_EN_PMC3);
     }
-    
+
     //List of all supported events - Section 19.3 - Table 19-3
     enum {
         LD_BLOCKS_DATA_UNKNOWN = 0x03 | (0x01 << 8),
         LD_BLOCKS_STORE_FORWARD = 0x03 | (0x02 << 8),
         LD_BLOCKS_NO_SR = 0x03 | (0x8 << 8),
         LD_BLOCKS_ALL_BLOCK = 0x03 | (0x10 << 8),
-        
+
         MISALIGN_MEM_REF_LOADS = 0x05 | (0x01 << 8),
         MISALIGN_MEM_REF_STORES = 0x05 | (0x02 << 8),
-        
+
         LD_BLOCKS_PARTIAL_ADDRESS_ALIAS = 0x07 | (0x01 << 8),
         LD_BLOCKS_PARTIAL_ALL_STA_BLCOK = 0x07 | (0x08 << 8),
-        
+
         DTLB_LOAD_MISSES_MISS_CAUSES_A_WALK = 0x08 | (0x01 << 8),
         DTLB_LOAD_MISSES_MISS_WALK_COMPLETED = 0x08 | (0x02 << 8),
         DTLB_LOAD_MISSES_MISS_WALK_DURATION = 0x08 | (0x04 << 8),
         DTLB_LOAD_MISSES_MISS_STLB_HIT = 0x08 | (0x10 << 8),
-        
+
         INT_MISC_RECOVERY_CYCLES = 0x0D | (0x03 << 8), // set edge to count occurences
         INT_MISC_RAT_STALL_CYCLES = 0x0D | (0x40 << 8),
-        
+
         UOPS_ISSUED_ANY = 0x0E | (0x01 << 8), //set cmmask = 1, inv = 1 to count stalled cycles
-        
+
         FP_COMP_OPS_EXE_X87 = 0x10 | (0x01 << 8),
         FP_COMP_OPS_EXE_SSE_FP_PACKED_DOUBLE = 0x10 | (0x10 << 8),
         FP_COMP_OPS_EXE_SSE_FP_SCALAR_SINGLE = 0x10 | (0x20 << 8),
         FP_COMP_OPS_EXE_SSE_PACKED_SINGLE = 0x10 | (0x40 << 8),
         FP_COMP_OPS_EXE_SSE_SCALAR_DOUBLE = 0x10 | (0x80 << 8),
-        
+
         SIMD_FP_256_PACKED_SINGLE = 0x11 | (0x01 << 8),
         SIMD_FP_256_PACKED_DOUBLE = 0x11 | (0x02 << 8),
-        
+
         ARITH_FPU_DIV_ACTIVE = 0x12 | (0x01 << 8),
-        
+
         INSTS_WRITTEN_TO_IQ_INSTS = 0x17 | (0x01 << 8),
-        
+
         L2_RQSTS_DEMAND_DATA_RD_HIT = 0x24 | (0x01 << 8),
         L2_RQSTS_ALL_DEMAND_DATA_RD = 0x24 | (0x03 << 8),
         L2_RQSTS_RFO_HITS = 0x24 | (0x04 << 8),
@@ -1039,76 +1039,76 @@ public:
         L2_RQSTS_PF_HIT = 0x24 | (0x40 << 8),
         L2_RQSTS_PF_MISS = 0x24 | (0x80 << 8),
         L2_RQSTS_ALL_PF = 0x24 | (0xC0 << 8),
-        
+
         L2_STORE_LOCK_RQSTS_MISS = 0x27 | (0x01 << 8),
         L2_STORE_LOCK_RQSTS_HIT_E = 0x27 | (0x04 << 8),
         L2_STORE_LOCK_RQSTS_HIT_M = 0x27 | (0x08 << 8),
         L2_STORE_LOCK_RQSTS_ALL = 0x27 | (0x0F << 8),
-        
+
         L2_L1D_WB_RQSTS_HIT_E = 0x28 | (0x04 << 8),
         L2_L1D_WB_RQSTS_HIT_M = 0x28 | (0x08 << 8),
-        
+
         LONGEST_LAT_CACHE_REFERENCE = 0x2E | (0x4F << 8), //table 19-1 architectural event
         LONGEST_LAT_CACHE_MISS = 0x2E | (0x41 << 8), //table 19-1 architectural event
-        
+
         CPU_CLK_UNHALTED_THREAD_P = 0x3C | (0x00 << 8), //table 19-1 architectural event
         CPU_CLK_THREAD_UNHALTED_REF_XCLK = 0x3C | (0x01 << 8), //table 1901 architectural event
-        
+
         L1D_PEND_MISS_PENDING = 0x48 | (0x01 << 8), //counter 2 only - set cmask = 1 to count cycles
-        
+
         DTLB_STORE_MISSES_MISS_CAUSES_A_WALK = 0x49 | (0x01 << 8),
         DTLB_STORE_MISSES_WALK_COMPLETED = 0x49 | (0x02 << 8),
         DTLB_STORE_MISSES_WALK_DURATION = 0x49 | (0x04 << 8),
         DTLB_STORE_MISSES_TLB_HIT = 0x49 | (0x10 << 8),
-        
+
         LOAD_HIT_PRE_SW_PF = 0x4C | (0x01 << 8),
         LOAD_HIT_PREHW_PF = 0x4C | (0x02 << 8),
-        
+
         HW_PRE_REQ_DL1_MISS = 0x4E | (0x02 << 8),
-        
+
         L1D_REPLACEMENT = 0x51 | (0x01 << 8),
         L1D_ALLOCATED_IN_M = 0x51 | (0x02 << 8),
         L1D_EVICTION = 0x51 | (0x04 << 8),
         L1D_ALL_M_REPLACEMENT = 0x51 | (0x08 << 8),
-        
+
         PARTIAL_RAT_STALLS_FLAGS_MERGE_UOP = 0x59 | (0x20 << 8),
         PARTIAL_RAT_STALLS_SLOW_LEA_WINDOW = 0x59 | (0x40 << 8),
         PARTIAL_RAT_STALLS_MUL_SINGLE_UOP = 0x59 | (0x80 << 8),
-        
+
         RESOURCE_STALLS2_ALL_FL_EMPTY = 0x5B | (0x0C << 8),
         RESOURCE_STALLS2_ALL_PRF_CONTROL = 0x5B | (0x0F << 8),
         RESOURCE_STALLS2_BOB_FULL = 0x5B | (0x40 << 8),
         RESOURCE_STALLS2_OOO_RSRC = 0x5B | (0x4F << 8),
-        
+
         CPL_CYCLES_RING0 = 0x5C | (0x01 << 8), //use edge to count transition
         CPL_CYCLES_RING123 = 0x5C | (0x02 << 8),
-        
+
         RS_EVENTS_EMPTY_CYCLES = 0x5E | (0x01 << 8),
-        
+
         OFFCORE_REQUESTS_OUTSTANDING_DEMAND_DATA_RD = 0x60 | (0x01 << 8),
         OFFCORE_REQUESTS_OUTSTANDING_DEMAND_RFO = 0x60 | (0x04 << 8),
         OFFCORE_REQUESTS_OUTSTANDING_ALL_DATA_RD = 0x60 | (0x08 << 8),
-        
+
         LOCK_CYCLES_SPLIT_LOCK_UC_LOCK_DURATION = 0x63 | (0x01 << 8),
         LOCK_CYCLES_CACHE_LOCK_DURATION = 0x63 | (0x02 << 8),
-        
+
         IDQ_EMPTY = 0x79 | (0x02 << 8),
         IDQ_MITE_UOPS = 0x79 | (0x04 << 8),
         IDQ_DSB_UOPS = 0x79 | (0x08 << 8),
         IDQ_MS_DSB_UOPS = 0x79 | (0x10 << 8),
         IDQ_MS_MITE_UOPS = 0x79 | (0x20 << 8),
         IDQ_MS_UOPS = 0x79 | (0x30 << 8),
-        
+
         ICACHE_MISSES = 0x80 | (0x02 << 8),
-        
+
         ITLB_MISSES_MISS_CAUSES_A_WALK = 0x85 | (0x01 << 8),
         ITLB_MISSES_WALK_COMPLETED = 0x85 | (0x02 << 8),
         ITLB_MISSES_WALK_DURATION = 0x85 | (0x04 << 8),
         ITLB_MISSES_STLB_HIT = 0x85 | (0x10 << 8),
-        
+
         ILD_STALL_LCP = 0x87 | (0x01 << 8),
         ILD_STALL_IQ_FULL = 0x87 | (0x04 << 8),
-        
+
         BR_INST_EXEC_COND = 0x88 | (0x01 << 8),
         BR_INST_EXEC_DIRECT_JMP = 0x88 | (0x02 << 8),
         BR_INST_EXEC_INDIRECT_JMP_NON_CALL_RET = 0x88 | (0x04 << 8),
@@ -1118,7 +1118,7 @@ public:
         BR_INST_EXEC_NON_TAKEN = 0x88 | (0x40 << 8),
         BR_INST_EXEC_TAKEN = 0x88 | (0x80 << 8),
         BR_INST_EXEC_ALL_BRANCHES = 0x88 | (0xFF << 8),
-        
+
         BR_MISP_EXEC_COND = 0x89 | (0x01 << 8),
         BR_MISP_EXEC_INDIRECT_JMP_NON_CALL_RET = 0x89 | (0x04 << 8),
         BR_MISP_EXEC_RETURN_NEAR = 0x89 | (0x08 << 8),
@@ -1127,9 +1127,9 @@ public:
         BR_MISP_EXEC_NON_TAKEN = 0x89 | (0x40 << 8),
         BR_MISP_EXEC_TAKEN = 0x89 | (0x80 << 8),
         BR_MISP_EXEC_ALL_BRANCHES = 0x89 | (0xFF << 8),
-        
+
         IDQ_UOPS_NOT_DELIVERED_CORE = 0x9C | (0x01 << 8),
-        
+
         UOPS_DISPATCHED_PORT_PORT_0 = 0xA1 | (0x01 << 8),
         UOPS_DISPATCHED_PORT_PORT_1 = 0xA1 | (0x02 << 8),
         UOPS_DISPATCHED_PORT_PORT_2_LD = 0xA1 | (0x04 << 8),
@@ -1140,7 +1140,7 @@ public:
         UOPS_DISPATCHED_PORT_PORT_3 = 0xA1 | (0x30 << 8),
         UOPS_DISPATCHED_PORT_PORT_4 = 0xA1 | (0x40 << 8),
         UOPS_DISPATCHED_PORT_PORT_5 = 0xA1 | (0x80 << 8),
-        
+
         RESOURCE_STALLS_ANY = 0xA2 | (0x01 << 8),
         RESOURCE_STALLS_LB = 0xA2 | (0x02 << 8),
         RESOURCE_STALLS_RS = 0xA2 | (0x04 << 8),
@@ -1149,51 +1149,51 @@ public:
         RESOURCE_STALLS_FCSW = 0xA2 | (0x20 << 8),
         RESOURCE_STALLS_MXCSR = 0xA2 | (0x40 << 8),
         RESOURCE_STALLS_OTHER = 0xA2 | (0x80 << 8),
-        
+
         DSB2MITE_SWITCHES_COUNT = 0xAB | (0x01 << 8),
         DSB2MITE_SWITCHES_PENALTY_CYCLES = 0xAB | (0x02 << 8),
-        
+
         DSB_FILL_OTHER_CANCEL = 0xAC | (0x02 << 8),
         DSB_FILL_EXCEED_DSB_LINES = 0xAC | (0x04 << 8),
         DSB_FILL_ALL_CANCEL = 0xAC | (0x08 << 8),
-        
+
         ITLB_ITLB_FLUSH = 0xAE | (0x01 << 8),
-        
+
         OFFCORE_REQUESTS_DEMAND_DATA_RD = 0xB0 | (0x01 << 8),
         OFFCORE_REQUESTS_DEMAND_RFO = 0xB0 | (0x04 << 8),
         OFFCORE_REQUESTS_ALL_DATA_RD = 0xB0 | (0x08 << 8),
-        
+
         UOPS_DISPATCHED_THREAD = 0xB1 | (0x01 << 8),
         UOPS_DISPATCHED_CORE = 0xB1 | (0x02 << 8),
-        
+
         OFFCORE_REQUESTS_BUFFER_SQ_FULL = 0xB2 | (0x01 << 8),
-        
+
         AGU_BYPASS_CANCEL_COUNT = 0xB6 | (0x01 << 8),
-        
+
         OFF_CORE_RESPONSE_0 = 0xB7 | (0x01 << 8),
-        
+
         OFF_CORE_RESPONSE_1 = 0xBB | (0x01 << 8),
-        
+
         TLB_FLUSH_DTLB_THREAD = 0xBD | (0x01 << 8),
         TLB_FLUSH_STLB_ANY = 0xBD | (0x20 << 8),
-        
+
         L1D_BLOCKS_BANK_CONFLICT_CYCLES = 0xBF | (0x05 << 8),
-        
+
         INST_RETIRED_ANY_P = 0xC0 | (0x00 << 8), //table 19-1 architectural event
         INST_RETIRED_PREC_DIST = 0xC0 | (0x01 << 8), //PMC1 only; must quiesce other PMCs
-        
+
         OTHER_ASSISTS_ITLB_MISS_RETIRED = 0xC1 | (0x02 << 8),
         OTHER_ASSISTS_AVX_STORE = 0xC1 | (0x08 << 8),
         OTHER_ASSISTS_AVX_TO_SSE = 0xC1 | (0x10 << 8),
         OTHER_ASSISTS_SSE_TO_AVX = 0xC1 | (0x20 << 8),
-        
+
         UOPS_RETIRED_ALL = 0xC2 | (0x01 << 8),
-        UOPS_RETIRED_RETIRE_SLOTS = 0xC2 | (0x02 << 8),       
-        
+        UOPS_RETIRED_RETIRE_SLOTS = 0xC2 | (0x02 << 8),
+
         MACHINE_CLEARS_MEMORY_ORDERING = 0xC3 | (0x02 << 8),
         MACHINE_CLEARS_SMC = 0xC3 | (0x04 << 8),
         MACHINE_CLEARS_MASKMOV = 0xC3 | (0x20 << 8),
-        
+
         BR_INST_RETIRED_ALL_BRANCHES_ARCH = 0xC4 | (0x00 << 8), //table 19-1
         BR_INST_RETIRED_CONDITIONAL = 0xC4 | (0x01 << 8),
         BR_INST_RETIRED_NEAR_CALL = 0xC4 | (0x02 << 8),
@@ -1202,44 +1202,44 @@ public:
         BR_INST_RETIRED_NOT_TAKEN = 0xC4 | (0x10 << 8),
         BR_INST_RETIRED_NEAR_TAKEN = 0xC4 | (0x20 << 8),
         BR_INST_RETIRED_FAR_BRANCH = 0xC4 | (0x40 << 8),
-        
+
         BR_MISP_RETIRED_ALL_BRANCHES_ARCH = 0xC5 | (0x00 << 8), //table 19-1
         BR_MISP_RETIRED_CONDITIONAL = 0xC5 | (0x01 << 8),
         BR_MISP_RETIRED_NEAR_CALL = 0xC5 | (0x02 << 8),
         BR_MISP_RETIRED_ALL_BRANCHES = 0xC5 | (0x04 << 8),
         BR_MISP_RETIRED_NOT_TAKEN = 0xC5 | (0x10 << 8),
         BR_MISP_RETIRED_TAKEN = 0xC5 | (0x20 << 8),
-        
+
         FP_ASSIST_X87_OUTPUT = 0xCA | (0x02 << 8),
         FP_ASSIST_X87_INPUT = 0xCA | (0x04 << 8),
         FP_ASSIST_SIMD_OUTPUT = 0xCA | (0x08 << 8),
         FP_ASSIST_SIMD_INPUT = 0xCA | (0x10 << 8),
         FP_ASSIST_ANY = 0xCA | (0x1E << 8),
-        
+
         ROB_MISC_EVENTS_LBR_INSERTS = 0xCC | (0x20 << 8),
-        
+
         MEM_TRANS_RETIRED_LOAD_LATENCY = 0xCD | (0x01 << 8), //specify threshold in MSR 0x3F6
         MEM_TRANS_RETIRED_PRECISE_STORE = 0xCD | (0x02 << 8), //see section 18.8.4.3
-        
+
         MEM_UOP_RETIRED_LOADS = 0xD0 | (0x01 << 8),
         MEM_UOP_RETIRED_STORES = 0xD0 | (0x02 << 8),
         MEM_UOP_RETIRED_STLB_MISS = 0xD0 | (0x10 << 8),
         MEM_UOP_RETIRED_LOCK = 0xD0 | (0x20 << 8),
         MEM_UOP_RETIRED_SPLIT = 0xD0 | (0x40 << 8),
         MEM_UOP_RETIRED_ALL = 0xD0 | (0x80 << 8),
-        
+
         MEM_LOAD_UOPS_RETIRED_L1_HIT = 0xD1 | (0x01 << 8),
         MEM_LOAD_UOPS_RETIRED_L2_HIT = 0xD1 | (0x02 << 8),
         MEM_LOAD_UOPS_RETIRED_L3_HIT = 0xD1 | (0x04 << 8),
         MEM_LOAD_UOPS_RETIRED_HIT_LFB = 0xD1 | (0x40 << 8),
-        
+
         XSNP_MISS = 0xD2 | (0x01 << 8),
         XSNP_HIT  = 0xD2 | (0x02 << 8),
         XSNP_HITM = 0xD2 | (0x04 << 8),
-        XSNP_NONE = 0xD2 | (0x08 << 8), 
-        
+        XSNP_NONE = 0xD2 | (0x08 << 8),
+
         MEM_LOAD_UOPS_MISC_RETIRED_LLC_MISS  = 0xD4 | (0x02 << 8),
-        
+
         L2_TRANS_DEMAND_DATA_RD = 0xF0 | (0x01 << 8),
         L2_TRANS_RFO = 0xF0 | (0x02 << 8),
         L2_TRANS_CODE_RD = 0xF0 | (0x04 << 8),
@@ -1248,24 +1248,24 @@ public:
         L2_TRANS_L2_FILL = 0xF0 | (0x20 << 8),
         L2_TRANS_L2_WB = 0xF0 | (0x40 << 8),
         L2_TRANS_ALL_REQ_UESTS = 0xF0 | (0x80 << 8),
-        
+
         L2_LINES_IN_I = 0xF1 | (0x01 << 8),
         L2_LINES_IN_S = 0xF1 | (0x02 << 8),
         L2_LINES_IN_E = 0xF1 | (0x04 << 8),
         L2_LINES_IN_ALL = 0xF1 | (0x07 << 8),
-        
+
         L2_LINES_OUT_DEMAND_CLEAN = 0xF2 | (0x01 << 8),
         L2_LINES_OUT_DEMAND_DIRTY = 0xF2 | (0x02 << 8),
         L2_LINES_OUT_DEMAND_PF_CLEAN = 0xF2 | (0x04 << 8),
         L2_LINES_OUT_DEMAND_PF_DIRTY = 0xF2 | (0x08 << 8),
         L2_LINES_OUT_DEMAND_DIRTY_ALL = 0xF2 | (0x0A << 8),
-        
+
         SQ_MISC_SPLIT_LOCK = 0xF4 | (010 << 8)
     };
 };
 
 // Intel Netburst microarchitecture
-class Intel_Netburst_PMU : public PMU 
+class Intel_Netburst_PMU : public PMU
 {
 public:
     Intel_Netburst_PMU() { }

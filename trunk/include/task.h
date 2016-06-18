@@ -19,7 +19,7 @@ class Task
 
 private:
     static const bool multitask = Traits<System>::multitask;
-    
+
     typedef CPU::Log_Addr Log_Addr;
     typedef CPU::Phy_Addr Phy_Addr;
     typedef CPU::Context Context;

@@ -59,7 +59,7 @@ volatile bool Paging_Ready = false;
 // PC_Setup is responsible for bringing the machine into a usable state. It
 // sets up several IA32 data structures (IDT, GDT, etc), builds a basic
 // memory model (flat) and a basic thread model (exclusive task/exclusive
-// thread). 
+// thread).
 //------------------------------------------------------------------------
 class PC_Setup
 {
@@ -140,7 +140,7 @@ PC_Setup::PC_Setup(char * boot_image)
     // Get boot image loaded by the bootstrap
     bi = reinterpret_cast<char *>(boot_image);
     si = reinterpret_cast<System_Info<PC> *>(bi);
-    
+
     Display::init();
     PC_Display::init(VGA_PHY); // Display can be Serial_Display, so PC_Display here!
 
@@ -182,7 +182,7 @@ PC_Setup::PC_Setup(char * boot_image)
         setup_sys_pt();
         setup_sys_pd();
 
-        // Enable paging 
+        // Enable paging
         // We won't be able to print anything before the remap() bellow
         db<Setup>(INF) << "IP=" << CPU::ip() << endl;
         db<Setup>(INF) << "SP=" << reinterpret_cast<void *>(CPU::sp()) << endl;
@@ -211,7 +211,7 @@ PC_Setup::PC_Setup(char * boot_image)
         // Wait for the Boot CPU to setup page tables
         while(!Paging_Ready);
 
-        // Enable paging 
+        // Enable paging
         enable_paging();
     }
 
@@ -410,7 +410,7 @@ void PC_Setup::build_pmm()
     // System Page Table (1 x sizeof(Page))
     top_page -= 1;
     si->pmm.sys_pt = top_page * sizeof(Page);
-    
+
     // System Page Directory (1 x sizeof(Page))
     top_page -= 1;
     si->pmm.sys_pd = top_page * sizeof(Page);
@@ -543,7 +543,7 @@ void PC_Setup::say_hi()
 }
 
 //========================================================================
-void PC_Setup::enable_paging() 
+void PC_Setup::enable_paging()
 {
     // Set IDTR (limit = 1 x sizeof(Page))
     CPU::idtr(sizeof(Page) - 1, IDT);
@@ -639,7 +639,7 @@ void PC_Setup::setup_sys_pt()
         	   << ",pt="   << (void *)si->pmm.sys_pt
         	   << ",pd="   << (void *)si->pmm.sys_pd
         	   << ",info=" << (void *)si->pmm.sys_info
-        	   << ",tss0=" << Phy_Addr(si->pmm.tss0) 
+        	   << ",tss0=" << Phy_Addr(si->pmm.tss0)
         	   << ",mem="  << (void *)si->pmm.phy_mem_pts
         	   << ",io="   << (void *)si->pmm.io_pts
         	   << ",sysc=" << (void *)si->pmm.sys_code
@@ -1013,10 +1013,10 @@ extern "C" { void _start(); }
 extern "C" { void setup(char * bi); }
 
 //========================================================================
-// _start		  
+// _start		
 //
-// "_start" MUST BE PC_SETUP's first function, since PC_BOOT assumes 
-// offset "0" to be the entry point. It is a kind of bridge between the 
+// "_start" MUST BE PC_SETUP's first function, since PC_BOOT assumes
+// offset "0" to be the entry point. It is a kind of bridge between the
 // assembly world of PC_BOOT and the C++ world of PC_SETUP. It's main
 // tasks are:
 //
@@ -1066,7 +1066,7 @@ void _start()
 
         // Load SETUP considering the address in the ELF header
         // Be careful: by reloading SETUP, global variables have been reset to
-        // the values stored in the ELF data segment 
+        // the values stored in the ELF data segment
         // Also check if this wouldn't destroy the boot image
         char * addr = reinterpret_cast<char *>(elf->segment_address(0));
         int size = elf->segment_size(0);
@@ -1085,13 +1085,13 @@ void _start()
 
         // Passes a pointer to the just allocated stack pool to other CPUs
         Stacks = dst;
-        
+
         // Initialize shared CPU counter
         si->bm.n_cpus = 1;
 
         // Broadcast INIT IPI to all APs excluding self
         APIC::ipi_init(si->bm.cpu_status);
-        
+
         // Broadcast STARTUP IPI to all APs excluding self
         // Non-boot CPUs will run a simplified boot strap just to
         // trampoline them into protected mode
@@ -1099,9 +1099,9 @@ void _start()
         // ipi_start() waits for cpu_status to be incremented by the finc
         // further down in this code
  	APIC::ipi_start(0x3000, si->bm.cpu_status);
-        
+
         Stacks_Ready = true;
-        
+
     } else { // Additional CPUs (APs)
         // Each AP increments the CPU counter
         CPU::finc(si->bm.n_cpus);
@@ -1136,14 +1136,14 @@ void _start()
 
     // Pass the boot image to SETUP
     ASM("pushl %0" : : "r" (Stacks));
-    
+
     // Call setup()
     // the assembly is necessary because the compiler generates
     // relative calls and we need an absolute one
     ASM("call *%0" : : "r" (&setup));
 }
 
-void setup(char * bi) 
+void setup(char * bi)
 {
     if(!Traits<System>::multicore || (APIC::id() == 0)) {
         kerr  << endl;

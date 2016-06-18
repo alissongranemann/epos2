@@ -198,12 +198,12 @@ public:
     /*12*/  Reg8 pad12_0:1, pad12_1:3, ifs:4;
     /*13*/  Reg8 ip_addr_lo;
     /*14*/  Reg8 ip_addr_hi;
-    /*15*/  Reg8 promiscuous_mode:1, broadcast_disabled:1, wait_after_win:1, 
+    /*15*/  Reg8 promiscuous_mode:1, broadcast_disabled:1, wait_after_win:1,
                  pad15_1:1, ignore_ul_bit:1, crc_16_bit:1, pad15_2:1, crs_or_cdt:1;
     /*16*/  Reg8 fc_delay_lo;
     /*17*/  Reg8 fc_delay_hi;
     /*18*/  Reg8 rx_stripping:1, tx_padding:1, rx_crc_transfer:1, rx_long_ok:1, fc_priority_threshold:3, pad18:1;
-    /*19*/  Reg8 pad19:1, magic_packet_disable:1, fc_disable:1, fc_restop:1, 
+    /*19*/  Reg8 pad19:1, magic_packet_disable:1, fc_disable:1, fc_restop:1,
                  fc_restart:1, fc_reject:1, full_duplex_force:1, full_duplex_pin:1;
     /*20*/  Reg8 pad20_1:5, fc_priority_location:1, multi_ia:1, pad20_2:1;
     /*21*/  Reg8 pad21_1:3, multicast_all:1, pad21_2:4;
@@ -319,13 +319,13 @@ private:
     static const unsigned int UNITS = Traits<E100>::UNITS;
     static const unsigned int TX_BUFS =	Traits<E100>::SEND_BUFFERS;
     static const unsigned int RX_BUFS =	Traits<E100>::RECEIVE_BUFFERS;
-    static const unsigned int DMA_BUFFER_SIZE = 
+    static const unsigned int DMA_BUFFER_SIZE =
         ((sizeof(ConfigureCB) + 15) & ~15U) +
         ((sizeof(MACaddrCB) + 15) & ~15U) +
         ((sizeof(struct mem) + 15) & ~15U) +
          RX_BUFS * ((sizeof(Rx_Desc) + 15) & ~15U) +
-         TX_BUFS * ((sizeof(Tx_Desc) + 15) & ~15U); 
-         
+         TX_BUFS * ((sizeof(Tx_Desc) + 15) & ~15U);
+
     // Share control and interrupt dispatiching info
     struct Device
     {
@@ -333,7 +333,7 @@ private:
         unsigned int interrupt;
         bool in_use;
     };
-        
+
 public:
     typedef CPU::Log_Addr Log_Addr;
     typedef CPU::Phy_Addr Phy_Addr;
@@ -386,7 +386,7 @@ private:
         i82559_flush(); udelay(20 * 1000);
         write32(SOFTWARE_RESET, &csr->port);
         i82559_flush(); udelay(20 * 1000);
-        // disable IRQs 
+        // disable IRQs
         i82559_disable_irq();
         i82559_flush(); udelay(1000);
     }

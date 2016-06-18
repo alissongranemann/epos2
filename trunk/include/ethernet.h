@@ -70,7 +70,7 @@ public:
         Frame(const Address & src, const Address & dst, const Protocol & prot, const void * data, unsigned int size): Header(src, dst, prot) {
             memcpy(_data, data, size);
         }
-        
+
         Header * header() { return this; }
 
         template<typename T>
@@ -80,7 +80,7 @@ public:
             db << "{h=" << reinterpret_cast<const Header &>(f) << ",d=" << f._data << "}";
             return db;
         }
-        
+
     protected:
         Data _data;
         CRC _crc;
@@ -116,7 +116,7 @@ public:
                << "}";
             return db;
         }
-        
+
         unsigned int rx_overruns;
         unsigned int tx_overruns;
         unsigned int frame_errors;

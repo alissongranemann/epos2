@@ -100,7 +100,7 @@ public:
             unsigned bDeviceSubClass : 8;    // Device subclass
             unsigned bDeviceProtocol : 8;    // Device protocol
             unsigned bMaxPacketSize0 : 8;    // Max packet size for endpoint 0
-            unsigned idVendor : 16;          // Vendor ID 
+            unsigned idVendor : 16;          // Vendor ID
             unsigned idProduct : 16;         // Product ID
             unsigned bcdDevice : 16;         // Device release number
             unsigned iManufacturer : 8;      // Manufacturer string index
@@ -149,7 +149,7 @@ public:
             unsigned bDescriptorType : 8;  // Descriptor type (DESC_ENDPOINT)
             unsigned bEndpointAddress : 8; // Encoded address of the endpoint on the USB device described by this descriptor
             unsigned bmAttributes : 8;     // Endpoint attributes
-            unsigned wMaxPacketSize : 16;  // Maximum packet size this endpoint is capable of sending or receiving at once 
+            unsigned wMaxPacketSize : 16;  // Maximum packet size this endpoint is capable of sending or receiving at once
             unsigned bInterval : 8;        // Interval for polling endpoint for data transfers. Expressed in frames or microframes
 
             char& operator[](unsigned int idx) { return (reinterpret_cast<char*>(this))[idx]; };
@@ -194,7 +194,7 @@ public:
                 db << "Device_Request:{bmRequestType=" << d.bmRequestType << ",bRequest=" << d.bRequest << ",wValue=" << d.wValue << ",wIndex=" << d.wIndex << ",wLength=" << d.wLength << "}";
                 return db;
             }
-        } __attribute__((packed));    
+        } __attribute__((packed));
 
         struct Set_Address
         {
@@ -222,7 +222,7 @@ public:
                 db << "Set_Address:{bmRequestType=" << d.bmRequestType << ",bRequest=" << d.bRequest << ",device_address=" << d.device_address << ",wIndex=" << d.wIndex << ",wLength=" << d.wLength << "}";
                 return db;
             }
-        } __attribute__((packed));    
+        } __attribute__((packed));
 
         struct Get_Descriptor
         {
@@ -251,7 +251,7 @@ public:
                 db << "Get_Descriptor:{bmRequestType=" << d.bmRequestType << ",bRequest=" << d.bRequest << ",descriptor_index=" << d.descriptor_index << ",descriptor_type=" << d.descriptor_type << ",language_id=" << d.language_id << ",descriptor_length=" << d.descriptor_length << "}";
                 return db;
             }
-        } __attribute__((packed));    
+        } __attribute__((packed));
 
         struct Set_Configuration
         {
@@ -279,7 +279,7 @@ public:
                 db << "Set_Configuration:{bmRequestType=" << d.bmRequestType << ",bRequest=" << d.bRequest << ",configuration_number=" << d.configuration_number << ",wIndex=" << d.wIndex << ",wLength=" << d.wLength << "}";
                 return db;
             }
-        } __attribute__((packed));    
+        } __attribute__((packed));
     };
 
     // Definitions for Communications Device Class
@@ -296,49 +296,49 @@ public:
         enum BREQUEST
         {
             SEND_ENCAPSULATED_COMMAND                    = 0x00,
-            GET_ENCAPSULATED_RESPONSE                    = 0x01, 
-            SET_COMM_FEATURE                             = 0x02, 
-            GET_COMM_FEATURE                             = 0x03, 
-            CLEAR_COMM_FEATURE                           = 0x04, 
-            SET_AUX_LINE_STATE                           = 0x10, 
-            SET_HOOK_STATE                               = 0x11, 
-            PULSE_SETUP                                  = 0x12, 
-            SEND_PULSE                                   = 0x13, 
-            SET_PULSE_TIME                               = 0x14, 
-            RING_AUX_JACK                                = 0x15, 
-            SET_LINE_CODING                              = 0x20, 
-            GET_LINE_CODING                              = 0x21, 
-            SET_CONTROL_LINE_STATE                       = 0x22, 
-            SEND_BREAK                                   = 0x23, 
-            SET_RINGER_PARMS                             = 0x30, 
-            GET_RINGER_PARMS                             = 0x31, 
-            SET_OPERATION_PARMS                          = 0x32, 
+            GET_ENCAPSULATED_RESPONSE                    = 0x01,
+            SET_COMM_FEATURE                             = 0x02,
+            GET_COMM_FEATURE                             = 0x03,
+            CLEAR_COMM_FEATURE                           = 0x04,
+            SET_AUX_LINE_STATE                           = 0x10,
+            SET_HOOK_STATE                               = 0x11,
+            PULSE_SETUP                                  = 0x12,
+            SEND_PULSE                                   = 0x13,
+            SET_PULSE_TIME                               = 0x14,
+            RING_AUX_JACK                                = 0x15,
+            SET_LINE_CODING                              = 0x20,
+            GET_LINE_CODING                              = 0x21,
+            SET_CONTROL_LINE_STATE                       = 0x22,
+            SEND_BREAK                                   = 0x23,
+            SET_RINGER_PARMS                             = 0x30,
+            GET_RINGER_PARMS                             = 0x31,
+            SET_OPERATION_PARMS                          = 0x32,
             GET_OPERATION_PARMS                          = 0x33,
-            SET_LINE_PARMS                               = 0x34, 
-            GET_LINE_PARMS                               = 0x35, 
-            DIAL_DIGITS                                  = 0x36, 
-            SET_UNIT_PARAMETER                           = 0x37, 
-            GET_UNIT_PARAMETER                           = 0x38, 
-            CLEAR_UNIT_PARAMETER                         = 0x39, 
+            SET_LINE_PARMS                               = 0x34,
+            GET_LINE_PARMS                               = 0x35,
+            DIAL_DIGITS                                  = 0x36,
+            SET_UNIT_PARAMETER                           = 0x37,
+            GET_UNIT_PARAMETER                           = 0x38,
+            CLEAR_UNIT_PARAMETER                         = 0x39,
             GET_PROFILE                                  = 0x3A,
-            SET_ETHERNET_MULTICAST_FILTERS               = 0x40, 
-            SET_ETHERNET_POWER_MANAGEMENT_PATTERN_FILTER = 0x41, 
-            GET_ETHERNET_POWER_MANAGEMENT_PATTERN_FILTER = 0x42, 
-            SET_ETHERNET_PACKET_FILTER                   = 0x43, 
-            GET_ETHERNET_STATISTIC                       = 0x44, 
-            SET_ATM_DATA_FORMAT                          = 0x50, 
-            GET_ATM_DEVICE_STATISTICS                    = 0x51, 
-            SET_ATM_DEFAULT_VC                           = 0x52, 
-            GET_ATM_VC_STATISTICS                        = 0x53, 
-            GET_NTB_PARAMETERS                           = 0x80, 
-            GET_NET_ADDRESS                              = 0x81, 
-            SET_NET_ADDRESS                              = 0x82, 
-            GET_NTB_FORMAT                               = 0x83, 
-            SET_NTB_FORMAT                               = 0x84, 
-            GET_NTB_INPUT_SIZE                           = 0x85, 
-            SET_NTB_INPUT_SIZE                           = 0x86, 
-            GET_MAX_DATAGRAM_SIZE                        = 0x87, 
-            SET_MAX_DATAGRAM_SIZE                        = 0x88, 
+            SET_ETHERNET_MULTICAST_FILTERS               = 0x40,
+            SET_ETHERNET_POWER_MANAGEMENT_PATTERN_FILTER = 0x41,
+            GET_ETHERNET_POWER_MANAGEMENT_PATTERN_FILTER = 0x42,
+            SET_ETHERNET_PACKET_FILTER                   = 0x43,
+            GET_ETHERNET_STATISTIC                       = 0x44,
+            SET_ATM_DATA_FORMAT                          = 0x50,
+            GET_ATM_DEVICE_STATISTICS                    = 0x51,
+            SET_ATM_DEFAULT_VC                           = 0x52,
+            GET_ATM_VC_STATISTICS                        = 0x53,
+            GET_NTB_PARAMETERS                           = 0x80,
+            GET_NET_ADDRESS                              = 0x81,
+            SET_NET_ADDRESS                              = 0x82,
+            GET_NTB_FORMAT                               = 0x83,
+            SET_NTB_FORMAT                               = 0x84,
+            GET_NTB_INPUT_SIZE                           = 0x85,
+            SET_NTB_INPUT_SIZE                           = 0x86,
+            GET_MAX_DATAGRAM_SIZE                        = 0x87,
+            SET_MAX_DATAGRAM_SIZE                        = 0x88,
             GET_CRC_MODE                                 = 0x89,
             SET_CRC_MODE                                 = 0x8A,
         };
@@ -424,7 +424,7 @@ public:
                     // 0 - 1 Stop bit
                     // 1 - 1.5 Stop bits
                     // 2 - 2 Stop bits
-                    unsigned bParityType : 8; //0-None 1-Odd 2-Even 3-Mark 4-Space 
+                    unsigned bParityType : 8; //0-None 1-Odd 2-Even 3-Mark 4-Space
                     unsigned bDataBits : 8;   // 5,6,7,8 or 16
                 }__attribute__((packed));
 

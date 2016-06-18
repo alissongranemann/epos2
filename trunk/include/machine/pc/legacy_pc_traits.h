@@ -152,7 +152,7 @@ template<> struct Traits<C905>: public Traits<PC_Ethernet>
 
 template<> struct Traits<PC_FPGA>: public Traits<PC_Common>
 {
-    static const bool enabled = true;
+    static const bool enabled = false;
 
     static const unsigned int DMA_BUFFER_SIZE = 64 * 1024; // 64 KB
 };

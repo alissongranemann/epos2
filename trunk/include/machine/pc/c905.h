@@ -37,7 +37,7 @@ public:
         Reg16 BytesXmittdOk;
         Reg16 IntStatus;
     };
-        
+
     struct Window5 {
         Reg16 TxStartThresh;
         Reg16 reserved0;
@@ -49,7 +49,7 @@ public:
         Reg16 IndicationEnable;
         Reg16 IntStatus;
     };
-        
+
     struct Window4 {
         Reg16 reserved0;
         Reg16 VcoDiagnostic;
@@ -61,7 +61,7 @@ public:
         Reg8  UpperBytesOK;
         Reg16 IntStatus;
     };
-        
+
     struct Window3 {
         Reg32 InternalConfig;
         Reg16 MaxPktSize;
@@ -96,7 +96,7 @@ public:
         Reg16 TriggerBits;
         Reg16 IntStatus;
     };
-        
+
     struct Window0 {
         Reg32 reserved0;
         Reg32 BiosRomAddr;
@@ -111,13 +111,13 @@ public:
         DPD() {}
         DPD(Reg32 a, Reg32 l) : DnNextPtr(0), FrameStartHeader(0),
         			DnFragAddress(a), DnFragLen(l) {}
-        
+
         volatile DPD * DnNextPtr;
         Reg32 FrameStartHeader;
         Reg32 DnFragAddress;
         Reg32 DnFragLen;
     };
-    
+
 public:
     union {
         Window0 w0;

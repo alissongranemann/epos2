@@ -60,7 +60,7 @@ public:
 
 private:
     void clear_interrupt() {
-        gpio(_port, ICR) = _pin_bit; 
+        gpio(_port, ICR) = _pin_bit;
         gpio(_port, IRQ_DETECT_ACK) &= ~(_pin_bit << (8 * _port));
     }
 

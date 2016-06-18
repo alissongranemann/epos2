@@ -55,7 +55,7 @@ public:
     typedef Page_Table Page_Directory;
 
     // Directory (for Address_Space)
-    class Directory 
+    class Directory
     {
     public:
         Directory() {}

@@ -204,7 +204,7 @@ namespace Scheduling_Criteria
 
           void update(); // Defined at Alarm
       };
-      
+
       // Global Earliest Deadline First (multicore)
       class GEDF: public EDF
       {

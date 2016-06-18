@@ -19,7 +19,7 @@ Scheduler<Thread> Thread::_scheduler;
 Spin Thread::_lock;
 
 // Methods
-void Thread::constructor_prolog(unsigned int stack_size)
+void Thread::constructor_prologue(unsigned int stack_size)
 {
     lock();
 
@@ -30,7 +30,7 @@ void Thread::constructor_prolog(unsigned int stack_size)
 }
 
 
-void Thread::constructor_epilog(const Log_Addr & entry, unsigned int stack_size)
+void Thread::constructor_epilogue(const Log_Addr & entry, unsigned int stack_size)
 {
     db<Thread>(TRC) << "Thread(task=" << _task
                     << ",entry=" << entry

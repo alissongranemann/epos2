@@ -73,7 +73,7 @@ template <> struct Traits<Cortex_M_USB>: public Traits<Cortex_M_Common>
     // Some observed objects are created before initializing the Display, which may use the USB.
     // Enabling debug may cause trouble in some Machines
     static const bool debugged = false;
-    
+
     static const unsigned int UNITS = 1;
     static const bool blocking = false;
     static const bool enabled = Traits<Serial_Display>::enabled && (Traits<Serial_Display>::ENGINE == Traits<Serial_Display>::USB);

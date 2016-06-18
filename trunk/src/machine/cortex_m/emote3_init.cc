@@ -24,8 +24,8 @@ void eMote3::init()
 void eMote3::init_clock()
 {
     // Since the clock is configured in traits and never changes,
-    // this needs to be done only once, but this method will be 
-    // called at least twice during EPOS' initialization 
+    // this needs to be done only once, but this method will be
+    // called at least twice during EPOS' initialization
     // (in eMote3::uart_config() and Cortex_M::init())
     if(_init_clock_done)
         return;
@@ -61,7 +61,7 @@ void eMote3::init_clock()
 
     Reg32 clock_ctrl = scr(CLOCK_CTRL) & ~(SYS_DIV * 7);
     clock_ctrl |= clock_val * SYS_DIV; // Set system clock rate
-    clock_ctrl |= AMP_DET; // Enable AMP detect to make sure XOSC starts correctly    
+    clock_ctrl |= AMP_DET; // Enable AMP detect to make sure XOSC starts correctly
     clock_ctrl |= OSC_PD; // Power down unused oscillator
     clock_ctrl &= ~OSC; // Select 32Mhz oscillator
     clock_ctrl &= ~OSC32K; // Select 32Khz crystal oscillator
@@ -74,7 +74,7 @@ void eMote3::init_clock()
     clock_ctrl = scr(CLOCK_CTRL) & ~(IO_DIV * 7);
     scr(CLOCK_CTRL) = clock_ctrl | (clock_val * IO_DIV); // Set IO clock rate
 
-    //while((scr(CLOCK_STA) & (STA_SYNC_32K))); // Contiki includes this line too for some reason 
+    //while((scr(CLOCK_STA) & (STA_SYNC_32K))); // Contiki includes this line too for some reason
     while(!(scr(CLOCK_STA) & (STA_SYNC_32K)));
 
     _init_clock_done = true;

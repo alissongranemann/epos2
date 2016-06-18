@@ -23,7 +23,7 @@ protected:
 public:
     // Offsets from base I/O address
     enum {
-        PROM       = 0x00, // 16 bytes EEPROM 
+        PROM       = 0x00, // 16 bytes EEPROM
         PROM_MAC   = 0x00, // MAC Address (6 bytes)
         PROM_CHK   = 0x0c, // PROM Check Sum (bytes 0-11 and 14-15)
         PROM_SIG   = 0x0e, // PROM Signature (ASCII W)
@@ -93,7 +93,7 @@ public:
         MACEC    = 125, // MAC Enhanced Configuration Control
         CSR_RESF = 126  // Reserved -> 127
     };
-    
+
     // CSR0 bits
     enum {
         CSR0_INIT = 0x0001,
@@ -178,7 +178,7 @@ public:
         CSR15_INTL    = 0x0040,
         CSR15_PROM    = 0x8000
     };
-    
+
     // Bus Configuration Registers (BCR)
     enum {
         BCR_RES0 =   0, // Reserved -> 1
@@ -247,14 +247,14 @@ public:
         BCR18_BREADE = 0x0040,
         BCR18_DWIO   = 0x0080
     };
-   
+
     // BCR20 bits
     enum {
         BCR20_SWSTYLE2 = 0x0002,
         BCR20_SSIZE32  = 0x0100,
         BCR20_CSRPCNET = 0x0200
     };
-   
+
     // Initialization block (pg 156)
     struct Init_Block {
         Reg16 mode;		// (pg 120)
@@ -336,7 +336,7 @@ public:
         CPU::out16(_io_port + WIO_RAP, a);
         return CPU::in16(_io_port + WIO_RDP);
     }
-    void csr(int a, Reg16 v) { 
+    void csr(int a, Reg16 v) {
         CPU::out16(_io_port + WIO_RAP, a);
         CPU::out16(_io_port + WIO_RDP, v);
     }
@@ -344,15 +344,15 @@ public:
         CPU::out16(_io_port + WIO_RAP, a);
         return CPU::in16(_io_port + WIO_BDP);
     }
-    void  bcr(int a, Reg16 v) { 
+    void  bcr(int a, Reg16 v) {
         CPU::out16(_io_port + WIO_RAP, a);
         CPU::out16(_io_port + WIO_BDP, v);
     }
 
-    Reg16 dwio_rap() volatile { 
+    Reg16 dwio_rap() volatile {
         return (CPU::in32(_io_port + DWIO_RAP) & 0xffff);
     }
-    void dwio_rap(Reg16 v) { 
+    void dwio_rap(Reg16 v) {
         CPU::out32(_io_port + DWIO_RAP, v);
     }
     void dwio_s_reset() {
@@ -362,7 +362,7 @@ public:
         CPU::out32(_io_port + DWIO_RAP, a);
         return (CPU::in32(_io_port + DWIO_RDP) & 0xffff);
     }
-    void dwio_csr(int a, Reg16 v) { 
+    void dwio_csr(int a, Reg16 v) {
         CPU::out32(_io_port + DWIO_RAP, a);
         CPU::out32(_io_port + DWIO_RDP, v);
     }
@@ -370,7 +370,7 @@ public:
         CPU::out32(_io_port + DWIO_RAP, a);
         return (CPU::in32(_io_port + DWIO_BDP) & 0xffff);
     }
-    void dwio_bcr(int a, Reg16 v) volatile { 
+    void dwio_bcr(int a, Reg16 v) volatile {
         CPU::out32(_io_port + DWIO_RAP, a);
         CPU::out32(_io_port + DWIO_BDP, v);
     }
@@ -415,7 +415,7 @@ private:
         PCNet32 * device;
         unsigned int interrupt;
     };
-        
+
 protected:
     PCNet32(unsigned int unit, IO_Port io_port, IO_Irq irq, DMA_Buffer * dma);
 

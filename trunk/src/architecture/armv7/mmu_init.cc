@@ -13,7 +13,7 @@ __BEGIN_SYS
 void ARMv7_MMU::init()
 {
     db<Init, ARMv7_MMU>(TRC) << "ARMv7_MMU::init()" << endl;
-    
+
     db<Init, ARMv7_MMU>(INF) << "ARMv7_MMU::init::dat.b=" << &__data_start << ",dat.e=" << &_edata << ",bss.b="
                              << &__bss_start << ",bss.e=" << &_end << endl;
 

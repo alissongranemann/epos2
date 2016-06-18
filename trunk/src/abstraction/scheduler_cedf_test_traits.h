@@ -30,7 +30,7 @@ template<> struct Traits<Build>
     static const unsigned int MODEL = Legacy_PC;
 
     static const unsigned int CPUS = 16;
-    static const unsigned int NODES = 1; // > 1 => NETWORKING    
+    static const unsigned int NODES = 1; // > 1 => NETWORKING
 };
 
 

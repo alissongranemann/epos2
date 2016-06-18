@@ -58,11 +58,11 @@ protected:
       //Name        Offset     Description                                                        Type Reset Value
         PLLLOCKED = 1 << 7, // PLL lock status. The PLL is locked when USB_CTRL.PLLLOCKED is 1.     RO 0
         PLLEN     = 1 << 1, // 48 MHz USB PLL enable When this bit is set, the 48 MHz PLL is        RW 0
-                            // started. Software must avoid access to other USB registers before 
-                            // the PLL has locked; that is, USB_CTRL.PLLLOCKED is 1. This bit 
-                            // can be set only when USB_CTRL.USBEN is 1.  The PLL must be 
+                            // started. Software must avoid access to other USB registers before
+                            // the PLL has locked; that is, USB_CTRL.PLLLOCKED is 1. This bit
+                            // can be set only when USB_CTRL.USBEN is 1.  The PLL must be
                             // disabled before entering PM1 when suspended, and must be re-
-                            // enabled when resuming operation.                                              
+                            // enabled when resuming operation.
         USBEN     = 1 << 0, // USB enable. The USB controller is reset when this bit is cleared     RW 0
     };
 
@@ -74,13 +74,13 @@ protected:
                              // time USB_CSIL.INPKTRDY is set before sending the packet. If an
                              // IN token is received before an SOF token, then a zero length data
                              // packet will be sent.
-       RST         = 1 << 3, // Indicates that reset signaling is present on the bus                 RO 0 
+       RST         = 1 << 3, // Indicates that reset signaling is present on the bus                 RO 0
        RESUME      = 1 << 2, // Drives resume signaling for remote wakeup
                              // According to the USB Specification, the resume signal must be held   RW 0
                              // active for at least 1 ms and no more than 15 ms. It is recommended
                              // to keep this bit set for approximately 10 ms.
        SUSPEND     = 1 << 1, // Indicates entry into suspend mode                                    RO 0
-                             // Suspend mode must be enabled by setting 
+                             // Suspend mode must be enabled by setting
                              // USB_POW.SUSPENDEN
                              // Software clears this bit by reading the USB_CIF register or by
                              // asserting USB_POW.RESUME
@@ -121,7 +121,7 @@ protected:
                                   // generated is generated when this bit is set. Software must clear
                                   // this bit.
        CS0_INPKTRDY     = 1 << 1, // Software sets this bit after loading a data packet into the        RW 0
-                                  // endpoint 0 FIFO. It is cleared automatically when the data packet 
+                                  // endpoint 0 FIFO. It is cleared automatically when the data packet
                                   // has been transmitted. An interrupt is generated when the bit is cleared.
        CS0_OUTPKTRDY    = 1 << 0, // Endpoint 0 data packet received                                    RO 0
                                   // An interrupt request (EP0) is generated if the interrupt is enabled.
@@ -145,14 +145,14 @@ protected:
     {
       //Name           Offset     Description                                                          Type Reset
         AUTISET      = 1 << 7, // If set by software, the CSIL.INPKTRDY bit is automatically set when    RW 0
-                               // a data packet of maximum size (specified by USBMAXI) is loaded into 
-                               // the IN endpoint FIFO. If a packet of less than the maximum packet 
-                               // size is loaded, then CSIL.INPKTRDY will have to be set manually. 
+                               // a data packet of maximum size (specified by USBMAXI) is loaded into
+                               // the IN endpoint FIFO. If a packet of less than the maximum packet
+                               // size is loaded, then CSIL.INPKTRDY will have to be set manually.
         ISO          = 1 << 6, // Selects IN endpoint type: 0: Bulk/interrupt 1: Isochronous             RW 0
         FORCEDATATOG = 1 << 3, // Software sets this bit to force the IN endpoint's data toggle to       RW 0
-                               // switch after each data packet is sent regardless of whether an ACK 
-                               // was received. This can be used by interrupt IN endpoints which are 
-                               // used to communicate rate feedback for isochronous endpoints. 
+                               // switch after each data packet is sent regardless of whether an ACK
+                               // was received. This can be used by interrupt IN endpoints which are
+                               // used to communicate rate feedback for isochronous endpoints.
         INDBLBUF     = 1 << 0, // IN endpoint FIFO double-buffering enable.                              RW 0
     };
 
@@ -161,26 +161,26 @@ protected:
       //Name              Offset     Description                                                         Type Reset
         CSIL_CLRDATATOG  = 1 << 6, // Software sets this bit to reset the IN endpoint data toggle to 0.    RW 0
         CSIL_SENTSTALL   = 1 << 5, // For bulk/interrupt mode IN endpoints: This bit is set when a STALL   RW 0
-                                   // handshake is transmitted. The FIFO is flushed and the INPKTRDY bit 
+                                   // handshake is transmitted. The FIFO is flushed and the INPKTRDY bit
                                    // cleared. Software should clear this bit.
         CSIL_SENDSTALL   = 1 << 4, // For bulk/interrupt mode IN endpoints: Software sets this bit to      RO 0
-                                   // issue a STALL handshake. Software clears this bit to terminate the 
-                                   // stall condition. 
-        CSIL_FLUSHPACKET = 1 << 3, // Software sets this bit to flush the next packet to be transmitted    RW 0 
-                                   // from the IN endpoint FIFO. The FIFO pointer is reset and the 
-                                   // INPKTRDY bit is cleared.  Note: If the FIFO contains two packets, 
-                                   // FLUSHPACKET will need to be set twice to completely clear the FIFO. 
+                                   // issue a STALL handshake. Software clears this bit to terminate the
+                                   // stall condition.
+        CSIL_FLUSHPACKET = 1 << 3, // Software sets this bit to flush the next packet to be transmitted    RW 0
+                                   // from the IN endpoint FIFO. The FIFO pointer is reset and the
+                                   // INPKTRDY bit is cleared.  Note: If the FIFO contains two packets,
+                                   // FLUSHPACKET will need to be set twice to completely clear the FIFO.
         CSIL_UNDERRUN    = 1 << 2, // In isochronous mode, this bit is set when a zero length data packet  RW 0
-                                   // is sent after receiving an IN token with USB_CSIL.INPKTRDY not set.  
-                                   // In bulk/interrupt mode, this bit is set when a NAK is returned in 
-                                   // response to an IN token. Software should clear this bit. 
+                                   // is sent after receiving an IN token with USB_CSIL.INPKTRDY not set.
+                                   // In bulk/interrupt mode, this bit is set when a NAK is returned in
+                                   // response to an IN token. Software should clear this bit.
         CSIL_PKTPRESENT  = 1 << 1, // This bit is set when there is at least one packet in the IN endpoint RW 0
-                                   // FIFO. 
-        CSIL_INPKTRDY    = 1 << 0, // IN endpoint {1-5} packet transfer pending Software sets this bit     RO 0 
+                                   // FIFO.
+        CSIL_INPKTRDY    = 1 << 0, // IN endpoint {1-5} packet transfer pending Software sets this bit     RO 0
                                    // after loading a data packet into the FIFO. It is cleared automati-
                                    // cally when a data packet has been transmitted. An interrupt is gene-
                                    // rated (if enabled) when the bit is cleared.  When using double-buff-
-                                   // ering, the bit is cleared immediately if the other FIFO is empty. 
+                                   // ering, the bit is cleared immediately if the other FIFO is empty.
     };
 };
 
@@ -247,11 +247,11 @@ public:
     static void put(const char * c, unsigned int size);
 
     static bool ready_to_get() {
-        if(!configured()) 
+        if(!configured())
             return false;
         lock();
-        input(); 
-        bool ret = reg(CSOL) & CSOL_OUTPKTRDY; 
+        input();
+        bool ret = reg(CSOL) & CSOL_OUTPKTRDY;
         unlock();
         return ret;
     }
@@ -280,7 +280,7 @@ private:
         // 2) If _was_locked was false and interrupts are still enabled when execution returns, we're OK.
         // 3) It seems like an error if _was_locked was false and execution comes back with interrupts disabled.
         // So _was_locked should be correct.
-        CPU::int_disable(); 
+        CPU::int_disable();
     }
     static void unlock() {
         if(!_was_locked)

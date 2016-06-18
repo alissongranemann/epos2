@@ -32,7 +32,7 @@ void GPIO::handle_int(const IC::Interrupt_Id & i)
     // There is something weird going on here.
     // The manual says: "There is a self-clearing function to this register that generates a
     // reset pulse to clear any interrupt which has its corresponding bit set to 1."
-    // But this is not happening! 
+    // But this is not happening!
     // Also, clearing only the bit that is set or replacing the statement below with
     // regs[irq_number](IRQ_DETECT_ACK) = 0;
     // do not work!

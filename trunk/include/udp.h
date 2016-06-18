@@ -5,7 +5,7 @@
 
 #include <ip.h>
 
-__BEGIN_SYS 
+__BEGIN_SYS
 
 class UDP: private IP::Observer
 {
@@ -21,7 +21,7 @@ public:
     typedef IP::Buffer Buffer;
 
     typedef unsigned short Port;
-    
+
     class Address
     {
     public:
@@ -59,7 +59,7 @@ public:
         IP::Address _ip;
         Port _port;
     };
-    
+
     typedef Data_Observer<Buffer, Port> Observer;
     typedef Data_Observed<Buffer, Port> Observed;
 

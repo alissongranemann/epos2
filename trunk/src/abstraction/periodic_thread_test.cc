@@ -42,7 +42,7 @@ int main()
 
     chrono.stop();
 
-    cout << "\n\nThread A exited with status " << status_a 
+    cout << "\n\nThread A exited with status " << status_a
          << ", thread B exited with status " << status_b
          << " and thread C exited with status " << status_c << ".\n";
 
@@ -63,7 +63,7 @@ int func_a()
         cout << "a";
     }
     cout << "A";
-    return 'A';   
+    return 'A';
 }
 
 int func_b(void)
@@ -74,7 +74,7 @@ int func_b(void)
         cout << "b";
     }
     cout << "B";
-    return 'B';   
+    return 'B';
 }
 
 int func_c(void)
@@ -85,5 +85,5 @@ int func_c(void)
         cout << "c";
     }
     cout << "C";
-    return 'C';   
+    return 'C';
 }

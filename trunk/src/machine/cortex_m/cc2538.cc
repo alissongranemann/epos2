@@ -115,7 +115,7 @@ void CC2538::handle_int()
     Reg32 irqrf0 = sfr(RFIRQF0);
     Reg32 irqrf1 = sfr(RFIRQF1);
     Reg32 errf = sfr(RFERRF);
-    sfr(RFIRQF0) = 0; 
+    sfr(RFIRQF0) = 0;
     sfr(RFIRQF1) = 0;
     sfr(RFERRF) = 0;
     db<CC2538>(INF) << "CC2538::handle_int:RFIRQF0=" << hex << irqrf0 << endl;

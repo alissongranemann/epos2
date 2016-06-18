@@ -143,9 +143,9 @@ public:
         return notified;
     }
 
-private: 
+private:
     Simple_Ordered_List<Conditional_Observer<T>, T> _observers;
-}; 
+};
 
 template<typename T>
 class Conditional_Observer
@@ -158,13 +158,13 @@ public:
 protected:
     Conditional_Observer(): _link(this) {
         db<Observers>(TRC) << "Conditionally_Observer() => " << this << endl;
-    } 
+    }
 
 public:
     ~Conditional_Observer() {
         db<Observers>(TRC) << "~Conditionally_Observer(this=" << this << ")" << endl;
     }
-    
+
     virtual void update(Conditionally_Observed<T> * o, T c) = 0;
 
 private:
@@ -359,5 +359,5 @@ private:
 };
 
 __END_UTIL
- 
+
 #endif

@@ -112,7 +112,7 @@ void PCNet32::init(unsigned int unit)
     // Register the device
     _devices[unit].device = dev;
     _devices[unit].interrupt = IC::irq2int(irq);
-    
+
     // Install interrupt handler
     IC::int_vector(_devices[unit].interrupt, &int_handler);
 

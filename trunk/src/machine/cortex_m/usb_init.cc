@@ -10,7 +10,7 @@ volatile bool Cortex_M_USB::_ready_to_put = false;
 bool Cortex_M_USB::_ready_to_put_next = false;
 bool Cortex_M_USB::_was_locked = false;
 
-const USB_2_0::Descriptor::Device Cortex_M_USB::_device_descriptor = 
+const USB_2_0::Descriptor::Device Cortex_M_USB::_device_descriptor =
 {
     sizeof(Descriptor::Device), // Descriptor length
     DESC_DEVICE,               // Descriptor type
@@ -28,9 +28,9 @@ const USB_2_0::Descriptor::Device Cortex_M_USB::_device_descriptor =
     0x01,                      // Number of possible configurations
 };
 
-const Cortex_M_USB::Full_Config Cortex_M_USB::_config = 
+const Cortex_M_USB::Full_Config Cortex_M_USB::_config =
 {
-    //_configuration_descriptor = 
+    //_configuration_descriptor =
     {
         sizeof(Descriptor::Configuration), // Descriptor length
         DESC_CONFIGURATION,              // Descriptor type (DESC_CONFIGURATION)
@@ -41,7 +41,7 @@ const Cortex_M_USB::Full_Config Cortex_M_USB::_config =
         0xA0,                            // Configuration characteristics (remote wakeup = 1)
         25                               // Maximum power consumption from the bus in this specific configuration. (50mA)
     },
-    //_interface0_descriptor = 
+    //_interface0_descriptor =
     {
         sizeof(Descriptor::Interface), // Descriptor length
         DESC_INTERFACE,               // Descriptor type (DESC_INTERFACE)
@@ -53,7 +53,7 @@ const Cortex_M_USB::Full_Config Cortex_M_USB::_config =
         0x01,                         // Protocol code (V25TER)
         0x00                          // Index of string descriptor describing this interface
     },
-    //_cdc_header_descriptor = 
+    //_cdc_header_descriptor =
     {
         sizeof(CDC::Functional_Descriptor::Header),
         DESC_CLASS_SPECIFIC_INTERFACE,
@@ -87,7 +87,7 @@ const Cortex_M_USB::Full_Config Cortex_M_USB::_config =
     {
         sizeof(Descriptor::Endpoint),// Descriptor length
         DESC_ENDPOINT,               // Descriptor type (DESC_ENDPOINT)
-        2 | (1 << 7),                // Encoded address: Endpoint 2, IN 
+        2 | (1 << 7),                // Encoded address: Endpoint 2, IN
         EP_ATTR_INT,                 // Endpoint attributes (Interrupt endpoint)
         _max_packet_ep2,             // Maximum packet size this endpoint is capable of sending or receiving at once
         0x40                         // Interval for polling endpoint (64 full-speed frames = 64 ms)
@@ -117,7 +117,7 @@ const Cortex_M_USB::Full_Config Cortex_M_USB::_config =
     {
         sizeof(Descriptor::Endpoint),// Descriptor length
         DESC_ENDPOINT,               // Descriptor type (DESC_ENDPOINT)
-        4,                           // Encoded address: Endpoint 4, OUT 
+        4,                           // Encoded address: Endpoint 4, OUT
         EP_ATTR_BULK,                // Endpoint attributes (Bulk endpoint)
         _max_packet_ep4,             // Maximum packet size this endpoint is capable of sending or receiving at once
         0x00                         // Interval (ignored for Bulk operation)
@@ -145,7 +145,7 @@ void Cortex_M_USB::reset()
 
     input();
     reg(MAXI) = 0;
-    reg(MAXO) = _max_packet_ep4 / 8; // Endpoint 4, OUT 
+    reg(MAXO) = _max_packet_ep4 / 8; // Endpoint 4, OUT
     reg(CSOL) |= CSOL_CLRDATATOG; // From cc2538 User Guide: When a Bulk OUT endpoint is first configured, USB_CSOL.CLRDATATOG should be set.
     // if there are any data packets in the FIFO, they should be flushed
     reg(CSOL) |= CSOL_FLUSHPACKET;
@@ -155,12 +155,12 @@ void Cortex_M_USB::reset()
     // Only enable OUT interrupts for endpoint 0
     reg(OIE) = (1 << 0);
     // Only enable RESET common interrupt (disable start-of-frame, resume and suspend)
-    reg(CIE) = INT_RESET;    
+    reg(CIE) = INT_RESET;
 }
 
 void Cortex_M_USB::init()
 {
-    // Make sure that eMote3::init_clock() has been called and 
+    // Make sure that eMote3::init_clock() has been called and
     // the crystal oscillator is selected as source and stable.
     // Also, set D+ USB pull-up resistor, which is controlled by GPIO pin C2 in eMote3
     Cortex_M_Model::usb_power(0, FULL);

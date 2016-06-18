@@ -35,9 +35,9 @@ void E100::init(unsigned int unit)
 
     // Get I/O base port
     Log_Addr io_mem = hdr.region[PCI_REG_MEM].log_addr;
-    db<Init, E100>(INF) << "E100::init: I/O memory at " 
+    db<Init, E100>(INF) << "E100::init: I/O memory at "
         		<< hdr.region[PCI_REG_MEM].phy_addr
-        		<< " mapped to " 
+        		<< " mapped to "
         		<< hdr.region[PCI_REG_MEM].log_addr << endl;
 
     // Get I/O irq

@@ -23,7 +23,7 @@ public:
         	    crc = crc << 1;
             } while(--i);
         }
-        
+
         return crc;
     }
 

@@ -27,7 +27,7 @@ public:
         db<NIC>(TRC) << "NIC::NIC(u=" << UNIT << ",d=" << _dev << ") => " << this << endl;
     }
     ~Cortex_M_IEEE802_15_4() { _dev = 0; }
-    
+
     Buffer * alloc(NIC * nic, const Address & dst, const Protocol & prot, unsigned int once, unsigned int always, unsigned int payload) { return _dev->alloc(nic, dst, prot, once, always, payload); }
     int send(Buffer * buf) { return _dev->send(buf); }
     void free(Buffer * buf) { _dev->free(buf); }
@@ -37,7 +37,7 @@ public:
 
     const unsigned int mtu() const { return _dev->mtu(); }
     const Address broadcast() const { return _dev->broadcast(); }
-    
+
     const Address & address() { return _dev->address(); }
     void address(const Address & address) { _dev->address(address); }
 
