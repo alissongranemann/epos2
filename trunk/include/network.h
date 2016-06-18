@@ -3,7 +3,7 @@
 #ifndef __network_h
 #define __network_h
 
-#include <nic.h>
+#include <ip.h>
 
 __BEGIN_SYS
 

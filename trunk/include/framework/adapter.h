@@ -29,12 +29,12 @@ public:
     ~Adapter() { static_enter(); }
 
     void * operator new(size_t bytes) {
-	static_enter();
-	return Scenario<Component>::operator new(bytes);
+        static_enter();
+        return Scenario<Component>::operator new(bytes);
     }
     void operator delete(void * adapter) {
-	Scenario<Component>::operator delete(adapter);
-	static_leave();
+        Scenario<Component>::operator delete(adapter);
+        static_leave();
     }
 
     static const Adapter<Component> * self() { static_enter(); const Adapter<Component> * res = reinterpret_cast<const Adapter<Component> *>(Component::self()); return res; }

@@ -232,7 +232,7 @@ void Agent::handle_segment()
         unsigned int bytes;
     Segment::Flags flags;
     in(bytes, flags);
-    id(Id(SEGMENT_ID, reinterpret_cast<Id::Unit_Id>(new Adapter<Segment>(bytes, flags))));
+    id(Id(SEGMENT_ID, reinterpret_cast<Id::Unit_Id>(new Adapter<Segment>(bytes, Segment::Color::WHITE, flags))));
     } break;
     case CREATE3: { // *** indistinguishable ***
         Segment::Phy_Addr phy_addr;
