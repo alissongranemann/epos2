@@ -5,7 +5,7 @@
 
 #include <channel.h>
 
-__BEGIN_SYS 
+__BEGIN_SYS
 
 // Commonalities for connectionless channels
 template<typename Channel, bool connectionless>
@@ -267,8 +267,8 @@ public:
     Port(const Local_Address & local): Base(local) {}
     ~Port() {}
 
-    Link<Channel> * listen() { return new Link<Channel>(Channel::listen(this->_local)); }
-    Link<Channel> * connect(const Address & to) { return new Link<Channel>(Channel::connect(this->_local, to)); }
+    Link<Channel> * listen() { return new (SYSTEM) Link<Channel>(Channel::listen(this->_local)); }
+    Link<Channel> * connect(const Address & to) { return new (SYSTEM) Link<Channel>(Channel::connect(this->_local, to)); }
 };
 
 __END_SYS

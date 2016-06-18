@@ -50,7 +50,7 @@ void IA32::Context::load() const volatile
     // Adjust the system-level stack pointer in the dummy TSS (that will be used by system calls and interrupts) for this Thread
     if(Traits<System>::multitask)
         ASM("       mov     %%esp, %%eax                                \n"
-            "       add     $42, %%eax                                  \n"
+            "       add     $52, %%eax                                  \n"
             "       movl     %%eax, %0                                  \n" : "=m"(reinterpret_cast<TSS *>(Memory_Map<PC>::TSS0)->esp0) : );
 
     // Perform a possibly cross-level return (from kernel to user-level)

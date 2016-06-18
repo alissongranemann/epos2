@@ -186,7 +186,7 @@ private:
     class Fragmented
     {
         friend class IP;
-    
+
     private:
         static const unsigned int MAX_FRAGMENTS = (MTU + MFS - 1) / MFS; // 45 for Ethernet
         typedef Reassembling::Element Element;

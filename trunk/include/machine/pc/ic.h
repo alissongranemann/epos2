@@ -25,29 +25,29 @@ private:
 public:
     // I/O Ports
     enum {
-        MASTER          = 0x20,
-        MASTER_CMD	= MASTER,
-        MASTER_DAT	= MASTER + 1,
-        SLAVE           = 0xa0,
-        SLAVE_CMD	= SLAVE,
-        SLAVE_DAT	= SLAVE + 1
+        MASTER      = 0x20,
+        MASTER_CMD  = MASTER,
+        MASTER_DAT  = MASTER + 1,
+        SLAVE       = 0xa0,
+        SLAVE_CMD   = SLAVE,
+        SLAVE_DAT   = SLAVE + 1
     };
 
     // Commands
     enum {
-        SELECT_IRR	= 0x0a,
-        SELECT_ISR	= 0x0b,
-        ICW1		= 0x11, // flank, cascaded, more ICWs
-        ICW4		= 0x01,
-        EOI		= 0x20
+        SELECT_IRR  = 0x0a,
+        SELECT_ISR  = 0x0b,
+        ICW1        = 0x11, // flank, cascaded, more ICWs
+        ICW4        = 0x01,
+        EOI         = 0x20
     };
 
     // IRQs
     typedef unsigned int IRQ;
     enum {
-        IRQ_TIMER	= 0,
-        IRQ_KEYBOARD	= 1,
-        IRQ_CASCADE	= 2,
+        IRQ_TIMER       = 0,
+        IRQ_KEYBOARD    = 1,
+        IRQ_CASCADE     = 2,
         IRQ_SERIAL24    = 3,
         IRQ_SERIAL13    = 4,
         IRQ_PARALLEL23  = 5,
@@ -65,8 +65,8 @@ public:
     static const unsigned int INTS = 50;
     enum {
         INT_FIRST_HARD  = HARD_INT,
-        INT_TIMER	= HARD_INT + IRQ_TIMER,
-        INT_KEYBOARD	= HARD_INT + IRQ_KEYBOARD,
+        INT_TIMER       = HARD_INT + IRQ_TIMER,
+        INT_KEYBOARD    = HARD_INT + IRQ_KEYBOARD,
         INT_LAST_HARD   = HARD_INT + IRQ_LAST,
         INT_RESCHEDULER = SOFT_INT,
         INT_SYSCALL
@@ -152,6 +152,7 @@ private:
     typedef CPU::Reg8 Reg8;
     typedef CPU::Reg16 Reg16;
     typedef CPU::Reg32 Reg32;
+    typedef CPU::Reg64 Reg64;
     typedef CPU::Log_Addr Log_Addr;
 
     static const unsigned int HARD_INT = i8259A::HARD_INT;
@@ -161,7 +162,7 @@ public:
     static const unsigned int INTS = i8259A::INTS;
     enum {
         INT_FIRST_HARD  = i8259A::INT_FIRST_HARD,
-        INT_TIMER	= i8259A::INT_TIMER,
+        INT_TIMER       = i8259A::INT_TIMER,
         INT_KEYBOARD    = i8259A::INT_KEYBOARD,
         INT_RESCHEDULER = i8259A::INT_RESCHEDULER, // in multicores, reschedule goes via IPI, which must be acknowledged just like hardware
         INT_SYSCALL     = i8259A::INT_SYSCALL,
@@ -170,130 +171,143 @@ public:
 
     // Default mapping addresses
     enum {
-        LOCAL_APIC_PHY_ADDR	= 0xfee00000,
-        LOCAL_APIC_LOG_ADDR	= Memory_Map<PC>::APIC,
-        LOCAL_APIC_SIZE         = Memory_Map<PC>::VGA - Memory_Map<PC>::APIC,
-        IO_APIC_PHY_ADDR	= 0xfec00000
+        LOCAL_APIC_PHY_ADDR = 0xfee00000,
+        LOCAL_APIC_LOG_ADDR = Memory_Map<PC>::APIC,
+        LOCAL_APIC_SIZE     = Memory_Map<PC>::IO_APIC - Memory_Map<PC>::APIC,
+        IO_APIC_PHY_ADDR    = 0xfec00000,
+        IO_APIC_LOG_ADDR    = Memory_Map<PC>::IO_APIC,
+        IO_APIC_SIZE        = Memory_Map<PC>::VGA - Memory_Map<PC>::IO_APIC
     };
 
     // Memory-mapped registers
+    // Values added with _base (originaly 0xfee00000). See Figure 10-1 of Intel Arch Dev Manual Vol 3A, 2014. Pg 354 PDF.
     enum {
-        ID =			0x020,	// Task priority 
-        VERSION =		0x030,	// Task priority 
-        TPR =			0x080,	// Task priority 
-        APR =			0x090,	// Arbitration priority 
-        PPR =			0x0a0,	// Processor priority 
-        EOI =			0x0b0,	// End of interrupt 
-        RRR =			0x0c0,	// Remote read 
-        LDR =			0x0d0,	// Logical destination 
-        DFR =			0x0e0,	// Destination format 
-        SVR =			0x0f0,	// Spurious interrupt vector 
-        ISR0_32 =		0x100,	// In-service 
-        ISR32_63 =		0x110,	// In-service 
-        ISR64_95 =		0x120,	// In-service 
-        ISR96_127 =		0x130,	// In-service 
-        ISR128_159 =		0x140,	// In-service 
-        ISR160_191 =		0x150,	// In-service 
-        ISR192_223 =		0x160,	// In-service 
-        ISR224_255 =		0x170,	// In-service 
-        TMR0_32 =		0x180,	// Trigger mode 
-        TMR32_63 =		0x190,	// Trigger mode 
-        TMR64_95 =		0x1a0,	// Trigger mode 
-        TMR96_127 =		0x1b0,	// Trigger mode 
-        TMR128_159 =		0x1c0,	// Trigger mode 
-        TMR160_191 =		0x1d0,	// Trigger mode 
-        TMR192_223 =		0x1e0,	// Trigger mode 
-        TMR224_255 =		0x1f0,	// Trigger mode 
-        IRR0_32 =		0x200,	// Interrupt request 
-        IRR32_63 =		0x210,	// Interrupt request 
-        IRR64_95 =		0x220,	// Interrupt request 
-        IRR96_127 =		0x230,	// Interrupt request 
-        IRR128_159 =		0x240,	// Interrupt request 
-        IRR160_191 =		0x250,	// Interrupt request 
-        IRR192_223 =		0x260,	// Interrupt request 
-        IRR224_255 =		0x270,	// Interrupt request 
-        ESR =			0x280,	// Error status 
-        LVT_CMCI =		0x2f0,	// LVT CMCI 
-        ICR0_31 =		0x300,	// Interrupt command 
-        ICR32_63 =		0x310,	// Interrupt command 
-        LVT_TIMER =		0x320,	// LVT timer 
-        LVT_THERMAL =		0x330,	// LVT thermal sensor 
-        LVT_PERF =		0x340,	// LVT performance monitor 
-        LVT_LINT0 =		0x350,	// LVT interrupt line 0 
-        LVT_LINT1 =		0x360,	// LVT interrupt line 1 
-        LVT_ERROR =		0x370,	// LVT error 
-        TIMER_INITIAL =		0x380,	// Timer's initial count 
-        TIMER_CURRENT =		0x390,	// Timer's current count 
-        TIMER_PRESCALE =	0x3e0	// Timer's BUS CLOCK prescaler 
+        ID            = 0x020,  // Task priority
+        VERSION       = 0x030,  // Task priority
+        TPR           = 0x080,  // Task priority
+        APR           = 0x090,  // Arbitration priority
+        PPR           = 0x0a0,  // Processor priority
+        EOI           = 0x0b0,  // End of interrupt
+        RRR           = 0x0c0,  // Remote read
+        LDR           = 0x0d0,  // Logical destination
+        DFR           = 0x0e0,  // Destination format
+        SVR           = 0x0f0,  // Spurious interrupt vector
+        ISR0_31       = 0x100,  // In-service
+        ISR32_63      = 0x110,  // In-service
+        ISR64_95      = 0x120,  // In-service
+        ISR96_127     = 0x130,  // In-service
+        ISR128_159    = 0x140,  // In-service
+        ISR160_191    = 0x150,  // In-service
+        ISR192_223    = 0x160,  // In-service
+        ISR224_255    = 0x170,  // In-service
+        TMR0_31       = 0x180,  // Trigger mode
+        TMR32_63      = 0x190,  // Trigger mode
+        TMR64_95      = 0x1a0,  // Trigger mode
+        TMR96_127     = 0x1b0,  // Trigger mode
+        TMR128_159    = 0x1c0,  // Trigger mode
+        TMR160_191    = 0x1d0,  // Trigger mode
+        TMR192_223    = 0x1e0,  // Trigger mode
+        TMR224_255    = 0x1f0,  // Trigger mode
+        IRR0_31       = 0x200,  // Interrupt request
+        IRR32_63      = 0x210,  // Interrupt request
+        IRR64_95      = 0x220,  // Interrupt request
+        IRR96_127     = 0x230,  // Interrupt request
+        IRR128_159    = 0x240,  // Interrupt request
+        IRR160_191    = 0x250,  // Interrupt request
+        IRR192_223    = 0x260,  // Interrupt request
+        IRR224_255    = 0x270,  // Interrupt request
+        ESR           = 0x280,  // Error status
+        LVT_CMCI      = 0x2f0,  // LVT CMCI
+        ICR0_31       = 0x300,  // Interrupt command
+        ICR32_63      = 0x310,  // Interrupt command
+        LVT_TIMER     = 0x320,  // LVT timer
+        LVT_THERMAL   = 0x330,  // LVT thermal sensor
+        LVT_PERF      = 0x340,  // LVT performance monitor
+        LVT_LINT0     = 0x350,  // LVT interrupt line 0
+        LVT_LINT1     = 0x360,  // LVT interrupt line 1
+        LVT_ERROR     = 0x370,  // LVT error
+        TIMER_INITIAL = 0x380,  // Timer's initial count
+        TIMER_CURRENT = 0x390,  // Timer's current count
+        TIMER_PRESCALE = 0x3e0   // Timer's BUS CLOCK prescaler
+    };
+
+    // MSR registers
+    enum {
+        IA32_APIC_BASE_MSR = 0x1b
+    };
+
+    // MSR and masks
+    enum {
+        BSP_MASK = 0x100
     };
 
     // Flags
     enum {
         // Local APIC ID Register
-        ID_SHIFT		= 24,
-        ID_MASK			= 0xff000000,
+        ID_SHIFT                = 24,
+        ID_MASK                 = 0xff000000,
 
         // Spurious Interrupt Vector Register
-        SVR_VECTOR		= 0x000000ff,
-        SVR_APIC_ENABLED	= (1 << 8),
-        SVR_FOCUS_DISABLED	= (1 << 9),
+        SVR_VECTOR              = 0x000000ff,
+        SVR_APIC_ENABLED        = (1 << 8),
+        SVR_FOCUS_DISABLED      = (1 << 9),
 
         // Error Status Register
-        ESR_SEND_CHECK		= (1 << 0),
-        ESR_RECV_CHECK		= (1 << 1),
-        ESR_SEND_ACCEPT		= (1 << 2),
-        ESR_RECV_ACCEPT		= (1 << 3),
-        ESR_SEND_ILLEGAL_VECTOR	= (1 << 5),
-        ESR_RECV_ILLEGAL_VECTOR	= (1 << 6),
-        ESR_ILLEGAL_REGISTER	= (1 << 7),
+        ESR_SEND_CHECK          = (1 << 0),
+        ESR_RECV_CHECK          = (1 << 1),
+        ESR_SEND_ACCEPT         = (1 << 2),
+        ESR_RECV_ACCEPT         = (1 << 3),
+        ESR_SEND_ILLEGAL_VECTOR = (1 << 5),
+        ESR_RECV_ILLEGAL_VECTOR = (1 << 6),
+        ESR_ILLEGAL_REGISTER    = (1 << 7),
 
         // Interrupt Command Register (64 bits)
-        ICR_DEST		= (3 << 18),
-        ICR_SELF		= (1 << 18),
-        ICR_ALL			= (1 << 19),
-        ICR_OTHERS		= (3 << 18),
-        ICR_TRIGMOD		= (1 << 15),
-        ICR_EDGE		= (0 << 15),
-        ICR_LEVEL		= (1 << 15),
-        ICR_ASSERTED		= (1 << 14),
-        ICR_DEASSERT		= (0 << 14),
-        ICR_ASSERT		= (1 << 14),
-        ICR_STATUS		= (1 << 12),
-        ICR_IDLE		= (0 << 12),
-        ICR_PENDING		= (1 << 12),
-        ICR_DESTMODE		= (1 << 11),
-        ICR_PHY			= (0 << 11),
-        ICR_LOG			= (1 << 11),
-        ICR_DELMODE		= (7 <<  8),
-        ICR_FIXED		= (0 <<  8),
-        ICR_LOWPRI		= (1 <<  8),
-        ICR_SMI			= (2 <<  8),
-        ICR_NMI			= (4 <<  8),
-        ICR_INIT		= (5 <<  8),
-        ICR_STARTUP		= (6 <<  8),
+        ICR_DEST                = (3 << 18),
+        ICR_SELF                = (1 << 18),
+        ICR_ALL                 = (1 << 19),
+        ICR_OTHERS              = (3 << 18),
+        ICR_TRIGMOD             = (1 << 15),
+        ICR_EDGE                = (0 << 15),
+        ICR_LEVEL               = (1 << 15),
+        ICR_ASSERTED            = (1 << 14),
+        ICR_DEASSERT            = (0 << 14),
+        ICR_ASSERT              = (1 << 14),
+        ICR_STATUS              = (1 << 12),
+        ICR_IDLE                = (0 << 12),
+        ICR_PENDING             = (1 << 12),
+        ICR_DESTMODE            = (1 << 11),
+        ICR_PHY                 = (0 << 11),
+        ICR_LOG                 = (1 << 11),
+        ICR_DELMODE             = (7 <<  8),
+        ICR_FIXED               = (0 <<  8),
+        ICR_LOWPRI              = (1 <<  8),
+        ICR_SMI                 = (2 <<  8),
+        ICR_NMI                 = (4 <<  8),
+        ICR_INIT                = (5 <<  8),
+        ICR_STARTUP             = (6 <<  8),
 
         // Local Vector Table
-        LVT_MASKED		= (1 << 16),
-        LVT_EDGE		= (0 << 15),
-        LVT_LEVEL		= (1 << 15),
-        LVT_FIXED		= (0 << 8),
-        LVT_SMI			= (2 << 8),
-        LVT_NMI			= (4 << 8),
-        LVT_EXTINT		= (7 << 8),
-        LVT_INIT		= (5 << 8),
+        LVT_MASKED              = (1 << 16),
+        LVT_EDGE                = (0 << 15),
+        LVT_LEVEL               = (1 << 15),
+        LVT_FIXED               = (0 << 8),
+        LVT_SMI                 = (2 << 8),
+        LVT_NMI                 = (4 << 8),
+        LVT_EXTINT              = (7 << 8),
+        LVT_INIT                = (5 << 8),
 
         // Local Timer (32 bits)
-        TIMER_PERIODIC		= (1 << 17),
-        TIMER_ONE_SHOT		= (0 << 17),
-        TIMER_MASKED		= LVT_MASKED,
-        TIMER_PRESCALE_BY_1	= 0xb,
-        TIMER_PRESCALE_BY_2	= 0x0,
-        TIMER_PRESCALE_BY_4	= 0x8,
-        TIMER_PRESCALE_BY_8	= 0x2,
-        TIMER_PRESCALE_BY_16	= 0xa,
-        TIMER_PRESCALE_BY_32	= 0x1,
-        TIMER_PRESCALE_BY_64	= 0x9,
-        TIMER_PRESCALE_BY_128	= 0x3,
+        TIMER_PERIODIC          = (1 << 17),
+        TIMER_ONE_SHOT          = (0 << 17),
+        TIMER_MASKED            = LVT_MASKED,
+        TIMER_PRESCALE_BY_1     = 0xb,
+        TIMER_PRESCALE_BY_2     = 0x0,
+        TIMER_PRESCALE_BY_4     = 0x8,
+        TIMER_PRESCALE_BY_8     = 0x2,
+        TIMER_PRESCALE_BY_16    = 0xa,
+        TIMER_PRESCALE_BY_32    = 0x1,
+        TIMER_PRESCALE_BY_64    = 0x9,
+        TIMER_PRESCALE_BY_128   = 0x3,
     };
 
 public:
@@ -340,7 +354,7 @@ public:
 
     static void reset(Log_Addr addr = LOCAL_APIC_LOG_ADDR) {
         // APIC must be on very early in the boot process, so it is
-        // subject to memory remappings. We also cannot be sure about 
+        // subject to memory remappings. We also cannot be sure about
         // global constructors here
         remap(addr);
         if(Traits<System>::multicore) {
@@ -352,8 +366,8 @@ public:
     }
 
     static int eoi(unsigned int i) { // End of interrupt
-    	write(APIC::EOI, 0);
-    	return true;
+        write(APIC::EOI, 0);
+        return true;
     }
 
     static void config_timer(Reg32 count, bool interrupt, bool periodic) {
@@ -366,17 +380,17 @@ public:
         write(LVT_TIMER, v);
     }
 
-    static void enable_timer() { 
+    static void enable_timer() {
         write(LVT_TIMER, read(LVT_TIMER) & ~TIMER_MASKED);
     }
-    static void disable_timer() { 
+    static void disable_timer() {
         write(LVT_TIMER, read(LVT_TIMER) | TIMER_MASKED);
     }
 
     static Reg32 read_timer() {
         return read(TIMER_CURRENT);
     }
-    
+
     static void reset_timer() {
         disable();
         write(TIMER_CURRENT, read(TIMER_INITIAL));
@@ -384,7 +398,7 @@ public:
     }
 
 private:
-    static int maxlvt()	{
+    static int maxlvt() {
         Reg32 v = read(VERSION);
         // 82489DXs do not report # of LVT entries
         return (v & 0xf) ? (v >> 16) & 0xff : 2;
