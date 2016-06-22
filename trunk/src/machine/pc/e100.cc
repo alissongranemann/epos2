@@ -2,6 +2,7 @@
 
 #include <machine/pc/machine.h>
 #include <machine/pc/e100.h>
+#include <task.h>
 
 __BEGIN_SYS
 
@@ -11,10 +12,12 @@ E100::Device E100::_devices[UNITS];
 // Class Methods
 void E100::int_handler(const IC::Interrupt_Id & interrupt)
 {
-    E100 * dev = get(interrupt);
+    db<E100>(TRC) << "E100::int_handler" << endl;
+
+    E100 * dev = get_by_interrupt(interrupt);
 
     db<E100>(TRC) << "E100::int_handler(int=" << interrupt
-        	  << ",dev=" << dev << ")" << endl;
+                  << ",dev=" << dev << ")" << endl;
     if(!dev)
         db<E100>(WRN) << "E100::int_handler: handler not found\n";
     else
@@ -53,19 +56,21 @@ E100::~E100()
 }
 
 E100::E100(unsigned int unit,
-           Log_Addr io_mem, IO_Irq irq, DMA_Buffer * dma_buf)
+           Log_Addr io_mem,
+           IO_Irq irq,
+           DMA_Buffer * dma_buf)
 {
     db<E100>(TRC) << "E100(unit=" << unit << ",io=" << io_mem << ",irq=" << irq << ",dma=" << dma_buf << ")" << endl;
 
     _unit = unit;
     _io_mem = io_mem;
     _irq = irq;
-    _dma_buf = dma_buf;
-    csr = (CSR_Desc *)io_mem;
+    csr = (CSR_Desc *) io_mem;
+    _dma_buffer = dma_buf;
 
     // Distribute the DMA_Buffer allocated by init()
-    Log_Addr log = _dma_buf->log_address();
-    Phy_Addr phy = _dma_buf->phy_address();
+    Log_Addr log = dma_buf->log_address();
+    Phy_Addr phy = dma_buf->phy_address();
 
     // Initialization Block
     _configCB_phy = phy;
@@ -125,6 +130,25 @@ E100::E100(unsigned int unit,
         _tx_ring[i].link = phy; //next TxCB
     }
     _tx_ring[i-1].link = _tx_ring_phy;
+
+
+    // Rx Buffer
+    for(i = 0; i < RX_BUFS; i++) {
+        _rx_buffer[i] = new (log) Buffer(&_rx_ring[i]);
+
+        log += align128(sizeof(Buffer));
+        phy += align128(sizeof(Buffer));
+    }
+
+    // Tx Buffer
+    for(i = 0; i < TX_BUFS; i++) {
+        _tx_buffer[i] = new (log) Buffer(&_tx_ring[i]);
+
+        log += align128(sizeof(Buffer));
+        phy += align128(sizeof(Buffer));
+    }
+
+    _tx_buffer_prev = _tx_buffer[_tx_prev];
 
     // reset
     reset();
@@ -231,7 +255,19 @@ int E100::send(const Address & dst, const Protocol & prot,
     _tx_ring[_tx_cur].tcb_byte_count = (size + HEADER_SIZE);
 
     // put the ethernet frame into de TxCB
-    new (_tx_ring[_tx_cur].frame) Frame(_address, dst, htons(prot), data, size);
+    // new (_tx_ring[_tx_cur].frame) Frame(_address, dst, htons(prot), data, size); // original
+    /* New implementation, double copy: parameters to buffer and buffer to Tx_Desc.frame.
+     * Making Tx_Desc.frame a pointer does not work (I believe E100 demands for
+     * a contiguous allocated memory for Tx ring descriptors).
+     */
+    Buffer * buf = _tx_buffer[_tx_cur];
+    Frame * frame = buf->frame();
+    new (frame) Frame(_address, dst, htons(prot), data, size);
+    new (_tx_ring[_tx_cur].frame) Frame(_address, frame->dst(), htons(frame->prot()), frame->data<void>(), size);
+    // ----
+
+    db<E100>(TRC) << "E100::send:\n(dst=" << dst << ", prot=" << prot << ", data=" << (char *) data << ", size=" << size
+        << ")\n(dst=" << frame->dst() << ", prot=" << frame->prot() << ", data=" << (char *) frame->data<void>() << ", size=" << buf->size() << ")" << endl;
 
     _tx_ring[_tx_cur].command = cb_s; // suspend bit
     _tx_ring[_tx_cur].command |= (cb_tx | cb_cid); // transmit command
@@ -316,6 +352,136 @@ int E100::receive(Address * src, Protocol * prot, void * data, unsigned int size
     return size;
 }
 
+/*! NOTE: this method is not thread-safe as _tx_cur is shared by all threads
+ * that use this object and the access to _tx_cur is not atomic. */
+E100::Buffer * E100::alloc(NIC * nic, const Address & dst, const Protocol & prot, unsigned int once, unsigned int always, unsigned int payload)
+{
+    db<E100>(TRC) << "E100::alloc(s=" << _address << ",d=" << dst << ",p=" << hex << prot << dec << ",on=" << once << ",al=" << always << ",ld=" << payload << ")" << endl;
+
+    int max_data = MTU - always;
+
+    // unsigned int allocated = 0; // Just for debug. Remove this later.
+
+    if((payload + once) / max_data > TX_BUFS) {
+        db<E100>(WRN) << "E100::alloc: sizeof(Network::Packet::Data) > sizeof(NIC::Frame::Data) * TX_BUFS!" << endl;
+        return 0;
+    }
+
+    Buffer::List pool;
+
+    // Calculate how many frames are needed to hold the transport PDU and allocate enough buffers
+    for(int size = once + payload; size > 0; size -= max_data) {
+        // Wait for the next buffer to become free and seize it
+        for(bool locked = false; !locked; ) {
+            for(; !(_tx_ring[_tx_cur].status & cb_complete); ++_tx_cur %= TX_BUFS);
+            locked = _tx_buffer[_tx_cur]->lock();
+            // allocated++;
+        }
+        Tx_Desc * desc = &_tx_ring[_tx_cur];
+        Buffer * buf = _tx_buffer[_tx_cur];
+
+        // Initialize the buffer and assemble the Ethernet Frame Header
+        new (buf) Buffer(nic, _address, dst, prot, (size > max_data) ? MTU : size + always);
+
+        db<E100>(INF) << "E100::alloc:desc[" << _tx_cur << "]=" << desc << " => " << *desc << endl;
+
+        ++_tx_cur %= TX_BUFS;
+
+        pool.insert(buf->link());
+    }
+
+    // db<E100>(WRN) << "E100::alloc, allocated: " << allocated << endl;
+
+    return pool.head()->object();
+}
+
+void E100::free(Buffer * buf)
+{
+/// TODO: adapt to use new Buffer defined at Ethernet.
+/*
+    db<E100>(TRC) << "E100::free(buf=" << buf << ")" << endl;
+
+    for(Buffer::Element * el = buf->link(); el; el = el->next()) {
+        buf = el->object();
+        Rx_Desc * desc = buf->back<Rx_Desc>();
+
+        _statistics.rx_packets++;
+        _statistics.rx_bytes += buf->size();
+
+        // Release the buffer to the NIC
+        desc->size = Reg16(-sizeof(Frame)); // 2's comp.
+        desc->status = Rx_RFD_AVAILABLE; // Owned by NIC
+
+        // Release the buffer to the OS
+        buf->unlock();
+
+        db<E100>(INF) << "E100::free:desc=" << desc << " => " << *desc << endl;
+    }
+*/
+}
+
+/*! NOTE: this method is not thread-safe because _tx_buffer_prev is shared by
+ * all threads that use this object. */
+int E100::send(Buffer * buf)
+{
+    db<E100>(TRC) << "E100::send new api" << endl;
+    /// assumes: buf->is_locked();
+
+    unsigned int size = 0;
+
+/// TODO: adapt to use new Buffer defined at Ethernet.
+/*
+    for(Buffer::Element * el = buf->link(); el; el = el->next()) {
+        buf = el->object();
+        Tx_Desc * desc = buf->back<Tx_Desc>();
+        Frame * frame = buf->frame();
+
+        db<E100>(TRC) << "E100::send(buf=" << buf << ")" << endl;
+
+        desc->tcb_byte_count = buf->size() + sizeof(Header);
+
+        db<E100>(TRC) << "E100::send-zc:\n" << "(dst=" << frame->dst() << ", prot=" << frame->prot() << ", data=" << (char *) frame->data<void>() << ", size=" << buf->size() << ")" << endl;
+
+        new (desc->frame) Frame(_address, frame->dst(), frame->prot(), frame->data<void>(), buf->size()); // TODO: FIXME. That is creating a copy on a Zero-copy implementation. :P
+
+        // Status must be set last, since it can trigger a send
+        desc->status = Tx_CB_IN_USE;
+
+        // Trigger an immediate send poll
+        desc->command = cb_s; // suspend bit
+        desc->command |= (cb_tx | cb_cid); // transmit command
+        _tx_buffer_prev->back<Tx_Desc>()->command &= ~cb_s; // remove suspend bit of the previous frame
+
+        while(exec_command(cuc_resume, 0));
+
+        size += buf->size();
+
+        _statistics.tx_packets++;
+        _statistics.tx_bytes += buf->size();
+
+        db<E100>(INF) << "E100::send:desc=" << desc << " => " << *desc << endl;
+
+        // Wait for packet to be sent and unlock the respective buffer
+        while(! (desc->status & cb_complete)) {
+            if (_tx_cuc_suspended) {
+                _tx_cuc_suspended = 0;
+                exec_command(cuc_resume, 0);
+            }
+        }
+
+        db<E100>(TRC) << "E100::send will unlock" << endl;
+
+        _tx_buffer_prev = buf;
+        buf->unlock();
+
+        db<E100>(TRC) << "E100::send unlocked" << endl;
+    }
+
+    db<E100>(TRC) << "E100::send size=" << size << endl;
+*/
+    return size;
+}
+
 unsigned short E100::eeprom_read(unsigned short *addr_len, unsigned short addr) {
 
     unsigned long cmd_addr_data;
@@ -373,14 +539,17 @@ unsigned char E100::eeprom_mac_address(Reg16 addr) {
 }
 
 void E100::handle_int() {
-
-    //_int_lock.acquire();
     CPU::int_disable();
+    // IC::disable(IC::irq2int(_irq));
+
+    db<E100>(TRC) << "E100::handle_int()" << endl;
+    db<E100>(TRC) << ">" << endl;
 
     Reg8 stat_ack = read8(&csr->scb.stat_ack);
     Reg8 status = read8(&csr->scb.status);
 
     if ((stat_ack != stat_ack_not_ours) && (stat_ack != stat_ack_not_present)) {
+        db<E100>(TRC) << "...if" << endl;
 
         // acknowledge interrupt(s) in one PCI write cycle
         write8((stat_ack & ~stat_ack_sw_gen), &csr->scb.stat_ack);
@@ -405,6 +574,53 @@ void E100::handle_int() {
         if ((status & rus_suspended) && (stat_ack & stat_ack_rnr)) {
         }
 
+        for(int count = RX_BUFS; count && (_rx_ring[_rx_cur].status & cb_complete); count--, ++_rx_cur %= RX_BUFS) {
+            db<E100>(TRC) << "@ count = " << count << ", _rx_cur = " << _rx_cur << endl;
+
+            // NIC received a frame in _rx_buffer[_rx_cur], let's check if it has already been handled
+            if(_rx_buffer[_rx_cur]->lock()) { // if it wasn't, let's handle it
+                Buffer * buf = _rx_buffer[_rx_cur];
+                Rx_Desc * desc = &_rx_ring[_rx_cur];
+                Frame * frame = buf->frame();
+
+                Frame * desc_frame = reinterpret_cast<Frame *>(desc->frame);
+
+                // For the upper layers, size will represent the size of frame->data<T>()
+                unsigned int size = 0;
+                if (_rx_ring[_rx_cur].actual_size & 0xC000) {
+                    size = _rx_ring[_rx_cur].actual_size & 0x3FFF;
+                }
+                buf->size(size);
+
+                db<E100>(INF) << "E100::int:receive desc_frame(s=" << desc_frame->src() << ",d=" << desc_frame->dst() << ",p=" << hex << desc_frame->prot() << dec << ",t=" << (char *) desc_frame->data<void>() << ",s=" << buf->size() << ")" << endl;
+
+                new (frame) Frame(desc_frame->src(), desc_frame->dst(), desc_frame->prot(), desc_frame->data<void>(), buf->size()); // TODO: FIXME. That is creating a copy on a Zero-copy implementation. :P
+
+                db<E100>(INF) << "E100::int:receive(s=" << frame->src() << ",d=" << frame->dst() << ",p=" << hex << frame->header()->prot() << dec << ",t=" << (char *) frame->data<void>() << ",s=" << buf->size() << ")" << endl;
+
+                db<E100>(INF) << "E100::handle_int:desc[" << _rx_cur << "]=" << desc << " => " << *desc << endl;
+
+                _rx_ring[_rx_cur].command = cb_el;
+                _rx_ring[_rx_cur].status = Rx_RFD_NOT_FILLED;
+
+                // try to avoid ruc stop interrupts by "walking" the el bit
+                _rx_ring[_rx_last_el].command &= ~cb_el; // remove previous el bit
+                _rx_last_el = _rx_cur;
+
+                _statistics.rx_packets++;
+                _statistics.rx_bytes += size;
+
+                db<E100>(TRC) << "Will notify!" << endl;
+                if(!notify(frame->header()->prot(), buf)) { // No one was waiting for this frame, so let it free for receive()
+                    free(buf);
+                    db<E100>(TRC) << "Not notified!" << endl;
+                }
+                else {
+                    db<E100>(TRC) << "Notified!" << endl;
+                }
+            }
+        }
+
         if ((status & cus_suspended)) {
             _tx_cuc_suspended++;
             if (_tx_frames_sent < _statistics.tx_packets) {
@@ -415,7 +631,10 @@ void E100::handle_int() {
         }
     }
 
+    db<E100>(TRC) << "<" << endl;
+
     CPU::int_enable();
+    // IC::enable(IC::irq2int(_irq));
 }
 
 void E100::i82559_configure(void)
@@ -484,6 +703,8 @@ int E100::self_test()
     if(dmadump->selftest.result != 0) {
         db<E100>(WRN) << "E100:self_test() => failed with code " << dmadump->selftest.result << "!" << endl;
         return -1;
+    } else {
+        db<E100>(TRC) << "E100:self_test() => PASSED with code " << dmadump->selftest.result << "!" << endl;
     }
 
     if(dmadump->selftest.signature == 0) {
@@ -493,5 +714,6 @@ int E100::self_test()
 
     return 0;
 }
+
 
 __END_SYS

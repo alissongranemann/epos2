@@ -283,6 +283,13 @@ public:
         volatile Reg16 actual_size;
         volatile Reg16 size;
         char frame[FRAME_SIZE];
+
+        friend Debug & operator<<(Debug & db, const Rx_Desc & d) {
+            db << "{"
+               << "}";
+
+            return db;
+        }
     };
 
     // Transmit Descriptor
@@ -292,6 +299,22 @@ public:
         volatile Reg8 threshold;
         volatile Reg8 tbd_count;
         char frame[FRAME_SIZE];
+
+        friend Debug & operator<<(Debug & db, const Tx_Desc & d) {
+            db << "{" << d.tbd_array << ", "
+               << d.tcb_byte_count << ", "
+               << d.threshold << ", "
+               << d.tbd_count << ", "
+               << ", frame: ";
+
+            for (unsigned int i = 0; i < FRAME_SIZE; i++) {
+                db << (unsigned char) (*(d.frame + i));
+            }
+
+            db << "}";
+
+            return db;
+        }
     };
 
 
@@ -315,16 +338,18 @@ private:
     static const unsigned int PCI_REG_IO = 1;
     static const unsigned int PCI_REG_MEM = 0;
 
-    // Transmit and Receive Ring Bbuffer sizes
+    // Transmit and Receive Ring Buffer sizes
     static const unsigned int UNITS = Traits<E100>::UNITS;
-    static const unsigned int TX_BUFS =	Traits<E100>::SEND_BUFFERS;
-    static const unsigned int RX_BUFS =	Traits<E100>::RECEIVE_BUFFERS;
+    static const unsigned int TX_BUFS = Traits<E100>::SEND_BUFFERS;
+    static const unsigned int RX_BUFS = Traits<E100>::RECEIVE_BUFFERS;
     static const unsigned int DMA_BUFFER_SIZE =
         ((sizeof(ConfigureCB) + 15) & ~15U) +
         ((sizeof(MACaddrCB) + 15) & ~15U) +
         ((sizeof(struct mem) + 15) & ~15U) +
          RX_BUFS * ((sizeof(Rx_Desc) + 15) & ~15U) +
-         TX_BUFS * ((sizeof(Tx_Desc) + 15) & ~15U);
+         TX_BUFS * ((sizeof(Tx_Desc) + 15) & ~15U) +
+         RX_BUFS * ((sizeof(Buffer) + 15) & ~15U)  +
+         TX_BUFS * ((sizeof(Buffer) + 15) & ~15U); // align128() cannot be used here
 
     // Share control and interrupt dispatiching info
     struct Device
@@ -344,15 +369,31 @@ public:
     E100(unsigned int unit = 0);
     ~E100();
 
+
+    /* New communication API:
+     * Uses NIC buffers, Zero-Copy.
+     * Used with upper protocols (e.g. TCP/IP).
+     * In the new API, handle_int() plays the role of receiver using the Publisher/Subscriber design pattern
+     * */
+    Buffer * alloc(NIC * nic, const Address & dst, const Protocol & prot, unsigned int once, unsigned int always, unsigned int payload);
+    void free(Buffer * buf);
+    int send(Buffer * buf);
+
+    /* Old communication API:
+     * Based on send/receive, buffer provided by user, with copy.
+     * Used for testing NIC */
     int send(const Address & dst, const Protocol & prot, const void * data, unsigned int size);
     int receive(Address * src, Protocol * prot, void * data, unsigned int size);
 
-    void reset();
-
+public:
     unsigned int mtu() { return MTU; }
     const Address & address() { return _address; }
     void address(const Address & address) { _address = address; }
     const Statistics & statistics() { return _statistics; }
+
+    void reset();
+
+    static E100 * get(unsigned int unit = 0) { return get_by_unit(unit); }
 
 private:
     E100(unsigned int unit, Log_Addr io_mem, IO_Irq irq, DMA_Buffer * dma);
@@ -409,14 +450,72 @@ private:
 
     void i82559_configure(void);
 
-    static void init(unsigned int unit);
+    static E100 * get_by_unit(unsigned int unit) {
+        if(unit >= UNITS) {
+            db<E100>(WRN) << "E100::get_by_unit: requested unit (" << unit << ") does not exist!" << endl;
+            return 0;
+        } else
+            return _devices[unit].device;
+    }
 
-    static E100 * get(unsigned int interrupt) {
+    static E100 * get_by_interrupt(unsigned int interrupt) {
         for(unsigned int i = 0; i < UNITS; i++)
             if(_devices[i].interrupt == interrupt)
-        	return _devices[i].device;
+                return _devices[i].device;
+
+        db<E100>(WRN) << "E100::get_by_interrupt: no device with interrupt (" << interrupt << ") was found!" << endl;
         return 0;
-    };
+    }
+
+    static void init(unsigned int unit);
+
+
+private:
+    void print_csr()
+    {
+        /* typedef struct csr {
+        struct {
+                volatile Reg8 status;
+                volatile Reg8 stat_ack;
+                volatile Reg8 cmd_lo;
+                volatile Reg8 cmd_hi;
+                volatile Reg32 gen_ptr;
+            } scb;
+            volatile Reg32 port;
+            volatile Reg16 flash_ctrl;
+            volatile Reg8 eeprom_ctrl_lo;
+            volatile Reg8 eeprom_ctrl_hi;
+            volatile Reg32 mdi_ctrl;
+            volatile Reg32 rx_dma_count;
+        } CSR_Desc;
+    */
+        db<E100>(WRN) << "status: [" << csr->scb.status << "] => " << *reinterpret_cast<volatile Reg8 *>(&csr->scb.status) << endl;
+        db<E100>(WRN) << "stat_ack: [" << csr->scb.stat_ack << "] => " << *reinterpret_cast<volatile Reg8 *>(&csr->scb.stat_ack) << endl;
+        db<E100>(WRN) << "cmd_lo: [" << csr->scb.cmd_lo << "] => " << *reinterpret_cast<volatile Reg8 *>(&csr->scb.cmd_lo) << endl;
+        db<E100>(WRN) << "cmd_hi: [" << csr->scb.cmd_hi << "] => " << *reinterpret_cast<volatile Reg8 *>(&csr->scb.cmd_hi) << endl;
+        db<E100>(WRN) << "gen_ptr: [" << csr->scb.gen_ptr << "] => " << *reinterpret_cast<volatile Reg32 *>(&csr->scb.gen_ptr) << endl;
+        db<E100>(WRN) << "port: [" << csr->port << "] => " << *reinterpret_cast<volatile Reg32 *>(&csr->port) << endl;
+        db<E100>(WRN) << "flash_ctrl: [" << csr->flash_ctrl << "] => " << *reinterpret_cast<volatile Reg16 *>(&csr->flash_ctrl) << endl;
+        db<E100>(WRN) << "eeprom_ctrl_lo: [" << csr->eeprom_ctrl_lo << "] => " << *reinterpret_cast<volatile Reg8 *>(&csr->eeprom_ctrl_lo) << endl;
+        db<E100>(WRN) << "eeprom_ctrl_hi: [" << csr->eeprom_ctrl_hi << "] => " << *reinterpret_cast<volatile Reg8 *>(&csr->eeprom_ctrl_hi) << endl;
+        db<E100>(WRN) << "mdi_ctrl: [" << csr->mdi_ctrl << "] => " << *reinterpret_cast<volatile Reg32 *>(&csr->mdi_ctrl) << endl;
+        db<E100>(WRN) << "rx_dma_count: [" << csr->rx_dma_count << "] => " << *reinterpret_cast<volatile Reg32 *>(&csr->rx_dma_count) << endl;
+    }
+
+
+    void csr_hard_init()
+    {
+        csr->scb.status = 0;
+        csr->scb.stat_ack = 0;
+        csr->scb.cmd_lo = 0;
+        csr->scb.cmd_hi = 1;
+        csr->scb.gen_ptr = 0;
+        csr->port = 0;
+        csr->flash_ctrl = 2;
+        csr->eeprom_ctrl_lo = 8;
+        csr->eeprom_ctrl_hi = 0;
+        csr->mdi_ctrl = 0x18217809;
+    }
 
 private:
     unsigned int _unit;
@@ -426,7 +525,6 @@ private:
 
     Log_Addr _io_mem;
     IO_Irq _irq;
-    DMA_Buffer * _dma_buf;
 
     volatile unsigned int _rx_ruc_no_more_resources;
     volatile unsigned int _tx_cuc_suspended;
@@ -451,6 +549,13 @@ private:
     Phy_Addr _tx_ring_phy;
 
     unsigned int _tx_frames_sent;
+
+    Buffer * _rx_buffer[RX_BUFS];
+    Buffer * _tx_buffer[TX_BUFS];
+
+    Buffer * _tx_buffer_prev; // Previously transmitted buffer
+
+    DMA_Buffer * _dma_buffer;
 
     static Device _devices[UNITS];
 };
