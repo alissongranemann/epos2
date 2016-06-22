@@ -1,4 +1,4 @@
-// EPOS (Litte-endian) Big Numbers Utility Implementatio
+// EPOS (Litte-endian) Big Numbers Utility Implementation
 
 #include <utility/bignum.h>
 

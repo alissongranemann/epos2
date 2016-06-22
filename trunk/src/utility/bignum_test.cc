@@ -1,4 +1,5 @@
 // EPOS (Litte-endian) Big Numbers Utility Test Program
+// The output of this script is meant to be verified by tools/epossectst/eposbignumtst.py
 
 #include <utility/string.h>
 #include <utility/bignum.h>
@@ -8,9 +9,8 @@
 
 using namespace EPOS;
 
-const int ITERATIONS = 5000000;
+const int ITERATIONS = 125000;
 const int SIZE = 16;
-const unsigned int INT_MAX = -1;
 
 OStream cout;
 
@@ -19,6 +19,7 @@ int main()
     cout << "Bignum Utility Test" << endl;
 
     cout << "sizeof(Bignum<" << SIZE << ">) = " << sizeof(Bignum<SIZE>) << " bytes." << endl;
+    cout << "sizeof(Bignum<" << SIZE << ">::Digit) = " << sizeof(Bignum<SIZE>::Digit) << " bytes." << endl; // This output is parsed by tools/epossectst/eposbignumtst.py
 
     Bignum<SIZE> a = 0, b = 1;
     cout << "a = " << a << ", b = " << b << endl;
@@ -29,113 +30,54 @@ int main()
     b = 200000000;
     cout << "a = " << a << ", b = " << b << endl;
     cout << "a + b = " << a + b << endl;
-    cout << "a * b = " << a * b << endl;
 
     a = Bignum<SIZE>("10000000000000000000000000000000", 16);
     b = Bignum<SIZE>("20000000000000000000000000000000", 16);
     cout << "a = " << a << ", b = " << b << endl;
-    cout << "a + b = " << a + b << endl;
+    a += b;
+    cout << "a + b = " << a << endl;
+
+    
+    unsigned int seed = Random::random();
+    Random::seed(seed);
+    cout << "Random seed = " << seed << endl;
+
+    a = 0;
+    a -= 1;
+    cout << "Modulo = " << a << " + 1" << endl; // This output is parsed by tools/epossectst/eposbignumtst.py
 
     for(unsigned int i = 0; i < ITERATIONS; i++) {
-        /*
-		if(!(i%500000))
-			cout<<i<<endl;
-		r = Random::random();
-		a = i;
-		b = r;
-		a += b;
-		k = a.to_uint();
-		tst = (i+r == k);
-//		cout<<"OKIS1" << endl;
-		if(!tst)
-		{
-			cout << "Error3" << endl;
-			cout << i << " " << r << " " << k << endl;
-			cout << a << endl;
-			cout << b << endl;
-			return 1;
-		}
-         */
+        a.randomize();
+        b.randomize();
+        cout << "a = " << a << endl; // This output is parsed by tools/epossectst/eposbignumtst.py
+        cout << "b = " << b << endl; // This output is parsed by tools/epossectst/eposbignumtst.py
+        a += b;
+        cout << "a + b = " << a << endl; // This output is parsed by tools/epossectst/eposbignumtst.py
 
-        unsigned int r = Random::random();
-        a = i;
-        b = r;
+        a.randomize();
+        b.randomize();
+        cout << "a = " << a << endl; // This output is parsed by tools/epossectst/eposbignumtst.py
+        cout << "b = " << b << endl; // This output is parsed by tools/epossectst/eposbignumtst.py
         a -= b;
-        unsigned int k = a;
-        if(!((i - r == k) || (r - i == k))) {
-            cout << "Error5" << endl;
-            cout << i << " " << r << " " << k << " " << i - r << " " << r - i << endl;
-            cout << a << endl;
-            cout << b << endl;
-            return 1;
-        }
+        cout << "a - b = " << a << endl; // This output is parsed by tools/epossectst/eposbignumtst.py
 
-        /*
-		if(i>0)
-			r = Random::random()%((INT_MAX)/i);		
-		a = i;
-		b = r;
+        a.randomize();
+        b.randomize();
+        cout << "a = " << a << endl; // This output is parsed by tools/epossectst/eposbignumtst.py
+        cout << "b = " << b << endl; // This output is parsed by tools/epossectst/eposbignumtst.py
+        a *= b;
+        cout << "a * b = " << a << endl; // This output is parsed by tools/epossectst/eposbignumtst.py
 
-		a *= b;
-		k = a.to_uint();
-		tst = (i*r==k);
-//		cout<<"OKIS5" << endl;
-		if(!tst)
-		{			
-			cout << "Error7" << endl;
-			cout << i << " " << r << " " << k << " " << i*r << endl;
-			cout << a << endl;
-			cout << a.to_uint() << endl;
-			a = i*r;
-			cout << a << endl;
-			cout << a.to_uint() << endl;
-			cout << b << endl;
-			cout << b.to_uint() << endl;
-			return 1;
-		}
-         */
-
-        /*
-		r = Random::random()%(INT_MAX-i)+i;
-		a = i;
-		b = r;
-		a /= b;
-		k = a.to_uint();
-		tst = (i/r==k);
-//		cout<<"OKIS7" << endl;
-		if(!tst)
-		{			
-			cout << "Error9" << endl;
-			cout << i << " " << r << " " << k << endl;
-			cout << a << endl;
-			cout << b << endl;
-			cout << i/r << endl;
-			return 1;
-		}
-
-		r = Random::random();
-		if(r==0) r++;
-		a = i;
-		b = r;
-		a %= b;
-		k = a.to_uint();
-		tst = ((i%r)==k);
-//		cout<<"OKIS9" << endl;
-		if(!tst)
-		{			
-			cout << "Error11" << endl;
-			cout << i << " " << r << " " << k << endl;
-			cout << a << endl;
-			cout << b << endl;
-			cout << i%r << endl;
-			return 1;
-		}
-         */
-        //	cout << a << endl;
-        //	cout << i << " + " << j << " == " << (int)k << endl;
+        a.randomize();
+        b.randomize();
+        cout << "a = " << a << endl; // This output is parsed by tools/epossectst/eposbignumtst.py
+        cout << "b = " << b << endl; // This output is parsed by tools/epossectst/eposbignumtst.py
+        b.invert();
+        a *= b;
+        cout << "a / b = " << a << endl; // This output is parsed by tools/epossectst/eposbignumtst.py
     }
 
-    cout << "Finish!" << endl;
+    cout << "Done!" << endl; // This output is parsed by tools/epossectst/eposbignumtst.py
 
     return 0;
 }

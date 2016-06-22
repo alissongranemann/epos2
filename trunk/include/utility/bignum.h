@@ -7,6 +7,9 @@
 
 __BEGIN_UTIL;
 
+// This class implements a prime finite field (Fp or GF(p))
+// It basically consists of (possibly) big numbers between 0 and a prime modulo, with + - * / operators
+// Primarily meant to be used primarily by asymmetric cryptography (e.g. Diffie-Hellman)
 template<unsigned int SIZE = 16>
 class Bignum
 {
@@ -88,7 +91,7 @@ public:
             db<Bignum>(TRC) << _mod.data[i] << ",";
         db<Bignum>(TRC) << _mod.data[DIGITS - 1] << "]) => ";
 
-        Double_Word mult_result;
+        Digit mult_result[2*DIGITS];
         simple_mult(mult_result, _data, b._data, DIGITS);
         barrett_reduction(_data, mult_result, DIGITS);
 
@@ -102,9 +105,9 @@ public:
         db<Bignum>(TRC) << _mod.data[DIGITS - 1] << "]) => ";
 
         if(simple_add(_data, _data, b._data, DIGITS))
-            simple_sub(_data, _data, _mod, DIGITS);
-        if(cmp(_data, _mod, DIGITS) >= 0)
-            simple_sub(_data, _data, _mod, DIGITS);
+            simple_sub(_data, _data, _mod.data, DIGITS);
+        if(cmp(_data, _mod.data, DIGITS) >= 0)
+            simple_sub(_data, _data, _mod.data, DIGITS);
 
         db<Bignum>(TRC) << *this << endl;
     }
@@ -182,7 +185,7 @@ public:
             _data[i] = Random::random();
     }
 
-    void invert() __attribute__((noinline)) { // _data = ??? TODO: document me
+    void invert() __attribute__((noinline)) { // _data = i, such that (_data * i) % _mod = 1
         Bignum A(1), u, v, zero(0);
         for(unsigned int i = 0; i < DIGITS; i++) {
             u._data[i] = _data[i];
@@ -195,7 +198,7 @@ public:
                 if(A.is_even())
                     A.divide_by_two();
                 else {
-                    bool carry = simple_add(A._data, A._data, _mod, DIGITS);
+                    bool carry = simple_add(A._data, A._data, _mod.data, DIGITS);
                     A.divide_by_two(carry);             
                 }
             }
@@ -204,7 +207,7 @@ public:
                 if(is_even())
                     divide_by_two();
                 else {
-                    bool carry = simple_add(_data, _data, _mod, DIGITS);
+                    bool carry = simple_add(_data, _data, _mod.data, DIGITS);
                     divide_by_two(carry);
                 }
             }
@@ -329,7 +332,7 @@ private:
                     // shifting left (little endian) size-1 places
                     // a is assumed to have size size*2
                     Double_Digit aj = a[j + (size - 1)];
-                    Double_Digit bk = _barrett_u[k];
+                    Double_Digit bk = _barrett_u.data[k];
                     Double_Digit prod = aj * bk;
                     r0 += Digit(prod);
                     r1 += (prod >> BITS_PER_DIGIT) + (r0 >> BITS_PER_DIGIT);
@@ -372,8 +375,8 @@ private:
         simple_sub(r, a, r, size+1);
 
         // _data = r % _mod
-        while((r[size] > 0) || (cmp(r, _mod, size) >= 0)) {
-            if(simple_sub(r, r, _mod, size))
+        while((r[size] > 0) || (cmp(r, _mod.data, size) >= 0)) {
+            if(simple_sub(r, r, _mod.data, size))
                 r[size]--;
         }
 
