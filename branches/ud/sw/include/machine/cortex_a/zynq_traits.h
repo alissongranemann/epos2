@@ -43,6 +43,11 @@ template <> struct Traits<Cortex_A>: public Traits<Cortex_A_Common>
     static const unsigned int STACK_SIZE = 16 * 1024;
     static const unsigned int HEAP_SIZE = 16 * 1024 * 1024;
     static const unsigned int MAX_THREADS = 16;
+
+    // PLL clocks
+    static const unsigned int ARM_PLL_CLOCK = 1333333333;
+    static const unsigned int IO_PLL_CLOCK = 1000000000;
+    static const unsigned int DDR_PLL_CLOCK = 1066666666;
 };
 
 template <> struct Traits<Cortex_A_IC>: public Traits<Cortex_A_Common>
@@ -63,7 +68,9 @@ template <> struct Traits<Cortex_A_UART>: public Traits<Cortex_A_Common>
 {
     static const unsigned int UNITS = 2;
 
-    //static const unsigned int CLOCK = Traits<ARMv7>::CLOCK;
+    // CLOCK_DIVISOR is hard coded in ps7_init.tcl
+    static const unsigned int CLOCK_DIVISOR = 20;
+    static const unsigned int CLOCK = Traits<Cortex_A>::IO_PLL_CLOCK/CLOCK_DIVISOR;
 
     static const unsigned int DEF_BAUD_RATE = 115200;
     static const unsigned int DEF_DATA_BITS = 8;

@@ -27,6 +27,7 @@ private:
     typedef CPU::Reg32 Reg32;
 
     static const unsigned int UNITS = Traits<UART>::UNITS;
+    static const unsigned int CLOCK = Traits<UART>::CLOCK;
 
 private:
     // Register addresses relative to base
@@ -51,11 +52,16 @@ private:
     };
 
     // Useful bits in the MODE_REG0 register
-    enum {
-        CHRL    = 1,
-        PAR     = 3,
-        NBSTOP  = 6,
-        CHMODE  = 8
+    enum {                     // Description               Type    Value after reset
+        CHRL8   = 0 << 1,      // Character Length 8 bits   r/w     0
+        CHRL7   = 2 << 1,      // Character Length 7 bits   r/w     0
+        CHRL6   = 3 << 1,      // Character Length 6 bits   r/w     0
+        PAREVEN = 0 << 3,      // Even parity               r/w     0
+        PARODD  = 1 << 3,      // Odd parity                r/w     0
+        PARNONE = 4 << 3,      // No parity                 r/w     0
+        NBSTOP2 = 2 << 6,      // 2 stop bits               r/w     0
+        NBSTOP1 = 0 << 6,      // 1 stop bit                r/w     0
+        CHMODE  = 8,
     };
 
     // Useful bits in the INTRPT_EN_REG0, and INTRPT_DIS_REG0 registers
@@ -78,20 +84,24 @@ public:
     }
 
     void config(unsigned int baud_rate, unsigned int data_bits, unsigned int parity, unsigned int stop_bits) {
-        // Divide baud rate by 6+1
-        reg(BAUD_RATE_DIVIDER_REG0) = 0x6;
+        // Configure the number of stop bits, data bits, and the parity
+        Reg32 mode = reg(MODE_REG0) & ~0xff;
 
-        // Set baud rate clock divisor to 62
-        reg(BAUD_RATE_GEN_REG0) = 0x3E;
+        mode |= stop_bits == 2 ? NBSTOP2 : NBSTOP1;
+        mode |= data_bits == 8 ? CHRL8 : data_bits == 7 ? CHRL7 : CHRL6;
+        mode |= parity == 2 ? PAREVEN : parity == 1 ? PARODD : PARNONE;
+        reg(MODE_REG0) = mode;
 
-        // Enable and reset RX/TX data paths
-        reg(CONTROL_REG0) |= (1 << RXRES) | (1 << TXRES) | (1 << RXEN) | (1 << TXEN);
-
-        // Set 1 stop bit, no parity and 8 data bits
-        reg(MODE_REG0) |= (0x0 << CHRL) | (0x4 << PAR) | (0x0 << NBSTOP);
+        // Set the baud rate
+        Reg32 br = CLOCK / (7 * baud_rate);
+        reg(BAUD_RATE_DIVIDER_REG0) = 6;
+        reg(BAUD_RATE_GEN_REG0) = br;
 
         // Set the receiver trigger level to 1
         reg(RCVR_FIFO_TRIGGER_LEVEL0) = 1;
+
+        // Enable and reset RX and TX data paths
+        reg(CONTROL_REG0) |= (1 << RXRES) | (1 << TXRES) | (1 << RXEN) | (1 << TXEN);
     }
 
     unsigned char rxd() { return reg(TX_RX_FIFO0); }
