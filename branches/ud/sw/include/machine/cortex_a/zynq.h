@@ -26,6 +26,8 @@ private:
     typedef CPU::Log_Addr Log_Addr;
     typedef CPU::Reg32 Reg32;
 
+    static const unsigned int UNITS = Traits<UART>::UNITS;
+
 private:
     // Register addresses relative to base
     enum {
@@ -71,7 +73,7 @@ private:
 public:
     Zynq_UART(unsigned int unit, unsigned int baud_rate, unsigned int data_bits, unsigned int parity, unsigned int stop_bits)
         : _base(reinterpret_cast<Log_Addr *>(unit ? UART1_BASE : UART0_BASE)) {
-        //assert(unit < UNITS);
+        assert(unit < UNITS);
         config(baud_rate, data_bits, parity, stop_bits);
     }
 
