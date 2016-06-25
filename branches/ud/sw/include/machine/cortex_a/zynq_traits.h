@@ -61,7 +61,14 @@ template <> struct Traits<Cortex_A_Timer>: public Traits<Cortex_A_Common>
 
 template <> struct Traits<Cortex_A_UART>: public Traits<Cortex_A_Common>
 {
-    static const unsigned int BAUD_RATE = 115200;
+    static const unsigned int UNITS = 2;
+
+    //static const unsigned int CLOCK = Traits<ARMv7>::CLOCK;
+
+    static const unsigned int DEF_BAUD_RATE = 115200;
+    static const unsigned int DEF_DATA_BITS = 8;
+    static const unsigned int DEF_PARITY = 0; // none
+    static const unsigned int DEF_STOP_BITS = 1;
 };
 
 template <> struct Traits<Cortex_A_NIC>: public Traits<Cortex_A_Common>

@@ -75,6 +75,8 @@ EXPORT(UDP);
 EXPORT(TCP);
 EXPORT(DHCP);
 
+EXPORT(UART);
+
 BIND(Adder);
 
 //TBIND(Link);
