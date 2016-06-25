@@ -40,12 +40,12 @@ public:
     bool ready_to_get() { return rxd_ok(); }
     bool ready_to_put() { return txd_ok(); }
 
-    //void int_enable(bool receive = true, bool send = true, bool line = true, bool modem = true) {
-        //Engine::int_enable(receive, send, line, modem);
-    //}
-    //void int_disable(bool receive = true, bool send = true, bool line = true, bool modem = true) {
-        //Engine::int_disable(receive, send, line, modem);
-    //}
+    void int_enable(bool receive = true, bool send = true, bool line = true, bool modem = true) {
+        Engine::int_enable(receive, send, line, modem);
+    }
+    void int_disable(bool receive = true, bool send = true, bool line = true, bool modem = true) {
+        Engine::int_disable(receive, send, line, modem);
+    }
 
     void reset() { Engine::config(BAUD_RATE, DATA_BITS, PARITY, STOP_BITS); }
     void loopback(bool flag) { Engine::loopback(flag); }

@@ -21,6 +21,8 @@ public:
     enum {
         UART_CONTROL_REG0               = 0x00,
         UART_MODE_REG0                  = 0x04,
+        UART_INTRPT_EN_REG0             = 0x08,
+        UART_INTRPT_DIS_REG0            = 0x0C,
         UART_BAUD_RATE_GEN_REG0         = 0x18,
         UART_RCVR_FIFO_TRIGGER_LEVEL0   = 0x20,
         UART_CHANNEL_STS_REG0           = 0x2C,
@@ -48,6 +50,13 @@ public:
         UART_MODE_REG0_PAR      = 3,
         UART_MODE_REG0_NBSTOP   = 6,
         UART_MODE_REG0_CHMODE   = 8
+    };
+
+    // Useful bits in the UART_INTRPT_EN_REG0, and UART_INTRPT_DIS_REG0
+    // registers
+    enum {
+        UART_INTRPT_REG0_RTRIG = 0,
+        UART_INTRPT_REG0_TTRIG = 10,
     };
 
     // Useful bits in the UART_CHANNEL_STS_REG0 register
@@ -98,10 +107,12 @@ public:
     void txd(unsigned char ch) { reg(UART_TX_RX_FIFO0, (Reg32)ch); }
 
     void int_enable(bool receive = true, bool send = true, bool line = true, bool modem = true) {
-        reg(UIM) &= ~((receive ? UIMRX : 0) | (send ? UIMTX : 0));
+        reg(UART_INTRPT_EN_REG0, reg(UART_INTRPT_EN_REG0) | (receive << UART_INTRPT_REG0_RTRIG) | (send << UART_INTRPT_REG0_TTRIG));
+        reg(UART_INTRPT_DIS_REG0, reg(UART_INTRPT_DIS_REG0) & ~(receive << UART_INTRPT_REG0_RTRIG) & ~(send << UART_INTRPT_REG0_TTRIG));
     }
     void int_disable(bool receive = true, bool send = true, bool line = true, bool modem = true) {
-        reg(UCR) |= (receive ? UIMRX : 0) | (send ? UIMTX : 0);
+        reg(UART_INTRPT_EN_REG0, reg(UART_INTRPT_EN_REG0) & ~(receive << UART_INTRPT_REG0_RTRIG) & ~(send << UART_INTRPT_REG0_TTRIG));
+        reg(UART_INTRPT_DIS_REG0, reg(UART_INTRPT_DIS_REG0) | (receive << UART_INTRPT_REG0_RTRIG) | (send << UART_INTRPT_REG0_TTRIG));
     }
 
     void loopback(bool flag) {
