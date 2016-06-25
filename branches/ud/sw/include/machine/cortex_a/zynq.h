@@ -23,6 +23,10 @@ typedef Zynq Cortex_A_Model;
 class Zynq_UART: protected Zynq
 {
 private:
+    typedef CPU::Log_Addr Log_Addr;
+    typedef CPU::Reg32 Reg32;
+
+private:
     // Register addresses relative to base
     enum {
         CONTROL_REG0                = 0x00,
@@ -66,7 +70,7 @@ private:
 
 public:
     Zynq_UART(unsigned int unit, unsigned int baud_rate, unsigned int data_bits, unsigned int parity, unsigned int stop_bits)
-        : _base(unit ? UART1_BASE : UART0_BASE) {
+        : _base(reinterpret_cast<Log_Addr *>(unit ? UART1_BASE : UART0_BASE)) {
         //assert(unit < UNITS);
         config(baud_rate, data_bits, parity, stop_bits);
     }
@@ -115,13 +119,10 @@ public:
     bool txd_ok() { return !(reg(CHANNEL_STS_REG0) & (1 << STS_TFUL)); }
 
 private:
-    typedef CPU::Reg32 Reg32;
-
-private:
     volatile Reg32 & reg(unsigned int o) { return reinterpret_cast<volatile Reg32*>(_base)[o / sizeof(Reg32)]; }
 
 private:
-    Reg32 _base;
+    volatile Log_Addr * _base;
 };
 
 typedef Zynq_UART Cortex_A_Model_UART;
