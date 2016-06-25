@@ -52,16 +52,17 @@ private:
     };
 
     // Useful bits in the MODE_REG0 register
-    enum {                     // Description               Type    Value after reset
-        CHRL8   = 0 << 1,      // Character Length 8 bits   r/w     0
-        CHRL7   = 2 << 1,      // Character Length 7 bits   r/w     0
-        CHRL6   = 3 << 1,      // Character Length 6 bits   r/w     0
-        PAREVEN = 0 << 3,      // Even parity               r/w     0
-        PARODD  = 1 << 3,      // Odd parity                r/w     0
-        PARNONE = 4 << 3,      // No parity                 r/w     0
-        NBSTOP2 = 2 << 6,      // 2 stop bits               r/w     0
-        NBSTOP1 = 0 << 6,      // 1 stop bit                r/w     0
-        CHMODE  = 8,
+    enum {                      // Description              Type    Value after reset
+        CHRL8       = 0 << 1,   // Character Length 8 bits  r/w     0
+        CHRL7       = 2 << 1,   // Character Length 7 bits  r/w     0
+        CHRL6       = 3 << 1,   // Character Length 6 bits  r/w     0
+        PAREVEN     = 0 << 3,   // Even parity              r/w     0
+        PARODD      = 1 << 3,   // Odd parity               r/w     0
+        PARNONE     = 4 << 3,   // No parity                r/w     0
+        NBSTOP2     = 2 << 6,   // 2 stop bits              r/w     0
+        NBSTOP1     = 0 << 6,   // 1 stop bit               r/w     0
+        CHMODENORM  = 0 << 8,   // Normal mode              r/w     0
+        CHMODELB    = 2 << 8    // Loopback mode            r/w     0
     };
 
     // Useful bits in the INTRPT_EN_REG0, and INTRPT_DIS_REG0 registers
@@ -120,9 +121,9 @@ public:
         Reg32 mode = reg(MODE_REG0) & ~0x300;
 
         if(flag)
-            mode |= 2 << CHMODE;
+            mode |= CHMODELB;
         else
-            mode |= 0 << CHMODE;
+            mode |= CHMODENORM;
 
         reg(MODE_REG0) = mode;
     }
