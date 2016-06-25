@@ -73,32 +73,31 @@ public:
 
     void config(unsigned int baud_rate, unsigned int data_bits, unsigned int parity, unsigned int stop_bits) {
         // Divide baud rate by 6+1
-        reg(BAUD_RATE_DIVIDER_REG0, 0x6);
+        reg(BAUD_RATE_DIVIDER_REG0) = 0x6;
 
         // Set baud rate clock divisor to 62
-        reg(BAUD_RATE_GEN_REG0, 0x3E);
+        reg(BAUD_RATE_GEN_REG0) = 0x3E;
 
         // Enable and reset RX/TX data paths
-        reg(CONTROL_REG0, reg(CONTROL_REG0) | 1<<RXRES | 1<<TXRES | 1<<RXEN |
-            1<<TXEN);
+        reg(CONTROL_REG0) |= (1 << RXRES) | (1 << TXRES) | (1 << RXEN) | (1 << TXEN);
 
         // Set 1 stop bit, no parity and 8 data bits
-        reg(MODE_REG0, reg(MODE_REG0) | 0x0<<CHRL | 0x4<<PAR | 0x0<<NBSTOP);
+        reg(MODE_REG0) |= (0x0 << CHRL) | (0x4 << PAR) | (0x0 << NBSTOP);
 
         // Set the receiver trigger level to 1
-        reg(RCVR_FIFO_TRIGGER_LEVEL0, 1);
+        reg(RCVR_FIFO_TRIGGER_LEVEL0) = 1;
     }
 
     unsigned char rxd() { return reg(TX_RX_FIFO0); }
-    void txd(unsigned char ch) { reg(TX_RX_FIFO0, (Reg32)ch); }
+    void txd(unsigned char ch) { reg(TX_RX_FIFO0) = (Reg32)ch; }
 
     void int_enable(bool receive = true, bool send = true, bool line = true, bool modem = true) {
-        reg(INTRPT_EN_REG0, reg(INTRPT_EN_REG0) | (receive << INTRPT_RTRIG) | (send << INTRPT_TTRIG));
-        reg(INTRPT_DIS_REG0, reg(INTRPT_DIS_REG0) & ~(receive << INTRPT_RTRIG) & ~(send << INTRPT_TTRIG));
+        reg(INTRPT_EN_REG0) |= (receive << INTRPT_RTRIG) | (send << INTRPT_TTRIG);
+        reg(INTRPT_DIS_REG0) &= ~(receive << INTRPT_RTRIG) & ~(send << INTRPT_TTRIG);
     }
     void int_disable(bool receive = true, bool send = true, bool line = true, bool modem = true) {
-        reg(INTRPT_EN_REG0, reg(INTRPT_EN_REG0) & ~(receive << INTRPT_RTRIG) & ~(send << INTRPT_TTRIG));
-        reg(INTRPT_DIS_REG0, reg(INTRPT_DIS_REG0) | (receive << INTRPT_RTRIG) | (send << INTRPT_TTRIG));
+        reg(INTRPT_EN_REG0) &= ~(receive << INTRPT_RTRIG) & ~(send << INTRPT_TTRIG);
+        reg(INTRPT_DIS_REG0) |= (receive << INTRPT_RTRIG) | (send << INTRPT_TTRIG);
     }
 
     void loopback(bool flag) {
@@ -109,7 +108,7 @@ public:
         else
             mode |= 0 << CHMODE;
 
-        reg(MODE_REG0, mode);
+        reg(MODE_REG0) = mode;
     }
 
     bool rxd_ok() { return reg(CHANNEL_STS_REG0) & (1 << STS_RTRIG); }
@@ -119,8 +118,7 @@ private:
     typedef CPU::Reg32 Reg32;
 
 private:
-    Reg32 reg(Reg32 addr) { return CPU::in32(_base + addr); }
-    void reg(Reg32 addr, Reg32 value) { CPU::out32(_base + addr, value); }
+    volatile Reg32 & reg(unsigned int o) { return reinterpret_cast<volatile Reg32*>(_base)[o / sizeof(Reg32)]; }
 
 private:
     Reg32 _base;
