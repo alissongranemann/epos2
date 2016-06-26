@@ -1,4 +1,4 @@
-// EPOS Cortex-A Memory Map
+// EPOS Cortex_A Memory Map
 
 #ifndef __cortex_a_memory_map_h
 #define __cortex_a_memory_map_h
@@ -41,4 +41,3 @@ struct Memory_Map<Cortex_A>
 __END_SYS
 
 #endif
-

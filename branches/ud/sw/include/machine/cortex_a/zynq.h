@@ -11,6 +11,7 @@ class Zynq
 {
 protected:
     typedef CPU::Reg32 Reg32;
+    typedef CPU::Log_Addr Log_Addr;
 
 public:
     // Base address for memory-mapped System Control Registers
@@ -19,6 +20,7 @@ public:
         UART1_BASE      = 0xE0001000,
         SLCR_BASE       = 0xF8000000,
         CPU_ITF_BASE    = 0xF8F00100,
+        PRIV_TIMER_BASE = 0XF8F00600,
         DIST_BASE       = 0xF8F01000
     };
 
@@ -35,6 +37,41 @@ public:
         DIVISOR1        = 1 << 20       // Second cascade divider       r/w     0x1
     };
 
+    // CPU Interface Registers offsets
+    enum {                              // Description
+        ICCICR          = 0x000,        // CPU Interface Control
+        ICCPMR          = 0x004,        // Interrupt Priority Mask
+        ICCIAR          = 0x00C,        // Interrupt Ack
+        ICCEOIR         = 0x010         // End Of Interrupt
+    };
+
+    // Useful bits in ICCICR
+    enum {                              // Description                  Type    Value after reset
+        ITF_EN_S        = 1 << 0,       // Enable secure signaling      r/w     0
+        ITF_EN_NS       = 1 << 1,       // Enable non-secure signaling  r/w     0
+        ACK_CTL         = 1 << 2        // Acknowledge control          r/w     0
+    };
+
+    // Private Timer Registers offsets
+    enum {                              // Description
+        PTLR            = 0x00,         // Load
+        PTCTR           = 0x04,         // Counter
+        PTCLR           = 0x08,         // Control
+        PTISR           = 0x0C          // Interrupt Status
+    };
+
+    // Useful bits in PTCLR
+    enum {                              // Description                  Type    Value after reset
+        TIMER_ENABLE    = 1 << 0,       // Enable                       r/w     0
+        AUTO_RELOAD     = 1 << 1,       // Auto reload                  r/w     0
+        IRQ_EN          = 1 << 2        // Enable interrupt             r/w     0
+    };
+
+    // Useful bits in PTISR
+    enum {                              // Description                  Type    Value after reset
+        INT_CLR         = 1 << 0        // Interrupt clear bit          r/w     0
+    };
+
     // Distributor Registers offsets
     enum {                              // Description
         ICDDCR          = 0x000,        // Distributor Control
@@ -49,21 +86,6 @@ public:
     // Useful bits in ICDDCR
     enum {                              // Description                  Type    Value after reset
         DIST_EN_S       = 1 << 0        // Enable secure interrupts     r/w     0
-    };
-
-    // CPU Interface Registers offsets
-    enum {                              // Description
-        ICCICR          = 0x000,        // CPU Interface Control
-        ICCPMR          = 0x004,        // Interrupt Priority Mask
-        ICCIAR          = 0x00C,        // Interrupt Ack
-        ICCEOIR         = 0x010         // End Of Interrupt
-    };
-
-    // Useful bits in ICCICR
-    enum {                              // Description                  Type    Value after reset
-        ITF_EN_S        = 1 << 0,       // Enable secure signaling      r/w     0
-        ITF_EN_NS       = 1 << 1,       // Enable non-secure signaling  r/w     0
-        ACK_CTL         = 1 << 2        // Acknowledge control          r/w     0
     };
 
 protected:
@@ -127,6 +149,7 @@ public:
     static volatile Reg32 & slcr(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(SLCR_BASE)[o / sizeof(Reg32)]; }
     static volatile Reg32 & cpu_itf(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(CPU_ITF_BASE)[o / sizeof(Reg32)]; }
     static volatile Reg32 & dist(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(DIST_BASE)[o / sizeof(Reg32)]; }
+    static volatile Reg32 & priv_timer(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(PRIV_TIMER_BASE)[o / sizeof(Log_Addr)]; }
 };
 
 typedef Zynq Cortex_A_Model;

@@ -1,4 +1,4 @@
-// EPOS Cortex-A Timer Mediator Declarations
+// EPOS Cortex_A Timer Mediator Declarations
 
 #ifndef __cortex_a_timer_h
 #define __cortex_a_timer_h
@@ -7,6 +7,7 @@
 #include <ic.h>
 #include <timer.h>
 #include <machine.h>
+#include __MODEL_H
 
 __BEGIN_SYS
 
@@ -62,33 +63,10 @@ public:
     }
 };
 
-class Cortex_A_Priv_Timer
+class Cortex_A_Priv_Timer: public Cortex_A_Model
 {
 private:
     typedef TSC::Hertz Hertz;
-    typedef CPU::Log_Addr Log_Addr;
-
-    enum {
-        PRIV_TIMER_BASE = 0XF8F00600
-    };
-
-    // Private Timer Registers offsets
-    enum {
-        PTLR    = 0x00, // Load
-        PTCTR   = 0x04, // Counter
-        PTCLR   = 0x08, // Control
-        PTISR   = 0x0C  // Interrupt Status
-    };
-    enum PTCLR {
-        EN          = 1 << 0,
-        AUTO_RELOAD = 1 << 1,
-        IRQ_EN      = 1 << 2
-    };
-    enum PTISR {
-        INT_CLR = 1 << 0
-    };
-
-    static Log_Addr & priv_timer(unsigned int o) { return reinterpret_cast<Log_Addr *>(PRIV_TIMER_BASE)[o / sizeof(Log_Addr)]; }
 
 public:
     typedef CPU::Reg32 Count;
@@ -98,8 +76,8 @@ protected:
     Cortex_A_Priv_Timer() {}
 
 public:
-    static void enable() { priv_timer(PTCLR) |= EN; }
-    static void disable() { priv_timer(PTCLR) &= ~EN; }
+    static void enable() { priv_timer(PTCLR) |= TIMER_ENABLE; }
+    static void disable() { priv_timer(PTCLR) &= TIMER_ENABLE; }
 
     static Hertz clock() { return CLOCK; }
 

@@ -13,9 +13,7 @@ public:
     static Date date();
     static void date(const Date & d);
 
-    static Second seconds_since_epoch() {
-        return 0;
-    }
+    static Second seconds_since_epoch() { return 0; }
 };
 
 __END_SYS
