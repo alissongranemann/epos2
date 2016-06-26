@@ -55,17 +55,14 @@ E100::~E100()
     _devices[_unit].in_use = false;
 }
 
-E100::E100(unsigned int unit,
-           Log_Addr io_mem,
-           IO_Irq irq,
-           DMA_Buffer * dma_buf)
+E100::E100(unsigned int unit, const Log_Addr & io_mem, const IO_Irq & irq, DMA_Buffer * dma_buf)
 {
     db<E100>(TRC) << "E100(unit=" << unit << ",io=" << io_mem << ",irq=" << irq << ",dma=" << dma_buf << ")" << endl;
 
     _unit = unit;
     _io_mem = io_mem;
     _irq = irq;
-    csr = (CSR_Desc *) io_mem;
+    csr = static_cast<CSR_Desc *>(io_mem);
     _dma_buffer = dma_buf;
 
     // Distribute the DMA_Buffer allocated by init()
@@ -238,8 +235,7 @@ void E100::reset()
     udelay(10);
 }
 
-int E100::send(const Address & dst, const Protocol & prot,
-               const void * data, unsigned int size)
+int E100::send(const Address & dst, const Protocol & prot, const void * data, unsigned int size)
 {
     // wait for a free TxCB
     while(!(_tx_ring[_tx_cur].status & cb_complete)) {
@@ -265,9 +261,10 @@ int E100::send(const Address & dst, const Protocol & prot,
     new (frame) Frame(_address, dst, htons(prot), data, size);
     new (_tx_ring[_tx_cur].frame) Frame(_address, frame->dst(), htons(frame->prot()), frame->data<void>(), size);
     // ----
-
-    db<E100>(TRC) << "E100::send:\n(dst=" << dst << ", prot=" << prot << ", data=" << (char *) data << ", size=" << size
-        << ")\n(dst=" << frame->dst() << ", prot=" << frame->prot() << ", data=" << (char *) frame->data<void>() << ", size=" << buf->size() << ")" << endl;
+    // TODO: the above doesn't make sense!
+    
+    db<E100>(TRC) << "E100::send(dst=" << dst << ", prot=" << prot << ", data=" << (char *) data << ", size=" << size << ")";
+    db<E100>(INF) << "E100::send:frame={dst=" << frame->dst() << ", prot=" << frame->prot() << ", data=" << (char *) frame->data<void>() << ", size=" << buf->size() << "}" << endl;
 
     _tx_ring[_tx_cur].command = cb_s; // suspend bit
     _tx_ring[_tx_cur].command |= (cb_tx | cb_cid); // transmit command
@@ -354,13 +351,12 @@ int E100::receive(Address * src, Protocol * prot, void * data, unsigned int size
 
 /*! NOTE: this method is not thread-safe as _tx_cur is shared by all threads
  * that use this object and the access to _tx_cur is not atomic. */
+// TODO: solve this!
 E100::Buffer * E100::alloc(NIC * nic, const Address & dst, const Protocol & prot, unsigned int once, unsigned int always, unsigned int payload)
 {
     db<E100>(TRC) << "E100::alloc(s=" << _address << ",d=" << dst << ",p=" << hex << prot << dec << ",on=" << once << ",al=" << always << ",ld=" << payload << ")" << endl;
 
     int max_data = MTU - always;
-
-    // unsigned int allocated = 0; // Just for debug. Remove this later.
 
     if((payload + once) / max_data > TX_BUFS) {
         db<E100>(WRN) << "E100::alloc: sizeof(Network::Packet::Data) > sizeof(NIC::Frame::Data) * TX_BUFS!" << endl;
@@ -587,9 +583,8 @@ void E100::handle_int() {
 
                 // For the upper layers, size will represent the size of frame->data<T>()
                 unsigned int size = 0;
-                if (_rx_ring[_rx_cur].actual_size & 0xC000) {
+                if(_rx_ring[_rx_cur].actual_size & 0xC000)
                     size = _rx_ring[_rx_cur].actual_size & 0x3FFF;
-                }
                 buf->size(size);
 
                 db<E100>(INF) << "E100::int:receive desc_frame(s=" << desc_frame->src() << ",d=" << desc_frame->dst() << ",p=" << hex << desc_frame->prot() << dec << ",t=" << (char *) desc_frame->data<void>() << ",s=" << buf->size() << ")" << endl;
@@ -614,8 +609,7 @@ void E100::handle_int() {
                 if(!notify(frame->header()->prot(), buf)) { // No one was waiting for this frame, so let it free for receive()
                     free(buf);
                     db<E100>(TRC) << "Not notified!" << endl;
-                }
-                else {
+                } else {
                     db<E100>(TRC) << "Notified!" << endl;
                 }
             }
@@ -703,9 +697,8 @@ int E100::self_test()
     if(dmadump->selftest.result != 0) {
         db<E100>(WRN) << "E100:self_test() => failed with code " << dmadump->selftest.result << "!" << endl;
         return -1;
-    } else {
+    } else
         db<E100>(TRC) << "E100:self_test() => PASSED with code " << dmadump->selftest.result << "!" << endl;
-    }
 
     if(dmadump->selftest.signature == 0) {
         db<E100>(WRN) << "E100:self_test() => timed out!" << endl;

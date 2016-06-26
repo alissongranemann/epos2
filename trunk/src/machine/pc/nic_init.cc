@@ -9,7 +9,6 @@ inline static void call_init()
 {
     typedef typename Traits<PC_Ethernet>::NICS::template Get<unit>::Result NIC;
 
-    // TODO: unit should be reset for each different NIC
     if(Traits<NIC>::enabled)
         NIC::init(unit);
 

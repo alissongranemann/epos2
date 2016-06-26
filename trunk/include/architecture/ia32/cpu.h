@@ -84,10 +84,13 @@ public:
         CR0_NW      = 0x20000000,
         CR0_CD      = 0x40000000,
         CR0_PG      = 0x80000000,
-        // Mask to clear flags (by ANDing)
-        CR0_CLEAR       = (CR0_PE | CR0_EM | CR0_WP),
-        // Mask to set flags (by ORing)
-        CR0_SET         = (CR0_PE | CR0_PG)
+        CR0_CLEAR       = (CR0_PE | CR0_EM | CR0_WP),   // Mask to clear flags (by ANDing)
+        CR0_SET         = (CR0_PE | CR0_PG)             // Mask to set flags (by ORing)
+    };
+
+    // CR4 Flags
+    enum {
+        CR4_PSE     = 1 << 8    // CR4 Performance Counter Enable
     };
 
     // Segment Flags
@@ -429,6 +432,11 @@ public:
             "       popl    %%eax                           \n"
             : "=o"(value) : );
         return value;
+    }
+
+    static void cpuid(Reg32 op, Reg32 * eax, Reg32 * ebx, Reg32 * ecx, Reg32 * edx) {
+        *eax = op;
+        ASM("cpuid" : "=a"(*eax), "=b"(*ebx), "=c"(*ecx), "=d"(*edx) : "0"(*eax), "2"(*ecx));
     }
 
     static Reg32 cr0() {

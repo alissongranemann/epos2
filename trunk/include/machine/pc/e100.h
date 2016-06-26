@@ -369,26 +369,18 @@ public:
     E100(unsigned int unit = 0);
     ~E100();
 
-
-    /* New communication API:
-     * Uses NIC buffers, Zero-Copy.
-     * Used with upper protocols (e.g. TCP/IP).
-     * In the new API, handle_int() plays the role of receiver using the Publisher/Subscriber design pattern
-     * */
     Buffer * alloc(NIC * nic, const Address & dst, const Protocol & prot, unsigned int once, unsigned int always, unsigned int payload);
     void free(Buffer * buf);
     int send(Buffer * buf);
 
-    /* Old communication API:
-     * Based on send/receive, buffer provided by user, with copy.
-     * Used for testing NIC */
     int send(const Address & dst, const Protocol & prot, const void * data, unsigned int size);
     int receive(Address * src, Protocol * prot, void * data, unsigned int size);
 
-public:
     unsigned int mtu() { return MTU; }
+    
     const Address & address() { return _address; }
     void address(const Address & address) { _address = address; }
+    
     const Statistics & statistics() { return _statistics; }
 
     void reset();
@@ -396,7 +388,7 @@ public:
     static E100 * get(unsigned int unit = 0) { return get_by_unit(unit); }
 
 private:
-    E100(unsigned int unit, Log_Addr io_mem, IO_Irq irq, DMA_Buffer * dma);
+    E100(unsigned int unit, const Log_Addr & io_mem, const IO_Irq & irq, DMA_Buffer * dma_buf);
 
     void handle_int();
 
@@ -467,28 +459,7 @@ private:
         return 0;
     }
 
-    static void init(unsigned int unit);
-
-
-private:
-    void print_csr()
-    {
-        /* typedef struct csr {
-        struct {
-                volatile Reg8 status;
-                volatile Reg8 stat_ack;
-                volatile Reg8 cmd_lo;
-                volatile Reg8 cmd_hi;
-                volatile Reg32 gen_ptr;
-            } scb;
-            volatile Reg32 port;
-            volatile Reg16 flash_ctrl;
-            volatile Reg8 eeprom_ctrl_lo;
-            volatile Reg8 eeprom_ctrl_hi;
-            volatile Reg32 mdi_ctrl;
-            volatile Reg32 rx_dma_count;
-        } CSR_Desc;
-    */
+    void print_csr() {
         db<E100>(WRN) << "status: [" << csr->scb.status << "] => " << *reinterpret_cast<volatile Reg8 *>(&csr->scb.status) << endl;
         db<E100>(WRN) << "stat_ack: [" << csr->scb.stat_ack << "] => " << *reinterpret_cast<volatile Reg8 *>(&csr->scb.stat_ack) << endl;
         db<E100>(WRN) << "cmd_lo: [" << csr->scb.cmd_lo << "] => " << *reinterpret_cast<volatile Reg8 *>(&csr->scb.cmd_lo) << endl;
@@ -502,9 +473,7 @@ private:
         db<E100>(WRN) << "rx_dma_count: [" << csr->rx_dma_count << "] => " << *reinterpret_cast<volatile Reg32 *>(&csr->rx_dma_count) << endl;
     }
 
-
-    void csr_hard_init()
-    {
+    void csr_hard_init() {
         csr->scb.status = 0;
         csr->scb.stat_ack = 0;
         csr->scb.cmd_lo = 0;
@@ -516,6 +485,8 @@ private:
         csr->eeprom_ctrl_hi = 0;
         csr->mdi_ctrl = 0x18217809;
     }
+
+    static void init(unsigned int unit);
 
 private:
     unsigned int _unit;

@@ -32,7 +32,9 @@ template<> struct Traits<IA32_FPU>: public Traits<void>
 
 template<> struct Traits<IA32_PMU>: public Traits<void>
 {
-    static const bool enabled = false;
+    static const bool enabled = true;
+    enum {V1, V2, V3, DUO, MICRO, ATOM, NEHALEN, NETBURST, SANDY_BRIDGE};
+    static const unsigned int MODEL = V2;
 };
 
 __END_SYS

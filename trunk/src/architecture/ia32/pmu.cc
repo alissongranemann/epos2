@@ -6,15 +6,18 @@ __BEGIN_SYS
 
 // Class attributes
 //IA32_PMU::Log_Addr IA32_PMU::_base;
-int IA32_PMU::_version;
-int IA32_PMU::_max_events;
-IA32_PMU::Reg32 IA32_PMU::_num_counters;
-IA32_PMU::Reg32 IA32_PMU::_num_counters_fixed;
-int IA32_PMU::_cntval_bits;
-IA32_PMU::Reg64 IA32_PMU::_cntval_mask;
-IA32_PMU::Reg64 IA32_PMU::_max_period;
-IA32_PMU::Reg64 IA32_PMU::_intel_ctrl;
-IA32_PMU::perf_capabilities IA32_PMU::_intel_cap;
-IA32_PMU::cpuinfo_x86 IA32_PMU::_cpuinfo;
+const CPU::Reg32 Intel_PMU_V1::_events[EVENTS] = {
+                         /* CLOCK              */ UNHALTED_CORE_CYCLES,
+                         /* DVS_CLOCK          */ UNHALTED_REFERENCE_CYCLES,
+                         /* INSTRUCTIONS       */ INSTRUCTIONS_RETIRED,
+                         /* BRANCHES           */ BRANCH_INSTRUCTIONS_RETIRED,
+                         /* BRANCH_MISSES      */ BRANCH_MISSES_RETIRED,
+                         /* L1_HIT             */ 0,
+                         /* L2_HIT             */ 0,
+                         /* L3_HIT             */ LLC_REFERENCES,
+                         /* L1_MISS            */ 0,
+                         /* L2_MISS            */ 0,
+                         /* L3_MISS            */ LLC_MISSES,
+};
 
 __END_SYS

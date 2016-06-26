@@ -91,7 +91,7 @@ public:
             db<Bignum>(TRC) << _mod.data[i] << ",";
         db<Bignum>(TRC) << _mod.data[DIGITS - 1] << "]) => ";
 
-        Digit mult_result[2*DIGITS];
+        Digit mult_result[2 * DIGITS];
         simple_mult(mult_result, _data, b._data, DIGITS);
         barrett_reduction(_data, mult_result, DIGITS);
 

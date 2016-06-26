@@ -37,18 +37,7 @@ void E100::init(unsigned int unit)
         db<Init, E100>(WRN) << "E100::init: not master capable!" << endl;
 
     // Get I/O base port
-    /* Bypassing the logical address computed by EPOS by creating a segment
-     * using the physical address of the E100 device and attaching it to the
-     * current address space.
-     */
-    // Original Code
     Log_Addr io_mem = hdr.region[PCI_REG_MEM].log_addr;
-    // ---
-    // Bypass code:
-    // Address_Space * as = new (SYSTEM) Address_Space(MMU::current());
-    // Segment * seg = new (SYSTEM) Segment(hdr.region[PCI_REG_MEM].phy_addr, hdr.region[PCI_REG_MEM].size, MMU::IA32_Flags::DMA);
-    // Log_Addr io_mem = as->attach(seg);
-    // ---
 
     db<Init, E100>(INF) << "E100::init: I/O memory at "
                         << hdr.region[PCI_REG_MEM].phy_addr
@@ -64,7 +53,7 @@ void E100::init(unsigned int unit)
 
     // Allocate a DMA Buffer for init block, rx and tx rings
     DMA_Buffer * dma_buf = new (SYSTEM) DMA_Buffer(DMA_BUFFER_SIZE);
-    db<Init, E100>(INF) << "DMA_Buffer: " << reinterpret_cast<void *>(dma_buf) << " : " << *dma_buf << endl;
+    db<Init, E100>(INF) << "E100::init: DMA_Buffer=" << reinterpret_cast<void *>(dma_buf) << " : " << *dma_buf << endl;
 
     // Initialize the device
     E100 * dev = new (SYSTEM) E100(unit, io_mem, irq, dma_buf);
@@ -74,21 +63,13 @@ void E100::init(unsigned int unit)
     _devices[unit].device = dev;
     _devices[unit].interrupt = IC::irq2int(irq);
 
-    db<E100>(INF) << "interrupt: " << _devices[unit].interrupt << ", irq: " << irq << endl;
+    db<E100>(INF) << "E100::init: interrupt: " << _devices[unit].interrupt << ", irq: " << irq << endl;
 
     // Install interrupt handler
     IC::int_vector(_devices[unit].interrupt, &int_handler);
 
     // Enable interrupts for device
     IC::enable(_devices[unit].interrupt);
-
-    // Assign IRQ to E100 interrupt on I/O APIC
-    // IO_APIC::remap(Memory_Map<PC>::IO_APIC); // Already done by setup. Should not be needed here.
-    // if (! Traits<Build>::RUNNING_ON_QEMU) { /* Assuming HP xw4600 Workstation (Intel Core 2 Quad Q9550) */
-    //    db<void>(TRC) << "IO_APIC::set_irq" << endl;
-        // IO_APIC::set_irq(2, 0, 42); /*  42 is the E100 interrupt */
-    //}
-
 }
 
 __END_SYS
