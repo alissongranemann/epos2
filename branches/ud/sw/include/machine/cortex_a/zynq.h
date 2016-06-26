@@ -9,12 +9,52 @@ __BEGIN_SYS
 
 class Zynq
 {
+protected:
+    typedef CPU::Reg32 Reg32;
+
 public:
     // Base address for memory-mapped System Control Registers
     enum {
-        UART0_BASE = 0xE0000000,
-        UART1_BASE = 0xE0001000
+        UART0_BASE      = 0xE0000000,
+        UART1_BASE      = 0xE0001000,
+        CPU_ITF_BASE    = 0xF8F00100,
+        DIST_BASE       = 0xF8F01000
     };
+
+    // Distributor Registers offsets
+    enum {                              // Description
+        ICDDCR          = 0x000,        // Distributor Control
+        ICDISER0        = 0x100,        // Interrupt Set-Enable
+        ICDISER1        = 0x104,        // Interrupt Set-Enable
+        ICDISER2        = 0x108,        // Interrupt Set-Enable
+        ICDICER0        = 0x180,        // Interrupt Clear-Enable
+        ICDICER1        = 0x184,        // Interrupt Clear-Enable
+        ICDICER2        = 0x188         // Interrupt Clear-Enable
+    };
+
+    // Useful bits in ICDDCR
+    enum {                              // Description                  Type    Value after reset
+        DIST_EN_S       = 1 << 0        // Enable secure interrupts     r/w     0
+    };
+
+    // CPU Interface Registers offsets
+    enum {                              // Description
+        ICCICR          = 0x000,        // CPU Interface Control
+        ICCPMR          = 0x004,        // Interrupt Priority Mask
+        ICCIAR          = 0x00C,        // Interrupt Ack
+        ICCEOIR         = 0x010         // End Of Interrupt
+    };
+
+    // Useful bits in ICCICR
+    enum {                              // Description                  Type    Value after reset
+        ITF_EN_S        = 1 << 0,       // Enable secure signaling      r/w     0
+        ITF_EN_NS       = 1 << 1,       // Enable non-secure signaling  r/w     0
+        ACK_CTL         = 1 << 2        // Acknowledge control          r/w     0
+    };
+
+public:
+    static volatile Reg32 & cpu_itf(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(CPU_ITF_BASE)[o / sizeof(Reg32)]; }
+    static volatile Reg32 & dist(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(DIST_BASE)[o / sizeof(Reg32)]; }
 };
 
 typedef Zynq Cortex_A_Model;

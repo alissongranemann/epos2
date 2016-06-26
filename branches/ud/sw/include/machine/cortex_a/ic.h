@@ -5,27 +5,28 @@
 
 #include <cpu.h>
 #include <ic.h>
+#include __MODEL_H
 
 __BEGIN_SYS
 
-class GIC_PL390
+class GIC_PL390: protected Cortex_A_Model
 {
 protected:
     static void enable() {
-        dist(ICDISERN + 0) = ~0;
-        dist(ICDISERN + 4) = ~0;
-        dist(ICDISERN + 8) = ~0;
+        dist(ICDISER0) = ~0;
+        dist(ICDISER1) = ~0;
+        dist(ICDISER2) = ~0;
     }
 
-    static void enable(int i) { dist(ICDISERN + (i/32)*4) = 1 << (i%32); }
+    static void enable(int i) { dist(ICDISER0 + (i/32)*4) = 1 << (i%32); }
 
     static void disable() {
-        dist(ICDICERN + 0) = ~0;
-        dist(ICDICERN + 4) = ~0;
-        dist(ICDICERN + 8) = ~0;
+        dist(ICDICER0) = ~0;
+        dist(ICDICER1) = ~0;
+        dist(ICDICER1) = ~0;
     }
 
-    static void disable(int i) { dist(ICDICERN + (i/32)*4) = 1 << (i%32); }
+    static void disable(int i) { dist(ICDICER0 + (i/32)*4) = 1 << (i%32); }
 
     static void init(void) {
         // Enable distributor
@@ -40,41 +41,7 @@ protected:
     }
 
 protected:
-    typedef CPU::Reg32 Reg32;
-
-    // Base address for memory-mapped registers
-    enum {
-        CPU_ITF_BASE  = 0xF8F00100,
-        DIST_BASE     = 0xF8F01000
-    };
-
-    // Distributor Registers offsets
-    enum {
-        ICDDCR      = 0x000, // Distributor Control
-        ICDISERN    = 0x100, // Interrupt Set-Enable
-        ICDICERN    = 0x180  // Interrupt Clear-Enable
-    };
-    enum ICDDCR {
-        DIST_EN_S   = 1 << 0
-    };
-
-    // CPU Interface Registers offsets
-    enum {
-        ICCICR  = 0x000, // CPU Interface Control
-        ICCPMR  = 0x004, // Interrupt Priority Mask
-        ICCIAR  = 0x00C, // Interrupt Ack
-        ICCEOIR = 0x010  // End Of Interrupt
-    };
-    enum ICCICR {
-        ITF_EN_S    = 1 << 0,
-        ITF_EN_NS   = 1 << 1,
-        ACK_CTL     = 1 << 2
-    };
-
     static const unsigned int INT_ID_MASK = 0x3FF;
-
-    static volatile Reg32 & cpu_itf(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(CPU_ITF_BASE)[o / sizeof(Reg32)]; }
-    static volatile Reg32 & dist(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(DIST_BASE)[o / sizeof(Reg32)]; }
 };
 
 class Cortex_A_IC: private IC_Common, private GIC_PL390
@@ -90,8 +57,8 @@ public:
 
     static const unsigned int INTS = 96;
     enum {
-        INT_TIMER       = 29,   // Each core has its own private timer interrupt
-        INT_RESCHEDULER = 42    // TODO: Implement this shit
+        INT_TIMER       = 29,
+        INT_RESCHEDULER = 42    // FIXME: Find the real number
     };
 
 public:
