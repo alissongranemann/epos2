@@ -117,13 +117,12 @@ public:
         USER
     };
 
-public:
-    Cortex_A_Timer(const Hertz & frequency, const Handler & handler, const Channel & channel, bool retrigger = true):
-        _channel(channel), _initial(FREQUENCY / frequency), _retrigger(retrigger), _handler(handler) {
-        db<Timer>(TRC) << "Timer(f=" << frequency << ",h=" << reinterpret_cast<void*>(handler)
-                       << ",ch=" << channel << ") => {count=" << _initial << "}" << endl;
+protected:
+    Cortex_A_Timer(const Hertz & frequency, const Handler & handler, const Channel & channel, bool retrigger = true)
+    : _channel(channel), _initial(FREQUENCY / frequency), _retrigger(retrigger), _handler(handler) {
+        db<Timer>(TRC) << "Timer(f=" << frequency << ",h=" << reinterpret_cast<void*>(handler) << ",ch=" << channel << ") => {count=" << _initial << "}" << endl;
 
-        if(_initial && (unsigned(channel) < CHANNELS) && !_channels[channel])
+        if(_initial && (channel < CHANNELS) && !_channels[channel])
             _channels[channel] = this;
         else
             db<Timer>(WRN) << "Timer not installed!"<< endl;
@@ -132,6 +131,7 @@ public:
             _current[i] = _initial;
     }
 
+public:
     ~Cortex_A_Timer() {
         db<Timer>(TRC) << "~Timer(f=" << frequency() << ",h=" << reinterpret_cast<void*>(_handler)
                        << ",ch=" << _channel << ") => {count=" << _initial << "}" << endl;
@@ -161,22 +161,17 @@ public:
     static void disable() { Engine::disable(); }
 
 private:
-    static Hertz count2freq(const Count & c) {
-        return c ? Engine::clock() / c : 0;
-    }
+    static Hertz count2freq(const Count & c) { return c ? Engine::clock() / c : 0; }
+    static Count freq2count(const Hertz & f) { return f ? Engine::clock() / f : 0; }
 
-    static Count freq2count(const Hertz & f) {
-        return f ? Engine::clock() / f : 0;
-    }
+    static void int_handler(const Interrupt_Id & i);
 
     static void isr_clr() { Engine::isr_clr(); }
-
-    static void int_handler(const Interrupt_Id & id);
 
     static void init();
 
 private:
-    Channel _channel;
+    unsigned int _channel;
     Count _initial;
     bool _retrigger;
     volatile Count _current[Traits<Machine>::CPUS];
@@ -190,13 +185,11 @@ private:
 class Scheduler_Timer: public Cortex_A_Timer
 {
 private:
-    typedef unsigned long Microsecond;
+    typedef RTC::Microsecond Microsecond;
 
 public:
-    Scheduler_Timer(const Microsecond & quantum, const Handler & handler):
-        Cortex_A_Timer(1000000 / quantum, handler, SCHEDULER) {}
+    Scheduler_Timer(const Microsecond & quantum, const Handler & handler): Cortex_A_Timer(1000000 / quantum, handler, SCHEDULER) {}
 };
-
 
 // Timer used by Alarm
 class Alarm_Timer: public Cortex_A_Timer
@@ -212,11 +205,12 @@ public:
 // TODO: Use a different timer
 class User_Timer: public Cortex_A_Timer
 {
-private:
-    typedef RTC::Microsecond Microsecond;
+public:
+    using Timer_Common::Microsecond;
 
 public:
-    User_Timer(const Microsecond & quantum, const Handler & handler): Cortex_A_Timer(1000000 / quantum, handler, USER, true) {}
+    User_Timer(const Microsecond & quantum, const Handler & handler)
+    : Cortex_A_Timer(1000000 / quantum, handler, USER, true) {}
 };
 
 __END_SYS

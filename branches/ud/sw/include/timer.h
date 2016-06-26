@@ -4,6 +4,7 @@
 #define __timer_h
 
 #include <tsc.h>
+#include <rtc.h>
 #include <ic.h>
 
 __BEGIN_SYS
@@ -16,6 +17,7 @@ protected:
 public:
     typedef TSC::Hertz Hertz;
     typedef TSC::Hertz Tick;
+    typedef RTC::Microsecond Microsecond;
     typedef IC::Interrupt_Handler Handler;
     typedef unsigned int Channel;
 };
