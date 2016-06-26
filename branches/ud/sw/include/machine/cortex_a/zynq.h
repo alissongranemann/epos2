@@ -17,8 +17,22 @@ public:
     enum {
         UART0_BASE      = 0xE0000000,
         UART1_BASE      = 0xE0001000,
+        SLCR_BASE       = 0xF8000000,
         CPU_ITF_BASE    = 0xF8F00100,
         DIST_BASE       = 0xF8F01000
+    };
+
+    // SLCR Registers offsets
+    enum {                              // Description
+        FPGA0_CLK_CTRL  = 0x170,        // PL Clock 0 Output control
+        PSS_RST_CTRL    = 0x200,        // PS Software Reset Control
+        FPGA_RST_CTRL   = 0x240         // FPGA Software Reset Control
+    };
+
+    // Useful bits in FPGAN_CLK_CTRL
+    enum {                              // Description                  Type    Value after reset
+        DIVISOR0        = 1 << 8,       // First cascade divider        r/w     0x18
+        DIVISOR1        = 1 << 20       // Second cascade divider       r/w     0x1
     };
 
     // Distributor Registers offsets
@@ -52,7 +66,65 @@ public:
         ACK_CTL         = 1 << 2        // Acknowledge control          r/w     0
     };
 
+protected:
+    Zynq() {}
+
+    static void reboot() {
+        // This will mess with qemu but works on real hardware, possibly a bug
+        // in qemu. Note that the asserting reset will clear the RAM where the
+        // application is stored.
+        slcr(PSS_RST_CTRL) = 1;
+    }
+
+    static unsigned int cpu_id() {
+        int id;
+        ASM("mrc p15, 0, %0, c0, c0, 5"
+            : "=r"(id)
+            : : );
+        return id & 0x3;
+    }
+
+    // Returns the frequency set, -1 if frequency can't be set
+    static int fpga0_clk_freq(unsigned int freq) {
+        const unsigned int div_max = 63, tol = 20;
+        unsigned int div0 = 0, div1 = 0,
+                io_pll_clock = Traits<Cortex_A>::IO_PLL_CLOCK;
+        Reg32 tmp;
+
+        while(++div1 <= div_max) {
+            div0 = 1;
+            while(++div0 <= div_max)
+                if((io_pll_clock/(div0*div1) < (freq + freq/tol)) &&
+                        (io_pll_clock/(div0*div1) > (freq - freq/tol)))
+                    goto set_clk_ctrl;
+        }
+
+        return -1;
+
+        set_clk_ctrl:
+        tmp = slcr(FPGA0_CLK_CTRL);
+        tmp &= ~((DIVISOR0 * 0x3f) | (DIVISOR1 * 0x3f));
+        slcr(FPGA0_CLK_CTRL) = tmp | (DIVISOR0 * div0) | (DIVISOR1 * div1);
+
+        return io_pll_clock/(div0*div1);
+    }
+
+    // PL logic connecting to the PS must not be reset when active transactions
+    // exist, since uncompleted transactions could be left pending in the PS
+    static void fpga_reset(int n) {
+        assert(n < 4);
+        slcr(FPGA_RST_CTRL) |= 1 << n;
+        // FPGA peripherals will reset on the rising/falling edge of their
+        // clocks if reset is asserted. This "rough" 1 us delay will ensure all
+        // peripherals operating on clocks higher than 1 MHz will be correctly
+        // reseted.
+        for(unsigned int i = 0; i < Traits<CPU>::CLOCK/1000000; i++)
+            ASM("nop");
+        slcr(FPGA_RST_CTRL) &= ~(1 << n);
+    }
+
 public:
+    static volatile Reg32 & slcr(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(SLCR_BASE)[o / sizeof(Reg32)]; }
     static volatile Reg32 & cpu_itf(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(CPU_ITF_BASE)[o / sizeof(Reg32)]; }
     static volatile Reg32 & dist(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(DIST_BASE)[o / sizeof(Reg32)]; }
 };
