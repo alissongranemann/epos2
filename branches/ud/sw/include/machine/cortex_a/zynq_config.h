@@ -1,7 +1,7 @@
 // EPOS Zynq-7000 (Cortex-A9) Mediators Configuration
 
-#ifndef __zynq_config_h
-#define __zynq_config_h
+#ifndef __machine_config_h
+#define __machine_config_h
 
 #include <system/meta.h>
 #include __APPL_TRAITS_H

@@ -11,28 +11,12 @@
 
 __BEGIN_SYS
 
-class Cortex_A_Global_Timer
+class Cortex_A_Global_Timer: public Cortex_A_Model
 {
 private:
     typedef TSC::Hertz Hertz;
     typedef TSC::Time_Stamp Time_Stamp;
-    typedef CPU::Log_Addr Log_Addr;
-    typedef CPU::Reg32 Reg32;
     typedef CPU::Reg32 Count;
-
-    enum {
-        GLOBAL_TIMER_BASE = 0xF8F00200
-    };
-
-    // Global Timer Registers offsets
-    enum {
-        GTCTRL  = 0x00, // Low Counter
-        GTCTRH  = 0x04, // High Counter
-        GTCLR   = 0x08, // Control
-        GTISR   = 0x0C  // Interrupt Status
-    };
-
-    static volatile Reg32 & global_timer(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(GLOBAL_TIMER_BASE)[o / sizeof(Reg32)]; }
 
 public:
     static const Hertz CLOCK = Traits<CPU>::CLOCK/2;

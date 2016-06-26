@@ -16,12 +16,13 @@ protected:
 public:
     // Base address for memory-mapped System Control Registers
     enum {
-        UART0_BASE      = 0xE0000000,
-        UART1_BASE      = 0xE0001000,
-        SLCR_BASE       = 0xF8000000,
-        CPU_ITF_BASE    = 0xF8F00100,
-        PRIV_TIMER_BASE = 0XF8F00600,
-        DIST_BASE       = 0xF8F01000
+        UART0_BASE          = 0xE0000000,
+        UART1_BASE          = 0xE0001000,
+        SLCR_BASE           = 0xF8000000,
+        CPU_ITF_BASE        = 0xF8F00100,
+        GLOBAL_TIMER_BASE   = 0xF8F00200,
+        PRIV_TIMER_BASE     = 0XF8F00600,
+        DIST_BASE           = 0xF8F01000
     };
 
     // SLCR Registers offsets
@@ -50,6 +51,14 @@ public:
         ITF_EN_S        = 1 << 0,       // Enable secure signaling      r/w     0
         ITF_EN_NS       = 1 << 1,       // Enable non-secure signaling  r/w     0
         ACK_CTL         = 1 << 2        // Acknowledge control          r/w     0
+    };
+
+    // Global Timer Registers offsets
+    enum {                              // Description
+        GTCTRL  = 0x00,                 // Low Counter
+        GTCTRH  = 0x04,                 // High Counter
+        GTCLR   = 0x08,                 // Control
+        GTISR   = 0x0C                  // Interrupt Status
     };
 
     // Private Timer Registers offsets
@@ -148,8 +157,9 @@ protected:
 public:
     static volatile Reg32 & slcr(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(SLCR_BASE)[o / sizeof(Reg32)]; }
     static volatile Reg32 & cpu_itf(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(CPU_ITF_BASE)[o / sizeof(Reg32)]; }
-    static volatile Reg32 & dist(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(DIST_BASE)[o / sizeof(Reg32)]; }
+    static volatile Reg32 & global_timer(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(GLOBAL_TIMER_BASE)[o / sizeof(Reg32)]; }
     static volatile Reg32 & priv_timer(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(PRIV_TIMER_BASE)[o / sizeof(Log_Addr)]; }
+    static volatile Reg32 & dist(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(DIST_BASE)[o / sizeof(Reg32)]; }
 };
 
 typedef Zynq Cortex_A_Model;
