@@ -77,7 +77,7 @@ protected:
 
 public:
     static void enable() { priv_timer(PTCLR) |= TIMER_ENABLE; }
-    static void disable() { priv_timer(PTCLR) &= TIMER_ENABLE; }
+    static void disable() { priv_timer(PTCLR) &= ~TIMER_ENABLE; }
 
     static Hertz clock() { return CLOCK; }
 
