@@ -106,7 +106,7 @@ public:
     }
 
     unsigned char rxd() { return reg(TX_RX_FIFO0); }
-    void txd(unsigned char ch) { reg(TX_RX_FIFO0) = (Reg32)ch; }
+    void txd(unsigned char ch) { reg(TX_RX_FIFO0) = ch; }
 
     void int_enable(bool receive = true, bool send = true, bool line = true, bool modem = true) {
         reg(INTRPT_EN_REG0) |= (receive << INTRPT_RTRIG) | (send << INTRPT_TTRIG);
