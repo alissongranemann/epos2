@@ -55,10 +55,10 @@ public:
 
     // Global Timer Registers offsets
     enum {                              // Description
-        GTCTRL  = 0x00,                 // Low Counter
-        GTCTRH  = 0x04,                 // High Counter
-        GTCLR   = 0x08,                 // Control
-        GTISR   = 0x0C                  // Interrupt Status
+        GTCTRL          = 0x00,         // Low Counter
+        GTCTRH          = 0x04,         // High Counter
+        GTCLR           = 0x08,         // Control
+        GTISR           = 0x0C          // Interrupt Status
     };
 
     // Private Timer Registers offsets
