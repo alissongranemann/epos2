@@ -21,9 +21,7 @@ private:
     static const unsigned int STOP_BITS = Traits<Cortex_A_UART>::DEF_STOP_BITS;
 
 public:
-    // The default unit is 1 because Serial_Display instantiate it without
-    // paremeters and we want it to use UART 1. By default, the UART 0 is
-    // disabled in Vivado.
+    // UART 0 is disabled in Vivado so the default is UART 1
     Cortex_A_UART(unsigned int baud_rate = BAUD_RATE, unsigned int data_bits = DATA_BITS, unsigned int parity = PARITY, unsigned int stop_bits = STOP_BITS, unsigned int unit = 1)
     : Engine(unit, baud_rate, data_bits, parity, stop_bits) {}
 
