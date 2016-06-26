@@ -4,7 +4,6 @@
 #define __zynq_h
 
 #include <cpu.h>
-#include <tsc.h>
 
 __BEGIN_SYS
 
