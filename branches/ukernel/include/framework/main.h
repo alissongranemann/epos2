@@ -45,6 +45,8 @@ __END_SYS
 #include <ip.h>
 #include <tcp.h>
 #include <chronometer.h>
+#include <fpga.h>
+#include <uart.h>
 
 #include "handle.h"
 #include "proxy.h"
@@ -92,6 +94,12 @@ public:
     typedef Sys::Time_Stamp Time_Stamp; /* unsigned long long */
 
 };
+
+
+BIND(FPGA);
+
+BIND(UART);
+
 
 EXPORT(System);
 EXPORT(Application);

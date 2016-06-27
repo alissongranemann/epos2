@@ -76,6 +76,7 @@ class PC_Display;
 class PC_Scratchpad;
 class PC_NIC;
 class PC_Ethernet;
+class PC_FPGA;
 
 class PCNet32;
 class C905;
@@ -217,6 +218,8 @@ enum
     THREAD_CONFIGURATION_ID,
     PERIODIC_THREAD_CONFIGURATION_ID,
 
+    FPGA_ID,
+
     LAST_TYPE_ID = 0xff,
 
     UNKNOWN_TYPE_ID = 0xffff
@@ -239,6 +242,7 @@ template<> struct Type<PC_PCI> { static const Type_Id ID = PCI_ID; };
 template<> struct Type<PC_Display> { static const Type_Id ID = DISPLAY_ID; };
 template<> struct Type<PC_Scratchpad> { static const Type_Id ID = SCRATCHPAD_ID; };
 template<> struct Type<PC_Ethernet> { static const Type_Id ID = NIC_ID; };
+template<> struct Type<PC_FPGA> { static const Type_Id ID = FPGA_ID; };
 
 template<> struct Type<Thread> { static const Type_Id ID = THREAD_ID; };
 template<> struct Type<Periodic_Thread> { static const Type_Id ID = PERIODIC_THREAD_ID; };

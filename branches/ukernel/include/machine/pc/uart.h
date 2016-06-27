@@ -128,6 +128,18 @@ public:
     bool parity_error()  { return reg(LSR) & (1 << 2); }
     bool framing_error() { return reg(LSR) & (1 << 3); }
 
+    void rts_down() {
+        reg(MCR, reg(MCR) & 0xfd);
+        // db<void>(WRN) << "NS16550AF::rts_down" << endl;
+        // txd(0x1);
+    }
+
+    void rts_up() {
+        reg(MCR, reg(MCR) | 0x2); // rts();
+        // db<void>(WRN) << "NS16550AF::rts_up" << endl;
+        // txd(0x1);
+    }
+
 private:
     Reg8 reg(Address addr) { return CPU::in8(_port + addr); }
     void reg(Address addr, Reg8 value) { CPU::out8(_port + addr, value); }
@@ -171,6 +183,10 @@ public:
     }
 
     void loopback(bool flag) { NS16550AF::loopback(flag); }
+
+    void rts_down() { Engine::rts_down(); }
+    void rts_up() { Engine::rts_up(); }
+
 };
 
 __END_SYS

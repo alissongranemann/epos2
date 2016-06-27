@@ -12,6 +12,7 @@
 #include "info.h"
 #include "memory_map.h"
 #include "ic.h"
+#include "fpga.h"
 
 __BEGIN_SYS
 

@@ -21,6 +21,7 @@
 #define __DISPLAY_H     __HEADER_MACH(display)
 #define __NIC_H         __HEADER_MACH(nic)
 #define __SCRATCHPAD_H  __HEADER_MACH(scratchpad)
+#define __FPGA_H        __HEADER_MACH(fpga)
 
 __BEGIN_SYS
 
@@ -39,6 +40,7 @@ typedef PC_UART         UART;
 typedef IF<Traits<Serial_Display>::enabled, Serial_Display, PC_Display>::Result Display;
 typedef PC_Ethernet     NIC;
 typedef PC_Scratchpad   Scratchpad;
+typedef PC_FPGA         FPGA;
 
 __END_SYS
 

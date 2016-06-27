@@ -199,6 +199,15 @@ public:
     static void int_enable() { _Stub::int_enable(); }
     static void int_disable() { _Stub::int_disable(); }
 
+    // FPGA
+    static void run() { _Stub::run(); }
+    static void report() { _Stub::report(); }
+    static void wait_for_transaction() { _Stub::wait_for_transaction(); }
+    static void print_configuration() { _Stub::print_configuration(); }
+
+    // UART
+    void rts_down() { _stub->rts_down(); }
+    void rts_up() { _stub->rts_up(); }
 
 public:
     _Stub * __stub() { return _stub; } // To be used by Subclasses of Handle<> only

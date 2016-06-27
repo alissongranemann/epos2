@@ -105,6 +105,8 @@ private:
     void handle_mmu_aux();
     void handle_tsc();
     void handle_chronometer_aux();
+    void handle_fpga();
+    void handle_uart();
 
 public:
     static void init();
@@ -1158,6 +1160,68 @@ void Agent::handle_chronometer_aux()
 
     result(res);
 }
+
+
+void Agent::handle_fpga()
+{
+    Result res = 0;
+
+    switch(method()) {
+    case FPGA_RUN: {
+        Adapter<FPGA>::run();
+    } break;
+    case FPGA_REPORT: {
+        Adapter<FPGA>::report();
+    } break;
+    case FPGA_WAIT_FOR_TRANSACTION: {
+        Adapter<FPGA>::wait_for_transaction();
+    } break;
+    case FPGA_PRINT_CONFIGURATION: {
+        Adapter<FPGA>::print_configuration();
+    } break;
+    default: {
+        db<Framework>(WRN) << "Undefined method for FPGA agent. Method = " << method() << endl;
+        res = UNDEFINED;
+    }
+    }
+
+    result(res);
+}
+
+
+void Agent::handle_uart()
+{
+    Adapter<UART> * uart = reinterpret_cast<Adapter<UART> *>(id().unit());
+
+    Result res = 0;
+
+    switch(method()) {
+    case CREATE: {
+        // db<void>(WRN) << "UART Agent, CREATE" << endl;
+
+        id(Id(UART_ID, reinterpret_cast<Id::Unit_Id>(new Adapter<UART>())));
+
+    } break;
+    case DESTROY: {
+        delete uart;
+    } break;
+    case UART_RTS_DOWN: {
+        // db<void>(WRN) << "UART Agent, RTS DOWN" << endl;
+        uart->rts_down();
+    } break;
+    case UART_RTS_UP: {
+        // db<void>(WRN) << "UART Agent, RTS UP" << endl;
+        uart->rts_up();
+    } break;
+    default: {
+        db<Framework>(WRN) << "Undefined method for UART agent. Method = " << method() << endl;
+        res = UNDEFINED;
+    }
+    }
+
+    result(res);
+}
+
 
 void Agent::handle_utility()
 {

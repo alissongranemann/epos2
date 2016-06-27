@@ -25,7 +25,7 @@ template<> struct Traits<PC>: public Traits<PC_Common>
 
     // Physical Memory
     static const unsigned int MEM_BASE  = 0x00000000;
-    static const unsigned int MEM_TOP   = 0x10000000; // 256 MB (MAX for 32-bit is 0x70000000 / 1792 MB)
+    static const unsigned int MEM_TOP   = 0x10000000; // 0x10000000 == 256 MB (MAX for 32-bit is 0x70000000 == 1792 MB)
 
     // Logical Memory Map
     static const unsigned int BOOT      = 0x00007c00;
@@ -156,6 +156,14 @@ template<> struct Traits<PC_Scratchpad>: public Traits<PC_Common>
     static const unsigned int ADDRESS = Traits<PC_Display>::FRAME_BUFFER_ADDRESS;
     static const unsigned int SIZE = Traits<PC_Display>::FRAME_BUFFER_SIZE;
 };
+
+template<> struct Traits<PC_FPGA>: public Traits<PC_Common>
+{
+    static const bool enabled = true;
+
+    static const unsigned int DMA_BUFFER_SIZE = 4 * 1024;
+};
+
 
 __END_SYS
 

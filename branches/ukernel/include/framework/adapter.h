@@ -162,6 +162,12 @@ public:
     static void int_enable() { static_enter(); Component::int_enable(); static_leave(); }
     static void int_disable() { static_enter(); Component::int_disable(); static_leave(); }
 
+    // FPGA
+    static void run() { static_enter(); Component::run(); static_leave(); }
+    static void report() { static_enter(); Component::report(); static_leave(); }
+    static void wait_for_transaction() { static_enter(); Component::wait_for_transaction(); static_leave(); }
+    static void print_configuration() { static_enter(); Component::print_configuration(); static_leave(); }
+
 };
 
 __END_SYS

@@ -124,6 +124,14 @@ public:
         CHRONO_MICRO,
         CHRONO_SEC,
 
+        FPGA_RUN = COMPONENT,
+        FPGA_REPORT,
+        FPGA_WAIT_FOR_TRANSACTION,
+        FPGA_PRINT_CONFIGURATION,
+
+        UART_RTS_DOWN = COMPONENT,
+        UART_RTS_UP,
+
         UNDEFINED = -1
     };
     typedef long long Method;

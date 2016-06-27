@@ -46,6 +46,8 @@ void Agent::init()
     _handlers[MMU_AUX_ID]                           =       &Agent::handle_mmu_aux;
     _handlers[TSC_ID]                               =       &Agent::handle_tsc;
     _handlers[CHRONOMETER_AUX_ID]                   =       &Agent::handle_chronometer_aux;
+    _handlers[FPGA_ID]                              =       &Agent::handle_fpga;
+    _handlers[UART_ID]                              =       &Agent::handle_uart;
 }
 
 
