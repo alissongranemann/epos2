@@ -8,9 +8,10 @@ template<int unit>
 inline static void call_init()
 {
     typedef typename Traits<PC_Ethernet>::NICS::template Get<unit>::Result NIC;
+    static const unsigned int OFFSET = Traits<PC_Ethernet>::NICS::template Find<NIC>::Result;
 
     if(Traits<NIC>::enabled)
-        NIC::init(unit);
+        NIC::init(unit - OFFSET);
 
     call_init<unit + 1>();
 };

@@ -625,7 +625,7 @@ public:
     private:
         void send() {
             db<TSTP>(TRC) << "TSTP::Interested::send() => " << reinterpret_cast<const Interest &>(*this) << endl;
-            Buffer * buf = _nic->alloc(_nic, NIC::Address::BROADCAST, NIC::TSTP, 0, 0, sizeof(Interest));
+            Buffer * buf = _nic->alloc(NIC::Address::BROADCAST, NIC::TSTP, 0, 0, sizeof(Interest));
             memcpy(buf->frame()->data<Interest>(), this, sizeof(Interest));
             _nic->send(buf);
         }
@@ -659,7 +659,7 @@ public:
     private:
         void send(const Time & expiry) {
             db<TSTP>(TRC) << "TSTP::Responsive::send(x=" << expiry << ")" << endl;
-            Buffer * buf = _nic->alloc(_nic, NIC::Address::BROADCAST, NIC::TSTP, 0, 0, _size);
+            Buffer * buf = _nic->alloc(NIC::Address::BROADCAST, NIC::TSTP, 0, 0, _size);
             memcpy(buf->frame()->data<Response>(), this, _size);
             db<TSTP>(INF) << "TSTP::Responsive::send:response=" << this << " => " << reinterpret_cast<const Response &>(*this) << endl;
             _nic->send(buf);

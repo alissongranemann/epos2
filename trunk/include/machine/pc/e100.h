@@ -10,7 +10,6 @@ __BEGIN_SYS
 
 class i82559
 {
-
 protected:
     typedef CPU::Reg8 Reg8;
     typedef CPU::Reg16 Reg16;
@@ -179,8 +178,6 @@ public:
         cuc_dump_reset = 0x70,
     };
 
-
-
     struct config {
     /*0*/   Reg8 byte_count:6, pad0:2;
     /*1*/   Reg8 rx_fifo_limit:4, tx_fifo_limit:3, pad1:1;
@@ -317,7 +314,6 @@ public:
         }
     };
 
-
 public:
     int log2(int n) {
         int log2_n = 0;
@@ -327,7 +323,7 @@ public:
 
 };
 
-class E100: public Ethernet, public Ethernet::Observed, private i82559
+class E100: public Ethernet::Base, private i82559
 {
     template<int unit> friend void call_init();
 
@@ -351,33 +347,25 @@ private:
          RX_BUFS * ((sizeof(Buffer) + 15) & ~15U)  +
          TX_BUFS * ((sizeof(Buffer) + 15) & ~15U); // align128() cannot be used here
 
-    // Share control and interrupt dispatiching info
-    struct Device
-    {
+    // Interrupt dispatching binding
+    struct Device {
         E100 * device;
         unsigned int interrupt;
-        bool in_use;
     };
 
-public:
-    typedef CPU::Log_Addr Log_Addr;
-    typedef CPU::Phy_Addr Phy_Addr;
-    typedef CPU::IO_Irq IO_Irq;
-    typedef MMU::DMA_Buffer DMA_Buffer;
+protected:
+    E100(unsigned int unit, const Log_Addr & io_mem, const IO_Irq & irq, DMA_Buffer * dma_buf);
 
 public:
-    E100(unsigned int unit = 0);
     ~E100();
-
-    Buffer * alloc(NIC * nic, const Address & dst, const Protocol & prot, unsigned int once, unsigned int always, unsigned int payload);
-    void free(Buffer * buf);
-    int send(Buffer * buf);
 
     int send(const Address & dst, const Protocol & prot, const void * data, unsigned int size);
     int receive(Address * src, Protocol * prot, void * data, unsigned int size);
 
-    unsigned int mtu() { return MTU; }
-    
+    Buffer * alloc(const Address & dst, const Protocol & prot, unsigned int once, unsigned int always, unsigned int payload);
+    void free(Buffer * buf);
+    int send(Buffer * buf);
+
     const Address & address() { return _address; }
     void address(const Address & address) { _address = address; }
     
@@ -388,8 +376,6 @@ public:
     static E100 * get(unsigned int unit = 0) { return get_by_unit(unit); }
 
 private:
-    E100(unsigned int unit, const Log_Addr & io_mem, const IO_Irq & irq, DMA_Buffer * dma_buf);
-
     void handle_int();
 
     static void int_handler(const IC::Interrupt_Id & interrupt);
@@ -443,11 +429,8 @@ private:
     void i82559_configure(void);
 
     static E100 * get_by_unit(unsigned int unit) {
-        if(unit >= UNITS) {
-            db<E100>(WRN) << "E100::get_by_unit: requested unit (" << unit << ") does not exist!" << endl;
-            return 0;
-        } else
-            return _devices[unit].device;
+        assert(unit < UNITS);
+        return _devices[unit].device;
     }
 
     static E100 * get_by_interrupt(unsigned int interrupt) {
@@ -455,7 +438,7 @@ private:
             if(_devices[i].interrupt == interrupt)
                 return _devices[i].device;
 
-        db<E100>(WRN) << "E100::get_by_interrupt: no device with interrupt (" << interrupt << ") was found!" << endl;
+        db<E100>(WRN) << "E100::get_by_interrupt(" << interrupt << ") => no device bound!" << endl;
         return 0;
     }
 

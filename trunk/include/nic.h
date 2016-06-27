@@ -170,99 +170,36 @@ public:
         bool trusted;
     };
 
-    // Polymorphic (or not) NIC wrapper
-    template<typename NIC>
-    class NIC_Base
-    {
-    private:
-        typedef typename NIC::Address Address;
-        typedef typename NIC::Protocol Protocol;
-        typedef typename NIC::Statistics Statistics;
-        typedef typename NIC::Buffer Buffer;
-        typedef typename NIC::Pool Pool;
 
+    // Polymorphic NIC Base
+    template<typename Family, bool polymorphic>
+    class NIC_Base: public Family, public Family::Observed
+    {
     public:
         NIC_Base(unsigned int unit = 0) {}
-
         virtual ~NIC_Base() {}
 
-        virtual int send(const Address & dst, const Protocol & prot, const void * data, unsigned int size) = 0;
-        virtual int receive(Address * src, Protocol * prot, void * data, unsigned int size) = 0;
+        virtual int send(const typename Family::Address & dst, const typename Family::Protocol & prot, const void * data, unsigned int size) = 0;
+        virtual int receive(typename Family::Address * src, typename Family::Protocol * prot, void * data, unsigned int size) = 0;
 
-        virtual Buffer * alloc(NIC * nic, const Address & dst, const Protocol & prot, unsigned int once, unsigned int always, unsigned int payload) = 0;
-        virtual int send(Buffer * buf) = 0;
-        virtual void free(Buffer * buf) = 0;
+        virtual typename Family::Buffer * alloc(const typename Family::Address & dst, const typename Family::Protocol & prot, unsigned int once, unsigned int always, unsigned int payload) = 0;
+        virtual int send(typename Family::Buffer * buf) = 0;
+        virtual void free(typename Family::Buffer * buf) = 0;
 
-        virtual const unsigned int mtu() = 0;
-        virtual const Address broadcast() = 0;
+        virtual const typename Family::Address & address() = 0;
+        virtual void address(const typename Family::Address &) = 0;
 
-        virtual const Address & address() = 0;
-        virtual void address(const Address &) = 0;
-
-        virtual const Statistics & statistics() = 0;
+        virtual const typename Family::Statistics & statistics() = 0;
 
         virtual void reset() = 0;
     };
 
-    template<typename NIC, bool polymorphic>
-    class NIC_Wrapper: public NIC_Base<NIC>, private NIC
-    {
-    private:
-        typedef typename NIC::Address Address;
-        typedef typename NIC::Protocol Protocol;
-        typedef typename NIC::Statistics Statistics;
-        typedef typename NIC::Buffer Buffer;
-
-    public:
-        NIC_Wrapper(unsigned int unit = 0): NIC(unit) {}
-
-        virtual ~NIC_Wrapper() {}
-
-        virtual int send(const Address & dst, const Protocol & prot, const void * data, unsigned int size) {
-            return NIC::send(dst, prot, data, size);
-        }
-        virtual int receive(Address * src, Protocol * prot, void * data, unsigned int size) {
-            return NIC::receive(src, prot, data, size);
-        }
-
-        virtual Buffer * alloc(NIC * nic, const Address & dst, const Protocol & prot, unsigned int once, unsigned int always, unsigned int payload) {
-            return NIC::alloc(nic, once, always, payload);
-        }
-        virtual int send(Buffer * buf) { return NIC::send(buf); }
-        virtual void free(Buffer * buf) { NIC::free(buf); }
-
-        virtual const unsigned int mtu() const { return NIC::mtu(); }
-        virtual const Address broadcast() const { return NIC::broadcast(); }
-
-        virtual const Address & address() { return NIC::address(); }
-        virtual void address(const Address & address) { NIC::address(address); }
-
-        virtual const Statistics & statistics() { return NIC::statistics(); }
-
-        virtual void reset() { NIC::reset(); }
-    };
-
-    template<typename NIC>
-    class NIC_Wrapper<NIC, false>: public NIC
+    // Monomorphic NIC Base
+    template<typename Family>
+    class NIC_Base<Family, false>: public Family, public Family::Observed
     {
     public:
-        NIC_Wrapper(unsigned int unit = 0): NIC(unit) {}
-    };
-
-    // Meta_NIC (efficiently handles polymorphic or monomorphic lists of NICs
-    template<typename NICS>
-    class Meta_NIC
-    {
-    private:
-        static const bool polymorphic = NICS::Polymorphic;
-
-        typedef typename NICS::template Get<0>::Result T;
-
-    public:
-        typedef typename IF<polymorphic, NIC_Base<T>, T>::Result Base;
-
-        template<int Index>
-        struct Get { typedef NIC_Wrapper<typename NICS::template Get<Index>::Result, polymorphic> Result; };
+        NIC_Base(unsigned int unit = 0) {}
     };
 };
 

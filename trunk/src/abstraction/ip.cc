@@ -61,7 +61,7 @@ IP::Buffer * IP::alloc(const Address & to, const Protocol & prot, unsigned int o
          return 0;
     }
 
-    Buffer * pool = nic->alloc(nic, mac, NIC::IP, once, sizeof(IP::Header), payload);
+    Buffer * pool = nic->alloc(mac, NIC::IP, once, sizeof(IP::Header), payload);
 
     Header header(ip->address(), to, prot, 0); // length will be defined latter for each fragment
 
@@ -111,7 +111,7 @@ void IP::update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf)
         return;
     }
 
-    buf->nic(&_nic);
+    buf->nic(_nic.device());
 
     // The Ethernet Frame in Buffer might have been padded, so we need to adjust it to the datagram length
     buf->size(packet->length());

@@ -387,7 +387,7 @@ protected:
 
 
 // PCNet32 PC Ethernet NIC
-class PCNet32: public Ethernet, public Ethernet::Observed, private Am79C970A
+class PCNet32: public Ethernet::Base, private Am79C970A
 {
     template<int unit> friend void call_init();
 
@@ -397,18 +397,15 @@ private:
     static const unsigned int PCI_DEVICE_ID = 0x2000;
     static const unsigned int PCI_REG_IO = 0;
 
-
     // Transmit and Receive Ring sizes
     static const unsigned int UNITS = Traits<PCNet32>::UNITS;
     static const unsigned int TX_BUFS = Traits<PCNet32>::SEND_BUFFERS;
     static const unsigned int RX_BUFS =	Traits<PCNet32>::RECEIVE_BUFFERS;
 
-
     // Size of the DMA Buffer that will host the ring buffers and the init block
     static const unsigned int DMA_BUFFER_SIZE = ((sizeof(Init_Block) + 15) & ~15U) +
         RX_BUFS * ((sizeof(Rx_Desc) + 15) & ~15U) + TX_BUFS * ((sizeof(Tx_Desc) + 15) & ~15U) +
         RX_BUFS * ((sizeof(Buffer) + 15) & ~15U) + TX_BUFS * ((sizeof(Buffer) + 15) & ~15U); // align128() cannot be used here
-
 
     // Interrupt dispatching binding
     struct Device {
@@ -425,7 +422,7 @@ public:
     int send(const Address & dst, const Protocol & prot, const void * data, unsigned int size);
     int receive(Address * src, Protocol * prot, void * data, unsigned int size);
 
-    Buffer * alloc(NIC * nic, const Address & dst, const Protocol & prot, unsigned int once, unsigned int always, unsigned int payload);
+    Buffer * alloc(const Address & dst, const Protocol & prot, unsigned int once, unsigned int always, unsigned int payload);
     void free(Buffer * buf);
     int send(Buffer * buf);
 
@@ -449,11 +446,11 @@ private:
     }
 
     static PCNet32 * get_by_interrupt(unsigned int interrupt) {
-        PCNet32 * tmp = 0;
         for(unsigned int i = 0; i < UNITS; i++)
             if(_devices[i].interrupt == interrupt)
-        	tmp = _devices[i].device;
-        return tmp;
+        	return _devices[i].device;
+        db<PCNet32>(WRN) << "PCNet32::get_by_interrupt(" << interrupt << ") => no device bound!" << endl;
+        return 0;
     };
 
     static void init(unsigned int unit);

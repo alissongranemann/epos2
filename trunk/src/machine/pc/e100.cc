@@ -16,43 +16,18 @@ void E100::int_handler(const IC::Interrupt_Id & interrupt)
 
     E100 * dev = get_by_interrupt(interrupt);
 
-    db<E100>(TRC) << "E100::int_handler(int=" << interrupt
-                  << ",dev=" << dev << ")" << endl;
+    db<E100>(TRC) << "E100::int_handler(int=" << interrupt << ",dev=" << dev << ")" << endl;
+
     if(!dev)
-        db<E100>(WRN) << "E100::int_handler: handler not found\n";
+        db<E100>(WRN) << "E100::int_handler: handler not found" << endl;
     else
         dev->handle_int();
 }
 
 // Methods
-E100::E100(unsigned int unit)
-{
-    db<E100>(TRC) << "E100(unit=" << unit << ")" << endl;
-
-    // Share control
-    if(unit >= UNITS) {
-        db<E100>(WRN) << "E100: requested unit (" << unit << ") does not exist!" << endl;
-        return;
-    }
-
-    // Share control
-    if(_devices[unit].in_use) {
-        db<E100>(WRN) << "E100: device already in use!" << endl;
-        return;
-    }
-
-    *this = *_devices[unit].device;
-
-    // Lock device
-    _devices[unit].in_use = true;
-}
-
 E100::~E100()
 {
     db<E100>(TRC) << "~E100(unit=" << _unit << ")" << endl;
-
-    // Unlock device
-    _devices[_unit].in_use = false;
 }
 
 E100::E100(unsigned int unit, const Log_Addr & io_mem, const IO_Irq & irq, DMA_Buffer * dma_buf)
@@ -178,6 +153,7 @@ void E100::reset()
 {
     db<E100>(TRC) << "E100::reset (software reset and self-test)" << endl;
 
+    return;
     // Reset the device
     software_reset();
 
@@ -352,7 +328,7 @@ int E100::receive(Address * src, Protocol * prot, void * data, unsigned int size
 /*! NOTE: this method is not thread-safe as _tx_cur is shared by all threads
  * that use this object and the access to _tx_cur is not atomic. */
 // TODO: solve this!
-E100::Buffer * E100::alloc(NIC * nic, const Address & dst, const Protocol & prot, unsigned int once, unsigned int always, unsigned int payload)
+E100::Buffer * E100::alloc(const Address & dst, const Protocol & prot, unsigned int once, unsigned int always, unsigned int payload)
 {
     db<E100>(TRC) << "E100::alloc(s=" << _address << ",d=" << dst << ",p=" << hex << prot << dec << ",on=" << once << ",al=" << always << ",ld=" << payload << ")" << endl;
 
@@ -377,7 +353,7 @@ E100::Buffer * E100::alloc(NIC * nic, const Address & dst, const Protocol & prot
         Buffer * buf = _tx_buffer[_tx_cur];
 
         // Initialize the buffer and assemble the Ethernet Frame Header
-        new (buf) Buffer(nic, _address, dst, prot, (size > max_data) ? MTU : size + always);
+        new (buf) Buffer(reinterpret_cast<Ethernet::NIC *>(this), _address, dst, prot, (size > max_data) ? MTU : size + always);
 
         db<E100>(INF) << "E100::alloc:desc[" << _tx_cur << "]=" << desc << " => " << *desc << endl;
 

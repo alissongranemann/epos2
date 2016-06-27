@@ -59,7 +59,6 @@ void E100::init(unsigned int unit)
     E100 * dev = new (SYSTEM) E100(unit, io_mem, irq, dma_buf);
 
     // Register the device
-    _devices[unit].in_use = false;
     _devices[unit].device = dev;
     _devices[unit].interrupt = IC::irq2int(irq);
 
