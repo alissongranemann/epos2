@@ -17,6 +17,8 @@ template <> struct Traits<ARMv7>: public Traits<void>
 
 template <> struct Traits<ARMv7_MMU>: public Traits<void>
 {
+    static const bool colorful = false;
+    static const unsigned int COLORS = 1;
 };
 
 template <> struct Traits<ARMv7_TSC>: public Traits<void>
