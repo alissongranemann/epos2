@@ -109,6 +109,13 @@ atmega_EMULATOR         =
 atmega_DEBUGGER         =
 atmega_FLASHER          = $(TOOLS)/eposflash/eposflash-$(MMOD)
 
+cortex_a_CC_FLAGS		:= -mcpu=cortex-a9 -mfpu=fpa
+cortex_a_AS_FLAGS		:= -mcpu=cortex-a9 -mfpu=fpa
+cortex_a_LD_FLAGS		:= 
+# The smp flag must be 2 else, qemu gives an assertion error
+cortex_a_EMULATOR		:= qemu-system-arm -cpu cortex-a9 -machine arm-generic-fdt -dtb ../tools/zynq/devicetree.dtb -smp 2 -m $(MEM_SIZE)k -nographic -no-reboot -kernel
+cortex_a_DEPLOYER		:= $(TOP)/tools/zynq/jtag.sh
+
 $(MACH)_CODE_NAME       := .init
 $(MACH)_DATA_NAME       := .data
 ifeq ($(GDB),1)
@@ -137,6 +144,8 @@ ifneq ($(wildcard $(IMG)/$(MACH)_system),)
 MACH_DEBUGGER           := $(MACH_DEBUGGER) -ex "add-symbol-file $(call DBSEC,$(SRC)/system/$(MACH)_system,.text)"
 endif
 MACH_FLASHER            := $($(MACH)_FLASHER)
+
+MACH_DEPLOYER		:= $(TERM) $($(MACH)_DEPLOYER)
 
 # Architecture specifics
 ifeq ($(words $(call GETTK,ENDIANESS,$(TRAITS))),1)
@@ -197,6 +206,8 @@ DEBUGGER	= $(MACH_DEBUGGER)
 EMULATOR	= $(MACH_EMULATOR) 
 
 FLASHER 	= $(MACH_FLASHER) 
+
+DEPLOYER	= $(MACH_DEPLOYER) 
 
 INSTALL		:= install
 

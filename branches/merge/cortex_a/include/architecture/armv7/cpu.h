@@ -50,8 +50,13 @@ public:
     class Context
     {
     public:
+#if MACH == cortex_a
+        // All interrupts enabled by default. 0x13 is SVC mode.
+        Context(const Log_Addr & entry, const Log_Addr & exit): _psr(0x00000013), _lr(exit), _pc(entry) {}
+#else
         Context(const Log_Addr & entry, const Log_Addr & exit): _psr(FLAG_DEFAULTS), _lr(exit | 1), _pc(entry | 1) {}
 //        _r0(0), _r1(1), _r2(2), _r3(3), _r4(4), _r5(5), _r6(6), _r7(7), _r8(8), _r9(9), _r10(10), _r11(11), _r12(12),
+#endif
 
         void save() volatile  __attribute__ ((naked));
         void load() const volatile;
@@ -114,18 +119,41 @@ public:
     static Hertz bus_clock() { return _bus_clock; }
 
     static void int_enable() {
+#if MACH == cortex_a
+        Reg32 flags;
+        ASM("mrs %0, cpsr               \n"
+            "bic %0, %0, #0xC0          \n"
+            "msr cpsr_c, %0             \n"
+            : "=r"(flags) : : "cc");
+#else
         ASM("cpsie i");
+#endif
     }
     static void int_disable() {
+#if MACH == cortex_a
+        Reg32 flags;
+        ASM("mrs %0, cpsr               \n"
+            "orr %0, %0, #0xC0          \n"
+            "msr cpsr_c, %0             \n"
+            : "=r"(flags) : : "cc");
+#else
         ASM("cpsid i");
+#endif
     }
 
     static bool int_enabled() {
         return !int_disabled();
     }
     static bool int_disabled() {
+        // TODO: The check must be performed in one instruction?
         bool disabled;
+#if MACH == cortex_a
+        ASM("mrs %0, cpsr               \n"
+            "and %0, %0, #0xC0          \n"
+            : "=r"(disabled));
+#else
         ASM("mrs %0, primask" : "=r"(disabled));
+#endif
         return disabled;
     }
 
@@ -138,11 +166,19 @@ public:
 
     static Flags flags() {
         register Reg32 value;
+#if MACH == cortex_a
+        ASM("mrs %0, cpsr" : "=r"(value) ::);
+#else
         ASM("mrs %0, xpsr" : "=r"(value) ::);
+#endif
         return value;
     }
     static void flags(const Flags & flags) {
+#if MACH == cortex_a
+        ASM("msr cpsr_c, %0" : : "r"(flags) :);
+#else
         ASM("msr xpsr, %0" : : "r"(flags) :);
+#endif
     }
 
     static Reg32 sp() {
@@ -157,11 +193,19 @@ public:
 
     static Reg32 fr() {
         Reg32 value;
+#if MACH == cortex_a
+        ASM("mov %0, r0" : "=r" (value) : : "r0");
+#else
         ASM("mov %0, r0" : "=r"(value));
+#endif
         return value;
     }
     static void fr(const Reg32 & fr) {
+#if MACH == cortex_a
+        ASM("mov r0, %0" : : "r" (fr) : "r0");
+#else
         ASM("mov r0, %0" : : "r"(fr) : "r0");
+#endif
     }
 
     static Log_Addr ip() // due to RISC pipelining PC is read with a +8 (4 for thumb) offset
@@ -240,7 +284,12 @@ public:
 
 public:
     // ARMv7 specific methods
+#if MACH == cortex_a
+    // TODO: Implement int_id()
+    //static unsigned int int_id() { return 0x00; }
+#else
     static unsigned int int_id() { return flags() & 0x3f; }
+#endif
 
 private:
     template<typename Head, typename ... Tail>

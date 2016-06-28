@@ -13,6 +13,14 @@ DEBUGGERS := $(subst 1235,1236,$(DEBUGGER))
 
 all:		strip $(IMAGE)
 
+deploy:		strip $(IMAGE)
+ifeq ($(GDB),1)
+		$(DEPLOYER) $(IMG)/$(IMAGE) 1 &
+		$(DEBUGGER) $(APP)/$(APPLICATION) &
+else
+		$(DEPLOYER) $(IMG)/$(IMAGE) 0 $(BIT) $(PBIN)
+endif
+
 flash:		strip $(FLASH)
 		$(FLASHER) $(IMG)/$(FLASH)
 

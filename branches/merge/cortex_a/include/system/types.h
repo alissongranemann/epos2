@@ -135,11 +135,22 @@ class ATmega_ADC;
 class ATmega_Battery;
 class ATmega_Radio;
 
+class Cortex_A;
+class Cortex_A_IC;
+class Cortex_A_Timer;
+class Cortex_A_RTC;
+class Cortex_A_UART;
+class Cortex_A_NIC;
+class Cortex_A_Display;
+class Cortex_A_Scratchpad;
+class Cortex_A_Ethernet;
+
 class PCNet32;
 class C905;
 class E100;
 class CC2538;
 class AT86RF;
+class GEM;
 
 class Serial_Display;
 class Serial_Keyboard;
@@ -304,6 +315,15 @@ template<> struct Type<Cortex_M_RTC> { static const Type_Id ID = RTC_ID; };
 template<> struct Type<Cortex_M_Display> { static const Type_Id ID = DISPLAY_ID; };
 template<> struct Type<Cortex_M_Scratchpad> { static const Type_Id ID = SCRATCHPAD_ID; };
 template<> struct Type<Cortex_M_IEEE802_15_4> { static const Type_Id ID = NIC_ID; };
+
+template<> struct Type<Cortex_A> { static const Type_Id ID = MACHINE_ID; };
+template<> struct Type<Cortex_A_IC> { static const Type_Id ID = IC_ID; };
+template<> struct Type<Cortex_A_Timer> { static const Type_Id ID = TIMER_ID; };
+template<> struct Type<Cortex_A_UART> { static const Type_Id ID = UART_ID; };
+template<> struct Type<Cortex_A_RTC> { static const Type_Id ID = RTC_ID; };
+template<> struct Type<Cortex_A_Display> { static const Type_Id ID = DISPLAY_ID; };
+template<> struct Type<Cortex_A_Scratchpad> { static const Type_Id ID = SCRATCHPAD_ID; };
+template<> struct Type<Cortex_A_Ethernet> { static const Type_Id ID = NIC_ID; };
 
 
 template<> struct Type<Thread> { static const Type_Id ID = THREAD_ID; };
