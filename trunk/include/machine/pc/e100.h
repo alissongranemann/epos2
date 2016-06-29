@@ -323,7 +323,7 @@ public:
 
 };
 
-class E100: public Ethernet::Base, private i82559
+class E100: public Ethernet::NIC_Base<Ethernet, Traits<PC_Ethernet>::NICS::Polymorphic>, private i82559
 {
     template<int unit> friend void call_init();
 
@@ -362,7 +362,7 @@ public:
     int send(const Address & dst, const Protocol & prot, const void * data, unsigned int size);
     int receive(Address * src, Protocol * prot, void * data, unsigned int size);
 
-    Buffer * alloc(const Address & dst, const Protocol & prot, unsigned int once, unsigned int always, unsigned int payload);
+    Buffer * alloc(NIC * nic, const Address & dst, const Protocol & prot, unsigned int once, unsigned int always, unsigned int payload);
     void free(Buffer * buf);
     int send(Buffer * buf);
 

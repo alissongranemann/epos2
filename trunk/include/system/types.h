@@ -183,7 +183,6 @@ class Chronometer;
 class Alarm;
 class Delay;
 
-class Ethernet;
 class Network;
 
 class ELP;
