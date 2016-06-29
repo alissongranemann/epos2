@@ -328,7 +328,7 @@ int E100::receive(Address * src, Protocol * prot, void * data, unsigned int size
 /*! NOTE: this method is not thread-safe as _tx_cur is shared by all threads
  * that use this object and the access to _tx_cur is not atomic. */
 // TODO: solve this!
-E100::Buffer * E100::alloc(const Address & dst, const Protocol & prot, unsigned int once, unsigned int always, unsigned int payload)
+E100::Buffer * E100::alloc(NIC * nic, const Address & dst, const Protocol & prot, unsigned int once, unsigned int always, unsigned int payload)
 {
     db<E100>(TRC) << "E100::alloc(s=" << _address << ",d=" << dst << ",p=" << hex << prot << dec << ",on=" << once << ",al=" << always << ",ld=" << payload << ")" << endl;
 
@@ -353,7 +353,7 @@ E100::Buffer * E100::alloc(const Address & dst, const Protocol & prot, unsigned 
         Buffer * buf = _tx_buffer[_tx_cur];
 
         // Initialize the buffer and assemble the Ethernet Frame Header
-        new (buf) Buffer(reinterpret_cast<Ethernet::NIC *>(this), _address, dst, prot, (size > max_data) ? MTU : size + always);
+        new (buf) Buffer(nic, _address, dst, prot, (size > max_data) ? MTU : size + always);
 
         db<E100>(INF) << "E100::alloc:desc[" << _tx_cur << "]=" << desc << " => " << *desc << endl;
 

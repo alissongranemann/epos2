@@ -12,14 +12,16 @@
 
 __BEGIN_SYS
 
-class IEEE802_15_4: private NIC_Common
+class IEEE802_15_4: public NIC_Common
 {
+private:
+    typedef CPU::Reg8 Reg8;
+    typedef CPU::Reg16 Reg16;
+
 public:
     typedef NIC_Common::Address<2> Short_Address;
     typedef NIC_Common::Address<8> Extended_Address;
     typedef Short_Address Address;
-    typedef CPU::Reg8 Reg8;
-    typedef CPU::Reg16 Reg16;
     typedef CPU::Reg16 CRC;
 
     // IEEE 802.15.4 Physical Layer

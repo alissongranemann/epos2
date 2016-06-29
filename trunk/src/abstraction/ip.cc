@@ -111,7 +111,7 @@ void IP::update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf)
         return;
     }
 
-    buf->nic(_nic.device());
+    buf->nic(&_nic);
 
     // The Ethernet Frame in Buffer might have been padded, so we need to adjust it to the datagram length
     buf->size(packet->length());
