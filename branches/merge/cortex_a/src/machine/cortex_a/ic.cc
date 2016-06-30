@@ -47,7 +47,7 @@ void Cortex_A_IC::entry()
         "msr spsr_cfxs, r0                          \n"
         // Restore context, the ^ in the end of the above instruction makes the
         // irq_spsr to be restored into svc_cpsr
-        "ldmfd sp!, {r0-r3, r12, lr, pc}^           \n");
+        "ldmfd sp!, {r0-r3, r12, lr, pc}^           \n" : : "i"(dispatch));
 }
 
 void Cortex_A_IC::int_not(const Interrupt_Id & i)
