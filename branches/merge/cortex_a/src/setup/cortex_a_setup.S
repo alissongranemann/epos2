@@ -28,6 +28,6 @@ _data_abort_addr:
 _reserved_addr:
         .word _reserved
 _irq_addr:
-        .word _irq
+        .word _int_entry
 _fiq_addr:
         .word _fiq
