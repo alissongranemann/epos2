@@ -7,17 +7,78 @@
 
 __BEGIN_SYS
 
-class ARMv7: private CPU_Common
+class ARMv7_A
 {
-    friend class Init_System;
+protected:
+    static const bool thumb_mode = false;
 
 public:
-    // CPU Native Data Types
-    using CPU_Common::Reg8;
-    using CPU_Common::Reg16;
-    using CPU_Common::Reg32;
-    using CPU_Common::Log_Addr;
-    using CPU_Common::Phy_Addr;
+    typedef CPU_Common::Reg32 Reg32;
+
+    // CPU Flags
+    typedef Reg32 Flags;
+    enum {
+        FLAG_USER       = 16 << 0,      // User mode
+        FLAG_FIQ        = 17 << 0,      // FIQ mode
+        FLAG_IRQ        = 18 << 0,      // IRQ mode
+        FLAG_SVC        = 19 << 0,      // SVC mode
+        FLAG_ABORT      = 23 << 0,      // Abort mode
+        FLAG_UNDEFINED  = 27 << 0,      // Undefined mode
+        FLAG_SYSTEM     = 31 << 0,      // System mode
+        FLAG_THUMB      = 1 << 5,       // Thumb state
+        FLAG_F          = 1 << 6,       // FIQ disable
+        FLAG_I          = 1 << 7,       // IRQ disable
+        FLAG_Q          = 1 << 27,      // DSP Overflow
+        FLAG_V          = 1 << 28,      // Overflow
+        FLAG_C          = 1 << 29,      // Carry
+        FLAG_Z          = 1 << 30,      // Zero
+        FLAG_N          = 1 << 31,      // Negative
+        FLAG_DEFAULTS   = FLAG_SVC
+    };
+
+    // Exceptions
+    typedef Reg32 Exception_Id;
+
+    static Flags flags() {
+        register Reg32 value;
+        ASM("mrs %0, cpsr" : "=r"(value) ::);
+        return value;
+    }
+    static void flags(const Flags & flags) {
+        ASM("msr cpsr_c, %0" : : "r"(flags) :);
+    }
+
+    static void int_enable() {
+        Reg32 flags;
+        ASM("mrs %0, cpsr               \n"
+            "bic %0, %0, #0xC0          \n"
+            "msr cpsr_c, %0             \n"
+            : "=r"(flags) : : "cc");
+    }
+    static void int_disable() {
+        Reg32 flags;
+        ASM("mrs %0, cpsr               \n"
+            "orr %0, %0, #0xC0          \n"
+            "msr cpsr_c, %0             \n"
+            : "=r"(flags) : : "cc");
+    }
+
+    static bool int_disabled() {
+        bool disabled;
+        ASM("mrs %0, cpsr               \n"
+            "and %0, %0, #0xC0          \n"
+            : "=r"(disabled));
+        return disabled;
+    }
+};
+
+class ARMv7_M
+{
+protected:
+    static const bool thumb_mode = true;
+
+public:
+    typedef CPU_Common::Reg32 Reg32;
 
     // CPU Flags
     typedef Reg32 Flags;
@@ -46,17 +107,57 @@ public:
         EXC_SYSTICK     = 15    // programmable
     };
 
+    static Flags flags() {
+        register Reg32 value;
+        ASM("mrs %0, xpsr" : "=r"(value) ::);
+        return value;
+    }
+    static void flags(const Flags & flags) {
+        ASM("msr xpsr, %0" : : "r"(flags) :);
+    }
+
+    static void int_enable() {
+        ASM("cpsie i");
+    }
+    static void int_disable() {
+        ASM("cpsid i");
+    }
+
+    static bool int_disabled() {
+        bool disabled;
+        ASM("mrs %0, primask" : "=r"(disabled));
+        return disabled;
+    }
+
+    static unsigned int int_id() { return flags() & 0x3f; }
+};
+
+class ARMv7: private CPU_Common, public IF<Traits<Build>::MACHINE == Traits<Build>::Cortex_A, ARMv7_A, ARMv7_M>::Result
+{
+    typedef IF<Traits<Build>::MACHINE == Traits<Build>::Cortex_A, ARMv7_A, ARMv7_M>::Result Base;
+
+    friend class Init_System;
+
+public:
+    // CPU Native Data Types
+    using CPU_Common::Reg8;
+    using CPU_Common::Reg16;
+    using CPU_Common::Log_Addr;
+    using CPU_Common::Phy_Addr;
+
+    typedef Base::Reg32 Reg32;
+
+    // CPU Flags
+    typedef Base::Flags Flags;
+
+    // Exceptions
+    typedef Base::Exception_Id Exception_Id;
+
     // CPU Context
     class Context
     {
     public:
-#if MACH == cortex_a
-        // All interrupts enabled by default. 0x13 is SVC mode.
-        Context(const Log_Addr & entry, const Log_Addr & exit): _psr(0x00000013), _lr(exit), _pc(entry) {}
-#else
-        Context(const Log_Addr & entry, const Log_Addr & exit): _psr(FLAG_DEFAULTS), _lr(exit | 1), _pc(entry | 1) {}
-//        _r0(0), _r1(1), _r2(2), _r3(3), _r4(4), _r5(5), _r6(6), _r7(7), _r8(8), _r9(9), _r10(10), _r11(11), _r12(12),
-#endif
+        Context(const Log_Addr & entry, const Log_Addr & exit): _psr(ARMv7_A::FLAG_DEFAULTS), _lr(exit | (thumb_mode ? 1 : 0)), _pc(entry | (thumb_mode ? 1 : 0)) {}
 
         void save() volatile  __attribute__ ((naked));
         void load() const volatile;
@@ -118,44 +219,7 @@ public:
     static Hertz clock() { return _cpu_clock; }
     static Hertz bus_clock() { return _bus_clock; }
 
-    static void int_enable() {
-#if MACH == cortex_a
-        Reg32 flags;
-        ASM("mrs %0, cpsr               \n"
-            "bic %0, %0, #0xC0          \n"
-            "msr cpsr_c, %0             \n"
-            : "=r"(flags) : : "cc");
-#else
-        ASM("cpsie i");
-#endif
-    }
-    static void int_disable() {
-#if MACH == cortex_a
-        Reg32 flags;
-        ASM("mrs %0, cpsr               \n"
-            "orr %0, %0, #0xC0          \n"
-            "msr cpsr_c, %0             \n"
-            : "=r"(flags) : : "cc");
-#else
-        ASM("cpsid i");
-#endif
-    }
-
-    static bool int_enabled() {
-        return !int_disabled();
-    }
-    static bool int_disabled() {
-        // TODO: The check must be performed in one instruction?
-        bool disabled;
-#if MACH == cortex_a
-        ASM("mrs %0, cpsr               \n"
-            "and %0, %0, #0xC0          \n"
-            : "=r"(disabled));
-#else
-        ASM("mrs %0, primask" : "=r"(disabled));
-#endif
-        return disabled;
-    }
+    static bool int_enabled() { return !int_disabled(); }
 
     static void halt() { ASM("wfi"); }
 
@@ -163,23 +227,6 @@ public:
 
     static int syscall(void * message);
     static void syscalled();
-
-    static Flags flags() {
-        register Reg32 value;
-#if MACH == cortex_a
-        ASM("mrs %0, cpsr" : "=r"(value) ::);
-#else
-        ASM("mrs %0, xpsr" : "=r"(value) ::);
-#endif
-        return value;
-    }
-    static void flags(const Flags & flags) {
-#if MACH == cortex_a
-        ASM("msr cpsr_c, %0" : : "r"(flags) :);
-#else
-        ASM("msr xpsr, %0" : : "r"(flags) :);
-#endif
-    }
 
     static Reg32 sp() {
         Reg32 value;
@@ -193,19 +240,11 @@ public:
 
     static Reg32 fr() {
         Reg32 value;
-#if MACH == cortex_a
         ASM("mov %0, r0" : "=r" (value) : : "r0");
-#else
-        ASM("mov %0, r0" : "=r"(value));
-#endif
         return value;
     }
     static void fr(const Reg32 & fr) {
-#if MACH == cortex_a
-        ASM("mov r0, %0" : : "r" (fr) : "r0");
-#else
         ASM("mov r0, %0" : : "r"(fr) : "r0");
-#endif
     }
 
     static Log_Addr ip() // due to RISC pipelining PC is read with a +8 (4 for thumb) offset
@@ -281,15 +320,6 @@ public:
         init_stack_helper(&ctx->_r0, an ...);
         return sp;
     }
-
-public:
-    // ARMv7 specific methods
-#if MACH == cortex_a
-    // TODO: Implement int_id()
-    //static unsigned int int_id() { return 0x00; }
-#else
-    static unsigned int int_id() { return flags() & 0x3f; }
-#endif
 
 private:
     template<typename Head, typename ... Tail>
