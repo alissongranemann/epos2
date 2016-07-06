@@ -109,12 +109,12 @@ atmega_EMULATOR         =
 atmega_DEBUGGER         =
 atmega_FLASHER          = $(TOOLS)/eposflash/eposflash-$(MMOD)
 
-cortex_a_CC_FLAGS		:= -mcpu=cortex-a9 -mfpu=fpa
-cortex_a_AS_FLAGS		:= -mcpu=cortex-a9 -mfpu=fpa
-cortex_a_LD_FLAGS		:= 
-# The smp flag must be 2 else, qemu gives an assertion error
-cortex_a_EMULATOR		:= qemu-system-arm -cpu cortex-a9 -machine arm-generic-fdt -dtb ../tools/zynq/devicetree.dtb -smp 2 -m $(MEM_SIZE)k -nographic -no-reboot -kernel
-cortex_a_DEPLOYER		:= $(TOP)/tools/zynq/jtag.sh
+cortex_a_CC_FLAGS	:= -mcpu=cortex-a9 -mfpu=fpa
+cortex_a_AS_FLAGS	:= -mcpu=cortex-a9 -mfpu=fpa
+cortex_a_LD_FLAGS	:= 
+cortex_a_EMULATOR	:= qemu-system-aarch64 -M arm-generic-fdt-plnx -m $(MEM_SIZE)k -serial /dev/null -serial mon:stdio -nographic -no-reboot -dtb ../tools/zynq/devicetree.dtb -kernel
+cortex_a_DEBUGGER       := cgdb -d arm-xilinx-eabi-gdb
+cortex_a_DEPLOYER	:= $(TOP)/tools/zynq/jtag.sh
 
 $(MACH)_CODE_NAME       := .init
 $(MACH)_DATA_NAME       := .data
@@ -235,7 +235,7 @@ TCPDUMP		:= tcpdump -tttttennvvvXXr
 
 TEE		:= tee
 
-TERM		:= xterm -e
+TERM		:= urxvt -e
 
 TOUCH		:= touch
 
