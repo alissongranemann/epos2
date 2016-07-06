@@ -871,7 +871,7 @@ protected:
 
 // GPTM
     static void timer_power(unsigned int unit, const Power_Mode & mode) {
-        assert(timer < TIMERS);
+        assert(unit < TIMERS);
         switch(mode) {
         case FULL:
         case LIGHT:

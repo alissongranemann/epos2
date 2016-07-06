@@ -64,7 +64,7 @@ private:
 
 public:
     static void * alloc(unsigned int bytes, const EPOS::Page_Coloring_Allocator & allocator) {
-        assert(allocator <= COLORS);
+        assert((unsigned int)allocator <= COLORS);
         return _heap[allocator]->alloc(bytes);
     }
 
