@@ -49,18 +49,16 @@ public:
     }
 
     static void int_enable() {
-        Reg32 flags;
-        ASM("mrs %0, cpsr               \n"
-            "bic %0, %0, #0xC0          \n"
-            "msr cpsr_c, %0             \n"
-            : "=r"(flags) : : "cc");
+        ASM("mrs r0, cpsr               \n"
+            "bic r0, r0, #0xC0          \n"
+            "msr cpsr_c, r0             \n"
+            : : : "r0", "cc", "memory");
     }
     static void int_disable() {
-        Reg32 flags;
-        ASM("mrs %0, cpsr               \n"
-            "orr %0, %0, #0xC0          \n"
-            "msr cpsr_c, %0             \n"
-            : "=r"(flags) : : "cc");
+        ASM("mrs r0, cpsr               \n"
+            "orr r0, r0, #0xC0          \n"
+            "msr cpsr_c, r0             \n"
+            : : : "r0", "cc", "memory");
     }
 
     static bool int_disabled() {
