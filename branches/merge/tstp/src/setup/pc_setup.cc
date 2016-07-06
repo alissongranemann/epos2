@@ -474,7 +474,7 @@ void PC_Setup::build_pmm()
     } else {
         si->pmm.ext_base = 0;
         si->pmm.ext_top = 0;
-    }	
+    }
 }
 
 //========================================================================
@@ -1013,7 +1013,7 @@ extern "C" { void _start(); }
 extern "C" { void setup(char * bi); }
 
 //========================================================================
-// _start		
+// _start
 //
 // "_start" MUST BE PC_SETUP's first function, since PC_BOOT assumes
 // offset "0" to be the entry point. It is a kind of bridge between the
