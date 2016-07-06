@@ -63,7 +63,6 @@ template<> struct Traits<Observers>: public Traits<void>
     // Some observed objects are created before initializing the Display
     // Enabling debug may cause trouble in some Machines
     static const bool debugged = false;
-
 };
 
 // System Parts (mostly to fine control debugging)
