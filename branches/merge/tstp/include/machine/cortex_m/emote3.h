@@ -944,20 +944,17 @@ protected:
 
 
 // USB
-    // Set D+ USB pull-up resistor, which is controlled by GPIO pin C2 in eMote3
-    static void usb_init(unsigned int unit)
-    {
-        init_clock();
-        const unsigned int pin_bit = 1 << 2;
-        gpioc(AFSEL) &= ~pin_bit; // Set pin C2 as software-controlled
-        gpioc(DIR) |= pin_bit; // Set pin C2 as output
-        gpioc(pin_bit << 2) = 0xff; // Set pin C2 (high)
-    }
-
     static void usb_power(unsigned int unit, const Power_Mode & mode) {
         assert(unit < USBS);
         switch(mode) {
-        case FULL:
+        case FULL: {
+            init_clock();
+            // Set D+ USB pull-up resistor, which is controlled by GPIO pin C2 in eMote3
+            const unsigned int pin_bit = 1 << 2;
+            gpioc(AFSEL) &= ~pin_bit; // Set pin C2 as software-controlled
+            gpioc(DIR) |= pin_bit; // Set pin C2 as output
+            gpioc(pin_bit << 2) = 0xff; // Set pin C2 (high)
+        } break;
         case LIGHT:
         case SLEEP:
             break;
