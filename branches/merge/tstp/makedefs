@@ -70,9 +70,9 @@ COMP_PREFIX		= $($(ARCH)_COMP_PREFIX)
 
 # Boot Memory Map
 ifeq ($(words $(call GETTK,MEM_BASE,$(TRAITS))),1)
-MACH_TRAITS	= $(TRAITS) 
+MACH_TRAITS	= $(TRAITS)
 else
-MACH_TRAITS     = $(INCLUDE)/machine/$(MACH)/$(MMOD)_traits.h 
+MACH_TRAITS     = $(INCLUDE)/machine/$(MACH)/$(MMOD)_traits.h
 endif
 MEM_BASE	= $(call GETTK,MEM_BASE,$(MACH_TRAITS))
 MEM_TOP		= $(call GETTK,MEM_TOP,$(MACH_TRAITS))
@@ -90,14 +90,14 @@ BOOT_LENGTH_MAX = $(call GETTK,BOOT_LENGTH_MAX,$(MACH_TRAITS))
 #Machine specifics
 pc_CC_FLAGS             := -Wa,--32
 pc_AS_FLAGS             := --32
-pc_LD_FLAGS             := 
+pc_LD_FLAGS             :=
 pc_EMULATOR             = qemu-system-i386 -smp $(CPUS) -m $(MEM_SIZE)k -nographic -no-reboot -fda
 pc_DEBUGGER             := gdb
 pc_FLASHER              :=
 
-cortex_m_CC_FLAGS       := -mcpu=cortex-m3 -mthumb -mno-thumb-interwork -mfpu=fpa #-Wa,-mimplicit-it=arm -marm 
+cortex_m_CC_FLAGS       := -mcpu=cortex-m3 -mthumb -mno-thumb-interwork -mfpu=fpa #-Wa,-mimplicit-it=arm -marm
 cortex_m_AS_FLAGS       := -mcpu=cortex-m3 -mthumb -mfpu=fpa
-cortex_m_LD_FLAGS       := 
+cortex_m_LD_FLAGS       :=
 cortex_m_EMULATOR       = qemu-system-arm -cpu cortex-m3 -machine lm3s811evb -m $(MEM_SIZE)k -serial stdio -no-reboot -kernel
 cortex_m_DEBUGGER       := arm-none-eabi-gdb
 cortex_m_FLASHER        = $(TOOLS)/eposflash/eposflash-$(MMOD) -d /dev/ttyACM0 -f 
@@ -105,7 +105,7 @@ cortex_m_FLASHER        = $(TOOLS)/eposflash/eposflash-$(MMOD) -d /dev/ttyACM0 -
 atmega_CC_FLAGS         := -mmcu=atmega128 -Wno-inline
 atmega_AS_FLAGS         := -mmcu=atmega128
 atmega_LD_FLAGS         := -m avr5
-atmega_EMULATOR         = 
+atmega_EMULATOR         =
 atmega_DEBUGGER         =
 atmega_FLASHER          = $(TOOLS)/eposflash/eposflash-$(MMOD)
 
@@ -127,22 +127,22 @@ else
 MACH_EMULATOR           = $($(MACH)_EMULATOR)
 endif
 MACH_DEBUGGER           = $(TERM) $($(MACH)_DEBUGGER) -ex "target remote:1235" -ex "set confirm off"
-ifneq ($(wildcard $(IMG)/$(MACH)_setup),) 
+ifneq ($(wildcard $(IMG)/$(MACH)_setup),)
 MACH_DEBUGGER           := $(MACH_DEBUGGER) -ex "add-symbol-file $(call DBSEC,$(SRC)/setup/$(MACH)_setup,.text)"
 endif
-ifneq ($(wildcard $(IMG)/$(MACH)_init),) 
+ifneq ($(wildcard $(IMG)/$(MACH)_init),)
 MACH_DEBUGGER           := $(MACH_DEBUGGER) -ex "add-symbol-file $(call DBSEC,$(SRC)/init/$(MACH)_init,.text)"
 endif
-ifneq ($(wildcard $(IMG)/$(MACH)_system),) 
+ifneq ($(wildcard $(IMG)/$(MACH)_system),)
 MACH_DEBUGGER           := $(MACH_DEBUGGER) -ex "add-symbol-file $(call DBSEC,$(SRC)/system/$(MACH)_system,.text)"
 endif
 MACH_FLASHER            := $($(MACH)_FLASHER)
 
 # Architecture specifics
 ifeq ($(words $(call GETTK,ENDIANESS,$(TRAITS))),1)
-ARCH_TRAITS     = $(TRAITS) 
+ARCH_TRAITS     = $(TRAITS)
 else
-ARCH_TRAITS     = $(INCLUDE)/architecture/$(ARCH)/traits.h 
+ARCH_TRAITS     = $(INCLUDE)/architecture/$(ARCH)/traits.h
 endif
 ARCH_LITTLE	:= little
 ARCH_BIG	:= big
@@ -192,11 +192,11 @@ CLEANDIR	:= rm -rf
 
 DD		:= dd
 
-DEBUGGER	= $(MACH_DEBUGGER) 
+DEBUGGER	= $(MACH_DEBUGGER)
 
-EMULATOR	= $(MACH_EMULATOR) 
+EMULATOR	= $(MACH_EMULATOR)
 
-FLASHER 	= $(MACH_FLASHER) 
+FLASHER 	= $(MACH_FLASHER)
 
 INSTALL		:= install
 

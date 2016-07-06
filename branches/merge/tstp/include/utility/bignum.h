@@ -14,7 +14,7 @@ template<unsigned int SIZE = 16>
 class Bignum
 {
 public:
-    typedef unsigned int Digit; 
+    typedef unsigned int Digit;
     typedef unsigned long long Double_Digit;
 
     static const unsigned int DIGITS = (SIZE + sizeof(Digit) - 1) / sizeof(Digit);
@@ -199,7 +199,7 @@ public:
                     A.divide_by_two();
                 else {
                     bool carry = simple_add(A._data, A._data, _mod.data, DIGITS);
-                    A.divide_by_two(carry);             
+                    A.divide_by_two(carry);
                 }
             }
             while(v.is_even()) {
@@ -254,7 +254,7 @@ private:
         return 0;
     }
 
-    // res = a - b 
+    // res = a - b
     // returns: borrow bit
     // -No modulo applied
     // -a, b and res are assumed to have size 'size'
@@ -271,7 +271,7 @@ private:
         return borrow;
     }
 
-    // res = a + b 
+    // res = a + b
     // returns: carry bit
     // -No modulo applied
     // -a, b and res are assumed to have size 'size'
