@@ -44,7 +44,11 @@ endif
 endif
 
 # System configuration
+ifndef APPLICATION
+TRAITS          = $(INCLUDE)/system/traits.h
+else
 TRAITS		= $(APP)/$(APPLICATION)_traits.h
+endif
 ifeq ($(words $(call GETTK,MEM_BASE,$(TRAITS))),1)
 MACH_TRAITS     = $(TRAITS) 
 else
