@@ -55,8 +55,8 @@ public:
     enum { INFINITE = RTC::INFINITE };
 
     struct Configuration: public Thread::Configuration {
-        Configuration(const Microsecond & p, int n = INFINITE, const State & s = READY, const Criterion & c = NORMAL, Task * t = 0, unsigned int ss = STACK_SIZE)
-        : Thread::Configuration(s, c, t, ss), period(p), times(n) {}
+        Configuration(const Microsecond & p, int n = INFINITE, const State & s = READY, const Criterion & c = NORMAL, const Color & a = WHITE, Task * t = 0, unsigned int ss = STACK_SIZE)
+        : Thread::Configuration(s, c, a, t, ss), period(p), times(n) {}
 
         Microsecond period;
         int times;
@@ -70,7 +70,7 @@ public:
 
     template<typename ... Tn>
     Periodic_Thread(const Configuration & conf, int (* entry)(Tn ...), Tn ... an)
-    : Thread(Thread::Configuration(SUSPENDED, (conf.criterion != NORMAL) ? conf.criterion : Criterion(conf.period), conf.task, conf.stack_size), entry, an ...),
+    : Thread(Thread::Configuration(SUSPENDED, (conf.criterion != NORMAL) ? conf.criterion : Criterion(conf.period), conf.color, conf.task, conf.stack_size), entry, an ...),
       _semaphore(0), _handler(&_semaphore, this), _alarm(conf.period, &_handler, conf.times) {
         if((conf.state == READY) || (conf.state == RUNNING)) {
             _state = SUSPENDED;
@@ -108,8 +108,8 @@ public:
     };
 
 public:
-    RT_Thread(void (* function)(), const Microsecond & deadline, const Microsecond & period = SAME, const Microsecond & capacity = UNKNOWN, const Microsecond & activation = NOW, int times = INFINITE, int cpu = ANY, unsigned int stack_size = STACK_SIZE)
-    : Periodic_Thread(Configuration(activation ? activation : period ? period : deadline, activation ? 1 : times, SUSPENDED, Criterion(deadline, period ? period : deadline, capacity, cpu), 0, stack_size), &entry, this, function, activation, times) {
+    RT_Thread(void (* function)(), const Microsecond & deadline, const Microsecond & period = SAME, const Microsecond & capacity = UNKNOWN, const Microsecond & activation = NOW, int times = INFINITE, int cpu = ANY, const Color & color = WHITE, unsigned int stack_size = STACK_SIZE)
+    : Periodic_Thread(Configuration(activation ? activation : period ? period : deadline, activation ? 1 : times, SUSPENDED, Criterion(deadline, period ? period : deadline, capacity, cpu), color, 0, stack_size), &entry, this, function, activation, times) {
         if(activation && Criterion::dynamic)
             // The priority of dynamic criteria will be adjusted to the correct value by the
             // update() in the operator()() of Handler

@@ -15,7 +15,6 @@ private:
 public:
     typedef CPU::Phy_Addr Phy_Addr;
     typedef MMU::Flags Flags;
-    typedef MMU::Color Color;
 
 public:
     Segment(unsigned int bytes, const Color & color = Color::WHITE, const Flags & flags = Flags::APP);

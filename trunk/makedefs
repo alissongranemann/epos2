@@ -1,7 +1,7 @@
 # EPOS Makefile Definitions
 
 # Functions
-GETTK		= $(shell sed -n -e '/^.* $(1)[ ]*=.*;.*$$/s/^.* =[ ]*\(.*\)[ ]*;.*$$/\1/p' $(2) 2> /dev/null)
+GETTK		= $(shell sed -n -e '/^.* $(1)[ ]*=.*;.*$$/s/^.* =[ ]*\(.*\)[ ]*;.*$$/\1/p' $(2) | head -1 2> /dev/null)
 DBSEC           = $(1) 0x$(shell objdump -h $(1) | grep $(2) | tr -s ' ' | cut -d ' ' -f 5 2> /dev/null)
 TOLOWER         = $(shell echo $(1) | tr A-Z a-z)
 
@@ -45,6 +45,16 @@ endif
 
 # System configuration
 TRAITS		= $(APP)/$(APPLICATION)_traits.h
+ifeq ($(words $(call GETTK,MEM_BASE,$(TRAITS))),1)
+MACH_TRAITS     = $(TRAITS) 
+else
+MACH_TRAITS     = $(INCLUDE)/machine/$(MACH)/$(MMOD)_traits.h 
+endif
+ifeq ($(words $(call GETTK,ENDIANESS,$(TRAITS))),1)
+ARCH_TRAITS     = $(TRAITS) 
+else
+ARCH_TRAITS     = $(INCLUDE)/architecture/$(ARCH)/traits.h 
+endif
 MODE		= $(call TOLOWER,$(call GETTK,MODE,$(TRAITS)))
 ARCH		= $(call TOLOWER,$(call GETTK,ARCHITECTURE,$(TRAITS)))
 MACH            = $(call TOLOWER,$(call GETTK,MACHINE,$(TRAITS)))
@@ -69,11 +79,6 @@ avr8_COMP_PREFIX        := /usr/local/avr/gcc-4.4.4/bin/avr-
 COMP_PREFIX		= $($(ARCH)_COMP_PREFIX)
 
 # Boot Memory Map
-ifeq ($(words $(call GETTK,MEM_BASE,$(TRAITS))),1)
-MACH_TRAITS	= $(TRAITS) 
-else
-MACH_TRAITS     = $(INCLUDE)/machine/$(MACH)/$(MMOD)_traits.h 
-endif
 MEM_BASE	= $(call GETTK,MEM_BASE,$(MACH_TRAITS))
 MEM_TOP		= $(call GETTK,MEM_TOP,$(MACH_TRAITS))
 MEM_SIZE	= $(shell echo "(`printf "%d" $(MEM_TOP)` + 1 - `printf "%d" $(MEM_BASE)`) / 1024"|bc)
@@ -139,11 +144,6 @@ endif
 MACH_FLASHER            := $($(MACH)_FLASHER)
 
 # Architecture specifics
-ifeq ($(words $(call GETTK,ENDIANESS,$(TRAITS))),1)
-ARCH_TRAITS     = $(TRAITS) 
-else
-ARCH_TRAITS     = $(INCLUDE)/architecture/$(ARCH)/traits.h 
-endif
 ARCH_LITTLE	:= little
 ARCH_BIG	:= big
 ARCH_ENDIANESS	= $(ARCH_$(call GETTK,ENDIANESS,$(ARCH_TRAITS)))
