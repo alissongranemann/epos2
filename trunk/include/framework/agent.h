@@ -76,7 +76,7 @@ void Agent::handle_thread()
     case CREATE1: {
         int (*entry)();
         in(entry);
-        id(Id(THREAD_ID, reinterpret_cast<Id::Unit_Id>(new Adapter<Thread>(Thread::Configuration(Thread::READY, Thread::NORMAL, 0, 0), entry))));
+        id(Id(THREAD_ID, reinterpret_cast<Id::Unit_Id>(new Adapter<Thread>(Thread::Configuration(Thread::READY, Thread::NORMAL, WHITE, 0, 0), entry))));
     } break;
     case DESTROY:
         delete thread;
@@ -232,7 +232,7 @@ void Agent::handle_segment()
         unsigned int bytes;
     Segment::Flags flags;
     in(bytes, flags);
-    id(Id(SEGMENT_ID, reinterpret_cast<Id::Unit_Id>(new Adapter<Segment>(bytes, Segment::Color::WHITE, flags))));
+    id(Id(SEGMENT_ID, reinterpret_cast<Id::Unit_Id>(new Adapter<Segment>(bytes, WHITE, flags))));
     } break;
     case CREATE3: { // *** indistinguishable ***
         Segment::Phy_Addr phy_addr;
