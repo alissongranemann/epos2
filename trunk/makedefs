@@ -44,10 +44,10 @@ endif
 endif
 
 # System configuration
-ifndef APPLICATION
-TRAITS          = $(INCLUDE)/system/traits.h
+ifneq ("$(wildcard $(APP)/$(APPLICATION)_traits.h)","")
+TRAITS          = $(APP)/$(APPLICATION)_traits.h
 else
-TRAITS		= $(APP)/$(APPLICATION)_traits.h
+TRAITS          = $(INCLUDE)/system/traits.h
 endif
 ifeq ($(words $(call GETTK,MEM_BASE,$(TRAITS))),1)
 MACH_TRAITS     = $(TRAITS) 
