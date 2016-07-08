@@ -93,12 +93,12 @@ int main()
     }
 
     for(int i = 0; i < TEST_REPETITIONS; i++) {
-        cout << "Starting test " << i << "\n";
+        cout << "Starting test " << i << endl;
         run(i);
     }
 
-    cout << "SDN WFD done!\n";
-    cout << "Worst-case exec time = " << exec_time / 1000000 << " seconds!\n";
+    cout << "SDN WFD done!" << endl;
+    cout << "Worst-case exec time = " << exec_time / 1000000 << " seconds!" << endl;
 
     print_stats();
 
@@ -110,65 +110,31 @@ int run(int test)
 {
     TSC_Chronometer chrono;
 
-    for(unsigned int i = 0; i < 0xffffffff; i++)
-        for(unsigned int j = 0; j < 0xffffffff; j++) ;
-
     for(int i = 0; i <  THREADS; i++)
         for(int j = 0; j < ITERATIONS; j++)
             wcet[i][j] = 0;
 
     for(int i = 0; i < THREADS; i++) {
-        //s.p();
-        //cout << "T[" << i << "] p=" << set[i].p << " d=" << set[i].d << " c=" << set[i].c << " a=" << set[i].affinity << endl;
-        if(i == lowest_priority_task) {
-            threads[i] = new Periodic_Thread(RTConf(set[i].p, //period
-                                                    ITERATIONS, //number of repetitions
-                                                    Thread::READY, //State
-                                                    Thread::Criterion((Microsecond) set[i].p, (Microsecond) set[i].d, (Microsecond) set[i].c, set[i].affinity)), //Scheduling Criterion
-                                             set[i].f, //function
-                                             (unsigned int) ((set[i].c / 1730) * 10), //repetition parameter
-                                             i); //id parameter
-        } else {
-            //for task set 5
-            unsigned int time;
-            if(i == 12) {
-                time = (unsigned int) (set[i].c / 540);
-            } else {
-                time = (unsigned int) ((set[i].c / 540) * 3);
-            }
-
-            threads[i] = new Periodic_Thread(RTConf(set[i].p, //period
-                                                    ITERATIONS, //number of repetitions
-                                                    Thread::READY, //State
-                                                    Thread::Criterion((Microsecond) set[i].p, (Microsecond) set[i].d, (Microsecond) set[i].c, set[i].affinity)), //Scheduling Criterion
-                                             set[i].f, //function
-                                             (unsigned int) time, //repetition parameter
-                                             i); //id parameter
-        }
-
-        //s.v();
+        cout << "T[" << i << "] p=" << set[i].p << " d=" << set[i].d << " c=" << set[i].c << " a=" << set[i].affinity << endl;
+        if(i == lowest_priority_task)
+            threads[i] = new Periodic_Thread(RTConf(set[i].p, ITERATIONS, Thread::READY, Thread::Criterion(Microsecond(set[i].p), Microsecond(set[i].d), Microsecond(set[i].c), set[i].affinity), Color(i + 1)),
+                                             set[i].f, (unsigned int)((set[i].c / 1730) * 10), i);
+        else
+            threads[i] = new Periodic_Thread(RTConf(set[i].p, ITERATIONS, Thread::READY, Thread::Criterion(Microsecond(set[i].p), Microsecond(set[i].d), Microsecond(set[i].c), set[i].affinity), Color(i + 1)),
+                                             set[i].f, (i == 12) ? set[i].c / 540 : set[i].c / 540 * 3, i);
     }
 
     chrono.start();
 
-    for(int i = 0; i <  THREADS; i++) {
+    for(int i = 0; i <  THREADS; i++)
         threads[i]->join();
-    }
 
     chrono.stop();
 
     collect_wcet(test);
 
-    //for(int i = 0; i <  THREADS; i++) {
-    //  cout << "wcet[" << i << "] = " << find_highest((long unsigned int*)wcet[i], ITERATIONS) << "\n";
-    //}
-
-    for(int i = 0; i <  THREADS; i++) {
+    for(int i = 0; i <  THREADS; i++)
         delete threads[i];
-    }
-
-    //if(chrono.read() > exec_time)
-    //    exec_time = chrono.read();
 
     cout << "Page coloring test " << test << " done in " << chrono.read() / 1000000 << " seconds!\n";
 }
