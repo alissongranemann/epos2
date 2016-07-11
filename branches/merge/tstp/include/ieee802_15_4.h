@@ -22,7 +22,7 @@ public:
     typedef NIC_Common::Address<2> Short_Address;
     typedef NIC_Common::Address<8> Extended_Address;
     typedef Short_Address Address;
-    typedef CPU::Reg16 CRC;
+    typedef NIC_Common::CRC16 CRC;
 
     // IEEE 802.15.4 Physical Layer
     static const unsigned int MTU = 127;
@@ -178,6 +178,7 @@ public:
 
         bool pending() const { return _frame_control.fp(); }
         unsigned int type() const { return _frame_control.type(); }
+
         void ack_request(bool val) { _frame_control.ar(val); }
         bool ack_request() { return _frame_control.ar(); }
 
@@ -203,6 +204,8 @@ public:
     public:
         Frame() {}
         Frame(const Type & type, const Address & src, const Address & dst): Header(type, src, dst) {}
+        Frame(const Type & type, const Address & src, const Address & dst, unsigned int size)
+        : Header(type, src, dst, ((size & (~0x7f)) ? 0x7f : size) + sizeof(CRC)) { }
         Frame(const Type & type, const Address & src, const Address & dst, const void * data, unsigned int size)
         : Header(type, src, dst, ((size & (~0x7f)) ? 0x7f : size) + sizeof(CRC)) { memcpy(_data, data, size); }
 

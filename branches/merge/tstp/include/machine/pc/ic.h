@@ -490,25 +490,23 @@ public:
 
     static void enable() {
         db<IC>(TRC) << "IC::enable()" << endl;
-        assert(i < INTS);
         Engine::enable();
     }
 
     static void enable(int i) {
         db<IC>(TRC) << "IC::enable(int=" << i << ")" << endl;
-        assert(i < INTS);
+        assert((unsigned int)i < INTS);
         Engine::enable(i);
     }
 
     static void disable() {
         db<IC>(TRC) << "IC::disable()" << endl;
-        assert(i < INTS);
         Engine::disable();
     }
 
     static void disable(int i) {
         db<IC>(TRC) << "IC::disable(int=" << i << ")" << endl;
-        assert(i < INTS);
+        assert((unsigned int)i < INTS);
         Engine::disable(i);
     }
 

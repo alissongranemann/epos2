@@ -24,59 +24,69 @@ int CC2538::send(const Address & dst, const Type & type, const void * data, unsi
 {
     db<CC2538>(TRC) << "CC2538::send(s=" << address() << ",d=" << dst << ",p=" << hex << type << dec << ",d=" << data << ",s=" << size << ")" << endl;
 
-    Phy_Frame frame;
-    MAC::marshal(&frame, address(), dst, type, data, size); // size adjustments are handled by the MAC
-    copy_to_nic(&frame);
-
-    db<CC2538>(INF) << "CC2538::send:frame=" << &frame << " => " << frame << endl;
-
-    size = MAC::send();
-
-    if(size) {
-        _statistics.tx_packets++;
-        _statistics.tx_bytes += size;
-    } else
-        db<CC2538>(WRN) << "CC2538::send(s=" << address() << ",d=" << dst << ",p=" << hex << type << dec << ",d=" << data << ",s=" << size << ")" << " => failed!" << endl;
-
-    return size;
+    Buffer * b;
+    if((b = alloc(reinterpret_cast<NIC*>(this), dst, type, 0, 0, size))) {
+        // Assemble the Frame Header and buffer Metainformation
+        MAC::marshal(b, address(), dst, type, data, size);
+        return send(b);
+    }
+    return 0;
 }
-
 
 int CC2538::receive(Address * src, Type * type, void * data, unsigned int size)
 {
     db<CC2538>(TRC) << "CC2538::receive(s=" << *src << ",p=" << hex << *type << dec << ",d=" << data << ",s=" << size << ") => " << endl;
 
-    Phy_Frame frame;
-    MAC::receive();
-    copy_from_nic(&frame);
-    Address dst;
-    size = MAC::unmarshal(&frame, src, &dst, type, data, size);
+    unsigned int ret = 0;
 
-    _statistics.rx_packets++;
-    _statistics.rx_bytes += size;
+    while(!ret) {
+        // TODO: Disabling interrupts because a deadlock will occur if a thread locks _receive_lock, then gets preempted by an interrupt that calls receive()
+        CPU::int_disable();
+        while(!CPU::tsl(_receive_lock)) {
+            CPU::int_enable();
+            CPU::int_disable();
+        }
 
-    db<CC2538>(INF) << "CC2538::receive:frame=" << &frame  << " => " << frame << endl;
+        Buffer::Element * el = _received_buffers.remove_head();
+        if(el) {
+            Buffer * buf = el->object();
+            Address dst;
+            ret = MAC::unmarshal(buf, src, &dst, type, data, size);
+            free(buf);
+        } else
+            MAC::receive(); // Note that MAC::receive happens with interrupts disabled
 
-    return size;
+        _receive_lock = 0;
+        CPU::int_enable();
+    }
+
+    db<CC2538>(INF) << "CC2538::received " << ret << " bytes" << endl;
+
+    return ret;
 }
-
 
 CC2538::Buffer * CC2538::alloc(NIC * nic, const Address & dst, const Type & type, unsigned int once, unsigned int always, unsigned int payload)
 {
     db<CC2538>(TRC) << "CC2538::alloc(s=" << address() << ",d=" << dst << ",p=" << hex << type << dec << ",on=" << once << ",al=" << always << ",ld=" << payload << ")" << endl;
 
-    // Initialize the buffer and assemble the Ethernet Frame Header
+    // Initialize the buffer
     return new (SYSTEM) Buffer(nic, once + always + payload, once + always + payload); // the last parameter is passed to Phy_Frame as the length
 }
-
 
 int CC2538::send(Buffer * buf)
 {
     db<CC2538>(TRC) << "CC2538::send(buf=" << buf << ")" << endl;
     db<CC2538>(INF) << "CC2538::send:frame=" << buf->frame() << " => " << *(buf->frame()) << endl;
 
-    copy_to_nic(buf->frame());
-    unsigned int size = MAC::send();
+    // TODO: Disabling interrupts because a deadlock will occur if a thread locks _send_lock, then gets preempted by an interrupt that calls send()
+    CPU::int_disable();
+    while(!CPU::tsl(_send_lock)) {
+        CPU::int_enable();
+        CPU::int_disable();
+    }
+
+    // Note that MAC::send happens with interrupts disabled
+    unsigned int size = MAC::send(buf);
 
     if(size) {
         _statistics.tx_packets++;
@@ -84,10 +94,11 @@ int CC2538::send(Buffer * buf)
     } else
         db<CC2538>(WRN) << "CC2538::send(buf=" << buf << ")" << " => failed!" << endl;
 
-    delete buf;
+    _send_lock = 0;
+    CPU::int_enable();
+
     return size;
 }
-
 
 void CC2538::free(Buffer * buf)
 {
@@ -96,7 +107,7 @@ void CC2538::free(Buffer * buf)
     _statistics.rx_packets++;
     _statistics.rx_bytes += buf->size();
 
-    buf->unlock();
+    delete buf;
 }
 
 void CC2538::reset()
@@ -107,7 +118,6 @@ void CC2538::reset()
     new (&_statistics) Statistics;
 }
 
-
 void CC2538::handle_int()
 {
     db<CC2538>(TRC) << "CC2538::handle_int()" << endl;
@@ -115,28 +125,30 @@ void CC2538::handle_int()
     Reg32 irqrf0 = sfr(RFIRQF0);
     Reg32 irqrf1 = sfr(RFIRQF1);
     Reg32 errf = sfr(RFERRF);
-    sfr(RFIRQF0) = 0;
-    sfr(RFIRQF1) = 0;
+    sfr(RFIRQF0) = irqrf0 & INT_RXPKTDONE; //INT_RXPKTDONE is polled by rx_done()
+    sfr(RFIRQF1) = irqrf1 & INT_TXDONE; //INT_TXDONE is polled by tx_done()
     sfr(RFERRF) = 0;
     db<CC2538>(INF) << "CC2538::handle_int:RFIRQF0=" << hex << irqrf0 << endl;
     db<CC2538>(INF) << "CC2538::handle_int:RFIRQF1=" << hex << irqrf1 << endl;
     db<CC2538>(INF) << "CC2538::handle_int:RFERRF=" << hex << errf << endl;
 
     if(irqrf0 & INT_FIFOP) { // Frame received
-        sfr(RFIRQF0) &= ~INT_FIFOP;
-        if((xreg(RXFIFOCNT) > 0)) {
-            db<CC2538>(TRC) << "CC2538::handle_int:receive()" << endl;
+        db<CC2538>(TRC) << "CC2538::handle_int:receive()" << endl;
+        if(MAC::filter()) {
             Buffer * buf = new (SYSTEM) Buffer(0);
-            Phy_Frame * frame = buf->frame();
-            copy_from_nic(frame);
-            buf->size(frame->length() - (sizeof(Header) + sizeof(CRC) - sizeof(Phy_Header))); // Phy_Header is included in Header, but is already discounted in frame_length
+            MAC::copy_from_nic(buf);
             db<CC2538>(TRC) << "CC2538::handle_int:receive(b=" << buf << ") => " << *buf << endl;
-            if(!notify(0, buf)) // No one was waiting for this frame, so let it free for receive()
-                free(buf);
+            if(!notify(reinterpret_cast<Frame*>(buf->frame())->type(), buf)) {
+                // No one was waiting for this frame, so store it for receive()
+                if(_received_buffers.size() < RX_BUFS) {
+                    _received_buffers.insert(buf->link());
+                } else {
+                    delete buf;
+                }
+            }
         }
     }
 }
-
 
 void CC2538::int_handler(const IC::Interrupt_Id & interrupt)
 {

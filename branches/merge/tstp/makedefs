@@ -50,14 +50,14 @@ else
 TRAITS          = $(INCLUDE)/system/traits.h
 endif
 ifeq ($(words $(call GETTK,MEM_BASE,$(TRAITS))),1)
-MACH_TRAITS     = $(TRAITS) 
+MACH_TRAITS     = $(TRAITS)
 else
-MACH_TRAITS     = $(INCLUDE)/machine/$(MACH)/$(MMOD)_traits.h 
+MACH_TRAITS     = $(INCLUDE)/machine/$(MACH)/$(MMOD)_traits.h
 endif
 ifeq ($(words $(call GETTK,ENDIANESS,$(TRAITS))),1)
-ARCH_TRAITS     = $(TRAITS) 
+ARCH_TRAITS     = $(TRAITS)
 else
-ARCH_TRAITS     = $(INCLUDE)/architecture/$(ARCH)/traits.h 
+ARCH_TRAITS     = $(INCLUDE)/architecture/$(ARCH)/traits.h
 endif
 MODE		= $(call TOLOWER,$(call GETTK,MODE,$(TRAITS)))
 ARCH		= $(call TOLOWER,$(call GETTK,ARCHITECTURE,$(TRAITS)))
@@ -104,12 +104,12 @@ pc_EMULATOR             = qemu-system-i386 -smp $(CPUS) -m $(MEM_SIZE)k -nograph
 pc_DEBUGGER             := gdb
 pc_FLASHER              :=
 
-cortex_m_CC_FLAGS       := -mcpu=cortex-m3 -mthumb -mno-thumb-interwork -mfpu=fpa #-Wa,-mimplicit-it=arm -marm 
+cortex_m_CC_FLAGS       := -mcpu=cortex-m3 -mthumb -mno-thumb-interwork -mfpu=fpa
 cortex_m_AS_FLAGS       := -mcpu=cortex-m3 -mthumb -mfpu=fpa
 cortex_m_LD_FLAGS       :=
 cortex_m_EMULATOR       = qemu-system-arm -cpu cortex-m3 -machine lm3s811evb -m $(MEM_SIZE)k -serial stdio -no-reboot -kernel
 cortex_m_DEBUGGER       := arm-none-eabi-gdb
-cortex_m_FLASHER        = $(TOOLS)/eposflash/eposflash-$(MMOD) -d /dev/ttyACM0 -f 
+cortex_m_FLASHER        = $(TOOLS)/eposflash/eposflash-$(MMOD) -d /dev/ttyACM0 -f
 
 atmega_CC_FLAGS         := -mmcu=atmega128 -Wno-inline
 atmega_AS_FLAGS         := -mmcu=atmega128
@@ -159,9 +159,9 @@ TCC		:= gcc -ansi -c -Werror
 TCCFLAGS	:= -m32 -Wall -O2 -I$(INCLUDE)
 
 TCXX		:= g++ -c -ansi -fno-exceptions -std=c++0x
-TCXXFLAGS	:= -m32 -Wall -O2 -I$(INCLUDE)
+TCXXFLAGS	:= -m32 -Wall -Wno-unused-result -O2 -I$(INCLUDE)
 
-TCPP		:= gcc -E 
+TCPP		:= gcc -E
 TCPPFLAGS	:= -I$(INCLUDE)
 
 TLD		:= gcc
@@ -181,7 +181,7 @@ ARFLAGS		:= rcs
 AS		= $(COMP_PREFIX)as
 ASFLAGS		= $(MACH_AS_FLAGS)
 
-CC		= $(COMP_PREFIX)gcc -ansi -c 
+CC		= $(COMP_PREFIX)gcc -ansi -c
 CCFLAGS		= $(MACH_CC_FLAGS) -O2 -nostdinc -Wall -Werror -I$(INCLUDE)
 CCLIB		= `$(CC) $(MACH_CC_FLAGS) -print-file-name=`
 
@@ -287,7 +287,7 @@ lib%.o: lib%.cc
 		$(CLEAN) $<.tmp
 
 %.key: %.cc
-		$(EPOSANL) $< 
+		$(EPOSANL) $<
 
 %.key: %.c
 		$(EPOSANL) $<

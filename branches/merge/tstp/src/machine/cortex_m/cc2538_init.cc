@@ -9,7 +9,7 @@
 
 __BEGIN_SYS
 
-CC2538::CC2538(unsigned int unit): _unit(unit)
+CC2538::CC2538(unsigned int unit): _unit(unit), _send_lock(0), _receive_lock(0)
 {
     db<CC2538>(TRC) << "CC2538(unit=" << unit << ")" << endl;
 
