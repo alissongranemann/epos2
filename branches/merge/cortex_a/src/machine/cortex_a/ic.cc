@@ -14,7 +14,6 @@ __BEGIN_SYS
 Cortex_A_IC::Interrupt_Handler Cortex_A_IC::_int_vector[Cortex_A_IC::INTS];
 
 // Class methods
-// TODO: Document why this mess is necessary
 void Cortex_A_IC::entry()
 {
     ASM(".equ MODE_IRQ, 0x12                        \n"
