@@ -12,23 +12,29 @@
 
 __BEGIN_SYS
 
-class Cortex_M_IEEE802_15_4: public IEEE802_15_4
+class Cortex_M_IEEE802_15_4: public IEEE802_15_4::NIC_Base<IEEE802_15_4, Traits<Cortex_M_IEEE802_15_4>::NICS::Polymorphic>
 {
     friend class Cortex_M;
 
 private:
     typedef Traits<Cortex_M_IEEE802_15_4>::NICS NICS;
+    typedef IF<NICS::Polymorphic, NIC_Base<IEEE802_15_4>, NICS::Get<0>::Result>::Result Device;
+
     static const unsigned int UNITS = NICS::Length;
+
+public:
+    typedef Data_Observer<Buffer, Protocol> Observer;
+    typedef Data_Observed<Buffer, Protocol> Observed;
 
 public:
     template<unsigned int UNIT = 0>
     Cortex_M_IEEE802_15_4(unsigned int u = UNIT) {
-        _dev = Meta_NIC<NICS>::Get<UNIT>::Result::get(u);
+        _dev = reinterpret_cast<Device *>(NICS::Get<UNIT>::Result::get(u));
         db<NIC>(TRC) << "NIC::NIC(u=" << UNIT << ",d=" << _dev << ") => " << this << endl;
     }
     ~Cortex_M_IEEE802_15_4() { _dev = 0; }
 
-    Buffer * alloc(NIC * nic, const Address & dst, const Protocol & prot, unsigned int once, unsigned int always, unsigned int payload) { return _dev->alloc(nic, dst, prot, once, always, payload); }
+    Buffer * alloc(const Address & dst, const Protocol & prot, unsigned int once, unsigned int always, unsigned int payload) { return _dev->alloc(this, dst, prot, once, always, payload); }
     int send(Buffer * buf) { return _dev->send(buf); }
     void free(Buffer * buf) { _dev->free(buf); }
 
@@ -56,7 +62,7 @@ private:
     static void init();
 
 private:
-    Meta_NIC<NICS>::Base * _dev;
+    Device * _dev;
 };
 
 __END_SYS

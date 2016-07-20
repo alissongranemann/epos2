@@ -1,4 +1,5 @@
 // EPOS IA32 Architecture Metainfo
+
 #ifndef __ia32_traits_h
 #define __ia32_traits_h
 
@@ -33,7 +34,7 @@ template<> struct Traits<IA32_FPU>: public Traits<void>
 template<> struct Traits<IA32_PMU>: public Traits<void>
 {
     static const bool enabled = true;
-    enum {V1, V2, V3, DUO, MICRO, ATOM, NEHALEN, NETBURST, SANDY_BRIDGE};
+    enum { V1, V2, V3, DUO, MICRO, ATOM, NEHALEN, NETBURST, SANDY_BRIDGE };
     static const unsigned int MODEL = V2;
 };
 

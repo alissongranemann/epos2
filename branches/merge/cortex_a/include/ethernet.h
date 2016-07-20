@@ -12,15 +12,12 @@
 
 __BEGIN_SYS
 
-class Ethernet: private NIC_Common
+class Ethernet: public NIC_Common
 {
 protected:
     static const unsigned int HEADER_SIZE = 14;
 
 public:
-    typedef NIC_Base<Ethernet, Traits<Ethernet>::NICS::Polymorphic> Base;
-    typedef IF<Traits<Ethernet>::NICS::Polymorphic, Base, Traits<Ethernet>::NICS::Get<0>::Result>::Result NIC;
-
     typedef NIC_Common::Address<6> Address;
 
     typedef unsigned short Protocol;

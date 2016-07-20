@@ -7,7 +7,8 @@
 
 __BEGIN_SYS
 
-class GEM: public Ethernet::Base
+class GEM: public Ethernet::NIC_Base<Ethernet, Traits<Cortex_A_Ethernet>::NICS::Polymorphic>
+           //public Ethernet::Base
 {
 public:
     GEM() {}

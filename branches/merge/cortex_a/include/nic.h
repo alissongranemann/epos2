@@ -172,7 +172,7 @@ public:
 
 
     // Polymorphic NIC Base
-    template<typename Family, bool polymorphic>
+    template<typename Family, bool polymorphic = true>
     class NIC_Base: public Family, public Family::Observed
     {
     public:
@@ -182,7 +182,7 @@ public:
         virtual int send(const typename Family::Address & dst, const typename Family::Protocol & prot, const void * data, unsigned int size) = 0;
         virtual int receive(typename Family::Address * src, typename Family::Protocol * prot, void * data, unsigned int size) = 0;
 
-        virtual typename Family::Buffer * alloc(const typename Family::Address & dst, const typename Family::Protocol & prot, unsigned int once, unsigned int always, unsigned int payload) = 0;
+        virtual typename Family::Buffer * alloc(NIC * nic, const typename Family::Address & dst, const typename Family::Protocol & prot, unsigned int once, unsigned int always, unsigned int payload) = 0;
         virtual int send(typename Family::Buffer * buf) = 0;
         virtual void free(typename Family::Buffer * buf) = 0;
 

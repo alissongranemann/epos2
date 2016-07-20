@@ -121,15 +121,12 @@ template<> struct Traits<PC_Scratchpad>: public Traits<PC_Common>
     static const unsigned int SIZE = 96 * 1024;
 };
 
-template<> struct Traits<Ethernet>: public Traits<PC_Common>
+template<> struct Traits<PC_Ethernet>: public Traits<PC_Common>
 {
     static const bool enabled = (Traits<Build>::NODES > 1);
 
     typedef LIST<PCNet32> NICS;
     static const unsigned int UNITS = NICS::Length;
-};
-template<> struct Traits<PC_Ethernet>: public Traits<Ethernet>
-{
 };
 
 template<> struct Traits<PCNet32>: public Traits<PC_Ethernet>

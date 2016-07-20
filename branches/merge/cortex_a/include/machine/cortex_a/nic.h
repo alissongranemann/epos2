@@ -10,12 +10,13 @@
 
 __BEGIN_SYS
 
-class Cortex_A_Ethernet: public Ethernet::Base
+class Cortex_A_Ethernet: public Ethernet
 {
     friend class Zynq;
 
 private:
     typedef Traits<Cortex_A_Ethernet>::NICS NICS;
+    typedef IF<NICS::Polymorphic, NIC_Base<Ethernet>, NICS::Get<0>::Result>::Result Device;
     static const unsigned int UNITS = NICS::Length;
 
 public:
@@ -45,13 +46,11 @@ public:
     void detach(Observer * obs, const Protocol & prot) {}
     void notify(const Protocol & prot, Buffer * buf) {}
 
-    Ethernet::NIC * device() { return 0; }
-
 private:
     static void init();
 
 private:
-    Ethernet::NIC * _dev;
+    Device * _dev;
 };
 
 __END_SYS

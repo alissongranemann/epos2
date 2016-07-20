@@ -102,7 +102,7 @@ int PCNet32::receive(Address * src, Protocol * prot, void * data, unsigned int s
 
 
 // Allocated buffers must be sent or release IN ORDER as assumed by the PCNet32
-PCNet32::Buffer * PCNet32::alloc(const Address & dst, const Protocol & prot, unsigned int once, unsigned int always, unsigned int payload)
+PCNet32::Buffer * PCNet32::alloc(NIC * nic, const Address & dst, const Protocol & prot, unsigned int once, unsigned int always, unsigned int payload)
 {
     db<PCNet32>(TRC) << "PCNet32::alloc(s=" << _address << ",d=" << dst << ",p=" << hex << prot << dec << ",on=" << once << ",al=" << always << ",ld=" << payload << ")" << endl;
 
@@ -126,7 +126,7 @@ PCNet32::Buffer * PCNet32::alloc(const Address & dst, const Protocol & prot, uns
         Buffer * buf = _tx_buffer[_tx_cur];
 
         // Initialize the buffer and assemble the Ethernet Frame Header
-        new (buf) Buffer(reinterpret_cast<Ethernet::NIC *>(this), (size > max_data) ? MTU : size + always, _address, dst, prot);
+        new (buf) Buffer(nic, (size > max_data) ? MTU : size + always, _address, dst, prot);
 
         db<PCNet32>(INF) << "PCNet32::alloc:desc[" << _tx_cur << "]=" << desc << " => " << *desc << endl;
 
