@@ -18,7 +18,7 @@ ifeq ($(GDB),1)
 		$(DEPLOYER) $(IMG)/$(IMAGE) 1 &
 		$(DEBUGGER) $(APP)/$(APPLICATION) &
 else
-		$(DEPLOYER) $(IMG)/$(IMAGE) 0 $(BIT) $(PBIN)
+		$(DEPLOYER) $(IMG)/$(IMAGE) 0
 endif
 
 flash:		strip $(FLASH)
