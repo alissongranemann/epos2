@@ -90,31 +90,35 @@ BOOT_LENGTH_MAX = $(call GETTK,BOOT_LENGTH_MAX,$(MACH_TRAITS))
 #Machine specifics
 pc_CC_FLAGS             := -Wa,--32
 pc_AS_FLAGS             := --32
-pc_LD_FLAGS             := 
+pc_LD_FLAGS             :=
 pc_EMULATOR             = qemu-system-i386 -smp $(CPUS) -m $(MEM_SIZE)k -nographic -no-reboot -fda
 pc_DEBUGGER             := gdb
 pc_FLASHER              :=
+pc_DEPLOYER             :=
 
 cortex_m_CC_FLAGS       := -mcpu=cortex-m3 -mthumb -mno-thumb-interwork -mfpu=fpa #-Wa,-mimplicit-it=arm -marm 
 cortex_m_AS_FLAGS       := -mcpu=cortex-m3 -mthumb -mfpu=fpa
-cortex_m_LD_FLAGS       := 
+cortex_m_LD_FLAGS       :=
 cortex_m_EMULATOR       = qemu-system-arm -cpu cortex-m3 -machine lm3s811evb -m $(MEM_SIZE)k -serial stdio -no-reboot -kernel
 cortex_m_DEBUGGER       := arm-none-eabi-gdb
 cortex_m_FLASHER        = $(TOOLS)/eposflash/eposflash-$(MMOD) -d /dev/ttyACM0 -f 
+cortex_m_DEPLOYER       :=
 
 atmega_CC_FLAGS         := -mmcu=atmega128 -Wno-inline
 atmega_AS_FLAGS         := -mmcu=atmega128
 atmega_LD_FLAGS         := -m avr5
-atmega_EMULATOR         = 
+atmega_EMULATOR         =
 atmega_DEBUGGER         =
 atmega_FLASHER          = $(TOOLS)/eposflash/eposflash-$(MMOD)
+atmega_DEPLOYER         :=
 
-cortex_a_CC_FLAGS	:= -mcpu=cortex-a9 -mfpu=fpa
-cortex_a_AS_FLAGS	:= -mcpu=cortex-a9 -mfpu=fpa
-cortex_a_LD_FLAGS	:= 
-cortex_a_EMULATOR	:= qemu-system-aarch64 -M arm-generic-fdt-plnx -m $(MEM_SIZE)k -serial /dev/null -serial mon:stdio -nographic -no-reboot -dtb ../tools/zynq/devicetree.dtb -kernel
+cortex_a_CC_FLAGS       := -mcpu=cortex-a9 -mfpu=fpa
+cortex_a_AS_FLAGS       := -mcpu=cortex-a9 -mfpu=fpa
+cortex_a_LD_FLAGS       :=
+cortex_a_EMULATOR       := qemu-system-aarch64 -M arm-generic-fdt-plnx -m $(MEM_SIZE)k -serial /dev/null -serial mon:stdio -nographic -no-reboot -dtb ../tools/zynq/devicetree.dtb -kernel
 cortex_a_DEBUGGER       := cgdb -d arm-xilinx-eabi-gdb
-cortex_a_DEPLOYER	:= $(TOP)/tools/zynq/jtag.sh
+cortex_a_FLASHER        =
+cortex_a_DEPLOYER       = $(TOOLS)/eposdeploy/eposdeploy-$(MMOD)
 
 $(MACH)_CODE_NAME       := .init
 $(MACH)_DATA_NAME       := .data

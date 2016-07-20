@@ -1,7 +1,7 @@
 #!/bin/bash
 
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-BASE_INI="$DIR"/base_xmd.ini
+BASE_INI="$DIR"/eposdeploy-zynq-base_xmd.ini
 INI="$DIR"/xmd.ini
 EMPTY=empty
 
