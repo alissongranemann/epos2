@@ -250,25 +250,32 @@ private:
     NIC _nic;
 };
 
-void pluviometer_handler(GPIO * pin)
-{
-    static bool rising_edge = false;
-    static TSC::Time_Stamp last_interrupt = 0;
+class Pluviometer_Handler : public Handler {
+public:
+    Pluviometer_Handler(GPIO * gpio) : _gpio(gpio) {}
 
-    auto now = TSC::time_stamp();
+    void operator()() {
+        static bool rising_edge = false;
+        static TSC::Time_Stamp last_interrupt = 0;
 
-    if((now - last_interrupt) >= INTERRUPT_DEBOUNCE_MARGIN) {
-        last_interrupt = now;
-        if(not rising_edge) { 
-            pluviometer_count++;
+        auto now = TSC::time_stamp();
+
+        if((now - last_interrupt) >= INTERRUPT_DEBOUNCE_MARGIN) {
+            last_interrupt = now;
+            if(not rising_edge) {
+                pluviometer_count++;
+            }
+            rising_edge = not rising_edge;
+            _gpio->enable_interrupt(rising_edge ? GPIO::RISING_EDGE : GPIO::FALLING_EDGE, this);
         }
-        rising_edge = not rising_edge;
-        pin->enable_interrupt(rising_edge ? GPIO::RISING_EDGE : GPIO::FALLING_EDGE, &pluviometer_handler);
     }
-}
+
+private:
+    GPIO * _gpio;
+};
 
 int main()
-{    
+{
     // Use this to erase the flash
     //unsigned int dt[512];
     //unsigned int sz = 512 * 4;
@@ -291,12 +298,14 @@ int main()
     auto turbidity = Turbidity_Sensor{turbidity_adc,
                                       turbidity_toggle,
                                       turbidity_infrared};
-    
+
     level.disable();
     turbidity.disable();
 
     auto pluviometer = GPIO{'b', 4, GPIO::INPUT};
-    pluviometer.enable_interrupt(GPIO::FALLING_EDGE, &pluviometer_handler);
+    Pluviometer_Handler phandler(&pluviometer);
+
+    pluviometer.enable_interrupt(GPIO::FALLING_EDGE, &phandler);
 
     unsigned int data[4];
     const unsigned int size_of_data = 4 * sizeof(unsigned int);
@@ -364,7 +373,7 @@ int main()
         cout << endl;
 
         // Sleep until the end of the first minute
-        while(timer.running());        
+        while(timer.running());
 
         // Sleep for 4 more minutes
         for (auto i = 0u; i < MINUTES-1; ++i) {
