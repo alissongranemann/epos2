@@ -30,11 +30,11 @@ protected:
 public:
     static Flags flags() {
         register Reg32 value;
-        ASM("mrs %0, xpsr" : "=r"(value) ::);
+        ASM("mrs %0, xpsr" : "=r"(value) :);
         return value;
     }
     static void flags(const Flags & flags) {
-        ASM("msr xpsr, %0" : : "r"(flags) :);
+        ASM("msr xpsr, %0" : : "r"(flags));
     }
 
     static void int_enable() { ASM("cpsie i"); }
@@ -46,7 +46,7 @@ public:
         return disabled;
     }
 
-    static void mrs12() { ASM("mrs r12, xpsr"); }
+    static void mrs12() { ASM("mrs r12, xpsr" : : "r12"); }
     static void msr12() { ASM("msr xpsr, r12"); }
 
 //    static unsigned int int_id() { return flags() & 0x3f; }
@@ -92,32 +92,32 @@ protected:
 public:
     static Flags flags() {
         register Reg32 value;
-        ASM("mrs %0, cpsr" : "=r"(value) ::);
+        ASM("mrs %0, cpsr" : "=r"(value) :);
         return value;
     }
     static void flags(const Flags & flags) {
-        ASM("msr cpsr_c, %0" : : "r"(flags) :);
+        ASM("msr cpsr_c, %0" : : "r"(flags));
     }
 
     static void int_enable() {
-        ASM("mrs r0, cpsr               \n"
-            "bic r0, r0, #0xC0          \n"
-            "msr cpsr_c, r0             \n");
+        ASM("   mrs r0, cpsr               \n"
+            "   bic r0, r0, #0xC0          \n"
+            "   msr cpsr_c, r0             \n" : : : "r0", "cc");
     }
     static void int_disable() {
-        ASM("mrs r0, cpsr               \n"
-            "orr r0, r0, #0xC0          \n"
-            "msr cpsr_c, r0             \n");
+        ASM("   mrs r0, cpsr               \n"
+            "   orr r0, r0, #0xC0          \n"
+            "   msr cpsr_c, r0             \n" : : : "r0", "cc");
     }
 
     static bool int_disabled() {
         bool disabled;
-        ASM("mrs %0, cpsr               \n"
-            "and %0, %0, #0xC0          \n" : "=r"(disabled));
+        ASM("   mrs %0, cpsr               \n"
+            "   and %0, %0, #0xC0          \n" : "=r"(disabled));
         return disabled;
     }
 
-    static void mrs12() { ASM("mrs r12, cpsr"); }
+    static void mrs12() { ASM("mrs r12, cpsr" : : : "r12"); }
     static void msr12() { ASM("msr cpsr, r12"); }
 };
 
@@ -218,6 +218,8 @@ public:
     static Hertz clock() { return _cpu_clock; }
     static Hertz bus_clock() { return _bus_clock; }
 
+    using Base::flags;
+
     using Base::int_enable;
     using Base::int_disable;
     static bool int_enabled() { return !int_disabled(); }
@@ -230,18 +232,9 @@ public:
     static int syscall(void * message);
     static void syscalled();
 
-    static Flags flags() {
-        register Reg32 value;
-        ASM("mrs %0, xpsr" : "=r"(value) ::);
-        return value;
-    }
-    static void flags(const Flags & flags) {
-        ASM("msr xpsr, %0" : : "r"(flags) :);
-    }
-
     static Reg32 sp() {
         Reg32 value;
-        ASM("mov %0, sp" : "=r"(value) : : );
+        ASM("mov %0, sp" : "=r"(value) :);
         return value;
     }
     static void sp(const Reg32 & sp) {
@@ -258,10 +251,9 @@ public:
         ASM("mov r0, %0" : : "r"(fr) : "r0");
     }
 
-    static Log_Addr ip() // due to RISC pipelining PC is read with a +8 (4 for thumb) offset
-    {
+    static Log_Addr ip() {// due to RISC pipelining PC is read with a +8 (4 for thumb) offset
         Reg32 value;
-        ASM("mov %0, pc" : "=r"(value) : :);
+        ASM("mov %0, pc" : "=r"(value) :);
         return value;
     }
 
