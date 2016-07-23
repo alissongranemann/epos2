@@ -49,10 +49,10 @@ public:
     }
 
     static void int_enable() {
-        ASM("mrs r0, cpsr               \n"
-            "bic r0, r0, #0xC0          \n"
-            "msr cpsr_c, r0             \n"
-            : : : "r0", "cc", "memory");
+        //ASM("mrs r0, cpsr               \n"
+            //"bic r0, r0, #0xC0          \n"
+            //"msr cpsr_c, r0             \n"
+            //: : : "r0", "cc", "memory");
     }
     static void int_disable() {
         ASM("mrs r0, cpsr               \n"

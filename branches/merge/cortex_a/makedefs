@@ -1,7 +1,7 @@
 # EPOS Makefile Definitions
 
 # Functions
-GETTK		= $(shell sed -n -e '/^.* $(1)[ ]*=.*;.*$$/s/^.* =[ ]*\(.*\)[ ]*;.*$$/\1/p' $(2) 2> /dev/null)
+GETTK		= $(shell sed -n -e '/^.* $(1)[ ]*=.*;.*$$/s/^.* =[ ]*\(.*\)[ ]*;.*$$/\1/p' $(2) | head -1 2> /dev/null)
 DBSEC           = $(1) 0x$(shell objdump -h $(1) | grep $(2) | tr -s ' ' | cut -d ' ' -f 5 2> /dev/null)
 TOLOWER         = $(shell echo $(1) | tr A-Z a-z)
 
@@ -44,7 +44,21 @@ endif
 endif
 
 # System configuration
-TRAITS		= $(APP)/$(APPLICATION)_traits.h
+ifneq ("$(wildcard $(APP)/$(APPLICATION)_traits.h)","")
+TRAITS          = $(APP)/$(APPLICATION)_traits.h
+else
+TRAITS          = $(INCLUDE)/system/traits.h
+endif
+ifeq ($(words $(call GETTK,MEM_BASE,$(TRAITS))),1)
+MACH_TRAITS     = $(TRAITS) 
+else
+MACH_TRAITS     = $(INCLUDE)/machine/$(MACH)/$(MMOD)_traits.h 
+endif
+ifeq ($(words $(call GETTK,ENDIANESS,$(TRAITS))),1)
+ARCH_TRAITS     = $(TRAITS) 
+else
+ARCH_TRAITS     = $(INCLUDE)/architecture/$(ARCH)/traits.h 
+endif
 MODE		= $(call TOLOWER,$(call GETTK,MODE,$(TRAITS)))
 ARCH		= $(call TOLOWER,$(call GETTK,ARCHITECTURE,$(TRAITS)))
 MACH            = $(call TOLOWER,$(call GETTK,MACHINE,$(TRAITS)))
@@ -115,7 +129,7 @@ atmega_DEPLOYER         :=
 cortex_a_CC_FLAGS       := -mcpu=cortex-a9 -mfpu=fpa
 cortex_a_AS_FLAGS       := -mcpu=cortex-a9 -mfpu=fpa
 cortex_a_LD_FLAGS       :=
-cortex_a_EMULATOR       := qemu-system-aarch64 -M arm-generic-fdt-plnx -m $(MEM_SIZE)k -serial /dev/null -serial mon:stdio -nographic -no-reboot -dtb ../tools/zynq/devicetree.dtb -kernel
+cortex_a_EMULATOR       = qemu-system-arm -M xilinx-zynq-a9 -m $(MEM_SIZE)k -serial null -serial mon:stdio -nographic -no-reboot -kernel
 cortex_a_DEBUGGER       := cgdb -d arm-xilinx-eabi-gdb
 cortex_a_FLASHER        =
 cortex_a_DEPLOYER       = $(TOOLS)/eposdeploy/eposdeploy-$(MMOD)

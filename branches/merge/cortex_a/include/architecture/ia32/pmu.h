@@ -100,6 +100,11 @@ public:
         return rdpmc(channel);
     }
 
+    static void write(const Channel & channel, const Count & count) {
+        db<PMU>(TRC) << "PMU::write(ch=" << channel << ",ct=" << count << ")" << endl;
+        wrmsr(EVTSEL0 + channel, count);
+    }
+
     static void start(const Channel & channel) {
         db<PMU>(TRC) << "PMU::start(c=" << channel << ")" << endl;
         wrmsr(EVTSEL0 + channel, (rdmsr(EVTSEL0 + channel) | ENABLE));
@@ -127,6 +132,7 @@ protected:
 protected:
     static const Reg32 _events[EVENTS];
 };
+
 
 class Intel_PMU_V2: public Intel_PMU_V1
 {
@@ -191,6 +197,11 @@ public:
         return channel < FIXED ? rdpmc(channel | (1 << 30)) : rdpmc(channel - FIXED);
     }
 
+    static void write(const Channel & channel, const Count & count) {
+        db<PMU>(TRC) << "PMU::write(ch=" << channel << ",ct=" << count << ")" << endl;
+        wrmsr(EVTSEL0 + channel, count);
+    }
+
     static bool overflow(const Channel & channel) {
         assert(channel < CHANNELS);
         db<PMU>(TRC) << "PMU::overflow(c=" << channel << ")" << endl;
@@ -229,6 +240,7 @@ public:
     }
 };
 
+// TODO: Refactoring stoped at V2. Someone with a real machine must continue the procedure following the model
 class Intel_PMU_V3: public Intel_PMU_V2
 {
 public:
@@ -238,8 +250,8 @@ public:
         ANY_THREAD = (0x01 << 21),
 
         //GLOBAL STATUS and GLOBAL OVF STATUS
-        PMC0_OVERFLOW        = 0x01,
-        PMC1_OVERFLOW        = (1 << 0x01),
+        PMC0_OVERFLOW   = 0x01,
+        PMC1_OVERFLOW   = (1 << 0x01),
         PMC2_OVF        = (1 << 0x02),
         PMC3_OVF        = (1 << 0x03),
         PMC4_OVF        = (1 << 0x04),
@@ -260,42 +272,8 @@ public:
         ANY_THREAD_FIXED2 = (0x01 << 10),
     };
 
-    static bool fixed_ctr0_overflow(void) {
-        return (rdmsr(GLOBAL_STATUS) & FIXED_CTR0_OVF) != 0;
-    }
-
-//    // INST_RETIRED.ANY
-//    static void enable_fixed_ctr0(void) {
-//        wrmsr(FIXED_CTR_CTL, (rdmsr(FIXED_CTR_CTL) | FIXED_CTR0_ALL));
-//        wrmsr(GLOBAL_CTRL, (rdmsr(GLOBAL_CTRL) | FIXED_CTR0_ENABLE));
-//    }
-//
-//    // CPU_CLK_UNHALTED.THREAD
-//    static void enable_fixed_ctr1(void) {
-//        wrmsr(FIXED_CTR_CTL, (rdmsr(FIXED_CTR_CTL) | FIXED_CTR1_ALL));
-//        wrmsr(GLOBAL_CTRL, (rdmsr(GLOBAL_CTRL) | FIXED_CTR1_ENABLE));
-//    }
-//
-//    // CPU_CLK_UNHALTED.REF
-//    static void enable_fixed_ctr2(void) {
-//        wrmsr(FIXED_CTR_CTL, (rdmsr(FIXED_CTR_CTL) | FIXED_CTR2_ALL));
-//        wrmsr(GLOBAL_CTRL, (rdmsr(GLOBAL_CTRL) | FIXED_CTR2_ENABLE));
-//    }
-
-//    static void disable_fixed_ctr0(void) {
-//        wrmsr(GLOBAL_OVF, (rdmsr(GLOBAL_OVF) | FIXED_CTR0_OVF)); //clear OVF flag
-//        wrmsr(FIXED_CTR_CTL, (rdmsr(FIXED_CTR_CTL) & ~FIXED_CTR0_ALL));
-//    }
-//
-//    static void disable_fixed_ctr1(void) {
-//        wrmsr(GLOBAL_OVF, (rdmsr(GLOBAL_OVF) | FIXED_CTR1_OVF)); //clear OVF flag
-//        wrmsr(FIXED_CTR_CTL, (rdmsr(FIXED_CTR_CTL) & ~FIXED_CTR1_ALL));
-//    }
-//
-//    static void disable_fixed_ctr2(void) {
-//        wrmsr(GLOBAL_OVF, (rdmsr(GLOBAL_OVF) | FIXED_CTR2_OVF)); //clear OVF flag
-//        wrmsr(FIXED_CTR_CTL, (rdmsr(FIXED_CTR_CTL) & ~FIXED_CTR2_ALL));
-//    }
+public:
+    Intel_PMU_V3() {}
 };
 
 
@@ -1155,14 +1133,14 @@ public:
 //    }
 };
 
-template<int MODEL>
+template<int VERSION>
 class PMU_Select_Engine: public Intel_PMU_V1 {};
 template<>
 class PMU_Select_Engine<Traits<PMU>::V2>: public Intel_PMU_V2 {};
 template<>
 class PMU_Select_Engine<Traits<PMU>::V3>: public Intel_PMU_V3 {};
 
-class IA32_PMU: public PMU_Select_Engine<Traits<PMU>::MODEL>
+class IA32_PMU: public PMU_Select_Engine<Traits<PMU>::VERSION>
 {
     friend class IA32;
 

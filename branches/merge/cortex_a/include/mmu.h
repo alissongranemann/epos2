@@ -61,9 +61,6 @@ public:
         unsigned int _flags;
     };
 
-    // Page colors
-    typedef Page_Coloring_Allocator Color;
-
     // Number of entries in Page_Table and Page_Directory
     static const unsigned int PT_ENTRIES = sizeof(Page) / sizeof(PT_Entry);
     static const unsigned int PD_ENTRIES = PT_ENTRIES;
