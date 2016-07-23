@@ -261,7 +261,7 @@ public:
         reg(RCVR_FIFO_TRIGGER_LEVEL0) = 1;
 
         // Enable and reset RX and TX data paths
-        reg(CONTROL_REG0) |= RXRES | TXRES | RXEN | TXEN;
+        reg(CONTROL_REG0) = RXRES | TXRES | RXEN | TXEN;
     }
 
     unsigned char rxd() { return reg(TX_RX_FIFO0); }
