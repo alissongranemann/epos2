@@ -2,11 +2,7 @@
 
 include makedefs
 
-ifeq ($(findstring flash,$(MAKECMDGOALS)),flash)
-SUBDIRS	:= etc tools src app
-else
 SUBDIRS	:= etc tools src app img
-endif
 
 all: FORCE
 ifndef APPLICATION
@@ -14,7 +10,7 @@ ifndef APPLICATION
 else
 		$(MAKE) all1
 endif
-		
+
 all1: $(SUBDIRS)
 
 $(SUBDIRS): FORCE
