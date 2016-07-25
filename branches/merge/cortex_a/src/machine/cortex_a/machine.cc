@@ -1,13 +1,13 @@
-// EPOS Cortex_A Mediator Implementation
+// EPOS Cortex Mediator Implementation
 
 #include <machine/cortex_a/machine.h>
 #include <display.h>
 
 __BEGIN_SYS
 
-volatile unsigned int Cortex_A::_n_cpus;
+volatile unsigned int Cortex::_n_cpus;
 
-void Cortex_A::panic()
+void Cortex::panic()
 {
     CPU::int_disable();
     if(Traits<Display>::enabled)
@@ -18,10 +18,10 @@ void Cortex_A::panic()
         CPU::halt();
 }
 
-void Cortex_A::reboot()
+void Cortex::reboot()
 {
     db<Machine>(WRN) << "Machine::reboot()" << endl;
-    Cortex_A_Model::reboot();
+    Cortex_Model::reboot();
 }
 
 __END_SYS

@@ -4,17 +4,17 @@
 
 //extern "C" { void _exit(int s); }
 // The _dispatch alias shouldn't be necessary but the assembler throws an error
-// when passing Cortex_A_IC::dispatch() as an ASM input operand
-extern "C" { void _dispatch() __attribute__ ((alias("_ZN4EPOS1S11Cortex_A_IC8dispatchEv"))); }
-extern "C" { void _int_entry() __attribute__ ((alias("_ZN4EPOS1S11Cortex_A_IC5entryEv"))); }
+// when passing Cortex_IC::dispatch() as an ASM input operand
+extern "C" { void _dispatch() __attribute__ ((alias("_ZN4EPOS1S11Cortex_IC8dispatchEv"))); }
+extern "C" { void _int_entry() __attribute__ ((alias("_ZN4EPOS1S11Cortex_IC5entryEv"))); }
 
 __BEGIN_SYS
 
 // Class attributes
-Cortex_A_IC::Interrupt_Handler Cortex_A_IC::_int_vector[Cortex_A_IC::INTS];
+Cortex_IC::Interrupt_Handler Cortex_IC::_int_vector[Cortex_IC::INTS];
 
 // Class methods
-void Cortex_A_IC::entry()
+void Cortex_IC::entry()
 {
     ASM(".equ MODE_IRQ, 0x12                        \n"
         ".equ MODE_SVC, 0x13                        \n"
@@ -49,7 +49,7 @@ void Cortex_A_IC::entry()
         "ldmfd sp!, {r0-r3, r12, lr, pc}^           \n" : : "i"(dispatch));
 }
 
-void Cortex_A_IC::int_not(const Interrupt_Id & i)
+void Cortex_IC::int_not(const Interrupt_Id & i)
 {
     db<IC>(WRN) << "IC::int_not(i=" << i << ")" << endl;
 }

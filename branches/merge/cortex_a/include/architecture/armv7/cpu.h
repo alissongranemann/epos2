@@ -7,76 +7,10 @@
 
 __BEGIN_SYS
 
-class ARMv7_A
+class ARMv7_M: public CPU_Common
 {
-protected:
-    static const bool thumb_mode = false;
-
 public:
-    typedef CPU_Common::Reg32 Reg32;
-
-    // CPU Flags
-    typedef Reg32 Flags;
-    enum {
-        FLAG_USER       = 16 << 0,      // User mode
-        FLAG_FIQ        = 17 << 0,      // FIQ mode
-        FLAG_IRQ        = 18 << 0,      // IRQ mode
-        FLAG_SVC        = 19 << 0,      // SVC mode
-        FLAG_ABORT      = 23 << 0,      // Abort mode
-        FLAG_UNDEFINED  = 27 << 0,      // Undefined mode
-        FLAG_SYSTEM     = 31 << 0,      // System mode
-        FLAG_THUMB      = 1 << 5,       // Thumb state
-        FLAG_F          = 1 << 6,       // FIQ disable
-        FLAG_I          = 1 << 7,       // IRQ disable
-        FLAG_Q          = 1 << 27,      // DSP Overflow
-        FLAG_V          = 1 << 28,      // Overflow
-        FLAG_C          = 1 << 29,      // Carry
-        FLAG_Z          = 1 << 30,      // Zero
-        FLAG_N          = 1 << 31,      // Negative
-        FLAG_DEFAULTS   = FLAG_SVC
-    };
-
-    // Exceptions
-    typedef Reg32 Exception_Id;
-
-    static Flags flags() {
-        register Reg32 value;
-        ASM("mrs %0, cpsr" : "=r"(value) ::);
-        return value;
-    }
-    static void flags(const Flags & flags) {
-        ASM("msr cpsr_c, %0" : : "r"(flags) :);
-    }
-
-    static void int_enable() {
-        //ASM("mrs r0, cpsr               \n"
-            //"bic r0, r0, #0xC0          \n"
-            //"msr cpsr_c, r0             \n"
-            //: : : "r0", "cc", "memory");
-    }
-    static void int_disable() {
-        ASM("mrs r0, cpsr               \n"
-            "orr r0, r0, #0xC0          \n"
-            "msr cpsr_c, r0             \n"
-            : : : "r0", "cc", "memory");
-    }
-
-    static bool int_disabled() {
-        bool disabled;
-        ASM("mrs %0, cpsr               \n"
-            "and %0, %0, #0xC0          \n"
-            : "=r"(disabled));
-        return disabled;
-    }
-};
-
-class ARMv7_M
-{
-protected:
-    static const bool thumb_mode = true;
-
-public:
-    typedef CPU_Common::Reg32 Reg32;
+    static const bool thumb = true;
 
     // CPU Flags
     typedef Reg32 Flags;
@@ -89,6 +23,117 @@ public:
         FLAG_N          = 1 << 31,      // Negative
         FLAG_DEFAULTS   = FLAG_THUMB
     };
+
+protected:
+    ARMv7_M() {};
+
+public:
+    static Flags flags() {
+        register Reg32 value;
+        ASM("mrs %0, xpsr" : "=r"(value) :);
+        return value;
+    }
+    static void flags(const Flags & flags) {
+        ASM("msr xpsr, %0" : : "r"(flags));
+    }
+
+    static void int_enable() { ASM("cpsie i"); }
+    static void int_disable() { ASM("cpsid i"); }
+
+    static bool int_disabled() {
+        bool disabled;
+        ASM("mrs %0, primask" : "=r"(disabled));
+        return disabled;
+    }
+
+    static void mrs12() { ASM("mrs r12, xpsr" : : : "r12"); }
+    static void msr12() { ASM("msr xpsr, r12"); }
+};
+
+class ARMv7_A: public CPU_Common
+{
+public:
+    static const bool thumb = false;
+
+    // CPU Flags
+    typedef Reg32 Flags;
+    enum {
+        FLAG_M          = 0x1f << 0,       // Processor Mode
+        FLAG_T          = 1    << 5,       // Thumb state
+        FLAG_F          = 1    << 6,       // FIQ disable
+        FLAG_I          = 1    << 7,       // IRQ disable
+        FLAG_A          = 1    << 8,       // Imprecise Abort disable
+        FLAG_E          = 1    << 9,       // Endianess (0 ->> little, 1 -> big)
+        FLAG_GE         = 0xf  << 16,      // SIMD Greater than or Equal (4 bits)
+        FLAG_J          = 1    << 24,      // Jazelle state
+        FLAG_Q          = 1    << 27,      // Underflow and/or DSP saturation
+        FLAG_V          = 1    << 28,      // Overflow
+        FLAG_C          = 1    << 29,      // Carry
+        FLAG_Z          = 1    << 30,      // Zero
+        FLAG_N          = 1    << 31,      // Negative
+
+        // FLAG_M values
+        FLAG_USER       = 0x10,      // User mode
+        FLAG_FIQ        = 0x11,      // FIQ mode
+        FLAG_IRQ        = 0x12,      // IRQ mode
+        FLAG_SVC        = 0x13,      // SVC mode
+        FLAG_ABORT      = 0x17,      // Abort mode
+        FLAG_UNDEFINED  = 0x1b,      // Undefined mode
+        FLAG_SYSTEM     = 0x1f,      // System mode
+
+        FLAG_DEFAULTS   = FLAG_SVC
+    };
+
+protected:
+    ARMv7_A() {};
+
+public:
+    static Flags flags() {
+        register Reg32 value;
+        ASM("mrs %0, cpsr" : "=r"(value) :);
+        return value;
+    }
+    static void flags(const Flags & flags) {
+        ASM("msr cpsr_c, %0" : : "r"(flags));
+    }
+
+    static void int_enable() {
+        ASM("   mrs r0, cpsr               \n"
+            "   bic r0, r0, #0xC0          \n"
+            "   msr cpsr_c, r0             \n" : : : "r0", "cc");
+    }
+    static void int_disable() {
+        ASM("   mrs r0, cpsr               \n"
+            "   orr r0, r0, #0xC0          \n"
+            "   msr cpsr_c, r0             \n" : : : "r0", "cc");
+    }
+
+    static bool int_disabled() {
+        bool disabled;
+        ASM("   mrs %0, cpsr               \n"
+            "   and %0, %0, #0xC0          \n" : "=r"(disabled));
+        return disabled;
+    }
+
+    static void mrs12() { ASM("mrs r12, cpsr" : : : "r12"); }
+    static void msr12() { ASM("msr cpsr, r12"); }
+};
+
+class ARMv7: private IF<Traits<Build>::MODEL == Traits<Build>::Zynq, ARMv7_A, ARMv7_M>::Result
+{
+    friend class Init_System;
+
+private:
+    typedef IF<Traits<Build>::MODEL == Traits<Build>::Zynq, ARMv7_A, ARMv7_M>::Result Base;
+
+public:
+    // CPU Native Data Types
+    using CPU_Common::Reg8;
+    using CPU_Common::Reg16;
+    using CPU_Common::Reg32;
+    using CPU_Common::Reg64;
+    using CPU_Common::Log_Addr;
+    using CPU_Common::Phy_Addr;
 
     // Exceptions
     typedef Reg32 Exception_Id;
@@ -105,57 +150,12 @@ public:
         EXC_SYSTICK     = 15    // programmable
     };
 
-    static Flags flags() {
-        register Reg32 value;
-        ASM("mrs %0, xpsr" : "=r"(value) ::);
-        return value;
-    }
-    static void flags(const Flags & flags) {
-        ASM("msr xpsr, %0" : : "r"(flags) :);
-    }
-
-    static void int_enable() {
-        ASM("cpsie i");
-    }
-    static void int_disable() {
-        ASM("cpsid i");
-    }
-
-    static bool int_disabled() {
-        bool disabled;
-        ASM("mrs %0, primask" : "=r"(disabled));
-        return disabled;
-    }
-
-    static unsigned int int_id() { return flags() & 0x3f; }
-};
-
-class ARMv7: private CPU_Common, public IF<Traits<Build>::MACHINE == Traits<Build>::Cortex_A, ARMv7_A, ARMv7_M>::Result
-{
-    typedef IF<Traits<Build>::MACHINE == Traits<Build>::Cortex_A, ARMv7_A, ARMv7_M>::Result Base;
-
-    friend class Init_System;
-
-public:
-    // CPU Native Data Types
-    using CPU_Common::Reg8;
-    using CPU_Common::Reg16;
-    using CPU_Common::Log_Addr;
-    using CPU_Common::Phy_Addr;
-
-    typedef Base::Reg32 Reg32;
-
-    // CPU Flags
-    typedef Base::Flags Flags;
-
-    // Exceptions
-    typedef Base::Exception_Id Exception_Id;
-
     // CPU Context
     class Context
     {
     public:
-        Context(const Log_Addr & entry, const Log_Addr & exit): _psr(ARMv7_A::FLAG_DEFAULTS), _lr(exit | (thumb_mode ? 1 : 0)), _pc(entry | (thumb_mode ? 1 : 0)) {}
+        Context(const Log_Addr & entry, const Log_Addr & exit): _flags(FLAG_DEFAULTS), _lr(exit | (thumb ? 1 : 0)), _pc(entry | (thumb ? 1 : 0)) {}
+//        _r0(0), _r1(1), _r2(2), _r3(3), _r4(4), _r5(5), _r6(6), _r7(7), _r8(8), _r9(9), _r10(10), _r11(11), _r12(12),
 
         void save() volatile  __attribute__ ((naked));
         void load() const volatile;
@@ -178,13 +178,13 @@ public:
                << ",sp="  << &c
                << ",lr="  << c._lr
                << ",pc="  << c._pc
-               << ",psr=" << c._psr
+               << ",psr=" << c._flags
                << "}" << dec;
             return db;
         }
 
     public:
-        Reg32 _psr;
+        Reg32 _flags;
         Reg32 _r0;
         Reg32 _r1;
         Reg32 _r2;
@@ -217,7 +217,12 @@ public:
     static Hertz clock() { return _cpu_clock; }
     static Hertz bus_clock() { return _bus_clock; }
 
+    using Base::flags;
+
+    using Base::int_enable;
+    using Base::int_disable;
     static bool int_enabled() { return !int_disabled(); }
+    using Base::int_disabled;
 
     static void halt() { ASM("wfi"); }
 
@@ -228,7 +233,7 @@ public:
 
     static Reg32 sp() {
         Reg32 value;
-        ASM("mov %0, sp" : "=r"(value) : : );
+        ASM("mov %0, sp" : "=r"(value) :);
         return value;
     }
     static void sp(const Reg32 & sp) {
@@ -238,17 +243,16 @@ public:
 
     static Reg32 fr() {
         Reg32 value;
-        ASM("mov %0, r0" : "=r" (value) : : "r0");
+        ASM("mov %0, r0" : "=r"(value));
         return value;
     }
     static void fr(const Reg32 & fr) {
         ASM("mov r0, %0" : : "r"(fr) : "r0");
     }
 
-    static Log_Addr ip() // due to RISC pipelining PC is read with a +8 (4 for thumb) offset
-    {
+    static Log_Addr ip() {// due to RISC pipelining PC is read with a +8 (4 for thumb) offset
         Reg32 value;
-        ASM("mov %0, pc" : "=r"(value) : :);
+        ASM("mov %0, pc" : "=r"(value) :);
         return value;
     }
 

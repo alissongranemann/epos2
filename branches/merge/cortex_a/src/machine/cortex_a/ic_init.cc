@@ -6,7 +6,7 @@
 
 __BEGIN_SYS
 
-void Cortex_A_IC::init()
+void Cortex_IC::init()
 {
     db<Init, IC>(TRC) << "IC::init()" << endl;
 

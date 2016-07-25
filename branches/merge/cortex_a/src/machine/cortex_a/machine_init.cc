@@ -4,16 +4,16 @@
 
 __BEGIN_SYS
 
-void Cortex_A::init()
+void Cortex::init()
 {
-    db<Init, Cortex_A>(TRC) << "Cortex_A::init()" << endl;
+    db<Init, Cortex>(TRC) << "Cortex::init()" << endl;
 
-    Cortex_A_Model::init();
+    Cortex_Model::init();
 
-    if(Traits<Cortex_A_IC>::enabled)
-        Cortex_A_IC::init();
-    if(Traits<Cortex_A_Timer>::enabled)
-        Cortex_A_Timer::init();
+    if(Traits<Cortex_IC>::enabled)
+        Cortex_IC::init();
+    if(Traits<Cortex_Timer>::enabled)
+        Cortex_Timer::init();
 }
 
 __END_SYS

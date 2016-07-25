@@ -1,8 +1,5 @@
 // EPOS IP Protocol Initialization
 
-#include <system/config.h>
-#ifndef __no_networking__
-
 #include <ip.h>
 
 __BEGIN_SYS
@@ -40,5 +37,3 @@ void IP::init(unsigned int unit)
 }
 
 __END_SYS
-
-#endif

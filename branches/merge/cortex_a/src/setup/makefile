@@ -6,7 +6,7 @@ TARGET := $(if $(shell find $(MACH)* 2> /dev/null), $(if $(SETUP_ADDR), install,
 
 all:		$(TARGET)
 
-cortex_m_setup.o: cortex_m_setup.s
+$(MACH)_setup.o: $(MACH)_setup.s
 		sed -e 's/MEM_TOP/$(call GETTK,MEM_TOP,$(MACH_TRAITS))/' -i $<
 		$(AS) $(ASFLAGS) -o $@ $<
 

@@ -1,8 +1,5 @@
 // EPOS IP Protocol Implementation
 
-#include <system/config.h>
-#ifndef __no_networking__
-
 #include <utility/string.h>
 #include <arp.h>
 #include <ip.h>
@@ -186,5 +183,3 @@ unsigned short IP::checksum(const void * data, unsigned int size)
 }
 
 __END_SYS
-
-#endif

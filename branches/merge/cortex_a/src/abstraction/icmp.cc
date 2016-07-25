@@ -1,8 +1,5 @@
 // EPOS ICMP Protocol Implementation
 
-#include <system/config.h>
-#ifndef __no_networking__
-
 #include <icmp.h>
 
 __BEGIN_SYS
@@ -61,6 +58,3 @@ void ICMP::update(IP::Observed * obs, IP::Protocol prot, NIC::Buffer * buf)
 }
 
 __END_SYS
-
-#endif
-

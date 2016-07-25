@@ -7,10 +7,10 @@
 __BEGIN_SYS
 
 // Class attributes
-Cortex_A_Timer * Cortex_A_Timer::_channels[CHANNELS];
+Cortex_Timer * Cortex_Timer::_channels[CHANNELS];
 
 // Class methods
-void Cortex_A_Timer::int_handler(const Interrupt_Id & i)
+void Cortex_Timer::int_handler(const Interrupt_Id & i)
 {
     if(_channels[SCHEDULER] && (--_channels[SCHEDULER]->_current[Machine::cpu_id()] <= 0)) {
         _channels[SCHEDULER]->_current[Machine::cpu_id()] = _channels[SCHEDULER]->_initial;

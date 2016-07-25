@@ -1,8 +1,5 @@
 // EPOS DHCP (RFCs 2131 and 2132) Protocol Implementation
 
-#include <system/config.h>
-#ifndef __no_networking__
-
 #include <dhcp.h>
 
 __BEGIN_SYS
@@ -126,5 +123,3 @@ void DHCP::Client::parse_options(Packet<> * packet, IP::Address * netmask, IP::A
 }
 
 __END_SYS
-
-#endif
