@@ -53,17 +53,15 @@ class Page_Coloring
 {
     friend class System;
 
-    friend void * ::operator new(size_t, const EPOS::Page_Coloring_Allocator &);
-    friend void * ::operator new[](size_t, const EPOS::Page_Coloring_Allocator &);
+    friend void * ::operator new(size_t, const EPOS::Color &);
+    friend void * ::operator new[](size_t, const EPOS::Color &);
 
 private:
     static const unsigned int HEAP_SIZE = Traits<Application>::HEAP_SIZE;
     static const unsigned int COLORS = Traits<MMU>::COLORS;
 
-    typedef MMU::Color Color;
-
 public:
-    static void * alloc(unsigned int bytes, const EPOS::Page_Coloring_Allocator & allocator) {
+    static void * alloc(unsigned int bytes, const EPOS::Color & allocator) {
         assert(allocator <= COLORS);
         return _heap[allocator]->alloc(bytes);
     }
@@ -78,11 +76,11 @@ protected:
 
 __END_SYS
 
-inline void * operator new(size_t bytes, const EPOS::Page_Coloring_Allocator & allocator) {
+inline void * operator new(size_t bytes, const EPOS::Color & allocator) {
     return _SYS::Page_Coloring::alloc(bytes, allocator);
 }
 
-inline void * operator new[](size_t bytes, const EPOS::Page_Coloring_Allocator & allocator) {
+inline void * operator new[](size_t bytes, const EPOS::Color & allocator) {
     return _SYS::Page_Coloring::alloc(bytes, allocator);
 }
 
