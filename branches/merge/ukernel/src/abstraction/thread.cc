@@ -19,14 +19,17 @@ Scheduler<Thread> Thread::_scheduler;
 Spin Thread::_lock;
 
 // Methods
-void Thread::constructor_prologue(unsigned int stack_size)
+void Thread::constructor_prologue(const Color & color, unsigned int stack_size)
 {
     lock();
 
     _thread_count++;
     _scheduler.insert(this);
 
-    _stack = new (SYSTEM) char[stack_size];
+    if(Traits<MMU>::colorful && color != WHITE)
+        _stack = new (color) char[stack_size];
+    else
+        _stack = new (SYSTEM) char[stack_size];
 }
 
 

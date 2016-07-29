@@ -66,11 +66,12 @@ public:
     // t = 0 => Task::self()
     // ss = 0 => user-level stack on an auto expand segment
     struct Configuration {
-        Configuration(const State & s = READY, const Criterion & c = NORMAL, Task * t = 0, unsigned int ss = STACK_SIZE)
-        : state(s), criterion(c), task(t), stack_size(ss) {}
+        Configuration(const State & s = READY, const Criterion & c = NORMAL, const Color & a = WHITE, Task * t = 0, unsigned int ss = STACK_SIZE)
+        : state(s), criterion(c), color(a), task(t), stack_size(ss) {}
 
         State state;
         Criterion criterion;
+        Color color;
         Task * task;
         unsigned int stack_size;
     };
@@ -102,7 +103,7 @@ public:
     static void exit(int status = 0);
 
 protected:
-    void constructor_prologue(unsigned int stack_size);
+    void constructor_prologue(const Color & color, unsigned int stack_size);
     void constructor_epilogue(const Log_Addr & entry, unsigned int stack_size);
 
     static Thread * volatile running() { return _scheduler.chosen(); }
@@ -170,7 +171,7 @@ template<typename ... Tn>
 inline Thread::Thread(int (* entry)(Tn ...), Tn ... an)
 : _task(Task::self()), _user_stack(0), _state(READY), _waiting(0), _joining(0), _link(this, NORMAL)
 {
-    constructor_prologue(STACK_SIZE);
+    constructor_prologue(WHITE, STACK_SIZE);
     _context = CPU::init_stack(0, _stack + STACK_SIZE, &__exit, entry, an ...);
     constructor_epilogue(entry, STACK_SIZE);
 }
@@ -180,7 +181,7 @@ inline Thread::Thread(const Configuration & conf, int (* entry)(Tn ...), Tn ... 
 : _task(conf.task ? conf.task : Task::self()), _state(conf.state), _waiting(0), _joining(0), _link(this, conf.criterion)
 {
     if(multitask && !conf.stack_size) { // Auto-expand, user-level stack
-        constructor_prologue(STACK_SIZE);
+        constructor_prologue(conf.color, STACK_SIZE);
         _user_stack = new (SYSTEM) Segment(USER_STACK_SIZE);
 
         // Attach the thread's user-level stack to the current address space so we can initialize it
@@ -205,7 +206,7 @@ inline Thread::Thread(const Configuration & conf, int (* entry)(Tn ...), Tn ... 
         // Initialize the thread's system-level stack
         _context = CPU::init_stack(usp, _stack + STACK_SIZE, &__exit, entry, an ...);
     } else {
-        constructor_prologue(conf.stack_size);
+        constructor_prologue(conf.color, conf.stack_size);
         _user_stack = 0;
         _context = CPU::init_stack(0, _stack + conf.stack_size, &__exit, entry, an ...);
     }
