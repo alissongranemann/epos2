@@ -1,4 +1,4 @@
-# EPOS PC Machine Makefile
+# EPOS Cortex Machine Makefile
 
 include ../../../makedefs
 
@@ -7,12 +7,9 @@ INITS := $(subst .cc,.o,$(shell find *.cc | grep _init))
 
 all:		$(LIBMACH) $(LIBINIT)
 
-$(LIBMACH):	$(LIBMACH)($(OBJS))	
+$(LIBMACH):	$(LIBMACH)($(OBJS))
 
 $(LIBINIT):	$(LIBINIT)($(INITS))
-
-pc_interrupt.o	: pc_interrupt.cc
-		$(CXX) $(CXXFLAGS) -fomit-frame-pointer $<
 
 clean:
 		$(CLEAN) *.o *_test
