@@ -111,6 +111,8 @@ public:
     static void enable() { scs(STCTRL) |= ENABLE; }
     static void disable() { scs(STCTRL) &= ~ENABLE; }
 
+    static void isr_clr() {}
+
     static void init(unsigned int f) {
         scs(STCTRL) = 0;
         scs(STCURRENT) = 0;
@@ -235,6 +237,8 @@ private:
     static Count freq2count(const Hertz & f) { return f ? Engine::clock() / f : 0;}
 
     static void int_handler(const Interrupt_Id & i);
+
+    static void isr_clr() { Engine::isr_clr(); }
 
     static void init();
 
