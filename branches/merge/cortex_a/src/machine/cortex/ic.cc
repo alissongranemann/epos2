@@ -5,6 +5,7 @@
 
 //extern "C" { void _exit(int s); }
 extern "C" { void _int_entry() __attribute__ ((alias("_ZN4EPOS1S9Cortex_IC5entryEv"))); }
+extern "C" { void _dispatch() __attribute__ ((alias("_ZN4EPOS1S9Cortex_IC8dispatchEj"))); }
 
 __BEGIN_SYS
 
