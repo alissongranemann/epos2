@@ -119,6 +119,7 @@ class Cortex_Display;
 class Cortex_Scratchpad;
 class Cortex_NIC;
 class Cortex_IEEE802_15_4;
+class Cortex_Ethernet;
 class Cortex_I2C;
 
 class ATmega;
@@ -134,16 +135,6 @@ class ATmega_SPI;
 class ATmega_ADC;
 class ATmega_Battery;
 class ATmega_Radio;
-
-class Cortex;
-class Cortex_IC;
-class Cortex_Timer;
-class Cortex_RTC;
-class Cortex_UART;
-class Cortex_NIC;
-class Cortex_Display;
-class Cortex_Scratchpad;
-class Cortex_Ethernet;
 
 class PCNet32;
 class C905;
