@@ -185,6 +185,8 @@ public:
 
     static Interrupt_Id int_id() { return CPU::flags() & 0x3f; }
 
+    static void init(void) {};
+
 private:
     static void unpend() {
         db<IC>(TRC) << "IC::unpend()" << endl;

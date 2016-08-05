@@ -10,6 +10,7 @@ void Cortex_IC::init()
     db<Init, IC>(TRC) << "IC::init()" << endl;
 
     CPU::int_disable(); // will be reenabled at Thread::init()
+    Engine::init();
 //    db<Init, IC>(TRC) << "IC::init:CCR = " << scs(CCR) << endl;
 //    scs(CCR) |= BASETHR; // BUG
 //    db<Init, IC>(TRC) << "IC::init:CCR = " << scs(CCR) << endl;
