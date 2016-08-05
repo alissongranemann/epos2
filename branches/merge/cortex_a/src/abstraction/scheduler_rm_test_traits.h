@@ -21,13 +21,13 @@ template<> struct Traits<Build>
     static const unsigned int MODE = LIBRARY;
 
     enum {IA32, ARMv7};
-    static const unsigned int ARCHITECTURE = IA32;
+    static const unsigned int ARCHITECTURE = ARMv7;
 
-    enum {PC, Cortex, Cortex};
-    static const unsigned int MACHINE = PC;
+    enum {PC, Cortex};
+    static const unsigned int MACHINE = Cortex;
 
-    enum {Legacy_PC, eMote3, LM3S811};
-    static const unsigned int MODEL = Legacy_PC;
+    enum {Legacy_PC, Zynq};
+    static const unsigned int MODEL = Zynq;
 
     static const unsigned int CPUS = 1;
     static const unsigned int NODES = 1; // > 1 => NETWORKING
