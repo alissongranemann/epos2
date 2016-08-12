@@ -139,21 +139,14 @@ private:
         else if(IRQS > 64) scs(IRQ_UNPEND2) = 1 << (i - 64);
     }
 
-    static void dispatch() {
-        register Interrupt_Id id = CPU::int_id();
-
-        if((id != INT_TIMER) || Traits<IC>::hysterically_debugged)
-            db<IC>(TRC) << "IC::dispatch(i=" << id << ")" << endl;
-
-        _int_vector[id](id);
-    }
-
     // Logical handlers
+    static void dispatch(unsigned int id);
     static void int_not(const Interrupt_Id & i);
     static void hard_fault(const Interrupt_Id & i);
 
     // Physical handler
     static void entry() __attribute__((naked));
+    static void exit() __attribute__((naked));
 
     static void init();
 
