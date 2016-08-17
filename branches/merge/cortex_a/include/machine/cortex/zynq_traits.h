@@ -72,6 +72,7 @@ template <> struct Traits<Cortex_UART>: public Traits<Cortex_Common>
     static const unsigned int CLOCK_DIVISOR = 20;
     static const unsigned int CLOCK = Traits<Cortex>::IO_PLL_CLOCK/CLOCK_DIVISOR;
 
+    static const unsigned int DEF_UNIT = 1;
     static const unsigned int DEF_BAUD_RATE = 115200;
     static const unsigned int DEF_DATA_BITS = 8;
     static const unsigned int DEF_PARITY = 0; // none
