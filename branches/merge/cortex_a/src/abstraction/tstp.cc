@@ -1,5 +1,8 @@
 // EPOS Trustful SpaceTime Protocol Implementation
 
+#include <system/config.h>
+#ifndef __no_networking__
+
 #include <tstp.h>
 
 __BEGIN_SYS
@@ -68,3 +71,5 @@ void TSTP::update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf)
 }
 
 __END_SYS
+
+#endif

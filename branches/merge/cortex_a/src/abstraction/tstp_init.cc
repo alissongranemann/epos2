@@ -1,5 +1,8 @@
 // EPOS Trustful SpaceTime Protocol Initialization
 
+#include <system/config.h>
+#ifndef __no_networking__
+
 #include <tstp.h>
 
 __BEGIN_SYS
@@ -18,3 +21,5 @@ void TSTP::init(unsigned int unit)
 }
 
 __END_SYS
+
+#endif

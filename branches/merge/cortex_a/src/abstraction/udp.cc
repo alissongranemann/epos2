@@ -1,5 +1,8 @@
 // EPOS UDP Protocol Implementation
 
+#include <system/config.h>
+#ifndef __no_networking__
+
 #include <udp.h>
 
 __BEGIN_SYS
@@ -156,3 +159,5 @@ void UDP::Message::sum_trailer()
 }
 
 __END_SYS
+
+#endif
