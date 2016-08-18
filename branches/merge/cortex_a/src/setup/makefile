@@ -6,6 +6,9 @@ TARGET := $(if $(shell find $(MACH)* 2> /dev/null), $(if $(SETUP_ADDR), install,
 
 all:		$(TARGET)
 
+$(MACH)_setup.s: $(MACH)_setup.S
+		$(CPP) $(CPPFLAGS) -D $(MMOD) $< -o $@
+
 $(MACH)_setup.o: $(MACH)_setup.s
 		sed -e 's/MEM_TOP/$(call GETTK,MEM_TOP,$(MACH_TRAITS))/' -i $<
 		$(AS) $(ASFLAGS) -o $@ $<
