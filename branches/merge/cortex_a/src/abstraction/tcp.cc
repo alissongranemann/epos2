@@ -1,5 +1,8 @@
 // EPOS Transmission Control Protocol (RFC 793) Implementation
 
+#include <system/config.h>
+#ifndef __no_networking__
+
 #include <tcp.h>
 
 __BEGIN_SYS
@@ -976,3 +979,5 @@ void TCP::Connection::set_timeout(const Alarm::Microsecond & time)
 }
 
 __END_SYS
+
+#endif
