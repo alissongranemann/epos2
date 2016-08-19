@@ -13,16 +13,13 @@ DEBUGGERS := $(subst 1235,1236,$(DEBUGGER))
 
 all:		strip $(IMAGE)
 
-deploy:		strip $(IMAGE)
-ifeq ($(GDB),1)
-		$(DEPLOYER) $(IMG)/$(IMAGE) 1 &
-		$(DEBUGGER) $(APP)/$(APPLICATION) &
+ifeq ($(MMOD),zynq)
+flash:		strip $(IMAGE)
+		$(FLASHER) $(IMG)/$(IMAGE)
 else
-		$(DEPLOYER) $(IMG)/$(IMAGE) 0
-endif
-
 flash:		strip $(FLASH)
 		$(FLASHER) $(IMG)/$(FLASH)
+endif
 
 run:		strip $(IMAGE)
 ifeq ($(NODES),1)

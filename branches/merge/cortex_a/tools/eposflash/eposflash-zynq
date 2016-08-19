@@ -1,14 +1,14 @@
 #!/bin/bash
 
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-BASE_INI="$DIR"/eposdeploy-zynq-base_xmd.ini
+BASE_INI="$DIR"/zynq-base_xmd.ini
 INI="$DIR"/xmd.ini
 EMPTY=empty
 
-APP=$1
-GDB=$2
-BIT=$3
-PBIN=$4
+APP=$4
+GDB=0
+BIT=
+PBIN=
 
 # Check if xmd is on $PATH
 hash xmd > /dev/null 2>/dev/null

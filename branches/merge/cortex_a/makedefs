@@ -108,7 +108,6 @@ pc_LD_FLAGS             :=
 pc_EMULATOR             = qemu-system-i386 -smp $(CPUS) -m $(MEM_SIZE)k -nographic -no-reboot -fda
 pc_DEBUGGER             := gdb
 pc_FLASHER              :=
-pc_DEPLOYER             :=
 
 ifeq ($(MMOD),zynq)
 cortex_CC_FLAGS         := -mcpu=cortex-a9 -mfpu=fpa
@@ -121,7 +120,7 @@ cortex_EMULATOR         = qemu-system-arm -machine lm3s811evb -m $(MEM_SIZE)k -s
 endif
 cortex_LD_FLAGS         :=
 cortex_DEBUGGER         := arm-none-eabi-gdb
-cortex_FLASHER          = $(TOOLS)/eposflash/eposflash-$(MMOD) -d /dev/ttyACM0 -f 
+cortex_FLASHER          = $(TOOLS)/eposflash/eposflash-$(MMOD) -d /dev/ttyACM0 -f
 
 atmega_CC_FLAGS         := -mmcu=atmega128 -Wno-inline
 atmega_AS_FLAGS         := -mmcu=atmega128
@@ -129,7 +128,6 @@ atmega_LD_FLAGS         := -m avr5
 atmega_EMULATOR         =
 atmega_DEBUGGER         =
 atmega_FLASHER          = $(TOOLS)/eposflash/eposflash-$(MMOD)
-atmega_DEPLOYER         :=
 
 $(MACH)_CODE_NAME       := .init
 $(MACH)_DATA_NAME       := .data
@@ -159,8 +157,6 @@ ifneq ($(wildcard $(IMG)/$(MACH)_system),)
 MACH_DEBUGGER           := $(MACH_DEBUGGER) -ex "add-symbol-file $(call DBSEC,$(SRC)/system/$(MACH)_system,.text)"
 endif
 MACH_FLASHER            := $($(MACH)_FLASHER)
-
-MACH_DEPLOYER		:= $(TERM) $($(MACH)_DEPLOYER)
 
 # Architecture specifics
 ifeq ($(words $(call GETTK,ENDIANESS,$(TRAITS))),1)
@@ -221,8 +217,6 @@ DEBUGGER	= $(MACH_DEBUGGER)
 EMULATOR	= $(MACH_EMULATOR) 
 
 FLASHER 	= $(MACH_FLASHER) 
-
-DEPLOYER	= $(MACH_DEPLOYER) 
 
 INSTALL		:= install
 

@@ -36,16 +36,6 @@ endif
 debug1: FORCE
 		(cd img && $(MAKE) debug)
 
-deploy: FORCE
-ifndef APPLICATION
-		$(foreach app,$(APPLICATIONS),$(MAKE) APPLICATION=$(app) flash $(PRECLEAN) deploy1;)
-else
-		$(MAKE) deploy1
-endif
-
-deploy1:
-		(cd img && $(MAKE) deploy)
-
 flash: FORCE
 ifndef APPLICATION
 		$(foreach app,$(APPLICATIONS),$(MAKE) APPLICATION=$(app) $(PRECLEAN) flash1;)
