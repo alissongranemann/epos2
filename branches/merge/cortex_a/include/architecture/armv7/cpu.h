@@ -46,8 +46,10 @@ public:
         return disabled;
     }
 
-    static void mrs12() { ASM("mrs r12, xpsr" : : : "r12"); }
+    static void mrs12() { ASM("mrs r12, xpsr" : : "r12"); }
     static void msr12() { ASM("msr xpsr, r12"); }
+
+    static unsigned int int_id() { return flags() & 0x3f; }
 };
 
 class ARMv7_A: public CPU_Common
@@ -117,6 +119,8 @@ public:
 
     static void mrs12() { ASM("mrs r12, cpsr" : : : "r12"); }
     static void msr12() { ASM("msr cpsr, r12"); }
+
+    static unsigned int int_id() { return 0; }
 };
 
 class ARMv7: private IF<Traits<Build>::MODEL == Traits<Build>::Zynq, ARMv7_A, ARMv7_M>::Result
@@ -131,7 +135,6 @@ public:
     using CPU_Common::Reg8;
     using CPU_Common::Reg16;
     using CPU_Common::Reg32;
-    using CPU_Common::Reg64;
     using CPU_Common::Log_Addr;
     using CPU_Common::Phy_Addr;
 
