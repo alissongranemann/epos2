@@ -46,7 +46,7 @@ public:
         return disabled;
     }
 
-    static void mrs12() { ASM("mrs r12, xpsr" : : "r12"); }
+    static void mrs12() { ASM("mrs r12, xpsr" : : : "r12" ); }
     static void msr12() { ASM("msr xpsr, r12"); }
 
     static unsigned int int_id() { return flags() & 0x3f; }
@@ -135,6 +135,7 @@ public:
     using CPU_Common::Reg8;
     using CPU_Common::Reg16;
     using CPU_Common::Reg32;
+    using CPU_Common::Reg64;
     using CPU_Common::Log_Addr;
     using CPU_Common::Phy_Addr;
 
