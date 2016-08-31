@@ -45,6 +45,7 @@ public:
             SYS  = (PRE | RW  | ACC),
             PCI  = (SYS | PCD | IO),
             APIC = (SYS | PCD),
+            IO_APIC = (SYS | PCD),
             VGA = (SYS | PCD),
             DMA  = (SYS | PCD | CT),
         };
