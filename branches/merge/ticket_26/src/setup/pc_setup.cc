@@ -145,7 +145,7 @@ PC_Setup::PC_Setup(char * boot_image)
     PC_Display::init(VGA_PHY); // Display can be Serial_Display, so PC_Display here!
 
     if(si->bm.n_cpus > Traits<PC>::CPUS)
- 	si->bm.n_cpus = Traits<PC>::CPUS;
+        si->bm.n_cpus = Traits<PC>::CPUS;
 
     // Multicore conditional start up
     int cpu_id = Machine::cpu_id();
@@ -166,7 +166,7 @@ PC_Setup::PC_Setup(char * boot_image)
         // Calibrate timers
         calibrate_timers();
 
-    	// Build the memory model
+        // Build the memory model
         build_lm();
         build_pmm();
 
@@ -195,10 +195,10 @@ PC_Setup::PC_Setup(char * boot_image)
         bi = reinterpret_cast<char *>(unsigned(bi) | PHY_MEM);
         si = reinterpret_cast<System_Info<PC> *>(SYS_INFO);
         PC_Display::init(Memory_Map<PC>::VGA); // Display can be Serial_Display, so PC_Display here!
- 	APIC::remap(Memory_Map<PC>::APIC);
+        APIC::remap(Memory_Map<PC>::APIC);
 
         // Configure a TSS for system calls and inter-level interrupt handling
- 	setup_tss0();
+        setup_tss0();
 
         // Load EPOS parts (e.g. INIT, SYSTEM, APP)
         load_parts();
@@ -260,11 +260,11 @@ void PC_Setup::build_lm()
         si->lm.stp_code_size = stp_elf->segment_size(0);
         if(stp_elf->segments() > 1) {
             for(int i = 1; i < stp_elf->segments(); i++) {
-        	if(stp_elf->segment_type(i) != PT_LOAD)
-        	    continue;
-        	if(stp_elf->segment_address(i) < si->lm.stp_data)
-        	    si->lm.stp_data = stp_elf->segment_address(i);
-        	si->lm.stp_data_size += stp_elf->segment_size(i);
+                if(stp_elf->segment_type(i) != PT_LOAD)
+                    continue;
+                if(stp_elf->segment_address(i) < si->lm.stp_data)
+                    si->lm.stp_data = stp_elf->segment_address(i);
+                si->lm.stp_data_size += stp_elf->segment_size(i);
             }
         }
     }
@@ -289,11 +289,11 @@ void PC_Setup::build_lm()
         si->lm.ini_code_size = ini_elf->segment_size(0);
         if(ini_elf->segments() > 1) {
             for(int i = 1; i < ini_elf->segments(); i++) {
-        	if(ini_elf->segment_type(i) != PT_LOAD)
-        	    continue;
-        	if(ini_elf->segment_address(i) < si->lm.ini_data)
-        	    si->lm.ini_data = ini_elf->segment_address(i);
-        	si->lm.ini_data_size += ini_elf->segment_size(i);
+                if(ini_elf->segment_type(i) != PT_LOAD)
+                    continue;
+                if(ini_elf->segment_address(i) < si->lm.ini_data)
+                    si->lm.ini_data = ini_elf->segment_address(i);
+                si->lm.ini_data_size += ini_elf->segment_size(i);
             }
         }
     }
@@ -320,11 +320,11 @@ void PC_Setup::build_lm()
         si->lm.sys_code_size = sys_elf->segment_size(0);
         if(sys_elf->segments() > 1) {
             for(int i = 1; i < sys_elf->segments(); i++) {
-        	if(sys_elf->segment_type(i) != PT_LOAD)
-        	    continue;
-        	if(sys_elf->segment_address(i) < si->lm.sys_data)
-        	    si->lm.sys_data = sys_elf->segment_address(i);
-        	si->lm.sys_data_size += sys_elf->segment_size(i);
+                if(sys_elf->segment_type(i) != PT_LOAD)
+                    continue;
+                if(sys_elf->segment_address(i) < si->lm.sys_data)
+                    si->lm.sys_data = sys_elf->segment_address(i);
+                si->lm.sys_data_size += sys_elf->segment_size(i);
             }
         }
 
@@ -368,11 +368,11 @@ void PC_Setup::build_lm()
         si->lm.app_code_size = app_elf->segment_size(0);
         if(app_elf->segments() > 1) {
             for(int i = 1; i < app_elf->segments(); i++) {
-        	if(app_elf->segment_type(i) != PT_LOAD)
-        	    continue;
-        	if(app_elf->segment_address(i) < si->lm.app_data)
-        	    si->lm.app_data = app_elf->segment_address(i);
-        	si->lm.app_data_size += app_elf->segment_size(i);
+                if(app_elf->segment_type(i) != PT_LOAD)
+                    continue;
+                if(app_elf->segment_address(i) < si->lm.app_data)
+                    si->lm.app_data = app_elf->segment_address(i);
+                si->lm.app_data_size += app_elf->segment_size(i);
             }
         }
         if(Traits<System>::multiheap) { // Application heap in data segment
@@ -474,7 +474,7 @@ void PC_Setup::build_pmm()
     } else {
         si->pmm.ext_base = 0;
         si->pmm.ext_top = 0;
-    }	
+    }
 }
 
 //========================================================================
@@ -537,8 +537,8 @@ void PC_Setup::say_hi()
     // Test if we didn't overlap SETUP and the boot image
     if(si->pmm.mem_top
        <= si->lm.stp_code + si->lm.stp_code_size + si->lm.stp_data_size) {
-  	db<Setup>(ERR) << "SETUP would have been overwritten!" << endl;
-  	panic();
+        db<Setup>(ERR) << "SETUP would have been overwritten!" << endl;
+        panic();
     }
 }
 
@@ -635,27 +635,27 @@ void PC_Setup::setup_gdt()
 void PC_Setup::setup_sys_pt()
 {
     db<Setup>(TRC) << "setup_sys_pt(pmm={idt=" << (void *)si->pmm.idt
-        	   << ",gdt="  << (void *)si->pmm.gdt
-        	   << ",pt="   << (void *)si->pmm.sys_pt
-        	   << ",pd="   << (void *)si->pmm.sys_pd
-        	   << ",info=" << (void *)si->pmm.sys_info
-        	   << ",tss0=" << Phy_Addr(si->pmm.tss0)
-        	   << ",mem="  << (void *)si->pmm.phy_mem_pts
-        	   << ",io="   << (void *)si->pmm.io_pts
-        	   << ",sysc=" << (void *)si->pmm.sys_code
-        	   << ",sysd=" << (void *)si->pmm.sys_data
-        	   << ",syss=" << (void *)si->pmm.sys_stack
-        	   << ",memb=" << (void *)si->pmm.mem_base
-        	   << ",memt=" << (void *)si->pmm.mem_top
-        	   << ",fr1b=" << (void *)si->pmm.free1_base
-        	   << ",fr1t=" << (void *)si->pmm.free1_top
-        	   << ",fr2b=" << (void *)si->pmm.free2_base
-        	   << ",fr2t=" << (void *)si->pmm.free2_top
-        	   << "}"
-        	   << ",code_size=" << MMU::pages(si->lm.sys_code_size)
-        	   << ",data_size=" << MMU::pages(si->lm.sys_data_size)
-        	   << ",stack_size=" << MMU::pages(si->lm.sys_stack_size)
-        	   << ")" << endl;
+                   << ",gdt="  << (void *)si->pmm.gdt
+                   << ",pt="   << (void *)si->pmm.sys_pt
+                   << ",pd="   << (void *)si->pmm.sys_pd
+                   << ",info=" << (void *)si->pmm.sys_info
+                   << ",tss0=" << Phy_Addr(si->pmm.tss0)
+                   << ",mem="  << (void *)si->pmm.phy_mem_pts
+                   << ",io="   << (void *)si->pmm.io_pts
+                   << ",sysc=" << (void *)si->pmm.sys_code
+                   << ",sysd=" << (void *)si->pmm.sys_data
+                   << ",syss=" << (void *)si->pmm.sys_stack
+                   << ",memb=" << (void *)si->pmm.mem_base
+                   << ",memt=" << (void *)si->pmm.mem_top
+                   << ",fr1b=" << (void *)si->pmm.free1_base
+                   << ",fr1t=" << (void *)si->pmm.free1_top
+                   << ",fr2b=" << (void *)si->pmm.free2_base
+                   << ",fr2t=" << (void *)si->pmm.free2_top
+                   << "}"
+                   << ",code_size=" << MMU::pages(si->lm.sys_code_size)
+                   << ",data_size=" << MMU::pages(si->lm.sys_data_size)
+                   << ",stack_size=" << MMU::pages(si->lm.sys_stack_size)
+                   << ")" << endl;
 
     // Get the physical address for the System Page Table
     PT_Entry * sys_pt = reinterpret_cast<PT_Entry *>((void *)si->pmm.sys_pt);
@@ -703,11 +703,11 @@ void PC_Setup::setup_sys_pt()
 void PC_Setup::setup_sys_pd()
 {
     db<Setup>(TRC) << "setup_sys_pd(pmm={idt=" << (void *)si->pmm.idt
-        	   << ",...},mem_base=" << (void *)si->pmm.mem_base
-        	   << ",mem_top=" << (void *)si->pmm.mem_top
-        	   << ",io_base=" << (void *)si->pmm.io_base
-        	   << ",io_top=" << (void *)si->pmm.io_top
-        	   << ")" << endl;
+                   << ",...},mem_base=" << (void *)si->pmm.mem_base
+                   << ",mem_top=" << (void *)si->pmm.mem_top
+                   << ",io_base=" << (void *)si->pmm.io_base
+                   << ",io_top=" << (void *)si->pmm.io_top
+                   << ")" << endl;
 
     // Get the physical address for the System Page Directory
     PT_Entry * sys_pd = reinterpret_cast<PT_Entry *>((void *)si->pmm.sys_pd);
@@ -807,8 +807,8 @@ void PC_Setup::load_parts()
         }
         for(int i = 1; i < ini_elf->segments(); i++)
             if(ini_elf->load_segment(i) < 0) {
-        	db<Setup>(ERR) << "INIT data segment was corrupted during SETUP!" << endl;
-        	panic();
+                db<Setup>(ERR) << "INIT data segment was corrupted during SETUP!" << endl;
+                panic();
             }
     }
 
@@ -822,8 +822,8 @@ void PC_Setup::load_parts()
         }
         for(int i = 1; i < sys_elf->segments(); i++)
             if(sys_elf->load_segment(i) < 0) {
-        	db<Setup>(ERR) << "OS data segment was corrupted during SETUP!" << endl;
-        	panic();
+                db<Setup>(ERR) << "OS data segment was corrupted during SETUP!" << endl;
+                panic();
             }
     }
 
@@ -837,8 +837,8 @@ void PC_Setup::load_parts()
         }
         for(int i = 1; i < app_elf->segments(); i++)
             if(app_elf->load_segment(i) < 0) {
-        	db<Setup>(ERR) << "Application data segment was corrupted during SETUP!" << endl;
-        	panic();
+                db<Setup>(ERR) << "Application data segment was corrupted during SETUP!" << endl;
+                panic();
             }
     }
 
@@ -1013,7 +1013,7 @@ extern "C" { void _start(); }
 extern "C" { void setup(char * bi); }
 
 //========================================================================
-// _start		
+// _start
 //
 // "_start" MUST BE PC_SETUP's first function, since PC_BOOT assumes
 // offset "0" to be the entry point. It is a kind of bridge between the
@@ -1098,7 +1098,7 @@ void _start()
         // PC_BOOT arranged for this code and stored it at 0x3000
         // ipi_start() waits for cpu_status to be incremented by the finc
         // further down in this code
- 	APIC::ipi_start(0x3000, si->bm.cpu_status);
+        APIC::ipi_start(0x3000, si->bm.cpu_status);
 
         Stacks_Ready = true;
 
