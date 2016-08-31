@@ -438,7 +438,7 @@ void PC_Setup::build_pmm()
     detect_pci(&si->pmm.io_base, &si->pmm.io_top);
     unsigned int io_size = MMU::pages(si->pmm.io_top - si->pmm.io_base);
     io_size += APIC_SIZE / sizeof(Page); // Add room for APIC (4 kB, 1 page)
-    io_size += VGA_SIZE / sizeof(Page); // Add room for VGA (64 kB, 16 pages)
+    io_size += VGA_SIZE / sizeof(Page); // Add room for VGA (32 kB, 8 pages)
     top_page -= (io_size + MMU::PT_ENTRIES - 1) / MMU::PT_ENTRIES;
     si->pmm.io_pts = top_page * sizeof(Page);
 
