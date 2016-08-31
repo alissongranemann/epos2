@@ -80,12 +80,12 @@ public:
         void map(int from, int to, const IA32_Flags & flags, const Color & color) {
             Phy_Addr * addr = alloc(to - from, color);
             if(addr)
-        	remap(addr, from, to, flags);
+                remap(addr, from, to, flags);
             else
-        	for( ; from < to; from++) {
+                for( ; from < to; from++) {
                     Log_Addr * tmp = phy2log(&_entry[from]);
                     *tmp = alloc(1, color) | flags;
-        	}
+                }
         }
 
         void map_contiguous(int from, int to, const IA32_Flags & flags, const Color & color) {
@@ -113,11 +113,11 @@ public:
             db << "{\n";
             int brk = 0;
             for(unsigned int i = 0; i < PT_ENTRIES; i++)
-        	if(pt[i]) {
-        	    db << "[" << i << "]=" << pt[i] << "  ";
-        	    if(!(++brk % 4))
-        		db << "\n";
-        	}
+                if(pt[i]) {
+                    db << "[" << i << "]=" << pt[i] << "  ";
+                    if(!(++brk % 4))
+                        db << "\n";
+                }
             db << "\n}";
             return db;
         }
@@ -135,9 +135,9 @@ public:
         Chunk(unsigned int bytes, const Flags & flags, const Color & color = WHITE)
         : _from(0), _to(pages(bytes)), _pts(page_tables(_to - _from)), _flags(IA32_Flags(flags)), _pt(calloc(_pts, WHITE)) {
             if(flags & IA32_Flags::CT)
-        	_pt->map_contiguous(_from, _to, _flags, color);
+                _pt->map_contiguous(_from, _to, _flags, color);
             else
-        	_pt->map(_from, _to, _flags, color);
+                _pt->map(_from, _to, _flags, color);
         }
 
         Chunk(const Phy_Addr & phy_addr, unsigned int bytes, const Flags & flags)
@@ -167,7 +167,7 @@ public:
 
         int resize(unsigned int amount) {
             if(_flags & IA32_Flags::CT)
-        	return 0;
+                return 0;
 
             unsigned int pgs = pages(amount);
 
@@ -206,7 +206,7 @@ public:
     public:
         Directory() : _pd(calloc(1, WHITE)), _free(true) {
             for(unsigned int i = directory(PHY_MEM); i < PD_ENTRIES; i++)
-        	(*_pd)[i] = (*_master)[i];
+                (*_pd)[i] = (*_master)[i];
         }
 
         Directory(Page_Directory * pd) : _pd(pd), _free(false) {}
@@ -220,34 +220,34 @@ public:
         Log_Addr attach(const Chunk & chunk, unsigned int from = 0) {
             for(unsigned int i = from; i < PD_ENTRIES; i++)
                 if(attach(i, chunk.pt(), chunk.pts(), chunk.flags()))
-        	        return i << DIRECTORY_SHIFT;
+                    return i << DIRECTORY_SHIFT;
             return false;
         }
 
         Log_Addr attach(const Chunk & chunk, const Log_Addr & addr) {
             unsigned int from = directory(addr);
             if(!attach(from, chunk.pt(), chunk.pts(), chunk.flags()))
-        	return Log_Addr(false);
+                return Log_Addr(false);
             return from << DIRECTORY_SHIFT;
         }
 
- 	void detach(const Chunk & chunk) {
- 	    for(unsigned int i = 0; i < PD_ENTRIES; i++)
-        	if(indexes((*_pd)[i]) == indexes(chunk.pt())) {
-        	    detach(i, chunk.pt(), chunk.pts());
-        	    return;
-        	}
+        void detach(const Chunk & chunk) {
+            for(unsigned int i = 0; i < PD_ENTRIES; i++)
+                if(indexes((*_pd)[i]) == indexes(chunk.pt())) {
+                    detach(i, chunk.pt(), chunk.pts());
+                return;
+            }
             db<MMU>(WRN) << "MMU::Directory::detach(pt=" << chunk.pt() << ") failed!" << endl;
- 	}
+        }
 
- 	void detach(const Chunk & chunk, const Log_Addr & addr) {
+        void detach(const Chunk & chunk, const Log_Addr & addr) {
             unsigned int from = directory(addr);
             if(indexes((*static_cast<Log_Addr *>(phy2log(_pd)))[from]) != indexes(chunk.pt())) {
-        	db<MMU>(WRN) << "MMU::Directory::detach(pt=" << chunk.pt() << ",addr=" << addr << ") failed!" << endl;
-        	return;
+                db<MMU>(WRN) << "MMU::Directory::detach(pt=" << chunk.pt() << ",addr=" << addr << ") failed!" << endl;
+                return;
             }
             detach(from, chunk.pt(), chunk.pts());
- 	}
+        }
 
         Phy_Addr physical(const Log_Addr & addr) {
             Page_Table * pt = reinterpret_cast<Page_Table *>((void *)(*_pd)[directory(addr)]);
@@ -258,7 +258,7 @@ public:
         bool attach(unsigned int from, const Page_Table * pt, unsigned int n, IA32_Flags flags) {
             for(unsigned int i = from; i < from + n; i++)
                 if((*static_cast<Page_Directory *>(phy2log(_pd)))[i])
-        	    return false;
+                    return false;
             for(unsigned int i = from; i < from + n; i++, pt++)
                 (*static_cast<Page_Directory *>(phy2log(_pd)))[i] = Phy_Addr(pt) | flags;
             return true;
