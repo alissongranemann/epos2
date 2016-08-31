@@ -46,7 +46,7 @@ public:
         return disabled;
     }
 
-    static void mrs12() { ASM("mrs r12, xpsr" : : "r12"); }
+    static void mrs12() { ASM("mrs r12, xpsr" : : : "r12" ); }
     static void msr12() { ASM("msr xpsr, r12"); }
 
 //    static unsigned int int_id() { return flags() & 0x3f; }
