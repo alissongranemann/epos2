@@ -13,8 +13,13 @@ DEBUGGERS := $(subst 1235,1236,$(DEBUGGER))
 
 all:		strip $(IMAGE)
 
+ifeq ($(MMOD),zynq)
+flash:		strip $(IMAGE)
+		$(FLASHER) $(IMG)/$(IMAGE)
+else
 flash:		strip $(FLASH)
 		$(FLASHER) $(IMG)/$(FLASH)
+endif
 
 run:		strip $(IMAGE)
 ifeq ($(NODES),1)
