@@ -107,20 +107,19 @@ class PC_NIC;
 class PC_Ethernet;
 class PC_FPGA;
 
-class Cortex;
-class Cortex_IC;
-class Cortex_Timer;
-class Cortex_RTC;
-class Cortex_UART;
-class Cortex_USB;
-class Cortex_GPIO;
-class Cortex_EEPROM;
-class Cortex_Display;
-class Cortex_Scratchpad;
-class Cortex_NIC;
-class Cortex_IEEE802_15_4;
-class Cortex_Ethernet;
-class Cortex_I2C;
+class Cortex_M;
+class Cortex_M_IC;
+class Cortex_M_Timer;
+class Cortex_M_RTC;
+class Cortex_M_UART;
+class Cortex_M_USB;
+class Cortex_M_GPIO;
+class Cortex_M_EEPROM;
+class Cortex_M_Display;
+class Cortex_M_Scratchpad;
+class Cortex_M_NIC;
+class Cortex_M_IEEE802_15_4;
+class Cortex_M_I2C;
 
 class ATmega;
 class ATmega_IC;
@@ -141,7 +140,6 @@ class C905;
 class E100;
 class CC2538;
 class AT86RF;
-class GEM;
 
 class Serial_Display;
 class Serial_Keyboard;
@@ -185,7 +183,6 @@ class Chronometer;
 class Alarm;
 class Delay;
 
-class Ethernet;
 class Network;
 
 class ELP;
@@ -298,15 +295,14 @@ template<> struct Type<PC_Keyboard> { static const Type_Id ID = KEYBOARD_ID; };
 template<> struct Type<PC_Scratchpad> { static const Type_Id ID = SCRATCHPAD_ID; };
 template<> struct Type<PC_Ethernet> { static const Type_Id ID = NIC_ID; };
 
-template<> struct Type<Cortex> { static const Type_Id ID = MACHINE_ID; };
-template<> struct Type<Cortex_IC> { static const Type_Id ID = IC_ID; };
-template<> struct Type<Cortex_Timer> { static const Type_Id ID = TIMER_ID; };
-template<> struct Type<Cortex_UART> { static const Type_Id ID = UART_ID; };
-template<> struct Type<Cortex_RTC> { static const Type_Id ID = RTC_ID; };
-template<> struct Type<Cortex_Display> { static const Type_Id ID = DISPLAY_ID; };
-template<> struct Type<Cortex_Scratchpad> { static const Type_Id ID = SCRATCHPAD_ID; };
-template<> struct Type<Cortex_Ethernet> { static const Type_Id ID = NIC_ID; };
-template<> struct Type<Cortex_IEEE802_15_4> { static const Type_Id ID = NIC_ID; };
+template<> struct Type<Cortex_M> { static const Type_Id ID = MACHINE_ID; };
+template<> struct Type<Cortex_M_IC> { static const Type_Id ID = IC_ID; };
+template<> struct Type<Cortex_M_Timer> { static const Type_Id ID = TIMER_ID; };
+template<> struct Type<Cortex_M_UART> { static const Type_Id ID = UART_ID; };
+template<> struct Type<Cortex_M_RTC> { static const Type_Id ID = RTC_ID; };
+template<> struct Type<Cortex_M_Display> { static const Type_Id ID = DISPLAY_ID; };
+template<> struct Type<Cortex_M_Scratchpad> { static const Type_Id ID = SCRATCHPAD_ID; };
+template<> struct Type<Cortex_M_IEEE802_15_4> { static const Type_Id ID = NIC_ID; };
 
 
 template<> struct Type<Thread> { static const Type_Id ID = THREAD_ID; };

@@ -99,28 +99,22 @@ BOOT_LENGTH_MAX = $(call GETTK,BOOT_LENGTH_MAX,$(MACH_TRAITS))
 #Machine specifics
 pc_CC_FLAGS             := -Wa,--32
 pc_AS_FLAGS             := --32
-pc_LD_FLAGS             :=
+pc_LD_FLAGS             := 
 pc_EMULATOR             = qemu-system-i386 -smp $(CPUS) -m $(MEM_SIZE)k -nographic -no-reboot -fda
 pc_DEBUGGER             := gdb
 pc_FLASHER              :=
 
-ifeq ($(MMOD),zynq)
-cortex_CC_FLAGS         := -mcpu=cortex-a9 -mfpu=fpa
-cortex_AS_FLAGS         := -mcpu=cortex-a9 -mfpu=fpa
-cortex_EMULATOR         = qemu-system-arm -machine xilinx-zynq-a9 -m $(MEM_SIZE)k -serial null -serial mon:stdio -nographic -no-reboot -kernel
-else
-cortex_CC_FLAGS         := -mcpu=cortex-m3 -mthumb -mno-thumb-interwork -mfpu=fpa
-cortex_AS_FLAGS         := -mcpu=cortex-m3 -mthumb -mfpu=fpa
-cortex_EMULATOR         = qemu-system-arm -machine lm3s811evb -m $(MEM_SIZE)k -serial stdio -no-reboot -kernel
-endif
-cortex_LD_FLAGS         :=
-cortex_DEBUGGER         := arm-none-eabi-gdb
-cortex_FLASHER          = $(TOOLS)/eposflash/eposflash-$(MMOD) -d /dev/ttyACM0 -f
+cortex_m_CC_FLAGS       := -mcpu=cortex-m3 -mthumb -mno-thumb-interwork -mfpu=fpa #-Wa,-mimplicit-it=arm -marm 
+cortex_m_AS_FLAGS       := -mcpu=cortex-m3 -mthumb -mfpu=fpa
+cortex_m_LD_FLAGS       := 
+cortex_m_EMULATOR       = qemu-system-arm -cpu cortex-m3 -machine lm3s811evb -m $(MEM_SIZE)k -serial stdio -no-reboot -kernel
+cortex_m_DEBUGGER       := arm-none-eabi-gdb
+cortex_m_FLASHER        = $(TOOLS)/eposflash/eposflash-$(MMOD) -d /dev/ttyACM0 -f 
 
 atmega_CC_FLAGS         := -mmcu=atmega128 -Wno-inline
 atmega_AS_FLAGS         := -mmcu=atmega128
 atmega_LD_FLAGS         := -m avr5
-atmega_EMULATOR         =
+atmega_EMULATOR         = 
 atmega_DEBUGGER         =
 atmega_FLASHER          = $(TOOLS)/eposflash/eposflash-$(MMOD)
 

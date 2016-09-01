@@ -17,7 +17,7 @@ _start:
         cmp     r1, r2
         blt     .L1
 
-        bl      _init
+	bl      _init
 
         .align  2
         .globl  __epos_app_entry
@@ -26,5 +26,5 @@ __epos_app_entry:
         bl      __pre_main
         bl      main
         push    {r0}         // save main's return value to be used by exit()
-        bl      _fini
-        bl      _exit
+    	bl	_fini
+    	bl	_exit

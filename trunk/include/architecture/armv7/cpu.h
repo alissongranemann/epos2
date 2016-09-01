@@ -49,7 +49,7 @@ public:
     static void mrs12() { ASM("mrs r12, xpsr" : : : "r12" ); }
     static void msr12() { ASM("msr xpsr, r12"); }
 
-    static unsigned int int_id() { return flags() & 0x3f; }
+//    static unsigned int int_id() { return flags() & 0x3f; }
 };
 
 class ARMv7_A: public CPU_Common
@@ -119,23 +119,20 @@ public:
 
     static void mrs12() { ASM("mrs r12, cpsr" : : : "r12"); }
     static void msr12() { ASM("msr cpsr, r12"); }
-
-    static unsigned int int_id() { return 0; }
 };
 
-class ARMv7: private IF<Traits<Build>::MODEL == Traits<Build>::Zynq, ARMv7_A, ARMv7_M>::Result
+class ARMv7: private IF<Traits<Build>::MACHINE == Traits<Build>::Cortex_A, ARMv7_A, ARMv7_M>::Result
 {
     friend class Init_System;
 
 private:
-    typedef IF<Traits<Build>::MODEL == Traits<Build>::Zynq, ARMv7_A, ARMv7_M>::Result Base;
+    typedef IF<Traits<Build>::MACHINE == Traits<Build>::Cortex_A, ARMv7_A, ARMv7_M>::Result Base;
 
 public:
     // CPU Native Data Types
     using CPU_Common::Reg8;
     using CPU_Common::Reg16;
     using CPU_Common::Reg32;
-    using CPU_Common::Reg64;
     using CPU_Common::Log_Addr;
     using CPU_Common::Phy_Addr;
 
@@ -326,6 +323,10 @@ public:
         init_stack_helper(&ctx->_r0, an ...);
         return sp;
     }
+
+public:
+    // ARMv7 specific methods
+    static unsigned int int_id() { return flags() & 0x3f; }
 
 private:
     template<typename Head, typename ... Tail>
