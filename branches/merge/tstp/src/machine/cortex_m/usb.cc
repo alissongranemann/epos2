@@ -236,4 +236,8 @@ void Cortex_M_USB::int_handler(const IC::Interrupt_Id & interrupt)
         db<Cortex_M_USB>(TRC) << "OIF = " << flags << endl;
     }
     endpoint(index); // Restore old index
+
+    // This is a workaround for the USB interrupt. It happens too fast, so we can't run it with reentrance
+    // See src/machine/cortex_m/ic.cc
+    CPU::int_enable();
 }

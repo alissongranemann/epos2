@@ -14,11 +14,11 @@ Cortex_M_IC::Interrupt_Handler Cortex_M_IC::_int_vector[Cortex_M_IC::INTS];
 
 /*
 We need to get around Cortex M3's interrupt handling to be able to make it re-entrant
-The problem is that interrupts are handled in Handler mode, and in this mode the processor 
+The problem is that interrupts are handled in Handler mode, and in this mode the processor
 is only preempted by interrupts of higher (not equal!) priority.
-Moreover, the processor automatically pushes information into the stack when an interrupt happens, 
+Moreover, the processor automatically pushes information into the stack when an interrupt happens,
 and it only pops this information and gets out of Handler mode when a specific value (called EXC_RETURN)
-is loaded to PC, representing the final return from the interrupt handler. 
+is loaded to PC, representing the final return from the interrupt handler.
 When an interrupt happens, the processor pushes this information into the current stack:
 
    (1) Stack pushed by processor
@@ -26,47 +26,47 @@ When an interrupt happens, the processor pushes this information into the curren
 SP + 32  |<alignment>| (one word of padding if necessary, to make the stack 8-byte-aligned)
          +-----------+
 SP + 28  |xPSR       | (with bit 9 set if there is alignment)
-         +-----------+ 
+         +-----------+
 SP + 24  |PC         | (return address)
          +-----------+
 SP + 20  |LR         | (link register before being overwritten with EXC_RETURN)
-         +-----------+ 
+         +-----------+
 SP + 16  |R12        | (general purpose register 12)
-         +-----------+ 
+         +-----------+
 SP + 12  |R3         | (general purpose register 3)
-         +-----------+ 
+         +-----------+
 SP +  8  |R2         | (general purpose register 2)
-         +-----------+ 
+         +-----------+
 SP +  4  |R1         | (general purpose register 1)
-         +-----------+ 
+         +-----------+
 SP       |R0         | (general purpose register 0)
-         +-----------+ 
+         +-----------+
 
-Also, it enters Handler mode and the value of LR is overwritten with EXC_RETURN 
+Also, it enters Handler mode and the value of LR is overwritten with EXC_RETURN
 (in our case, it is always 0xFFFFFFF9).
 To execute dispatch() in Thread mode, which is preemptable, we extend this stack with the following:
 
    (2) Stack built to make the processor execute dispatch() outside of Handler mode
          +-----------+
 SP + 28  |1 << 24    | (xPSR with Thumb bit set (the only mandatory bit for Cortex-M3))
-         +-----------+ 
+         +-----------+
 SP + 24  |dispatch   | (address of the actual dispatch method)
          +-----------+
 SP + 20  |exit       | (address of the interrupt epilogue)
-         +-----------+ 
+         +-----------+
 SP + 16  |Don't Care | (general purpose register 12)
-         +-----------+ 
+         +-----------+
 SP + 12  |Don't Care | (general purpose register 3)
-         +-----------+ 
+         +-----------+
 SP +  8  |Don't Care | (general purpose register 2)
-         +-----------+ 
+         +-----------+
 SP +  4  |Don't Care | (general purpose register 1)
-         +-----------+ 
+         +-----------+
 SP       |int_id     | (to be passed as argument to dispatch())
-         +-----------+ 
+         +-----------+
 
 And then load EXC_RETURN into pc. This will cause stack (2) to the popped.
-The stack will return to state (1), the processor will be in Thread mode, and the following 
+The stack will return to state (1), the processor will be in Thread mode, and the following
 registers of interest will be updated:
     r0 = int_id
     pc = dispatch
@@ -87,13 +87,19 @@ More information can be found at:
 void Cortex_M_IC::entry() // __attribute__((naked));
 {
     // Building the fake stack (1)
-    ASM("   mov     r3, #1             \n"
+    ASM(
+        "   mrs     r0, xpsr           \n"
+        "   and     r0, #0x3f          \n" // Store int_id in r0 (which will be passed as argument to dispatch())
+        // FIXME: This is a workaround for the USB interrupt (60). It happens too fast, so we can't run it with reentrance
+        "   cmp     r0, 60             \n" // FIXME
+        "   bne     NODISABLE          \n" // FIXME
+        "   cpsid   i                  \n" // FIXME
+        "NODISABLE:                    \n" // FIXME
+        "   mov     r3, #1             \n"
         "   lsl     r3, #24            \n" // xPSR with Thumb bit only. Other bits are Don't Care
         "   ldr     r2, =_int_dispatch \n" // Fake PC (will cause dispatch() to execute after entry())
         "   ldr     r1, =_int_exit     \n" // Fake LR (will cause exit() to execute after dispatch())
         "   push    {r1-r3}            \n" // Fake stack (2): xPSR, PC, LR
-        "   mrs     r0, xpsr           \n"
-        "   and     r0, #0x3f          \n" // Store int_id in r0 (which will be passed as argument to dispatch())
         "   push    {r0-r3, r12}       \n" // Push rest of fake stack (2)
         "   bx      lr                 \n" // Return from handler mode. Will proceed to dispatch()
        );
