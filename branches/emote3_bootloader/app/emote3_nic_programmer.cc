@@ -16,9 +16,9 @@ public:
     typedef IEEE802_15_4::Observed Observed;
 
     Receiver(const Protocol & p, NIC * nic) : _prot(p), _nic(nic)
-    {        
-        _nic->attach(this, _prot);        
-    }   
+    {
+        _nic->attach(this, _prot);
+    }
 
     void update(Observed * o, Protocol p, Buffer * b)
     {
@@ -41,6 +41,14 @@ private:
 int main()
 {
     GPIO led('c',3,GPIO::OUTPUT);
+    GPIO * reset_mote[9];
+    for(int i =0; i<8; i++) {
+        reset_mote[i] = new GPIO('B',i,GPIO::OUTPUT);
+        reset_mote[i]->set(true);
+    }
+    reset_mote[8] = new GPIO('D',0,GPIO::OUTPUT);
+    reset_mote[8]->set(true);
+
     led.set(false);
     while(!eMote3_USB::initialized());
     for(unsigned int i=0; i<10; i++)
@@ -57,9 +65,16 @@ int main()
     char buffer[MESSAGE_SIZE];
     while(true)
     {
-        while(eMote3_USB::get_data(buffer, MESSAGE_SIZE) != MESSAGE_SIZE);
-        nic.send(nic.broadcast(), BOOTLOADER_PROTOCOL, buffer, MESSAGE_SIZE);
+        int size = eMote3_USB::get_data(buffer, MESSAGE_SIZE);
+        if(size == MESSAGE_SIZE)
+            nic.send(nic.broadcast(), BOOTLOADER_PROTOCOL, buffer, MESSAGE_SIZE);
+        else if(size == 3 && buffer[0] == 'C' && buffer[1] == 'R' && buffer[2] >= '0' && buffer[2] <= '8') {
+            GPIO * reset = reset_mote[buffer[2] - '0'];
+            reset->set(false);
+            eMote3_GPTM::delay(1000);
+            reset->set(true);
+        }
     }
-    
+
     return 0;
 }
