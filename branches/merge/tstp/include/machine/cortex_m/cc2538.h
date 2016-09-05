@@ -470,18 +470,19 @@ public:
         return acked;
     }
 
-    bool tx_done() {
+    //FIXME: this doesn't work without the noinline attribute
+    bool tx_done()__attribute__((noinline)) {
         bool ret = (sfr(RFIRQF1) & INT_TXDONE);
         if(ret)
             sfr(RFIRQF1) &= ~INT_TXDONE;
         return ret;
     }
 
-    bool rx_done() {
+    //FIXME: this doesn't work without the noinline attribute
+    bool rx_done()__attribute__((noinline)) {
         bool ret = (sfr(RFIRQF0) & INT_RXPKTDONE);
-        if(ret) {
+        if(ret)
             sfr(RFIRQF0) &= ~INT_RXPKTDONE;
-        }
         return ret;
     }
 

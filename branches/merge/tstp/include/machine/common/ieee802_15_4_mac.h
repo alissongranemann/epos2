@@ -27,8 +27,11 @@ public:
     using IEEE802_15_4::Address;
 
 protected:
-    IEEE802_15_4_MAC() {
-        Radio::promiscuous(false);
+    IEEE802_15_4_MAC() {}
+
+    // Called after the Radio's constructor
+    void constructor_epilogue() {
+        Radio::promiscuous(Traits<_API::ELP>::promiscuous);
         if(auto_listen) {
             Radio::power(Power_Mode::FULL);
             Radio::listen();
@@ -110,12 +113,15 @@ public:
         }
     }
 
-    bool filter() { return Radio::filter(); }
-
-    void copy_from_nic(Buffer * buf) {
+    bool copy_from_nic(Buffer * buf) {
         IEEE802_15_4::Phy_Frame * frame = buf->frame();
         Radio::copy_from_nic(frame);
-        buf->size(frame->length() - sizeof(Header) + sizeof(Phy_Header) - sizeof(CRC)); // Phy_Header is included in Header, but is already discounted in frame_length
+        int size = frame->length() - sizeof(Header) + sizeof(Phy_Header) - sizeof(CRC); // Phy_Header is included in Header, but is already discounted in frame_length
+        if(size > 0) {
+            buf->size(size);
+            return true;
+        } else
+            return false;
     }
 
 private:

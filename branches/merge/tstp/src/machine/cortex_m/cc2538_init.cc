@@ -29,7 +29,7 @@ CC2538::CC2538(unsigned int unit): _unit(unit), _send_lock(0), _receive_lock(0)
     // Enable auto-CRC
     xreg(FRMCTRL0) |= AUTO_CRC;
 
-    channel(15);
+    channel(13);
 
     // Enable auto ACK
     xreg(FRMCTRL0) |= AUTO_ACK;
@@ -47,6 +47,8 @@ CC2538::CC2538(unsigned int unit): _unit(unit), _send_lock(0), _receive_lock(0)
 
     // Issue the listen command
     sfr(RFST) = ISTXON;
+
+    MAC::constructor_epilogue();
 }
 
 

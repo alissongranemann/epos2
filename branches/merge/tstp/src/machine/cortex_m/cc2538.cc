@@ -40,12 +40,7 @@ int CC2538::receive(Address * src, Type * type, void * data, unsigned int size)
     unsigned int ret = 0;
 
     while(!ret) {
-        // TODO: Disabling interrupts because a deadlock will occur if a thread locks _receive_lock, then gets preempted by an interrupt that calls receive()
-        CPU::int_disable();
-        while(!CPU::tsl(_receive_lock)) {
-            CPU::int_enable();
-            CPU::int_disable();
-        }
+        while(CPU::tsl(_receive_lock));
 
         Buffer::Element * el = _received_buffers.remove_head();
         if(el) {
@@ -54,10 +49,9 @@ int CC2538::receive(Address * src, Type * type, void * data, unsigned int size)
             ret = MAC::unmarshal(buf, src, &dst, type, data, size);
             free(buf);
         } else
-            MAC::receive(); // Note that MAC::receive happens with interrupts disabled
+            MAC::receive();
 
         _receive_lock = 0;
-        CPU::int_enable();
     }
 
     db<CC2538>(INF) << "CC2538::received " << ret << " bytes" << endl;
@@ -78,14 +72,8 @@ int CC2538::send(Buffer * buf)
     db<CC2538>(TRC) << "CC2538::send(buf=" << buf << ")" << endl;
     db<CC2538>(INF) << "CC2538::send:frame=" << buf->frame() << " => " << *(buf->frame()) << endl;
 
-    // TODO: Disabling interrupts because a deadlock will occur if a thread locks _send_lock, then gets preempted by an interrupt that calls send()
-    CPU::int_disable();
-    while(!CPU::tsl(_send_lock)) {
-        CPU::int_enable();
-        CPU::int_disable();
-    }
+    while(CPU::tsl(_send_lock));
 
-    // Note that MAC::send happens with interrupts disabled
     unsigned int size = MAC::send(buf);
 
     if(size) {
@@ -95,7 +83,6 @@ int CC2538::send(Buffer * buf)
         db<CC2538>(WRN) << "CC2538::send(buf=" << buf << ")" << " => failed!" << endl;
 
     _send_lock = 0;
-    CPU::int_enable();
 
     return size;
 }
@@ -134,17 +121,25 @@ void CC2538::handle_int()
 
     if(irqrf0 & INT_FIFOP) { // Frame received
         db<CC2538>(TRC) << "CC2538::handle_int:receive()" << endl;
-        if(MAC::filter()) {
+        if(CC2538RF::filter()) {
             Buffer * buf = new (SYSTEM) Buffer(0);
-            MAC::copy_from_nic(buf);
-            db<CC2538>(TRC) << "CC2538::handle_int:receive(b=" << buf << ") => " << *buf << endl;
-            if(!notify(reinterpret_cast<Frame*>(buf->frame())->type(), buf)) {
-                // No one was waiting for this frame, so store it for receive()
-                if(_received_buffers.size() < RX_BUFS) {
-                    _received_buffers.insert(buf->link());
-                } else {
-                    delete buf;
+            if(MAC::copy_from_nic(buf)) {
+                db<CC2538>(TRC) << "CC2538::handle_int:receive(b=" << buf << ") => " << *buf << endl;
+                if(!notify(reinterpret_cast<Frame*>(buf->frame())->type(), buf)) {
+                    // No one was waiting for this frame, so store it for receive()
+                    if(_received_buffers.size() < RX_BUFS) {
+                        _received_buffers.insert(buf->link());
+                    } else {
+                        db<CC2538>(WRN) << "CC2538::handle_int: frame dropped, too many buffers in queue!"  << endl;
+                        delete buf;
+                    }
                 }
+                else {
+                    db<CC2538>(TRC) << "notified"  << endl;
+                }
+            } else {
+                db<CC2538>(TRC) << "CC2538::handle_int: frame dropped by MAC"  << endl;
+                delete buf;
             }
         }
     }
