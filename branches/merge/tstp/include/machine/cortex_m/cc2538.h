@@ -326,7 +326,8 @@ public:
         static void int_enable(const Reg32 & interrupt) { mactimer(MTIRQM) |= interrupt; }
         static void int_disable() { mactimer(MTIRQM) = INT_OVERFLOW_PER; }
 
-        static Time_Stamp us_to_ts(const Microsecond & us) { return us * CLOCK / 1000000; }
+        static Time_Stamp us_to_ts(const Microsecond & us) { return static_cast<long long>(us) * CLOCK / 1000000; }
+        static Time_Stamp ts_to_us(const Microsecond & ts) { return static_cast<long long>(ts) * 1000000 / CLOCK; }
 
     private:
         static Time_Stamp read(unsigned int sel) {
@@ -428,13 +429,13 @@ public:
         ffsm(SHORT_ADDR1) = address[1];
     }
 
-    // TODO: looks like this method is not waiting for "time"
     bool cca(const Microsecond & time) {
         listen();
         Timer::Time_Stamp end = Timer::read() + Timer::us_to_ts(time);
         while(!(xreg(RSSISTAT) & RSSI_VALID));
-        while(Timer::read() < end);
-        return xreg(FSMSTAT1) & CCA;
+        bool channel_free;
+        while((channel_free = xreg(FSMSTAT1) & CCA) && (Timer::read() < end));
+        return channel_free;
     }
 
     bool transmit() { sfr(RFST) = ISTXONCCA; return (xreg(FSMSTAT1) & SAMPLED_CCA); }
@@ -491,7 +492,7 @@ public:
             xreg(FRMFILT0) |= FRAME_FILTER_EN;
         else
             xreg(FRMFILT0) &= ~FRAME_FILTER_EN;
-    } 
+    }
 
     bool promiscuous() { return xreg(FRMFILT0) & FRAME_FILTER_EN; }
 
