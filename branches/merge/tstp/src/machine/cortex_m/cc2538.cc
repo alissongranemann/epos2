@@ -84,6 +84,8 @@ int CC2538::send(Buffer * buf)
 
     _send_lock = 0;
 
+    delete buf;
+
     return size;
 }
 

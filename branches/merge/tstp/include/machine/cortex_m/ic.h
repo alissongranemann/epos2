@@ -147,6 +147,7 @@ private:
     // Physical handler
     static void entry() __attribute__((naked));
     static void exit() __attribute__((naked));
+    static void svc_handler()__attribute__((naked));
 
     static void init();
 

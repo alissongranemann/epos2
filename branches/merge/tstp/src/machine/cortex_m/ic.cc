@@ -6,6 +6,8 @@
 extern "C" { void _int_exit() __attribute__ ((alias("_ZN4EPOS1S11Cortex_M_IC4exitEv"))); }
 extern "C" { void _int_dispatch(unsigned int id) __attribute__ ((alias("_ZN4EPOS1S11Cortex_M_IC8dispatchEj"))); }
 extern "C" { void _int_entry() __attribute__ ((alias("_ZN4EPOS1S11Cortex_M_IC5entryEv"))); }
+extern "C" { void _svc_handler() __attribute__ ((alias("_ZN4EPOS1S11Cortex_M_IC11svc_handlerEv"))); }
+
 
 __BEGIN_SYS
 
@@ -48,6 +50,8 @@ To execute dispatch() in Thread mode, which is preemptable, we extend this stack
 
    (2) Stack built to make the processor execute dispatch() outside of Handler mode
          +-----------+
+SP + 32  |EXC_RETURN | (value used later on)
+         +-----------+
 SP + 28  |1 << 24    | (xPSR with Thumb bit set (the only mandatory bit for Cortex-M3))
          +-----------+
 SP + 24  |dispatch   | (address of the actual dispatch method)
@@ -65,15 +69,26 @@ SP +  4  |Don't Care | (general purpose register 1)
 SP       |int_id     | (to be passed as argument to dispatch())
          +-----------+
 
-And then load EXC_RETURN into pc. This will cause stack (2) to the popped.
-The stack will return to state (1), the processor will be in Thread mode, and the following
-registers of interest will be updated:
+And then load EXC_RETURN into pc. This will cause stack (2) to the popped up until the EXC_RETURN value pushed.
+The stack will return to state (1) with the addition of EXC_RETURN, the processor will be in Thread mode, and
+the followingregisters of interest will be updated:
     r0 = int_id
     pc = dispatch
     lr = exit
 
-Then dispatch(int_id) will be executed and return to exit(), which manually
-unrolls stack (1) to finally return to the pre-interrupt context.
+Then dispatch(int_id) will be executed and return to exit(), which simply issues a supervisor call (SVC).
+The processor then enters handler mode and pushes a new stack like (1) to execute the SVC. The svc handler
+simply ignores this stack, sets the stack back to (1) and returns from the interrupt, making the processor
+restore the context it saved in (1).
+
+We use SVC to return because the processor does things when returning from an interrupt that are hard to be
+replicated in software. For instance, it might consistently return to the middle (not the beginning) of
+an stm (Store Multiple) instruction.
+
+Known issues:
+- If the handler executed disables interrupts, the svc instruction in exit() will cause a hard fault.
+This can be detected and revert if necessary. One would need to make the hard fault handler detect that the
+fault was generated in exit(), and in this case simply call svc_handler.
 
 More information can be found at:
 [1] ARMv7-M Architecture Reference Manual:
@@ -81,28 +96,33 @@ More information can be found at:
         Section B1.5.7 (Stack alignment on exception entry)
         Section B1.5.8 (Exception return behavior)
 [2] https://sites.google.com/site/sippeyfunlabs/embedded-system/how-to-run-re-entrant-task-scheduler-on-arm-cortex-m4
+[3] https://community.arm.com/thread/4919
 */
 
 // Class methods
 void Cortex_M_IC::entry() // __attribute__((naked));
 {
-    // Building the fake stack (1)
-    ASM(
-        "   mrs     r0, xpsr           \n"
-        "   and     r0, #0x3f          \n" // Store int_id in r0 (which will be passed as argument to dispatch())
-        // FIXME: This is a workaround for the USB interrupt (60). It happens too fast, so we can't run it with reentrance
-        "   cmp     r0, 60             \n" // FIXME
-        "   bne     NODISABLE          \n" // FIXME
-        "   cpsid   i                  \n" // FIXME
-        "NODISABLE:                    \n" // FIXME
-        "   mov     r3, #1             \n"
+    // Building the fake stack (2)
+    ASM("   mrs     r0, xpsr           \n"
+        "   and     r0, #0x3f          \n"); // Store int_id in r0 (which will be passed as argument to dispatch())
+
+    if(Traits<Cortex_M_USB>::enabled) {
+        // This is a workaround for the USB interrupt (60). It is level-enabled, so we need to process it in handler mode, otherwise the handler will never exit
+        ASM("   cmp     r0, #60            \n" // Check if this is the USB IRQ
+            "   bne     NOT_USB            \n"
+            "   b       _int_dispatch      \n" // Execute USB interrupt in handler mode
+            "   bx      lr                 \n" // Return from handler mode directly to pre-interrupt code
+            "NOT_USB:                      \n");
+    }
+
+    ASM("   mov     r3, #1             \n"
         "   lsl     r3, #24            \n" // xPSR with Thumb bit only. Other bits are Don't Care
-        "   ldr     r2, =_int_dispatch \n" // Fake PC (will cause dispatch() to execute after entry())
         "   ldr     r1, =_int_exit     \n" // Fake LR (will cause exit() to execute after dispatch())
+        "   ldr     r2, =_int_dispatch \n" // Fake PC (will cause dispatch() to execute after entry())
+        "   push    {lr}               \n" // Push EXC_RETURN code, which will be popped by svc_handler
         "   push    {r1-r3}            \n" // Fake stack (2): xPSR, PC, LR
         "   push    {r0-r3, r12}       \n" // Push rest of fake stack (2)
-        "   bx      lr                 \n" // Return from handler mode. Will proceed to dispatch()
-       );
+        "   bx      lr                 \n"); // Return from handler mode. Will proceed to dispatch()
 }
 
 void Cortex_M_IC::dispatch(unsigned int id)
@@ -116,21 +136,24 @@ void Cortex_M_IC::dispatch(unsigned int id)
 
 void Cortex_M_IC::exit() // __attribute__((naked));
 {
-    // Unrolling the fake stack (1)
-    ASM("   ldr r0, [sp, #28]    \n" // Read stacked xPSR
-        "   msr xpsr, r12        \n" // Restore xPSR
-        "   and r0, #0x200       \n" // Bit 9 indicating alignment existence
-        "   lsr r0, #7           \n" // if bit9==1 then r0=4 else r0=0
-        "   add r0, sp           \n"
-        "   add r0, #28          \n" // r0 now points to the base of the stack
-        "   ldr r1, [sp, #24]    \n" // Read stacked return address
-        "   orr r1, #1           \n" // Make sure first bit is set (Thumb requirement)
-        "   str r1, [r0]         \n" // Store return address at the base of the stack
-        "   str r0, [sp, #24]    \n" // Store address of stack base right after the remaining stacked registers
-        "   pop {r0-r3, r12, lr} \n" // Restore stacked registers
-        "   ldr sp, [sp]         \n" // Set SP to base of stack
-        "   pop {pc}             \n" // And we're back to pre-interrupt context
-       );
+    ASM("svc #7 \n"); // 7 is an arbitrary number
+    // Will enter handler mode and proceed to svc_handler()
+}
+
+void Cortex_M_IC::svc_handler()
+{
+    // Set the stack back to state (1) and tell the processor to recover the pre-interrupt context
+    ASM("   ldr r0, [sp, #28]\n" // Read stacked xPSR
+        "   and r0, #0x200   \n" // Bit 9 indicating alignment existence
+        "   lsr r0, #7       \n" // if bit9==1 then r0=4 else r0=0
+        "   add r0, sp       \n"
+        "   add r0, #32      \n" // r0 now points to were EXC_RETURN was pushed
+        "   mov sp, r0       \n" // Set stack pointer to that address
+        "   isb              \n"
+        "   pop {pc}         \n"); // Pops EXC_RETURN, so that stack is in state (1)
+                                   // Load EXC_RETURN code to pc
+                                   // Processor unrolls stack (1)
+                                   // And we're back to pre-interrupt code
 }
 
 void Cortex_M_IC::int_not(const Interrupt_Id & i)
