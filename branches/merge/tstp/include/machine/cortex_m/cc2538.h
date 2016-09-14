@@ -413,15 +413,6 @@ public:
         sfr(RFIRQF0) = 0;
         sfr(RFIRQF1) = 0;
         sfr(RFERRF) = 0;
-
-        // Enable automatic hardware handling of CRC
-        xreg(FRMCTRL0) |= AUTO_CRC;
-
-        // ACK frames are handled only when expected
-        xreg(FRMFILT1) = ~ACCEPT_FT2_ACK;
-
-        // Enable relevant interrupts
-        xreg(RFIRQM0) = INT_FIFOP;
     }
 
     void address(const IEEE802_15_4::Address & address) {
@@ -430,11 +421,13 @@ public:
     }
 
     bool cca(const Microsecond & time) {
+        xreg(FRMCTRL0) = (xreg(FRMCTRL0) & ~(3 * RX_MODE)) | (RX_MODE_NO_SYMBOL_SEARCH * RX_MODE);
         listen();
         Timer::Time_Stamp end = Timer::read() + Timer::us_to_ts(time);
         while(!(xreg(RSSISTAT) & RSSI_VALID));
         bool channel_free;
         while((channel_free = xreg(FSMSTAT1) & CCA) && (Timer::read() < end));
+        xreg(FRMCTRL0) = (xreg(FRMCTRL0) & ~(3 * RX_MODE)) | (RX_MODE_NORMAL * RX_MODE);
         return channel_free;
     }
 
@@ -442,7 +435,7 @@ public:
 
     bool wait_for_ack(const Microsecond & timeout) {
         // Disable FIFOP int. We'll poll the interrupt flag
-        xreg(RFIRQM0) &= ~INT_FIFOP;
+        xreg(RFIRQM0) &= ~INT_FRAME_ACCEPTED;
 
         // Save radio configuration
         Reg32 saved_filter_settings = xreg(FRMFILT1);
@@ -452,21 +445,20 @@ public:
         promiscuous(false);
         xreg(FRMFILT1) = ACCEPT_FT2_ACK;
 
-        // Listen
-        sfr(RFST) = ISRXON;
+        while(!tx_done());
 
         // Wait for either ACK or timeout
         bool acked = false;
-        for(Timer::Time_Stamp end = Timer::read() + Timer::us_to_ts(timeout); (Timer::read() < end) && !(acked = sfr(RFIRQF0) & INT_FIFOP););
+        for(Timer::Time_Stamp end = Timer::read() + Timer::us_to_ts(timeout); (Timer::read() < end) && !(acked = sfr(RFIRQF0) & INT_FRAME_ACCEPTED););
 
         // Restore radio configuration
         if(acked) {
             sfr(RFST) = ISFLUSHRX;
-            sfr(RFIRQF0) &= ~INT_FIFOP;
+            sfr(RFIRQF0) &= ~INT_FRAME_ACCEPTED;
         }
         xreg(FRMFILT1) = saved_filter_settings;
         promiscuous(was_promiscuous);
-        xreg(RFIRQM0) |= INT_FIFOP;
+        xreg(RFIRQM0) |= INT_FRAME_ACCEPTED;
 
         return acked;
     }
@@ -489,12 +481,12 @@ public:
 
     void promiscuous(bool on) {
         if(on)
-            xreg(FRMFILT0) |= FRAME_FILTER_EN;
-        else
             xreg(FRMFILT0) &= ~FRAME_FILTER_EN;
+        else
+            xreg(FRMFILT0) |= FRAME_FILTER_EN;
     }
 
-    bool promiscuous() { return xreg(FRMFILT0) & FRAME_FILTER_EN; }
+    bool promiscuous() { return !(xreg(FRMFILT0) & FRAME_FILTER_EN); }
 
     void listen() { sfr(RFST) = ISRXON; }
 
@@ -645,8 +637,6 @@ private:
     Address _address;
     unsigned int _channel;
     Statistics _statistics;
-    volatile bool _send_lock;
-    volatile bool _receive_lock;
 
     Buffer::List _received_buffers;
     static Device _devices[UNITS];

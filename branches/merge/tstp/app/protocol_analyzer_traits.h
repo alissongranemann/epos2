@@ -10,7 +10,7 @@ template<typename T>
 struct Traits
 {
     static const bool enabled = true;
-    static const bool debugged = false;
+    static const bool debugged = true;
     static const bool hysterically_debugged = false;
     typedef TLIST<> ASPECTS;
 };
@@ -37,8 +37,8 @@ template<> struct Traits<Build>
 // Utilities
 template<> struct Traits<Debug>
 {
-    static const bool error   = false;
-    static const bool warning = false;
+    static const bool error   = true;
+    static const bool warning = true;
     static const bool info    = false;
     static const bool trace   = false;
 };
@@ -190,7 +190,6 @@ template<> struct Traits<ELP>: public Traits<Network>
     static const bool enabled = NETWORKS::Count<ELP>::Result;
 
     static const bool acknowledged = false;
-    static const bool synchronous = false;
     static const bool promiscuous = true;
 };
 

@@ -9,7 +9,7 @@
 
 __BEGIN_SYS
 
-CC2538::CC2538(unsigned int unit): _unit(unit), _send_lock(0), _receive_lock(0)
+CC2538::CC2538(unsigned int unit): _unit(unit)
 {
     db<CC2538>(TRC) << "CC2538(unit=" << unit << ")" << endl;
 
@@ -41,12 +41,9 @@ CC2538::CC2538(unsigned int unit): _unit(unit), _send_lock(0), _receive_lock(0)
 
     // Enable useful device interrupts
     // WARNING: do not enable INT_TXDONE, because _send_and_wait handles it
-    xreg(RFIRQM0) = INT_FIFOP;
+    xreg(RFIRQM0) = INT_FRAME_ACCEPTED;
     xreg(RFIRQM1) = 0;
     xreg(RFERRM) = 0;
-
-    // Issue the listen command
-    sfr(RFST) = ISTXON;
 
     MAC::constructor_epilogue();
 }

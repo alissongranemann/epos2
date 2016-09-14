@@ -39,19 +39,12 @@ int CC2538::receive(Address * src, Type * type, void * data, unsigned int size)
 
     unsigned int ret = 0;
 
-    while(!ret) {
-        while(CPU::tsl(_receive_lock));
-
-        Buffer::Element * el = _received_buffers.remove_head();
-        if(el) {
-            Buffer * buf = el->object();
-            Address dst;
-            ret = MAC::unmarshal(buf, src, &dst, type, data, size);
-            free(buf);
-        } else
-            MAC::receive();
-
-        _receive_lock = 0;
+    Buffer::Element * el = _received_buffers.remove_head();
+    if(el) {
+        Buffer * buf = el->object();
+        Address dst;
+        ret = MAC::unmarshal(buf, src, &dst, type, data, size);
+        free(buf);
     }
 
     db<CC2538>(INF) << "CC2538::received " << ret << " bytes" << endl;
@@ -72,8 +65,6 @@ int CC2538::send(Buffer * buf)
     db<CC2538>(TRC) << "CC2538::send(buf=" << buf << ")" << endl;
     db<CC2538>(INF) << "CC2538::send:frame=" << buf->frame() << " => " << *(buf->frame()) << endl;
 
-    while(CPU::tsl(_send_lock));
-
     unsigned int size = MAC::send(buf);
 
     if(size) {
@@ -81,8 +72,6 @@ int CC2538::send(Buffer * buf)
         _statistics.tx_bytes += size;
     } else
         db<CC2538>(WRN) << "CC2538::send(buf=" << buf << ")" << " => failed!" << endl;
-
-    _send_lock = 0;
 
     delete buf;
 
@@ -121,7 +110,7 @@ void CC2538::handle_int()
     db<CC2538>(INF) << "CC2538::handle_int:RFIRQF1=" << hex << irqrf1 << endl;
     db<CC2538>(INF) << "CC2538::handle_int:RFERRF=" << hex << errf << endl;
 
-    if(irqrf0 & INT_FIFOP) { // Frame received
+    if(irqrf0 & INT_FRAME_ACCEPTED) { // Frame received
         db<CC2538>(TRC) << "CC2538::handle_int:receive()" << endl;
         if(CC2538RF::filter()) {
             Buffer * buf = new (SYSTEM) Buffer(0);
@@ -135,9 +124,6 @@ void CC2538::handle_int()
                         db<CC2538>(WRN) << "CC2538::handle_int: frame dropped, too many buffers in queue!"  << endl;
                         delete buf;
                     }
-                }
-                else {
-                    db<CC2538>(TRC) << "notified"  << endl;
                 }
             } else {
                 db<CC2538>(TRC) << "CC2538::handle_int: frame dropped by MAC"  << endl;

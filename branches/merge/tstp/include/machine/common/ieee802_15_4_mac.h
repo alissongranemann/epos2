@@ -18,10 +18,9 @@ private:
     static const unsigned int CSMA_CA_UNIT_BACKOFF_PERIOD = 320; // us
     static const unsigned int CSMA_CA_RETRIES = Traits<_API::ELP>::RETRIES > 4 ? 4 : Traits<_API::ELP>::RETRIES;
 
-    static const unsigned int ACK_TIMEOUT = 3 * 832; // us
+    static const unsigned int ACK_TIMEOUT = 352 * 2;
 
     static const bool acknowledged = Traits<_API::ELP>::acknowledged;
-    static const bool auto_listen = !Traits<_API::ELP>::synchronous; // TODO: add in all traits files
 
 public:
     using IEEE802_15_4::Address;
@@ -32,12 +31,8 @@ protected:
     // Called after the Radio's constructor
     void constructor_epilogue() {
         Radio::promiscuous(Traits<_API::ELP>::promiscuous);
-        if(auto_listen) {
-            Radio::power(Power_Mode::FULL);
-            Radio::listen();
-        } else {
-            Radio::power(Power_Mode::SLEEP);
-        }
+        Radio::power(Power_Mode::FULL);
+        Radio::listen();
     }
 
 public:
@@ -66,51 +61,26 @@ public:
     int send(Buffer * buf) {
         const bool do_ack = acknowledged && reinterpret_cast<Frame *>(buf->frame())->ack_request();
 
-        Radio::power(Power_Mode::LIGHT);
         Radio::copy_to_nic(buf->frame());
         bool sent, ack_ok;
         ack_ok = sent = backoff_and_send();
 
         if(do_ack) {
-            if(sent) {
-                while(!Radio::tx_done());
-                Radio::power(Power_Mode::FULL);
+            if(sent)
                 ack_ok = Radio::wait_for_ack(ACK_TIMEOUT);
-            }
 
             for(unsigned int i = 0; !ack_ok && (i < CSMA_CA_RETRIES); i++) {
                 db<IEEE802_15_4_MAC>(TRC) << "IEEE802_15_4_MAC::retransmitting" << endl;
-                Radio::power(Power_Mode::LIGHT);
                 ack_ok = sent = backoff_and_send();
-                if(sent) {
-                    while(!Radio::tx_done());
-                    Radio::power(Power_Mode::FULL);
+                if(sent)
                     ack_ok = Radio::wait_for_ack(ACK_TIMEOUT);
-                }
                 if(ack_ok)
                     break;
             }
         } else if(sent)
             while(!Radio::tx_done());
 
-        if(auto_listen) {
-            Radio::power(Power_Mode::FULL);
-            Radio::listen();
-        } else
-            Radio::power(Power_Mode::OFF);
-
         return ack_ok ? buf->size() : 0;
-    }
-
-    void receive() {
-        if(!auto_listen) {
-            Radio::power(Power_Mode::FULL);
-            Radio::listen();
-        }
-        while(!Radio::rx_done());
-        if(!auto_listen) {
-            Radio::power(Power_Mode::OFF);
-        }
     }
 
     bool copy_from_nic(Buffer * buf) {

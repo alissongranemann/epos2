@@ -162,13 +162,13 @@ public:
         Header() {}
 
         Header(const Type & type, const Reg8 & len)
-        : Phy_Header(len + sizeof(Header) - sizeof(Phy_Header)), _frame_control(), _sequence_number(0), _dst_pan_id(PAN_ID_BROADCAST) {};
+        : Phy_Header(len + sizeof(Header) - sizeof(Phy_Header)), _frame_control(type), _sequence_number(0), _dst_pan_id(PAN_ID_BROADCAST) {};
 
         Header(const Type & type, const Address & src, const Address & dst)
-        : Phy_Header(0 + sizeof(Header) - sizeof(Phy_Header)), _frame_control(), _sequence_number(0), _dst_pan_id(PAN_ID_BROADCAST), _dst(dst), _src(src) { ack_request(dst != broadcast()); }
+        : Phy_Header(0 + sizeof(Header) - sizeof(Phy_Header)), _frame_control(type), _sequence_number(0), _dst_pan_id(PAN_ID_BROADCAST), _dst(dst), _src(src) { ack_request(dst != broadcast()); }
 
         Header(const Type & type, const Address & src, const Address & dst, const Reg8 & len)
-        : Phy_Header(len + sizeof(Header) - sizeof(Phy_Header)), _frame_control(), _sequence_number(0), _dst_pan_id(PAN_ID_BROADCAST), _dst(dst), _src(src) { ack_request(dst != broadcast());}
+        : Phy_Header(len + sizeof(Header) - sizeof(Phy_Header)), _frame_control(type), _sequence_number(0), _dst_pan_id(PAN_ID_BROADCAST), _dst(dst), _src(src) { ack_request(dst != broadcast()); }
 
         const Address & src() const { return _src; }
         const Address & dst() const { return _dst; }
