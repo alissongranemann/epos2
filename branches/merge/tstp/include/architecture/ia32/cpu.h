@@ -366,7 +366,7 @@ public:
         return compare;
    }
 
-    static Reg32 htonl(Reg32 v) { ASM("bswap %0" : "=r" (v) : "0" (v), "r" (v)); return v; }
+    static Reg32 htonl(Reg32 v) { ASM("bswap %0" : "=r"(v) : "0"(v), "r"(v)); return v; }
     static Reg16 htons(Reg16 v) { return swap16(v); }
     static Reg32 ntohl(Reg32 v) { return htonl(v); }
     static Reg16 ntohs(Reg16 v) { return htons(v); }
@@ -429,8 +429,7 @@ public:
             "       call    1f                              \n"
             "1:     popl    %%eax       # ret. addr.        \n"
             "       movl    %%eax,%0                        \n"
-            "       popl    %%eax                           \n"
-            : "=o"(value) : );
+            "       popl    %%eax                           \n" : "=o"(value) : : "%eax");
         return value;
     }
 
@@ -531,10 +530,10 @@ public:
     }
 
     static void bts(Log_Addr addr, const int bit) {
-        ASM("bts %1,%0" : "=m"(addr) : "r" (bit));
+        ASM("bts %1,%0" : "=m"(addr) : "r"(bit));
     }
     static void btr(Log_Addr addr, const int bit) {
-        ASM("btr %1,%0" : "=m" (addr) : "r" (bit));
+        ASM("btr %1,%0" : "=m"(addr) : "r"(bit));
     }
 
     static int bsf(Log_Addr addr) {

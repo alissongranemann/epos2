@@ -412,6 +412,8 @@ public:
         // Clear interrupts
         sfr(RFIRQF0) = 0;
         sfr(RFIRQF1) = 0;
+
+        // Clear error flags
         sfr(RFERRF) = 0;
     }
 
@@ -421,21 +423,19 @@ public:
     }
 
     bool cca(const Microsecond & time) {
-        xreg(FRMCTRL0) = (xreg(FRMCTRL0) & ~(3 * RX_MODE)) | (RX_MODE_NO_SYMBOL_SEARCH * RX_MODE);
-        listen();
         Timer::Time_Stamp end = Timer::read() + Timer::us_to_ts(time);
         while(!(xreg(RSSISTAT) & RSSI_VALID));
         bool channel_free;
         while((channel_free = xreg(FSMSTAT1) & CCA) && (Timer::read() < end));
-        xreg(FRMCTRL0) = (xreg(FRMCTRL0) & ~(3 * RX_MODE)) | (RX_MODE_NORMAL * RX_MODE);
         return channel_free;
     }
 
     bool transmit() { sfr(RFST) = ISTXONCCA; return (xreg(FSMSTAT1) & SAMPLED_CCA); }
 
     bool wait_for_ack(const Microsecond & timeout) {
-        // Disable FIFOP int. We'll poll the interrupt flag
-        xreg(RFIRQM0) &= ~INT_FRAME_ACCEPTED;
+        // Disable and clear FIFOP int. We'll poll the interrupt flag
+        xreg(RFIRQM0) &= ~INT_FIFOP;
+        sfr(RFIRQF0) &= ~INT_FIFOP;
 
         // Save radio configuration
         Reg32 saved_filter_settings = xreg(FRMFILT1);
@@ -449,19 +449,21 @@ public:
 
         // Wait for either ACK or timeout
         bool acked = false;
-        for(Timer::Time_Stamp end = Timer::read() + Timer::us_to_ts(timeout); (Timer::read() < end) && !(acked = sfr(RFIRQF0) & INT_FRAME_ACCEPTED););
+        for(Timer::Time_Stamp end = Timer::read() + Timer::us_to_ts(timeout); (Timer::read() < end) && !(acked = sfr(RFIRQF0) & INT_FIFOP););
 
         // Restore radio configuration
         if(acked) {
             sfr(RFST) = ISFLUSHRX;
-            sfr(RFIRQF0) &= ~INT_FRAME_ACCEPTED;
+            sfr(RFIRQF0) &= ~INT_FIFOP;
         }
         xreg(FRMFILT1) = saved_filter_settings;
         promiscuous(was_promiscuous);
-        xreg(RFIRQM0) |= INT_FRAME_ACCEPTED;
+        xreg(RFIRQM0) |= INT_FIFOP;
 
         return acked;
     }
+
+    void listen() { sfr(RFST) = ISRXON; }
 
     //FIXME: this doesn't work without the noinline attribute
     bool tx_done()__attribute__((noinline)) {
@@ -487,8 +489,6 @@ public:
     }
 
     bool promiscuous() { return !(xreg(FRMFILT0) & FRAME_FILTER_EN); }
-
-    void listen() { sfr(RFST) = ISRXON; }
 
     void channel(unsigned int c) {
         assert((c > 10) && (c < 27));

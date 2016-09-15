@@ -12,11 +12,17 @@ unsigned int ARMv7::_bus_clock;
 // Class methods
 void ARMv7::Context::save() volatile
 {
-    ASM("       mov     r12, pc                 \n"
-        "       push    {r12}                   \n"
+    ASM("       sub     sp, #4                  \n" 
+        "       push    {r12}                    \n"
+        "       mov     r12, pc                  \n"
+        "       str     r12, [sp,#4]             \n"
+        "       pop     {r12}                    \n"
         "       push    {r0-r12, lr}            \n"
-        "       mrs     r12, xpsr               \n"
-        "       push    {r12}                   \n"
+        "       sub     sp, #4                  \n" 
+        "       push    {r12}                    \n"
+        "       mrs     r12, xpsr                \n"
+        "       str     r12, [sp,#4]             \n"
+        "       pop     {r12}                    \n"
         "       str     sp, [%0]                \n"
         : : "r"(this));
 }
@@ -35,8 +41,11 @@ void ARMv7::Context::load() const volatile
 
 void ARMv7::switch_context(Context * volatile * o, Context * volatile n)
 {
-    ASM("       adr     r12, .ret               \n"
+    ASM("       sub     sp, #4                  \n" 
         "       push    {r12}                   \n"
+        "       adr     r12, .ret               \n"
+        "       str     r12, [sp,#4]            \n"
+        "       pop     {r12}                   \n"
         "       push    {r0-r12, lr}            \n"
         "       mrs     r12, xpsr               \n"
         "       push    {r12}                   \n"
@@ -46,9 +55,12 @@ void ARMv7::switch_context(Context * volatile * o, Context * volatile n)
         "       pop     {r12}                   \n"
         "       msr     xpsr, r12               \n"
         "       pop     {r0-r12, lr}            \n"
-        "       pop     {r12}                   \n"
-        "       mov     pc, r12                 \n"     // popping directly into PC causes an Usage Fault???
-        ".ret:  bx      lr                      \n"
+        "       push    {r12}                   \n"
+        "       ldr     r12, [sp, #4]           \n"
+        "       mov     pc, r12                 \n"
+        ".ret:  pop     {r12}                   \n"
+        "       add     sp, #4                  \n"
+        "       bx      lr                      \n"
         : : "r"(o), "r"(n));
 }
 

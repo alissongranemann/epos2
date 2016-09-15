@@ -59,26 +59,38 @@ public:
     }
 
     int send(Buffer * buf) {
-        const bool do_ack = acknowledged && reinterpret_cast<Frame *>(buf->frame())->ack_request();
+        bool do_ack = acknowledged && reinterpret_cast<Frame *>(buf->frame())->ack_request();
+
+        Radio::power(Power_Mode::LIGHT);
 
         Radio::copy_to_nic(buf->frame());
         bool sent, ack_ok;
         ack_ok = sent = backoff_and_send();
 
         if(do_ack) {
-            if(sent)
+            if(sent) {
+                Radio::power(Power_Mode::FULL);
                 ack_ok = Radio::wait_for_ack(ACK_TIMEOUT);
+            }
 
             for(unsigned int i = 0; !ack_ok && (i < CSMA_CA_RETRIES); i++) {
+                Radio::power(Power_Mode::LIGHT);
                 db<IEEE802_15_4_MAC>(TRC) << "IEEE802_15_4_MAC::retransmitting" << endl;
                 ack_ok = sent = backoff_and_send();
-                if(sent)
+                if(sent) {
+                    Radio::power(Power_Mode::FULL);
                     ack_ok = Radio::wait_for_ack(ACK_TIMEOUT);
-                if(ack_ok)
-                    break;
+                }
             }
-        } else if(sent)
-            while(!Radio::tx_done());
+
+            if(!sent)
+                Radio::power(Power_Mode::FULL);
+
+        } else {
+            if(sent)
+                while(!Radio::tx_done());
+            Radio::power(Power_Mode::FULL);
+        }
 
         return ack_ok ? buf->size() : 0;
     }

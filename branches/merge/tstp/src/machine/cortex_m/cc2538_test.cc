@@ -1,3 +1,5 @@
+// EPOS TI CC2538 IEEE 802.15.4 NIC Mediator Test Program
+
 #include <utility/ostream.h>
 #include <nic.h>
 #include <gpio.h>
@@ -13,7 +15,6 @@ const static bool use_receive = true;
 bool led_value;
 GPIO * led;
 NIC::Address peer;
-volatile bool send = false;
 
 int sender(NIC * nic)
 {
@@ -24,13 +25,16 @@ int sender(NIC * nic)
     while(1)
     {
         cout << "Sending message: " << data << endl;
-        cout << "send result = ";
-        send = false;
-        cout << nic->send(peer, NIC::PTP, data, 16) << endl;
+        cout << "to " << peer << endl;
+        int send_result = nic->send(peer, NIC::PTP, data, 16);
+        cout << "send result = " << send_result << endl;
+
+        if(send_result <= 0)
+            peer = nic->broadcast();
+
         data[0] = ((data[0] - '0' + 1) % 10) + '0';
+
         Periodic_Thread::wait_next();
-        while(!send);
-        Alarm::delay(10000);
     }
     return 0;
 }
@@ -56,8 +60,6 @@ public:
         led_value = !led_value;
         led->set(led_value);
         Frame * f = reinterpret_cast<Frame *>(b->frame());
-        cout << f << endl;
-        cout << f->data<char>() << endl;
         auto d = f->data<data_type>();
         auto from = f->src();
         peer = from;
@@ -67,7 +69,6 @@ public:
             cout << d[i] << " ";
         cout << endl << "=====================" << endl;
         _nic->free(b);
-        send = true;
     }
 
 private:
@@ -98,23 +99,24 @@ int receive(NIC * nic)
             cout << data[i] << " ";
         cout << endl << "=====================" << endl;
         peer = from;
-        send = true;
     }
 }
 
 int main()
 {
+    cout << "CC2538 Radio test" << endl;
+
     led = new GPIO('C',3, GPIO::OUTPUT);
     led_value = true;
     led->set(led_value);
 
     NIC * nic = new NIC();
-    auto me = nic->address();
+    NIC::Address me = nic->address();
     me[0] = 0xaa;
     me[1] = 0;
     nic->address(me);
 
-    cout << nic->address() << endl;
+    cout << "My address is " << nic->address() << endl;
     peer = nic->broadcast();
 
     if(use_receive)

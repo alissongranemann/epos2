@@ -8,7 +8,6 @@ extern "C" { void _int_dispatch(unsigned int id) __attribute__ ((alias("_ZN4EPOS
 extern "C" { void _int_entry() __attribute__ ((alias("_ZN4EPOS1S11Cortex_M_IC5entryEv"))); }
 extern "C" { void _svc_handler() __attribute__ ((alias("_ZN4EPOS1S11Cortex_M_IC11svc_handlerEv"))); }
 
-
 __BEGIN_SYS
 
 // Class attributes

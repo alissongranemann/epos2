@@ -110,7 +110,7 @@ void CC2538::handle_int()
     db<CC2538>(INF) << "CC2538::handle_int:RFIRQF1=" << hex << irqrf1 << endl;
     db<CC2538>(INF) << "CC2538::handle_int:RFERRF=" << hex << errf << endl;
 
-    if(irqrf0 & INT_FRAME_ACCEPTED) { // Frame received
+    if(irqrf0 & INT_FIFOP) { // Frame received
         db<CC2538>(TRC) << "CC2538::handle_int:receive()" << endl;
         if(CC2538RF::filter()) {
             Buffer * buf = new (SYSTEM) Buffer(0);
