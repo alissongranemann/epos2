@@ -41,12 +41,12 @@ unsigned long IA32_MMU_Aux::physical_address(unsigned long log_addr, unsigned lo
 void IA32_MMU_Aux::dump_memory_mapping()
 {
     unsigned long phy_addr = 0x0;
-    unsigned long * page_frame_present = 0;
+    unsigned long page_frame_present = 0;
 
     for (unsigned long log_addr = 0x0; log_addr <= 0xffffefff; log_addr += 0x1000) {
-        phy_addr = physical_address(log_addr, page_frame_present);
+        phy_addr = physical_address(log_addr, &page_frame_present);
 
-        if (*page_frame_present) {
+        if (page_frame_present) {
             db<void>(WRN) << reinterpret_cast<void *>(log_addr) << ":\t" << reinterpret_cast<void *>(phy_addr) << endl;
         }
     }

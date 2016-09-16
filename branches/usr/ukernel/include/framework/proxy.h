@@ -183,7 +183,6 @@ public:
     // FPGA
     static void run() { static_invoke(FPGA_RUN); }
     static void report() { static_invoke(FPGA_REPORT); }
-    static void wait_for_transaction() { static_invoke(FPGA_WAIT_FOR_TRANSACTION); }
     static void print_configuration() { static_invoke(FPGA_PRINT_CONFIGURATION); }
 
     // UART

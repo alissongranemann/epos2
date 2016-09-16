@@ -16,6 +16,8 @@ LIB		:= $(TOP)/lib
 IMG		:= $(TOP)/img
 ETC		:= $(TOP)/etc
 DOC		:= $(TOP)/doc
+FACTORS_DIR := $(TOP)/factors
+IMAGES_DIR := $(TOP)/images
 LARCHNAME	:= arch
 LMACHNAME	:= mach
 LSYSNAME	:= sys
@@ -23,6 +25,8 @@ LINITNAME	:= init
 LUTILNAME	:= util
 
 # Makefile hacks
+FACTORS			:= $(shell find $(FACTORS_DIR) -name \*.h -printf "%f\n")
+
 APPLICATIONS	:= $(subst .cc,,$(shell find $(APP) -name \*.cc -printf "%f\n"))
 
 ifeq ($(words $(APPLICATIONS)),1)

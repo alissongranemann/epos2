@@ -202,7 +202,6 @@ public:
     // FPGA
     static void run() { _Stub::run(); }
     static void report() { _Stub::report(); }
-    static void wait_for_transaction() { _Stub::wait_for_transaction(); }
     static void print_configuration() { _Stub::print_configuration(); }
 
     // UART

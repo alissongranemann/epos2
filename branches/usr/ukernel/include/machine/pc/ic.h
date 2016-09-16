@@ -467,7 +467,7 @@ private:
 };
 
 
-class IO_APIC
+class IO_APIC // Intel 82093AA
 {
 private:
     typedef CPU::Reg8 Reg8;
@@ -477,48 +477,313 @@ private:
     typedef CPU::Log_Addr Log_Addr;
 
 public:
-    enum
+    class IO_Redirection_Table_Entry
     {
-        INDEX_REG = 0x0,
-        DATA_REG  = 0x10
+    public:
+        IO_Redirection_Table_Entry(Log_Addr base) {
+            _base = base;
+        }
+
+    private:
+        enum {
+            HIGH = 1,
+            LOW  = 0
+        };
+        // Whether field lies on the high[63:32] = 1 or low[31:0] part of the entry
+        enum {
+            DESTINATION_PART = HIGH,
+            INTMASK_PART     = LOW,
+            TRGMOD_PART      = LOW,
+            RIRR_PART        = LOW,
+            INTPOL_PART      = LOW,
+            DELIVS_PART      = LOW,
+            DESTMOD_PART     = LOW,
+            DELMOD_PART      = LOW,
+            INTVEC_PART      = LOW
+        };
+
+        // Left-shifts for writing into fields
+        enum {
+            DESTINATION_SHIFT = 24,     // Destination Field (R/W) Bit[63:56]
+            INTMASK_SHIFT     = 16,     // Interrupt Mask (R/W) Bit[16]
+            TRGMOD_SHIFT      = 15,     // Trigger Mode (R/W) Bit[15]
+            RIRR_SHIFT        = 14,     // Remote IRR (RO) Bit[14]
+            INTPOL_SHIFT      = 13,     // Interrupt Input Pin Polarity (R/W) Bit[13]
+            DELIVS_SHIFT      = 12,     // Delivery Status (RO) Bit[12]
+            DESTMOD_SHIFT     = 11,     // Destination Mode (R/W) Bit[11]
+            DELMOD_SHIFT      = 8       // Delivery Mode (R/W) Bit[10:8]
+        };
+
+        // 32-bit AND-masks (use as-it-is for reading and negate for writing)
+        enum {
+            DESTINATION       =   0xff000000, // Destination Field (R/W) Bit[63:56]
+            INTMASK           =   0x00010000, // Interrupt Mask (R/W) Bit[16]
+            TRGMOD            =   0x00008000, // Trigger Mode (R/W) Bit[15]
+            RIRR              =   0x00004000, // Remote IRR (RO) Bit[14]
+            INTPOL            =   0x00002000, // Interrupt Input Pin Polarity (R/W) Bit[13]
+            DELIVS            =   0x00001000, // Delivery Status (RO) Bit[12]
+            DESTMOD           =   0x00000800, // Destination Mode (R/W) Bit[11]
+            DELMOD            =   0x00000700, // Delivery Mode (R/W) Bit[10:8]
+            INTVEC            =   0x000000ff,  // Interrupt Vector (R/W) Bit[7:0]
+        };
+
+
+    public:
+        // Field Values: FIELDNAME_VALUEDESCRIPTION
+        enum Trigger_Mode {
+            TRGMOD_EDGE_SENSITIVE      = 0,
+            TRGMOD_LEVEL_SENSITIVE     = 1
+        };
+
+        enum Destination_Mode {
+            DESTMOD_PHY                = 0,
+            DESTMOD_LOG                = 1
+        };
+
+        enum Delivery_Mode {
+            DELMOD_FIXED               = 0x0, // Fixed
+            DELMOD_LSP                 = 0x1, // Lowest Priority
+            DELMOD_SMI                 = 0x2, // System Management Interrupt
+            DELMOD_NMI                 = 0x4, // Non-Maskable Interrupt
+            DELMOD_INT                 = 0x5, // INT
+            DELMOD_EXTINT              = 0x7  // ExtINT
+        };
+
+        enum {
+            INTMASK_MASKED             = 1,
+            INTPOL_LOW_ACTIVE          = 1
+        };
+
+    public:
+        /*! If Destination Mode is 0, Physical Mode, dest is an APIC ID
+         * (4-bit long), if Destination Mode is 1, Logical Mode, dest is an
+         * set of processors (8-bit long)
+         * */
+        void destination(Reg8 dest) {
+            ioapic_write(_base + DESTINATION_PART, ioapic_read(_base + DESTINATION_PART) & ~DESTINATION);
+            ioapic_write(_base + DESTINATION_PART, ioapic_read(_base + DESTINATION_PART) | (dest << DESTINATION_SHIFT));
+        }
+        Reg8 destination() const {
+            return (ioapic_read(_base + DESTINATION_PART) & DESTINATION) >> DESTINATION_SHIFT;
+        }
+
+        void mask_interrupt() {
+            ioapic_write(_base + INTMASK_PART, ioapic_read(_base + INTMASK_PART) | (INTMASK_MASKED << INTMASK_SHIFT));
+        }
+        void unmask_interrupt() {
+            ioapic_write(_base + INTMASK_PART, ioapic_read(_base + INTMASK_PART) & (~(INTMASK_MASKED << INTMASK_SHIFT)));
+        }
+        bool interrupt_masked() const {
+            return (ioapic_read(_base + INTMASK_PART) & INTMASK) >> INTMASK_SHIFT;
+        }
+
+        void interrupt_low_active() {
+            ioapic_write(_base + INTPOL_PART, ioapic_read(_base + INTPOL_PART) | (INTPOL_LOW_ACTIVE << INTPOL_SHIFT));
+        }
+        void interrupt_high_active() {
+            ioapic_write(_base + INTPOL_PART, ioapic_read(_base + INTPOL_PART) & (~(INTPOL_LOW_ACTIVE << INTPOL_SHIFT)));
+        }
+        /*! Returns true if interrupt input pin polarity is low active.
+         * Returns false otherwise
+         */
+        bool low_actived_interrupt() const {
+            return (ioapic_read(_base + INTPOL_PART) & INTPOL) >> INTPOL_SHIFT;
+        }
+
+        void trigger_mode(Trigger_Mode mode) {
+            if (mode == TRGMOD_LEVEL_SENSITIVE) {
+                ioapic_write(_base + TRGMOD_PART, ioapic_read(_base + TRGMOD_PART) | (TRGMOD_LEVEL_SENSITIVE << TRGMOD_SHIFT));
+            } else { // TRGMOD_EDGE_SENSITIVE
+                ioapic_write(_base + TRGMOD_PART, ioapic_read(_base + TRGMOD_PART) & (~(TRGMOD_EDGE_SENSITIVE << TRGMOD_SHIFT)));
+            }
+        }
+        /*! Returns true if trigger mode is Level Sensitive Mode.
+         * Returns and false otherwise
+         */
+        bool level_sensitive_trigger_mode() const {
+            return (ioapic_read(_base + TRGMOD_PART) & TRGMOD) >> TRGMOD_SHIFT;
+        }
+
+        void destination_mode(Destination_Mode mode) {
+            if (mode == DESTMOD_LOG) {
+                ioapic_write(_base + DESTMOD_PART, ioapic_read(_base + DESTMOD_PART) | (DESTMOD_LOG << DESTMOD_SHIFT));
+            } else { // DESTMOD_PHY
+                ioapic_write(_base + DESTMOD_PART, ioapic_read(_base + DESTMOD_PART) & (~(DESTMOD_LOG << DESTMOD_SHIFT)));
+            }
+        }
+        /*! Returns true if destination mode is Logical Mode.
+         *  Returns false otherwise.
+         */
+        bool logical_destination_mode() const {
+            return (ioapic_read(_base + DESTMOD_PART) & DESTMOD) >> DESTMOD_SHIFT;
+        }
+
+        void delivery_mode(Delivery_Mode mode) {
+            ioapic_write(_base + DELMOD_PART, ioapic_read(_base + DELMOD_PART) & (~DELMOD));
+            ioapic_write(_base + DELMOD_PART, ioapic_read(_base + DELMOD_PART) | (mode << DELMOD_SHIFT));
+        }
+        Reg8 delivery_mode() const {
+            return (ioapic_read(_base + DELMOD_PART) & DELMOD) >> DELMOD_SHIFT;
+        }
+
+        void interrupt_vector(Reg8 vector) {
+            ioapic_write(_base + INTVEC_PART, ioapic_read(_base + INTVEC_PART) & (~INTVEC));
+            ioapic_write(_base + INTVEC_PART, ioapic_read(_base + INTVEC_PART) | vector);
+        }
+        Reg8 interrupt_vector() const {
+            return ioapic_read(_base + INTVEC_PART) & INTVEC;
+        }
+
+        Reg8 delivery_status() const {
+            return (ioapic_read(_base + DELIVS_PART) & DELIVS) >> DELIVS_SHIFT;
+        }
+
+        Reg8 remote_irr() const {
+            return (ioapic_read(_base + RIRR_PART) & RIRR) >> RIRR_SHIFT;
+        }
+
+    friend Debug & operator<<(Debug & db, const IO_Redirection_Table_Entry & entry) {
+        db << "{dst = " << entry.destination()
+           << ", intvec = " << entry.interrupt_vector()
+           << ", masked = " << (entry.interrupt_masked() ? "Y" : "N")
+           << ", destmod = " << (entry.logical_destination_mode() ? "L" : "P")
+           << ", trgmod = " << (entry.level_sensitive_trigger_mode() ? "L" : "E")
+           << ", delmod = " << reinterpret_cast<void *>(entry.delivery_mode())
+           << ", delst = " << reinterpret_cast<void *>(entry.delivery_status())
+           << ", rirr = " << reinterpret_cast<void *>(entry.remote_irr())
+           << ", intpol = " << (entry.low_actived_interrupt() ? "L" : "H")
+           << "}";
+        return db;
+    }
+
+    private:
+        Log_Addr _base;
+    };
+
+    typedef IO_Redirection_Table_Entry IRT_Entry;
+
+private:
+    /* Like the local APIC, the IOAPIC is controlled via memory-mapped
+     * registers.
+     * Unlike the local APIC, however, the IOAPIC only has two 32-bit
+     * registers; an index register (IOREGSEL) and a data register (IOWIN).
+     * To access a register i, you write the value i into the index register and
+     * read/write from/to the data register.
+     * That can be accomplished by using the ioapic_read and ioapic_write
+     * methods.
+     */
+    // Memory-mapped registers for reading IO_APIC registers
+    enum {
+        IOREGSEL        = 0x00,         // I/O Register Select "INDEX_REG"  (R/W)
+        IOWIN           = 0x10          // I/O Window Register "DATA_REG"   (R/W)
+    };
+
+    // IOAPIC registers
+    enum {
+        IOAPICID        = 0x00,         // IOAPIC ID (R/W)
+        IOAPICVER       = 0x01,         // IOAPIC Version (RO)
+        IOAPICARB       = 0x02,         // IOAPIC Arbitration ID (RO)
+        IOREDTBL_BASE   = 0x10          // Base of I/O Redirection Table (IRT), Entries 0-23, 64 bits each (R/W)
+    };
+
+    // AND-masks for reading bits of the IOAPICID register
+    enum {
+        IOAPICID_ID     = 0x0f000000    // IOAPIC identification (R/W) Bit[27:24]
+    };
+
+    // AND-masks and shifts for reading bits of the IOAPICVER register
+    enum {
+        IOAPICVER_MRE   = 0x00ff0000,   // Maximum Redirection Entry in IRT (RO) Bit[23:16]
+        IOAPICVER_VER   = 0x000000ff,   // Version (RO) Bit[7:0]
+        IOAPICVER_MRE_SHIFT = 16
+    };
+
+    // AND-masks and shifts for reading bits of IOAPICARB register
+    enum {
+        IOAPICARB_ID    = 0x0f000000,    // IOAPIC Arbitration identification (R/W) Bit[27:24]
+        IOAPICARB_ID_SHIFT = 24
     };
 
 public:
-    static void remap(Log_Addr addr)
-    {
-        db<void>(TRC) << "IO_APIC::remap, addr = " << addr << endl;
+
+    /// Returns IO_APIC ID
+    static Reg32 id() {
+        return (ioapic_read(IOAPICID) & IOAPICID_ID) >> IOAPICARB_ID_SHIFT;
+    }
+
+    /// Returns Implementation Version of IO_APIC
+    static Reg32 version() {
+        return ioapic_read(IOAPICVER) & IOAPICVER_VER;
+    }
+
+    /// Returns Maximum Redirection Entry in IRT
+    /*! Returns the entry number (0 being the lowest entry) of the highest entry
+     *  in the I/O Redirection Table (IRT).
+     *  The value is equal to the number of interrupt input pins for the
+     *  IOAPIC minus one.
+     *  The range of values is 0 through 239.
+     *  For 82093AA, the value is 0x17 (23).
+     * */
+    static unsigned int maximum_redirection_entry() {
+        return (ioapic_read(IOAPICVER) & IOAPICVER_MRE) >> IOAPICVER_MRE_SHIFT;
+    }
+
+    /*
+    /// Returns the entry i of IRT
+    static Reg64 irt_entry(unsigned int i) {
+        Reg64 entry;
+        entry = ioapic_read(IOREDTBL_BASE + (i * 2));
+        entry |= ((ioapic_read(IOREDTBL_BASE + (i * 2 + 1))) << 32);
+        return entry;
+    }
+    */
+
+    /// Returns the entry i of IRT
+    static IRT_Entry irt_entry(unsigned int i) {
+        IRT_Entry entry = IRT_Entry(IOREDTBL_BASE + (i * 2));
+        return entry;
+    }
+
+    /// Returns IOAPIC arbitration ID
+    static Reg32 arbitration_id() {
+        return (ioapic_read(IOAPICARB) & IOAPICARB_ID) >> 24;
+    }
+
+    static void remap(Log_Addr addr) {
+        db<IC>(TRC) << "IO_APIC::remap, addr = " << addr << endl;
         _base = addr;
-        db<void>(TRC) << "IO_APIC::remap, _base = " << _base << endl;
+        db<IC>(TRC) << "IO_APIC::remap, _base = " << _base << endl;
     }
 
 
-    static Reg32 ioapic_read(Reg32 index)
-    {
-        db<void>(TRC) << "ioapic_read, index: " << reinterpret_cast<void *>(index) << endl;
+    static Reg32 ioapic_read(Reg32 index) {
+        db<IC>(TRC) << "ioapic_read, index: " << reinterpret_cast<void *>(index) << endl;
 
-        *reinterpret_cast<volatile Reg32 *>(_base + INDEX_REG) = index;
+        *reinterpret_cast<volatile Reg32 *>(_base + IOREGSEL) = index;
 
-        db<void>(TRC) << "indexed, will return data..." << endl;
+        db<IC>(TRC) << "indexed, will return data..." << endl;
 
-        return *reinterpret_cast<volatile Reg32 *>(_base + DATA_REG);
+        return *reinterpret_cast<volatile Reg32 *>(_base + IOWIN);
     }
 
 
-    static void ioapic_write(Reg32 index, Reg32 data)
-    {
-        db<void>(TRC) << "ioapic_write, index: " << reinterpret_cast<void *>(index) << " , data: " << data << endl;
+    static void ioapic_write(Reg32 index, Reg32 data) {
+        db<IC>(TRC) << "ioapic_write, index: " << reinterpret_cast<void *>(index) << " , data: " << data << endl;
 
-        *reinterpret_cast<volatile Reg32 *>(_base + INDEX_REG) = index;
-        *reinterpret_cast<volatile Reg32 *>(_base + DATA_REG) = data;
+        *reinterpret_cast<volatile Reg32 *>(_base + IOREGSEL) = index;
+        *reinterpret_cast<volatile Reg32 *>(_base + IOWIN) = data;
     }
 
 
-    static void set_irq(Reg8 irq, Reg64 apic_id, Reg8 vector)
-    {
-        db<void>(TRC) << "IO_APIC::set_irq, irq: " << irq << " , apic_id: " << apic_id << ", vector: " << vector << ", _base: " << _base << endl;
+    /*! Set the given IRT entry with '''apic_id''' as destination
+     * (assuming physical destination mode), sets the interrupt vector with
+     * '''vector''', set delivery mode to Fixed, and unmasks the interrupt.
+     * */
+    static void set_irt_entry(Reg8 entry_index, Reg64 apic_id, Reg8 vector) {
+        db<IC>(TRC) << "IO_APIC::set_irt_entry, entry_index: " << entry_index << " , apic_id: " << apic_id << ", vector: " << vector << ", _base: " << _base << endl;
 
-        const Reg32 low_index = 0x10 + irq*2;
-        const Reg32 high_index = 0x10 + irq*2 + 1;
+        const Reg32 low_index = 0x10 + entry_index * 2;
+        const Reg32 high_index = 0x10 + entry_index * 2 + 1;
 
         Reg32 high = ioapic_read(high_index);
         // set APIC ID
@@ -531,7 +796,7 @@ public:
         // unmask the IRQ
         low &= ~(1<<16);
 
-        // set to physical delivery mode
+        // set to physical destination mode
         low &= ~(1<<11);
 
         // set to fixed delivery mode
@@ -543,7 +808,7 @@ public:
 
         ioapic_write(low_index, low);
 
-        db<void>(TRC) << "IO_APIC::set_irq, irq set done." << endl;
+        db<IC>(TRC) << "IO_APIC::set_irq, irq set done." << endl;
     }
 
 private:

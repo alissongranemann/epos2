@@ -29,7 +29,7 @@ template<> struct Traits<Build>
     enum {Legacy};
     static const unsigned int MODEL = Legacy;
 
-    static const unsigned int CPUS = 2;
+    static const unsigned int CPUS = 4;
     static const unsigned int NODES = 1; // > 1 => NETWORKING
 
     static const bool NO_LOADER = true;
@@ -127,25 +127,20 @@ template<> struct Traits<Application>: public Traits<void>
     static const unsigned int HEAP_SIZE = Traits<Machine>::HEAP_SIZE;
     static const unsigned int MAX_THREADS = Traits<Machine>::MAX_THREADS;
     static const unsigned long DOMAIN_PERIOD = 20 * 1000;
-    static const unsigned int WSS = 12 * 1024 * 1024; /*! Bytes */
+    static const unsigned int WSS = Factors::work_set_size;
+    static const unsigned int DMA_RUNS = Factors::dma_runs;
 
-    static const unsigned long MAX_INTERF = 1000 * 1;   // 1 ms
-    static const unsigned long MED_INTERF = 1000 * 10;  // 10 ms
-    static const unsigned long MIN_INTERF = 1000 * 100; // 100 ms
-    static const unsigned long MIN_MIN_INTERF = 1000 * 500; // 500 ms
-    static const unsigned long LESS_THAN_MIN_INTERF = 1000 * 1000; // 1s
-
-    static const unsigned long TIME_BETWEEN_SEGMENTS = LESS_THAN_MIN_INTERF; /*! Experiment Factor Set in Client */
-
-    static const unsigned long GUEST_OS_1_TASK_ITERATIONS = 3000;
+    static const unsigned long GUEST_OS_1_TASK_ITERATIONS = Factors::worker_iteractions;
     static const unsigned long GUEST_OS_TASK_ITERATIONS = GUEST_OS_1_TASK_ITERATIONS;
-    static const unsigned long GUEST_OS_2_TASK_ITERATIONS = (GUEST_OS_1_TASK_ITERATIONS * DOMAIN_PERIOD) / TIME_BETWEEN_SEGMENTS;
+    static const unsigned int worker_access_pattern = Factors::worker_access_pattern;
+
     static const unsigned int NUM_OF_DOMAINS = 1;
     static const bool IS_DOM_1_HRT = true;
     static const bool IS_DOM_2_HRT = false;
 
     static const unsigned int NUM_OF_PCPUS_ON_DOMAIN_1 = Traits<Build>::CPUS;
-    static const bool DONT_RUN_GUEST_OS_2_TASK = true;
+
+    static const bool IO_INTERF_INTERRUPTS = (Traits<FPGA>::enabled && Traits<FPGA>::USE_INTERRUPTS);
 };
 
 template<> struct Traits<System>: public Traits<void>

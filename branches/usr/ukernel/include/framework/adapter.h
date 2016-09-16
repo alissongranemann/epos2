@@ -165,7 +165,6 @@ public:
     // FPGA
     static void run() { static_enter(); Component::run(); static_leave(); }
     static void report() { static_enter(); Component::report(); static_leave(); }
-    static void wait_for_transaction() { static_enter(); Component::wait_for_transaction(); static_leave(); }
     static void print_configuration() { static_enter(); Component::print_configuration(); static_leave(); }
 
 };

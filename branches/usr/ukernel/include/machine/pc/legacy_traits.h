@@ -4,6 +4,7 @@
 #define __pc_traits_h
 
 #include <system/config.h>
+#include <factors.h>
 
 __BEGIN_SYS
 
@@ -69,7 +70,7 @@ template<> struct Traits<PC_PCI>: public Traits<PC_Common>
 
 template<> struct Traits<PC_IC>: public Traits<PC_Common>
 {
-    static const bool debugged = hysterically_debugged;
+    static const bool debugged = true;
 };
 
 template<> struct Traits<PC_Timer>: public Traits<PC_Common>
@@ -159,9 +160,14 @@ template<> struct Traits<PC_Scratchpad>: public Traits<PC_Common>
 
 template<> struct Traits<PC_FPGA>: public Traits<PC_Common>
 {
-    static const bool enabled = true;
-
-    static const unsigned int DMA_BUFFER_SIZE = 4 * 1024;
+    static const bool enabled = Factors::fpga_enabled;
+    static const unsigned int DMA_OPERATION = Factors::dma_operation;
+    static const unsigned int DMA_BUFFER_SIZE = Factors::dma_buffer_size;
+    static const unsigned int WRITE_DMA_TLP_SIZE = Factors::write_dma_tlp_size;
+    static const unsigned int WRITE_DMA_TLP_COUNT = Factors::write_dma_tlp_count;
+    static const unsigned long long DELAY_BETWEEN_DMA_TRANSACTIONS = Factors::delay_between_dma_transactions;
+    static const bool USE_INTERRUPTS = Factors::fpga_uses_interrupts;
+    static const bool AUTO_RESTART_DMA_TRANSACTIONS = Factors::auto_restart_dma_transactions;
 };
 
 

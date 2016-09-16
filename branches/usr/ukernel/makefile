@@ -14,11 +14,19 @@ ifndef APPLICATION
 else
 		$(MAKE) all1
 endif
-		
+
 all1: $(SUBDIRS)
 
 $(SUBDIRS): FORCE
 		(cd $@ && $(MAKE))
+
+experiments:
+		rm -f $(IMAGES_DIR)/*.img;
+		$(foreach factor,$(FACTORS),\
+			 $(INSTALL) $(FACTORS_DIR)/$(factor) $(INCLUDE)/factors.h;\
+			 $(MAKE) veryclean all $(APPLICATION);\
+			 $(INSTALL) $(IMG)/$(APPLICATION).img $(IMAGES_DIR)/$(factor).img;\
+		)
 
 run: FORCE
 ifndef APPLICATION
@@ -81,7 +89,7 @@ clean1: FORCE
 		(cd img && $(MAKECLEAN))
 		(cd src && $(MAKECLEAN))
 		find $(LIB) -maxdepth 1 -type f -exec $(CLEAN) {} \;
-		
+
 veryclean: clean
 		(cd tools && $(MAKECLEAN))
 		find $(LIB) -maxdepth 1 -type f -exec $(CLEAN) {} \;

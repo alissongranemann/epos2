@@ -16,7 +16,7 @@ struct Traits
 
 template<> struct Traits<Build>
 {
-    enum {LIBRARY};
+    enum {LIBRARY, BUILTIN, KERNEL};
     static const unsigned int MODE = LIBRARY;
 
     enum {IA32};
@@ -30,6 +30,8 @@ template<> struct Traits<Build>
 
     static const unsigned int CPUS = 1;
     static const unsigned int NODES = 2; // > 1 => NETWORKING
+
+    static const bool RUNNING_ON_QEMU = false;
 };
 
 

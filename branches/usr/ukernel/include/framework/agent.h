@@ -1173,9 +1173,6 @@ void Agent::handle_fpga()
     case FPGA_REPORT: {
         Adapter<FPGA>::report();
     } break;
-    case FPGA_WAIT_FOR_TRANSACTION: {
-        Adapter<FPGA>::wait_for_transaction();
-    } break;
     case FPGA_PRINT_CONFIGURATION: {
         Adapter<FPGA>::print_configuration();
     } break;

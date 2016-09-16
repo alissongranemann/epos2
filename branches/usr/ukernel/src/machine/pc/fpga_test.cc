@@ -10,18 +10,18 @@ static OStream cout;
 int main()
 {
     cout << "FPGA Test" << endl;
-    UART * uart = new UART();
-    uart->rts_down();
+    // UART * uart = new UART();
+    // uart->rts_down();
 
     FPGA::print_configuration();
 
     transaction_begin = TSC::time_stamp();
-    uart->rts_up();
+    // uart->rts_up();
 
     FPGA::run();
-    FPGA::wait_for_transaction();
+    // FPGA::wait_for_transaction();
 
-    uart->rts_down();
+    // uart->rts_down();
     transaction_end = TSC::time_stamp();
 
     cout << "transaction_cycles = " << (transaction_end - transaction_begin) << endl;
@@ -29,7 +29,7 @@ int main()
 
     FPGA::report();
 
-    delete uart;
+    // delete uart;
     cout << "Bye!" << endl;
 
     return 0;
