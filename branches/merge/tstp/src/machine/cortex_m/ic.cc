@@ -118,6 +118,7 @@ void Cortex_M_IC::entry() // __attribute__((naked));
         "   lsl     r3, #24            \n" // xPSR with Thumb bit only. Other bits are Don't Care
         "   ldr     r1, =_int_exit     \n" // Fake LR (will cause exit() to execute after dispatch())
         "   ldr     r2, =_int_dispatch \n" // Fake PC (will cause dispatch() to execute after entry())
+        "   sub     r2, #1             \n" // This one instruction is necessary for old versions of qemu (confirmed on 2.0.0). It is inocuous and can be removed on newer versions of qemu (confirmed on 2.6.0) and on the actual EPOSMoteIII.
         "   push    {lr}               \n" // Push EXC_RETURN code, which will be popped by svc_handler
         "   push    {r1-r3}            \n" // Fake stack (2): xPSR, PC, LR
         "   push    {r0-r3, r12}       \n" // Push rest of fake stack (2)
