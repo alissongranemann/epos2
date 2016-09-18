@@ -802,7 +802,7 @@ public:
 
     // GPTM registers offsets
     enum
-    {                                   //Type  Width  Reset Value
+    {                                //Type  Width  Reset Value
         GPTMCFG           =   0x00,  //RW    32    0x00000000
         GPTMTAMR          =   0x04,  //RW    32    0x00000000
         GPTMTBMR          =   0x08,  //RW    32    0x00000000
@@ -858,6 +858,18 @@ public:
         TPLO            = 1 << 11,      // Legacy PWM operation (0 -> legacy operation, 1 -> CCP is set to 1 on time-out)
     };
 
+    enum GPTMICR {          // Description                         Type Reset value
+        TATOCINT = 1 << 0,  // Timer A time-out interrupt clear      RW 0
+        CAMCINT  = 1 << 1,  // Timer A capture match interrupt clear RW 0
+        CAECINT  = 1 << 2,  // Timer A capture event Interrupt clear RW 0
+        TAMCINT  = 1 << 4,  // Timer A match interrupt clear         RW 0
+        TBTOCINT = 1 << 8,  // Timer B time-out interrupt clear      RW 0
+        CBMCINT  = 1 << 9,  // Timer B capture match interrupt clear RW 0
+        CBECINT  = 1 << 10, // Timer B capture event Interrupt clear RW 0
+        TBMCINT  = 1 << 11, // Timer B match interrupt clear         RW 0
+        WUECINT  = 1 << 16, // write update error interrupt clear    RW 0
+    };
+
 protected:
     eMote3() {}
 
@@ -871,7 +883,7 @@ protected:
 
 // GPTM
     static void timer_power(unsigned int unit, const Power_Mode & mode) {
-        assert(timer < TIMERS);
+        assert(unit < TIMERS);
         switch(mode) {
         case FULL:
         case LIGHT:
@@ -944,20 +956,17 @@ protected:
 
 
 // USB
-    // Set D+ USB pull-up resistor, which is controlled by GPIO pin C2 in eMote3
-    static void usb_init(unsigned int unit)
-    {
-        init_clock();
-        const unsigned int pin_bit = 1 << 2;
-        gpioc(AFSEL) &= ~pin_bit; // Set pin C2 as software-controlled
-        gpioc(DIR) |= pin_bit; // Set pin C2 as output
-        gpioc(pin_bit << 2) = 0xff; // Set pin C2 (high)
-    }
-
     static void usb_power(unsigned int unit, const Power_Mode & mode) {
         assert(unit < USBS);
         switch(mode) {
-        case FULL:
+        case FULL: {
+            init_clock();
+            // Set D+ USB pull-up resistor, which is controlled by GPIO pin C2 in eMote3
+            const unsigned int pin_bit = 1 << 2;
+            gpioc(AFSEL) &= ~pin_bit; // Set pin C2 as software-controlled
+            gpioc(DIR) |= pin_bit; // Set pin C2 as output
+            gpioc(pin_bit << 2) = 0xff; // Set pin C2 (high)
+        } break;
         case LIGHT:
         case SLEEP:
             break;
@@ -970,13 +979,17 @@ protected:
 
 
 // GPIO
-    void gpio_pull_up(unsigned int port, unsigned int pin) {
+    static void gpio_pull_up(unsigned int port, unsigned int pin) {
         auto over = PA0_OVER + 0x20*port + 0x4*pin;
         ioc(over) = PUE;
     }
-    void gpio_pull_down(unsigned int port, unsigned int pin) {
+    static void gpio_pull_down(unsigned int port, unsigned int pin) {
         auto over = PA0_OVER + 0x20*port + 0x4*pin;
         ioc(over) = PDE;
+    }
+    static void gpio_analog(unsigned int port, unsigned int pin) {
+        auto over = PA0_OVER + 0x20*port + 0x4*pin;
+        ioc(over) = ANA;
     }
 
 
@@ -999,20 +1012,12 @@ protected:
 
 
 // PWM
-    static void config_PWM(unsigned int which_timer, char gpio_port, unsigned int gpio_pin)
+    static void pwm_config(unsigned int timer, char gpio_port, unsigned int gpio_pin)
     {
-        timer_power(which_timer, FULL);
+        unsigned int port = gpio_port - 'A';
+        unsigned int sel = PA0_SEL + 0x20*port + 0x4*gpio_pin;
 
-        if((gpio_port >= 'A') && (gpio_port <= 'D'))
-            gpio_port += ('a'-'A');
-        assert((gpio_port >= 'a') && (gpio_port <= 'd'));
-        assert(gpio_pin <= 7);
-
-        // Calculate the offset for the GPIO's IOC_Pxx_SEL
-        auto n = gpio_port - 'a';
-        auto sel = PA0_SEL + 0x20*n + 0x4*gpio_pin;
-
-        switch(which_timer)
+        switch(timer)
         {
             case 0: ioc(sel) = GPT0CP1; break;
             case 1: ioc(sel) = GPT1CP1; break;
@@ -1020,16 +1025,16 @@ protected:
             case 3: ioc(sel) = GPT3CP1; break;
         }
 
-        auto over = sel + 0x80;
+        unsigned int over = sel + 0x80;
         ioc(over) = OE;
 
-        auto pin_bit = 1 << gpio_pin;
+        unsigned int pin_bit = 1 << gpio_pin;
         switch(gpio_port)
         {
-            case 'a': gpioa(AFSEL) |= pin_bit; break;
-            case 'b': gpiob(AFSEL) |= pin_bit; break;
-            case 'c': gpioc(AFSEL) |= pin_bit; break;
-            case 'd': gpiod(AFSEL) |= pin_bit; break;
+            case 'A': gpioa(AFSEL) |= pin_bit; break;
+            case 'B': gpiob(AFSEL) |= pin_bit; break;
+            case 'C': gpioc(AFSEL) |= pin_bit; break;
+            case 'D': gpiod(AFSEL) |= pin_bit; break;
         }
     }
 
