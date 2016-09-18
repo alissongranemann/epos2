@@ -1,4 +1,4 @@
-// EPOS ADC Mediator Common Package
+// EPOS Analog to Digital Converter (ADC) Mediator Common Package
 
 #ifndef __adc_h
 #define __adc_h

@@ -1,4 +1,4 @@
-// EPOS Cortex-M ADC Mediator Declarations
+// EPOS Cortex-M Analog to Digital Converter (ADC) Mediator Declarations
 
 #ifndef __cortex_m_adc_h_
 #define __cortex_m_adc_h_
@@ -36,31 +36,43 @@ public:
         EXTERNAL_DIFF  = 3
     };
 
-    enum Decimation {
-        D64  = 0,  //  7 bit resolution
-        D128 = 1,  //  9 bit resolution
-        D256 = 2,  // 10 bit resolution
-        D512 = 3   // 12 bit resolution
+    enum Resolution {
+        BITS_7  = 0, //  7 bits resolution, 64  decimation rate
+        BITS_9  = 1, //  9 bits resolution, 128 decimation rate
+        BITS_10 = 2, // 10 bits resolution, 256 decimation rate
+        BITS_12 = 3  // 12 bits resolution, 512 decimation rate
     };
 
-    Cortex_M_ADC(const Channel & channel = SINGLE_ENDED_ADC0, const Reference & reference = SYSTEM_REF, const Decimation & decimation = D512) :
-        _channel(channel), _reference(reference), _decimation(decimation)
+    Cortex_M_ADC(const Channel & channel = SINGLE_ENDED_ADC0, const Reference & reference = SYSTEM_REF, const Resolution & resolution = BITS_12) :
+        _channel(channel), _reference(reference), _resolution(resolution)
     {
         Cortex_M_Model::adc_config(_channel);
     }
 
     short read()
     {
-        reg(ADCCON3) = (_reference * ADCCON3_EREF) | (_decimation * ADCCON3_EDIV) | (_channel * ADCCON3_ECH);
-        while(!reg(ADCCON1) & ADCCON1_EOC);
-        short ret = (reg(ADCH) << 8) + reg(ADCL); // TODO: do we need to >> 2 ?
-        switch(_decimation) {
-            case D64:  ret &= 0xfe0; break;
-            case D128: ret &= 0xff8; break;
-            case D256: ret &= 0xffc; break;
-            case D512: break;
+        reg(ADCCON3) = (_reference * ADCCON3_EREF) | (_resolution * ADCCON3_EDIV) | (_channel * ADCCON3_ECH);
+        while(!(reg(ADCCON1) & ADCCON1_EOC));
+        short ret = (reg(ADCH) << 8) + reg(ADCL);
+        switch(_resolution) {
+            case BITS_7:  ret >>= 9; break;
+            case BITS_9:  ret >>= 7; break;
+            case BITS_10: ret >>= 6; break;
+            case BITS_12: ret >>= 4; break;
         }
         return ret;
+    }
+
+    // returns the voltage corresponding to the reading, with three decimal places (e.g. 2534 means 2.534V)
+    int convert(short raw_reading, int reference = 3300/*3.3V*/) {
+        int limit;
+        switch(_resolution) {
+            case BITS_7:  limit =   63; break;
+            case BITS_9:  limit =  255; break;
+            case BITS_10: limit =  511; break;
+            case BITS_12: limit = 2047; break;
+        }
+        return raw_reading * reference / limit;
     }
 
 private:
@@ -68,7 +80,7 @@ private:
 
     Channel _channel;
     Reference _reference;
-    Decimation _decimation;
+    Resolution _resolution;
 };
 
 __END_SYS

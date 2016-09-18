@@ -1268,7 +1268,7 @@ protected:
 
     static void adc_config(unsigned char channel)
     {
-        gpioa(DIR) &= ~1 << channel;
+        gpioa(DIR) &= ~(1 << channel);
         gpio_analog(0, channel);
     }
 
