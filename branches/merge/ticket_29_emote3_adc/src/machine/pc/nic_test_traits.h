@@ -6,27 +6,26 @@
 __BEGIN_SYS
 
 // Global Configuration
-template<typename T>
+template <typename T>
 struct Traits
 {
     static const bool enabled = true;
     static const bool debugged = true;
     static const bool hysterically_debugged = false;
-    typedef TLIST<> ASPECTS;
 };
 
-template<> struct Traits<Build>
+template <> struct Traits<Build>
 {
-    enum {LIBRARY, BUILTIN, KERNEL};
+    enum {LIBRARY, BUILTIN};
     static const unsigned int MODE = LIBRARY;
 
-    enum {IA32, ARMv7};
+    enum {IA32};
     static const unsigned int ARCHITECTURE = IA32;
 
-    enum {PC, Cortex_M, Cortex_A};
+    enum {PC};
     static const unsigned int MACHINE = PC;
 
-    enum {Legacy_PC, eMote3, LM3S811};
+    enum {Legacy_PC};
     static const unsigned int MODEL = Legacy_PC;
 
     static const unsigned int CPUS = 1;
@@ -35,7 +34,7 @@ template<> struct Traits<Build>
 
 
 // Utilities
-template<> struct Traits<Debug>
+template <> struct Traits<Debug>
 {
     static const bool error   = true;
     static const bool warning = true;
@@ -43,44 +42,38 @@ template<> struct Traits<Debug>
     static const bool trace   = false;
 };
 
-template<> struct Traits<Lists>: public Traits<void>
+template <> struct Traits<Lists>: public Traits<void>
 {
     static const bool debugged = hysterically_debugged;
 };
 
-template<> struct Traits<Spin>: public Traits<void>
+template <> struct Traits<Spin>: public Traits<void>
 {
     static const bool debugged = hysterically_debugged;
 };
 
-template<> struct Traits<Heaps>: public Traits<void>
+template <> struct Traits<Heap>: public Traits<void>
 {
     static const bool debugged = hysterically_debugged;
 };
 
-template<> struct Traits<Observers>: public Traits<void>
-{
-    // Some observed objects are created before initializing the Display
-    // Enabling debug may cause trouble in some Machines
-    static const bool debugged = false;
-};
 
 // System Parts (mostly to fine control debugging)
-template<> struct Traits<Boot>: public Traits<void>
+template <> struct Traits<Boot>: public Traits<void>
 {
 };
 
-template<> struct Traits<Setup>: public Traits<void>
+template <> struct Traits<Setup>: public Traits<void>
 {
 };
 
-template<> struct Traits<Init>: public Traits<void>
+template <> struct Traits<Init>: public Traits<void>
 {
 };
 
 
-// Mediators
-template<> struct Traits<Serial_Display>: public Traits<void>
+// Common Mediators
+template <> struct Traits<Serial_Display>: public Traits<void>
 {
     static const bool enabled = true;
     enum {UART, USB};
@@ -88,11 +81,6 @@ template<> struct Traits<Serial_Display>: public Traits<void>
     static const int COLUMNS = 80;
     static const int LINES = 24;
     static const int TAB_SIZE = 8;
-};
-
-template<> struct Traits<Serial_Keyboard>: public Traits<void>
-{
-    static const bool enabled = false;
 };
 
 __END_SYS
@@ -103,15 +91,13 @@ __END_SYS
 
 __BEGIN_SYS
 
-
-// Abstractions
-template<> struct Traits<Application>: public Traits<void>
+template <> struct Traits<Application>: public Traits<void>
 {
     static const unsigned int STACK_SIZE = 256 * 1024;
     static const unsigned int HEAP_SIZE = 16 * 1024 * 1024;
 };
 
-template<> struct Traits<System>: public Traits<void>
+template <> struct Traits<System>: public Traits<void>
 {
     static const unsigned int mode = Traits<Build>::MODE;
     static const bool multithread = (Traits<Application>::MAX_THREADS > 1);
@@ -128,12 +114,14 @@ template<> struct Traits<System>: public Traits<void>
     static const unsigned int HEAP_SIZE = (Traits<Application>::MAX_THREADS + 1) * Traits<Application>::STACK_SIZE;
 };
 
-template<> struct Traits<Task>: public Traits<void>
+
+// Abstractions
+template <> struct Traits<Task>: public Traits<void>
 {
     static const bool enabled = Traits<System>::multitask;
 };
 
-template<> struct Traits<Thread>: public Traits<void>
+template <> struct Traits<Thread>: public Traits<void>
 {
     static const bool smp = Traits<System>::multicore;
 
@@ -143,32 +131,32 @@ template<> struct Traits<Thread>: public Traits<void>
     static const bool trace_idle = hysterically_debugged;
 };
 
-template<> struct Traits<Scheduler<Thread> >: public Traits<void>
+template <> struct Traits<Scheduler<Thread> >: public Traits<void>
 {
     static const bool debugged = Traits<Thread>::trace_idle || hysterically_debugged;
 };
 
-template<> struct Traits<Periodic_Thread>: public Traits<void>
+template <> struct Traits<Periodic_Thread>: public Traits<void>
 {
     static const bool simulate_capacity = false;
 };
 
-template<> struct Traits<Address_Space>: public Traits<void>
+template <> struct Traits<Address_Space>: public Traits<void>
 {
     static const bool enabled = Traits<System>::multiheap;
 };
 
-template<> struct Traits<Segment>: public Traits<void>
+template <> struct Traits<Segment>: public Traits<void>
 {
     static const bool enabled = Traits<System>::multiheap;
 };
 
-template<> struct Traits<Alarm>: public Traits<void>
+template <> struct Traits<Alarm>: public Traits<void>
 {
     static const bool visible = hysterically_debugged;
 };
 
-template<> struct Traits<Synchronizer>: public Traits<void>
+template <> struct Traits<Synchronizer>: public Traits<void>
 {
     static const bool enabled = Traits<System>::multithread;
 };
@@ -181,26 +169,8 @@ template<> struct Traits<Network>: public Traits<void>
     static const unsigned int RETRIES = 3;
     static const unsigned int TIMEOUT = 10; // s
 
-    // This list is positional, with one network for each NIC in Traits<NIC>::NICS
+    // This list is positional, with one network for each NIC in traits<NIC>::NICS
     typedef LIST<IP> NETWORKS;
-};
-
-template<> struct Traits<ELP>: public Traits<Network>
-{
-    static const bool enabled = NETWORKS::Count<ELP>::Result;
-
-    static const bool acknowledged = true;
-    static const bool promiscuous = false;
-};
-
-template<> struct Traits<TSTP>: public Traits<Network>
-{
-    static const bool enabled = NETWORKS::Count<TSTP>::Result;
-};
-
-template<> template <typename S> struct Traits<Smart_Data<S>>: public Traits<Network>
-{
-    static const bool enabled = NETWORKS::Count<TSTP>::Result;
 };
 
 template<> struct Traits<IP>: public Traits<Network>

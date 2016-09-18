@@ -238,7 +238,7 @@ int E100::send(const Address & dst, const Protocol & prot, const void * data, un
     new (_tx_ring[_tx_cur].frame) Frame(_address, frame->dst(), htons(frame->prot()), frame->data<void>(), size);
     // ----
     // TODO: the above doesn't make sense!
-
+    
     db<E100>(TRC) << "E100::send(dst=" << dst << ", prot=" << prot << ", data=" << (char *) data << ", size=" << size << ")";
     db<E100>(INF) << "E100::send:frame={dst=" << frame->dst() << ", prot=" << frame->prot() << ", data=" << (char *) frame->data<void>() << ", size=" << buf->size() << "}" << endl;
 

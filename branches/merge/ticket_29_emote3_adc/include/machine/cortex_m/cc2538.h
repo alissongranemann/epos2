@@ -326,8 +326,7 @@ public:
         static void int_enable(const Reg32 & interrupt) { mactimer(MTIRQM) |= interrupt; }
         static void int_disable() { mactimer(MTIRQM) = INT_OVERFLOW_PER; }
 
-        static Time_Stamp us_to_ts(const Microsecond & us) { return static_cast<long long>(us) * CLOCK / 1000000; }
-        static Time_Stamp ts_to_us(const Microsecond & ts) { return static_cast<long long>(ts) * 1000000 / CLOCK; }
+        static Time_Stamp us_to_ts(const Microsecond & us) { return us * CLOCK / 1000000; }
 
     private:
         static Time_Stamp read(unsigned int sel) {
@@ -403,8 +402,10 @@ public:
         // Set FIFOP threshold to maximum
         xreg(FIFOPCTRL) = 0xff;
 
-        // Maximize transmission power
-        xreg(TXPOWER) = 0xff;
+        // Set TXPOWER (this is the value Contiki uses by default)
+        xreg(TXPOWER) = 0xd5;
+
+        xreg(FRMCTRL0) = (xreg(FRMCTRL0) & ~(3 * RX_MODE)) | (RX_MODE_NORMAL * RX_MODE);
 
         // Disable counting of MAC overflows
         xreg(CSPT) = 0xff;
@@ -423,72 +424,46 @@ public:
     }
 
     bool cca(const Microsecond & time) {
-        Timer::Time_Stamp end = Timer::read() + Timer::us_to_ts(time);
-        while(!(xreg(RSSISTAT) & RSSI_VALID));
-        bool channel_free;
-        while((channel_free = xreg(FSMSTAT1) & CCA) && (Timer::read() < end));
-        return channel_free;
+        xreg(FRMCTRL0) = (xreg(FRMCTRL0) & ~(3 * RX_MODE)) | (RX_MODE_NO_SYMBOL_SEARCH * RX_MODE);
+        sfr(RFST) = ISRXON;
+        for(Timer::Time_Stamp final = Timer::read() + Timer::us_to_ts(time); Timer::read() < final;);
+        xreg(FRMCTRL0) = (xreg(FRMCTRL0) & ~(3 * RX_MODE)) | (RX_MODE_NORMAL * RX_MODE);
+        return (xreg(RSSISTAT) & RSSI_VALID);
     }
 
     bool transmit() { sfr(RFST) = ISTXONCCA; return (xreg(FSMSTAT1) & SAMPLED_CCA); }
 
-    bool wait_for_ack(const Microsecond & timeout) {
-        // Disable and clear FIFOP int. We'll poll the interrupt flag
-        xreg(RFIRQM0) &= ~INT_FIFOP;
-        sfr(RFIRQF0) &= ~INT_FIFOP;
-
-        // Save radio configuration
-        Reg32 saved_filter_settings = xreg(FRMFILT1);
-        bool was_promiscuous = promiscuous();
-
-        // Accept only ACK frames now
-        promiscuous(false);
-        xreg(FRMFILT1) = ACCEPT_FT2_ACK;
-
-        while(!tx_done());
-
-        // Wait for either ACK or timeout
+    bool wait_for_ack(const Microsecond & time) {
+        while(!(sfr(RFIRQF1) & INT_TXDONE));
+        sfr(RFIRQF1) &= ~INT_TXDONE;
+        //    if(not Traits<CC2538>::auto_listen) {
+//        xreg(RFST) = ISRXON;
+        //    }
         bool acked = false;
-        for(Timer::Time_Stamp end = Timer::read() + Timer::us_to_ts(timeout); (Timer::read() < end) && !(acked = sfr(RFIRQF0) & INT_FIFOP););
-
-        // Restore radio configuration
-        if(acked) {
-            sfr(RFST) = ISFLUSHRX;
-            sfr(RFIRQF0) &= ~INT_FIFOP;
-        }
-        xreg(FRMFILT1) = saved_filter_settings;
-        promiscuous(was_promiscuous);
-        xreg(RFIRQM0) |= INT_FIFOP;
-
+        for(Timer::Time_Stamp final = Timer::read() + Timer::us_to_ts(time); (Timer::read() < final) && !(acked = (sfr(RFIRQF0) & INT_FIFOP)););
         return acked;
     }
 
-    void listen() { sfr(RFST) = ISRXON; }
-
-    //FIXME: this doesn't work without the noinline attribute
-    bool tx_done()__attribute__((noinline)) {
+    bool tx_done() {
         bool ret = (sfr(RFIRQF1) & INT_TXDONE);
         if(ret)
             sfr(RFIRQF1) &= ~INT_TXDONE;
         return ret;
     }
 
-    //FIXME: this doesn't work without the noinline attribute
-    bool rx_done()__attribute__((noinline)) {
-        bool ret = (sfr(RFIRQF0) & INT_RXPKTDONE);
-        if(ret)
-            sfr(RFIRQF0) &= ~INT_RXPKTDONE;
-        return ret;
+    void listen()
+    {
+        // Clear interrupts
+        sfr(RFIRQF0) = 0;
+        sfr(RFIRQF1) = 0;
+        // Enable device interrupts
+        xreg(RFIRQM0) = INT_FIFOP;
+        xreg(RFIRQM1) = 0;
+        // Issue the listen command
+        sfr(RFST) = ISRXON;
     }
 
-    void promiscuous(bool on) {
-        if(on)
-            xreg(FRMFILT0) &= ~FRAME_FILTER_EN;
-        else
-            xreg(FRMFILT0) |= FRAME_FILTER_EN;
-    }
-
-    bool promiscuous() { return !(xreg(FRMFILT0) & FRAME_FILTER_EN); }
+    bool rx_done() { return ((xreg(FSMSTAT1) & FIFOP) && (xreg(RXFIFOCNT) > 0)); }
 
     void channel(unsigned int c) {
         assert((c > 10) && (c < 27));
@@ -496,7 +471,7 @@ public:
     }
 
     void copy_to_nic(IEEE802_15_4::Phy_Frame * frame) {
-        // Clear TXFIFO
+        // Wait for TXFIFO to get empty
         sfr(RFST) = ISFLUSHTX;
         while(xreg(TXFIFOCNT) != 0);
 
@@ -515,41 +490,20 @@ public:
         sfr(RFST) = ISFLUSHRX;
     }
 
-    bool filter() {
-        bool valid_frame = false;
-        if(xreg(RXFIFOCNT) > sizeof(IEEE802_15_4::Phy_Header) + sizeof(IEEE802_15_4::CRC)) {
-            volatile unsigned int * rxfifo = reinterpret_cast<volatile unsigned int*>(RXFIFO);
-            unsigned char mac_frame_size = rxfifo[0];
-            // On RX, last two bytes in the frame are replaced by info like CRC result
-            // (obs: mac frame is preceded by one byte containing the frame length,
-            // so total RXFIFO data size is 1 + mac_frame_size)
-            valid_frame = (mac_frame_size <= 127) && (rxfifo[mac_frame_size] & AUTO_CRC_OK);
-        }
-        if(!valid_frame)
-            sfr(RFST) = ISFLUSHRX;
-
-        return valid_frame;
-    }
-
     static void power(const Power_Mode & mode) {
          switch(mode) {
-         case FULL: // Able to receive and transmit
-             ieee802_15_4_power(FULL);
-             xreg(FRMCTRL0) = (xreg(FRMCTRL0) & ~(3 * RX_MODE)) | (RX_MODE_NORMAL * RX_MODE);
+         case FULL:
+         case LIGHT:
+         case SLEEP:
              break;
-         case LIGHT: // Able to sense channel and transmit
-             xreg(FRMCTRL0) = (xreg(FRMCTRL0) & ~(3 * RX_MODE)) | (RX_MODE_NO_SYMBOL_SEARCH * RX_MODE);
-             ieee802_15_4_power(LIGHT);
-             break;
-         case SLEEP: // Receiver off
+         case OFF:
+             // Disable device interrupts
+             xreg(RFIRQM0) = 0;
+             xreg(RFIRQM1) = 0;
+             // Issue the OFF command
              sfr(RFST) = ISRFOFF;
-             ieee802_15_4_power(SLEEP);
-             break;
-         case OFF: // Radio unit shut down
-             sfr(RFST) = ISRFOFF;
-             ieee802_15_4_power(OFF);
-             break;
-         }
+             sfr(RFST) = ISFLUSHRX;
+             sfr(RFIRQF0) = 0;          }
      }
 
 protected:
@@ -638,7 +592,6 @@ private:
     unsigned int _channel;
     Statistics _statistics;
 
-    Buffer::List _received_buffers;
     static Device _devices[UNITS];
 };
 
