@@ -22,7 +22,7 @@
 //#define __SPI_H               __HEADER_MACH(spi)
 #define __I2C_H                 __HEADER_MACH(i2c)
 #define __GPIO_H                __HEADER_MACH(gpio)
-//#define __ADC_H               __HEADER_MACH(adc)
+#define __ADC_H                 __HEADER_MACH(adc)
 //#define __FLASH_H             __HEADER_MACH(flash)
 
 __BEGIN_SYS
@@ -44,6 +44,7 @@ typedef Cortex_M_Scratchpad     Scratchpad;
 typedef Cortex_M_IEEE802_15_4   NIC;
 typedef Cortex_M_GPIO           GPIO;
 typedef Cortex_M_I2C            I2C;
+typedef Cortex_M_ADC            ADC;
 
 __END_SYS
 

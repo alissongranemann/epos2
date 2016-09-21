@@ -64,11 +64,55 @@ public:
     ~Cortex_M_GPTM() { disable(); power(OFF); }
 
     unsigned int clock() const { return CLOCK; }
-    bool running() { return !reg(GPTMRIS); }
+    bool running() { return !(reg(GPTMRIS) & TATOCINT); }
 
     Count read() { return reg(GPTMTAR); }
 
-    void enable() { reg(GPTMICR) = -1; reg(GPTMCTL) |= TAEN; } // TODO: Why are pending interrupts discharted?
+    void enable() { reg(GPTMICR) |= TATOCINT; reg(GPTMCTL) |= TAEN; }
+    void disable() { reg(GPTMCTL) &= ~TAEN; }
+
+    void power(const Power_Mode & mode) { Cortex_M_Model::timer_power(_channel, mode); }
+
+private:
+    volatile Reg32 & reg(unsigned int o) { return _base[o / sizeof(Reg32)]; }
+
+private:
+    int _channel;
+    Reg32 * _base;
+};
+
+class Cortex_M_PWM_Timer: public Cortex_M_Model
+{
+protected:
+    const static unsigned int CLOCK = Traits<CPU>::CLOCK;
+
+    typedef CPU::Reg32 Count;
+
+protected:
+    Cortex_M_PWM_Timer(int channel, const Count & reload, const Count & match, bool invert = false)
+    : _channel(channel), _base(reinterpret_cast<Reg32 *>(TIMER0_BASE + 0x1000 * channel)) {
+        assert(_channel < TIMERS);
+        disable();
+        power(FULL);
+        reg(GPTMCFG) = 4; // 4 -> 16-bit, only possible value for PWM
+        reg(GPTMTAMR) = TCMR | TAMS | 2; // 2 -> Periodic, 1 -> One-shot
+        reg(GPTMTAPR) = reload >> 16;
+        reg(GPTMTAILR) = reload;
+        reg(GPTMTAPMR) = match >> 16;
+        reg(GPTMTAMATCHR) = match;
+        if(invert)
+            reg(GPTMCTL) |= TBPWML;
+        else
+            reg(GPTMCTL) &= ~TBPWML;
+        enable();
+    }
+
+public:
+    ~Cortex_M_PWM_Timer() { disable(); power(OFF); }
+
+    unsigned int clock() const { return CLOCK; }
+
+    void enable() { reg(GPTMCTL) |= TAEN; }
     void disable() { reg(GPTMCTL) &= ~TAEN; }
 
     void power(const Power_Mode & mode) { Cortex_M_Model::timer_power(_channel, mode); }
@@ -219,6 +263,32 @@ private:
 
 private:
     Handler _handler;
+};
+
+// PWM Mediator
+class PWM: private Timer_Common, public Cortex_M_PWM_Timer
+{
+public:
+    using Timer_Common::Hertz;
+    using Timer_Common::Channel;
+
+public:
+    PWM(const Channel & channel, const Hertz & frequency, unsigned char duty_cycle_percent, char gpio_port = 'A', unsigned int gpio_pin = 0)
+    : Cortex_M_PWM_Timer(channel, freq2reload(frequency), percent2match(duty_cycle_percent, freq2reload(frequency))) {
+        Cortex_M_Model::pwm_config(channel, gpio_port, gpio_pin);
+    }
+
+    ~PWM() {}
+
+    using Cortex_M_PWM_Timer::enable;
+    using Cortex_M_PWM_Timer::disable;
+    using Cortex_M_PWM_Timer::power;
+
+private:
+    static Count freq2reload(const Hertz & freq) { return CLOCK / freq; }
+    static Count percent2match(unsigned char duty_cycle_percent, const Count & period) { 
+        return period - ((period * duty_cycle_percent) / 100);
+    }
 };
 
 __END_SYS
