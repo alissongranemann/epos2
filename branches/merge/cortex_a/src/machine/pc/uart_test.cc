@@ -9,9 +9,9 @@ int main()
 {
     OStream cout;
 
-    cout << "PC_UART test\n" << endl;
+    cout << "UART test\n" << endl;
 
-    PC_UART uart(115200, 8, 0, 1);
+    UART uart(115200, 8, 0, 1);
 
     cout << "Loopback transmission test (conf = 115200 8N1):";
     uart.loopback(true);

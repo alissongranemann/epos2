@@ -1,8 +1,9 @@
-// EPOS Cortex TI CC2538 IEEE 802.15.4 NIC Mediator Initialization
+// EPOS Cortex_M TI CC2538 IEEE 802.15.4 NIC Mediator Initialization
 
-#include <system.h>
+#include <system/config.h>
 #ifndef __mmod_zynq__
 
+#include <system.h>
 #include <machine/cortex/machine.h>
 #include <machine/cortex/cc2538.h>
 
@@ -58,25 +59,13 @@ void CC2538::init(unsigned int unit)
 
     // Register the device
     _devices[unit].device = dev;
-    _devices[unit].interrupt = IC::irq2int(NVIC::IRQ_RFTXRX);
+    _devices[unit].interrupt = IC::irq2int(IC::IRQ_RFTXRX);
 
     // Install interrupt handler
     IC::int_vector(_devices[unit].interrupt, &int_handler);
 
     // Enable interrupts for device
-    IC::enable(NVIC::IRQ_RFTXRX);
-}
-
-void CC2538::Timer::init()
-{
-    mactimer(MTCTRL) |= MTCTRL_RUN; // Stop counting
-    mactimer(MTIRQM) = 0; // Mask interrupts
-    mactimer(MTIRQF) = 0; // Clear interrupts
-    mactimer(MTCTRL) &= ~MTCTRL_SYNC; // We can't use the sync feature because we want to change the count and overflow values when the timer is stopped
-    mactimer(MTCTRL) |= MTCTRL_LATCH_MODE; // count and overflow will be latched at once
-    IC::int_vector(IC::irq2int(NVIC::IRQ_MACTIMER), &int_handler);
-    IC::enable(33);
-    int_enable(INT_OVERFLOW_PER);
+    IC::enable(IC::IRQ_RFTXRX);
 }
 
 __END_SYS

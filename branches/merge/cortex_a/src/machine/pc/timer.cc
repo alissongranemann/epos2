@@ -7,10 +7,10 @@
 __BEGIN_SYS
 
 // Class attributes
-PC_Timer * PC_Timer::_channels[CHANNELS];
+Timer * Timer::_channels[CHANNELS];
 
 // Class methods
-void PC_Timer::int_handler(const Interrupt_Id & i)
+void Timer::int_handler(const Interrupt_Id & i)
 {
     if(_channels[SCHEDULER] && (--_channels[SCHEDULER]->_current[Machine::cpu_id()] <= 0)) {
         _channels[SCHEDULER]->_current[Machine::cpu_id()] = _channels[SCHEDULER]->_initial;

@@ -10,9 +10,9 @@
 __BEGIN_SYS
 
 // WARNING: TODO: It looks like this class only implements Master operation
-class Cortex_I2C : private Cortex_Model, private I2C_Common {
+class I2C : private Cortex_Model, private I2C_Common {
 public:
-    Cortex_I2C(Role r = I2C_Common::MASTER, char port_sda = 'B', unsigned int pin_sda = 1, char port_scl = 'B', unsigned int pin_scl = 0)
+    I2C(Role r = I2C_Common::MASTER, char port_sda = 'B', unsigned int pin_sda = 1, char port_scl = 'B', unsigned int pin_scl = 0)
         : _base(r == I2C_Common::MASTER ? reinterpret_cast<Log_Addr*>(I2C_MASTER_BASE) : reinterpret_cast<Log_Addr*>(I2C_SLAVE_BASE))
     {
         Cortex_Model::i2c_config(port_sda, pin_sda, port_scl, pin_scl);

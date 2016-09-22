@@ -73,26 +73,26 @@ void PCNet32::init(unsigned int unit)
     db<Init, PCNet32>(TRC) << "PCNet32::init(unit=" << unit << ")" << endl;
 
     // Scan the PCI bus for device
-    PC_PCI::Locator loc = PC_PCI::scan(PCI_VENDOR_ID, PCI_DEVICE_ID, unit);
+    PCI::Locator loc = PCI::scan(PCI_VENDOR_ID, PCI_DEVICE_ID, unit);
     if(!loc) {
         db<Init, PCNet32>(WRN) << "PCNet32::init: PCI scan failed!" << endl;
         return;
     }
 
     // Try to enable IO regions and bus master
-    PC_PCI::command(loc, PC_PCI::command(loc) | PC_PCI::COMMAND_IO | PC_PCI::COMMAND_MASTER);
+    PCI::command(loc, PCI::command(loc) | PCI::COMMAND_IO | PCI::COMMAND_MASTER);
 
     // Get the config space header and check if we got IO and MASTER
-    PC_PCI::Header hdr;
+    PCI::Header hdr;
     PCI::header(loc, &hdr);
     if(!hdr) {
         db<Init, PCNet32>(WRN) << "PCNet32::init: PCI header failed!" << endl;
         return;
     }
     db<Init, PCNet32>(INF) << "PCNet32::init: PCI header=" << hdr << endl;
-    if(!(hdr.command & PC_PCI::COMMAND_IO))
+    if(!(hdr.command & PCI::COMMAND_IO))
         db<Init, PCNet32>(WRN) << "PCNet32::init: I/O unaccessible!" << endl;
-    if(!(hdr.command & PC_PCI::COMMAND_MASTER))
+    if(!(hdr.command & PCI::COMMAND_MASTER))
         db<Init, PCNet32>(WRN) << "PCNet32::init: not master capable!" << endl;
 
     // Get I/O base port

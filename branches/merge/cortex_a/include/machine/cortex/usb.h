@@ -238,7 +238,7 @@ private:
     static bool _was_locked;
 
 public:
-    Cortex_USB() { }
+    USB() { }
 
     static USB_2_0::STATE state() { return _state; }
 

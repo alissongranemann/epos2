@@ -15,7 +15,7 @@
 
 __BEGIN_SYS
 
-class PC: public Machine_Common
+class Machine: public Machine_Common
 {
     friend class Init_System;
 
@@ -26,7 +26,7 @@ private:
     typedef CPU::Log_Addr Log_Addr;
 
 public:
-    PC() {}
+    Machine() {}
 
     static void delay(const RTC::Microsecond & time) {
         TSC::Time_Stamp end = TSC::time_stamp() + time * (TSC::frequency() / 1000000);

@@ -17,7 +17,7 @@ protected:
 class Serial_Keyboard: public Keyboard_Common
 {
     friend class PC_Setup;
-    friend class First_Object;
+    friend class Machine;
 
 public:
     typedef _UTIL::Observer Observer;
@@ -43,6 +43,10 @@ __END_SYS
 
 #ifdef __KEYBOARD_H
 #include __KEYBOARD_H
+#else
+__BEGIN_SYS
+class keyboard: public IF<Traits<Serial_Keyboard>::enabled, Serial_Keyboard, Dummy>::Result {};
+__END_SYS
 #endif
 
 #endif

@@ -7,12 +7,12 @@ __USING_SYS
 
 #ifndef __mmod_zynq__
 
-volatile USB_2_0::STATE Cortex_USB::_state = USB_2_0::STATE::ATTACHED;
-volatile bool Cortex_USB::_ready_to_put = false;
-bool Cortex_USB::_ready_to_put_next = false;
-bool Cortex_USB::_was_locked = false;
+volatile USB_2_0::STATE USB::_state = USB_2_0::STATE::ATTACHED;
+volatile bool USB::_ready_to_put = false;
+bool USB::_ready_to_put_next = false;
+bool USB::_was_locked = false;
 
-const USB_2_0::Descriptor::Device Cortex_USB::_device_descriptor =
+const USB_2_0::Descriptor::Device USB::_device_descriptor =
 {
     sizeof(Descriptor::Device), // Descriptor length
     DESC_DEVICE,               // Descriptor type
@@ -30,7 +30,7 @@ const USB_2_0::Descriptor::Device Cortex_USB::_device_descriptor =
     0x01,                      // Number of possible configurations
 };
 
-const Cortex_USB::Full_Config Cortex_USB::_config =
+const USB::Full_Config USB::_config =
 {
     //_configuration_descriptor =
     {
@@ -127,7 +127,7 @@ const Cortex_USB::Full_Config Cortex_USB::_config =
 };
 
 // Configurations that need to be done at every USB reset
-void Cortex_USB::reset()
+void USB::reset()
 {
     _ready_to_put = false;
     _ready_to_put_next = false;
@@ -160,7 +160,7 @@ void Cortex_USB::reset()
     reg(CIE) = INT_RESET;
 }
 
-void Cortex_USB::init()
+void USB::init()
 {
     // Make sure that eMote3::init_clock() has been called and
     // the crystal oscillator is selected as source and stable.

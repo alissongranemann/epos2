@@ -4,7 +4,7 @@
 
 __BEGIN_SYS
 
-void IA32_PMU::init()
+void PMU::init()
 {
     db<Init, PMU>(TRC) << "PMU::init()" << endl;
 

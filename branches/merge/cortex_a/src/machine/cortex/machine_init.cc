@@ -4,21 +4,23 @@
 
 __BEGIN_SYS
 
-void Cortex::init()
+void Machine::init()
 {
-    db<Init, Cortex>(TRC) << "Cortex::init()" << endl;
+    db<Init, Machine>(TRC) << "Cortex::init()" << endl;
 
     Cortex_Model::init();
 
-    if(Traits<Cortex_IC>::enabled)
-        Cortex_IC::init();
-    if(Traits<Cortex_Timer>::enabled)
-        Cortex_Timer::init();
+    if(Traits<IC>::enabled)
+        IC::init();
+    if(Traits<Timer>::enabled)
+        Timer::init();
 #ifndef __mmod_zynq__
-    if(Traits<Cortex_USB>::enabled)
-        Cortex_USB::init();
-    if(Traits<Cortex_IEEE802_15_4>::enabled)
-        Cortex_IEEE802_15_4::init();
+    if(Traits<USB>::enabled)
+        USB::init();
+#ifndef __no_networking__
+    if(Traits<NIC>::enabled)
+        NIC::init();
+#endif
 #endif
 }
 

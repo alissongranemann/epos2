@@ -15,12 +15,12 @@
 
 __BEGIN_SYS
 
-class Cortex_Ethernet: public Ethernet
+class NIC: public Ethernet
 {
-    friend class Cortex;
+    friend class Machine;
 
 private:
-    typedef Traits<Cortex_Ethernet>::NICS NICS;
+    typedef Traits<NIC>::NICS NICS;
     typedef IF<NICS::Polymorphic, NIC_Base<Ethernet>, NICS::Get<0>::Result>::Result Device;
     static const unsigned int UNITS = NICS::Length;
 
@@ -30,11 +30,11 @@ public:
 
 public:
     template<unsigned int UNIT = 0>
-    Cortex_Ethernet(unsigned int u = UNIT) {
+    NIC(unsigned int u = UNIT) {
         _dev = reinterpret_cast<Device *>(NICS::Get<UNIT>::Result::get(u));
         db<PC_Ethernet>(TRC) << "NIC::NIC(u=" << UNIT << ",d=" << _dev << ") => " << this << endl;
     }
-    ~Cortex_Ethernet() { _dev = 0; }
+    ~NIC() { _dev = 0; }
 
     int send(const Address & dst, const Protocol & prot, const void * data, unsigned int size) { return _dev->send(dst, prot, data, size); }
     int receive(Address * src, Protocol * prot, void * data, unsigned int size) { return _dev->receive(src, prot, data, size); }
@@ -70,13 +70,13 @@ __END_SYS
 
 __BEGIN_SYS
 
-class Cortex_IEEE802_15_4: public IEEE802_15_4::NIC_Base<IEEE802_15_4, Traits<Cortex_IEEE802_15_4>::NICS::Polymorphic>
+class NIC: public IEEE802_15_4::NIC_Base<IEEE802_15_4, Traits<NIC>::NICS::Polymorphic>
 {
-    friend class Cortex;
+    friend class Machine;
 
 private:
-    typedef Traits<Cortex_IEEE802_15_4>::NICS NICS;
-    typedef IF<NICS::Polymorphic, NIC_Base<IEEE802_15_4>, NICS::Get<0>::Result>::Result Device;
+    typedef Traits<NIC>::NICS NICS;
+    typedef IF<NICS::Polymorphic, NIC_Base<NIC>, NICS::Get<0>::Result>::Result Device;
 
     static const unsigned int UNITS = NICS::Length;
 
@@ -86,11 +86,11 @@ public:
 
 public:
     template<unsigned int UNIT = 0>
-    Cortex_IEEE802_15_4(unsigned int u = UNIT) {
+    NIC(unsigned int u = UNIT) {
         _dev = reinterpret_cast<Device *>(NICS::Get<UNIT>::Result::get(u));
         db<NIC>(TRC) << "NIC::NIC(u=" << UNIT << ",d=" << _dev << ") => " << this << endl;
     }
-    ~Cortex_IEEE802_15_4() { _dev = 0; }
+    ~NIC() { _dev = 0; }
 
     Buffer * alloc(const Address & dst, const Protocol & prot, unsigned int once, unsigned int always, unsigned int payload) { return _dev->alloc(this, dst, prot, once, always, payload); }
     int send(Buffer * buf) { return _dev->send(buf); }
@@ -124,7 +124,5 @@ private:
 };
 
 __END_SYS
-
-#endif
 
 #endif

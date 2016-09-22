@@ -1,6 +1,6 @@
 // EPOS TI CC2538 IEEE 802.15.4 NIC Mediator Declarations
 
-#if !defined(__cc2538_h) && !defined(__mmod_zynq__)
+#ifndef __cc2538_h
 #define __cc2538_h
 
 #include <ieee802_15_4.h>
@@ -10,7 +10,7 @@
 __BEGIN_SYS
 
 // IT CC2538 IEEE 802.15.4 RF Transceiver
-class CC2538RF: private Cortex_Model
+class CC2538RF: private Cortex_M_Model
 {
 protected:
     typedef CPU::Reg8 Reg8;
@@ -356,7 +356,16 @@ public:
             }
         }
 
-        static void init();
+        static void init() {
+            mactimer(MTCTRL) |= MTCTRL_RUN; // Stop counting
+            mactimer(MTIRQM) = 0; // Mask interrupts
+            mactimer(MTIRQF) = 0; // Clear interrupts
+            mactimer(MTCTRL) &= ~MTCTRL_SYNC; // We can't use the sync feature because we want to change the count and overflow values when the timer is stopped
+            mactimer(MTCTRL) |= MTCTRL_LATCH_MODE; // count and overflow will be latched at once
+            IC::int_vector(IC::INT_MACTIMER, &int_handler);
+            IC::enable(33);
+            int_enable(INT_OVERFLOW_PER);
+        }
 
     private:
         static Time_Stamp _offset;
@@ -506,12 +515,12 @@ protected:
 };
 
 // CC2538 IEEE 802.15.4 EPOSMote III NIC Mediator
-class CC2538: public IF<EQUAL<Traits<Network>::NETWORKS::Get<Traits<Cortex_IEEE802_15_4>::NICS::Find<CC2538>::Result>::Result, TSTP>::Result, TSTP_MAC<CC2538RF>, IEEE802_15_4_MAC<CC2538RF>>::Result
+class CC2538: public IF<EQUAL<Traits<Network>::NETWORKS::Get<Traits<NIC>::NICS::Find<CC2538>::Result>::Result, TSTP>::Result, TSTP_MAC<CC2538RF>, IEEE802_15_4_MAC<CC2538RF>>::Result
 {
-    template <typename Type, int unit> friend void call_init();
+    template <int unit> friend void call_init();
 
 private:
-    typedef IF<EQUAL<Traits<Network>::NETWORKS::Get<Traits<Cortex_IEEE802_15_4>::NICS::Find<CC2538>::Result>::Result, _SYS::TSTP>::Result, TSTP_MAC<CC2538RF>, IEEE802_15_4_MAC<CC2538RF>>::Result MAC;
+    typedef IF<EQUAL<Traits<Network>::NETWORKS::Get<Traits<NIC>::NICS::Find<CC2538>::Result>::Result, _SYS::TSTP>::Result, TSTP_MAC<CC2538RF>, IEEE802_15_4_MAC<CC2538RF>>::Result MAC;
 
     // Transmit and Receive Ring sizes
     static const unsigned int UNITS = Traits<CC2538>::UNITS;

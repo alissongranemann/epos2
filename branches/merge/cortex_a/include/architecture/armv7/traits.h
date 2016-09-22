@@ -6,7 +6,7 @@
 
 __BEGIN_SYS
 
-template <> struct Traits<ARMv7>: public Traits<void>
+template <> struct Traits<CPU>: public Traits<void>
 {
     enum {LITTLE, BIG};
     static const unsigned int ENDIANESS         = LITTLE;
@@ -15,15 +15,16 @@ template <> struct Traits<ARMv7>: public Traits<void>
     static const bool unaligned_memory_access   = false;
 };
 
-template <> struct Traits<ARMv7_MMU>: public Traits<void>
+template <> struct Traits<MMU>: public Traits<void>
 {
     static const bool colorful = false;
     static const unsigned int COLORS = 1;
 };
 
-template <> struct Traits<ARMv7_TSC>: public Traits<void>
+template <> struct Traits<TSC>: public Traits<void>
 {
     static const bool enabled = false;
+//TODO: http://stackoverflow.com/questions/16236460/arm-cortex-a9-event-counters-return-0
 };
 
 __END_SYS

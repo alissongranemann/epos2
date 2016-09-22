@@ -23,7 +23,7 @@ class Thread
     friend class Synchronizer_Common;
     friend class Alarm;
     friend class Task;
-    friend class IA32;
+    friend class CPU;
     friend class Agent;
 
 protected:

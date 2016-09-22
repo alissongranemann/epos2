@@ -1,4 +1,4 @@
-// EPOS ARM Cortex Run-Time System Information
+// EPOS Cortex Run-Time System Information
 
 #ifndef __cortex_info_h
 #define __cortex_info_h
@@ -7,8 +7,7 @@
 
 __BEGIN_SYS
 
-template<>
-struct System_Info<Cortex>
+struct System_Info
 {
 private:
     typedef unsigned int LAddr;
@@ -52,7 +51,7 @@ public:
     };
 
 public:
-    friend Debug & operator<<(Debug & db, const System_Info<Cortex> & si) { return db; }
+    friend Debug & operator<<(Debug & db, const System_Info & si) { return db; }
 
 public:
     Boot_Map bm;

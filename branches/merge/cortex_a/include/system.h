@@ -3,6 +3,7 @@
 #ifndef __system_h
 #define __system_h
 
+#include <system/info.h>
 #include <utility/heap.h>
 #include <segment.h>
 
@@ -21,13 +22,13 @@ class System
     friend void ::operator delete[](void *);
 
 public:
-    static System_Info<Machine> * const info() { assert(_si); return _si; }
+    static System_Info * const info() { assert(_si); return _si; }
 
 private:
     static void init();
 
 private:
-    static System_Info<Machine> * _si;
+    static System_Info * _si;
     static char _preheap[(Traits<System>::multiheap ? sizeof(Segment) : 0) + sizeof(Heap)];
     static Segment * _heap_segment;
     static Heap * _heap;

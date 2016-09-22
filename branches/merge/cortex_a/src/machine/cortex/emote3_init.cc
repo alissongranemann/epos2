@@ -1,4 +1,4 @@
-// EPOS eMote3 (ARM Cortex) MCU Initialization
+// EPOS eMote3 (Cortex-M3) MCU Initialization
 
 #include <system/config.h>
 #include __MODEL_H
@@ -18,7 +18,7 @@ void eMote3::init()
     scr(I_MAP) |= I_MAP_ALTMAP;
 
     // Set the vector table offset (must be 512-byte aligned)
-    scs(VTOR) = (Traits<Cortex>::SYS_CODE) & ~(1 << 29);
+    scs(VTOR) = (Traits<Machine>::SYS_CODE) & ~(1 << 29);
 }
 
 void eMote3::init_clock()

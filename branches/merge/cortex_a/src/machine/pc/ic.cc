@@ -7,7 +7,7 @@ __BEGIN_SYS
 
 // Class attributes
 APIC::Log_Addr APIC::_base;
-PC_IC::Interrupt_Handler PC_IC::_int_vector[PC_IC::INTS];
+IC::Interrupt_Handler IC::_int_vector[IC::INTS];
 
 
 // APIC class methods
@@ -20,7 +20,7 @@ void APIC::ipi_init(volatile int * status)
     status[0] = 0;
 
     // Send INIT IPI to all APs excluding self
-    for(unsigned int n = 1; n < Traits<PC>::CPUS; n++) {
+    for(unsigned int n = 1; n < Traits<Machine>::CPUS; n++) {
         status[n] = 0;
         write(ICR32_63, n << 24);
         write(ICR0_31, ICR_LEVEL | ICR_ASSERT | ICR_INIT);
@@ -49,7 +49,7 @@ void APIC::ipi_start(Log_Addr entry, volatile int * status)
     unsigned int vector = (entry >> 12) & 0xff;
 
     // Send STARTUP IPI to all APs
-    for(unsigned int n = 1; n < Traits<PC>::CPUS; n++) {
+    for(unsigned int n = 1; n < Traits<Machine>::CPUS; n++) {
         write(ICR32_63, n << 24);
         write(ICR0_31, ICR_LEVEL | ICR_ASSERT | ICR_STARTUP | vector);
         while((read(ICR0_31) & ICR_PENDING));
@@ -58,7 +58,7 @@ void APIC::ipi_start(Log_Addr entry, volatile int * status)
     // Give them time to wake up (> 100ms)
     i8255::ms_delay(500);
 
-    for(unsigned int n = 1; n < Traits<PC>::CPUS; n++) {
+    for(unsigned int n = 1; n < Traits<Machine>::CPUS; n++) {
         if(status[n] == 1) { // CPU is up
             CPU::finc(status[n]);
             i8255::ms_delay(30);

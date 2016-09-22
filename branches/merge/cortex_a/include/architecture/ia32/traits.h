@@ -7,7 +7,7 @@
 
 __BEGIN_SYS
 
-template<> struct Traits<IA32>: public Traits<void>
+template<> struct Traits<CPU>: public Traits<void>
 {
     enum {LITTLE, BIG};
     static const unsigned int ENDIANESS         = LITTLE;
@@ -16,22 +16,22 @@ template<> struct Traits<IA32>: public Traits<void>
     static const bool unaligned_memory_access   = true;
 };
 
-template<> struct Traits<IA32_TSC>: public Traits<void>
+template<> struct Traits<TSC>: public Traits<void>
 {
 };
 
-template<> struct Traits<IA32_MMU>: public Traits<void>
+template<> struct Traits<MMU>: public Traits<void>
 {
     static const bool colorful = false;
     static const unsigned int COLORS = 1;
 };
 
-template<> struct Traits<IA32_FPU>: public Traits<void>
+template<> struct Traits<FPU>: public Traits<void>
 {
     static const bool enabled = false;
 };
 
-template<> struct Traits<IA32_PMU>: public Traits<void>
+template<> struct Traits<PMU>: public Traits<void>
 {
     static const bool enabled = true;
     enum { V1, V2, V3, DUO, MICRO, ATOM, NEHALEN, NETBURST, SANDY_BRIDGE };

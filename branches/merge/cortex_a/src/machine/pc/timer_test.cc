@@ -1,4 +1,4 @@
-// EPOS PC_Timer Test Program
+// EPOS Timer Test Program
 
 #include <utility/ostream.h>
 #include <machine.h>
@@ -22,7 +22,7 @@ void handler()
 
 int main()
 {
-    cout << "PC_Timer test" << endl;
+    cout << "Timer test" << endl;
 
     User_Timer timer(10000, handler);
 

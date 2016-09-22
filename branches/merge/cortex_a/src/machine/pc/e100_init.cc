@@ -14,26 +14,26 @@ void E100::init(unsigned int unit)
     db<Init, E100>(TRC) << "E100::init(unit=" << unit << ")" << endl;
 
     // Scan the PCI bus for device
-    PC_PCI::Locator loc = PC_PCI::scan(PCI_VENDOR_ID, PCI_DEVICE_ID, unit);
+    PCI::Locator loc = PCI::scan(PCI_VENDOR_ID, PCI_DEVICE_ID, unit);
     if(!loc) {
         db<Init, E100>(WRN) << "E100::init: PCI scan failed!" << endl;
         return;
     }
 
     // Try to enable IO regions and bus master
-    PC_PCI::command(loc, PC_PCI::command(loc) | PC_PCI::COMMAND_MEMORY | PC_PCI::COMMAND_MASTER);
+    PCI::command(loc, PCI::command(loc) | PCI::COMMAND_MEMORY | PCI::COMMAND_MASTER);
 
     // Get the config space header and check it we got MEMORY and MASTER
-    PC_PCI::Header hdr;
+    PCI::Header hdr;
     PCI::header(loc, &hdr);
     if(!hdr) {
         db<Init, E100>(WRN) << "E100::init: PCI header failed!" << endl;
         return;
     }
     db<Init, E100>(INF) << "E100::init: PCI header=" << hdr << endl;
-    if(!(hdr.command & PC_PCI::COMMAND_MEMORY))
+    if(!(hdr.command & PCI::COMMAND_MEMORY))
         db<Init, E100>(WRN) << "E100::init: I/O memory unaccessible!" << endl;
-    if(!(hdr.command & PC_PCI::COMMAND_MASTER))
+    if(!(hdr.command & PCI::COMMAND_MASTER))
         db<Init, E100>(WRN) << "E100::init: not master capable!" << endl;
 
     // Get I/O base port

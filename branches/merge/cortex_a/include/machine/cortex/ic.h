@@ -1,4 +1,4 @@
-// EPOS ARM Cortex IC Mediator Declarations
+// EPOS Cortex IC Mediator Declarations
 
 #ifndef __cortex_ic_h
 #define __cortex_ic_h
@@ -281,8 +281,8 @@ private:
     static void int_not(const Interrupt_Id & i);
     static void hard_fault(const Interrupt_Id & i);
 
-    // Physical handlers
-    static void entry();
+    // Physical handler
+    static void entry() __attribute__((naked));
 
     static void init();
 

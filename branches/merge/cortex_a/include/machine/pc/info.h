@@ -7,8 +7,7 @@
 
 __BEGIN_SYS
 
-template<>
-struct System_Info<PC>
+struct System_Info
 {
 private:
     typedef unsigned int LAddr;
@@ -33,7 +32,7 @@ public:
         int system_offset;
         int application_offset;
         int extras_offset;
-        volatile int cpu_status[Traits<PC>::CPUS]; // CPUs initialization status
+        volatile int cpu_status[Traits<Machine>::CPUS]; // CPUs initialization status
     };
 
     // Physical Memory Map (built by SETUP)
@@ -112,7 +111,7 @@ public:
     };
 
 public:
-    friend Debug & operator<<(Debug & db, const System_Info<PC> & si);
+    friend Debug & operator<<(Debug & db, const System_Info & si);
 
 public:
     Boot_Map bm;

@@ -41,7 +41,7 @@ public:
 
 public:
     NS16550AF(unsigned int unit, unsigned int brate, unsigned int dbits, unsigned int par, unsigned int sbits):
-        _port((unit == 0) ? Traits<PC_UART>::COM1 : (unit == 1) ? Traits<PC_UART>::COM2 : (unit == 2) ?Traits<PC_UART>::COM3 : Traits<PC_UART>::COM4) {
+        _port((unit == 0) ? Traits<UART>::COM1 : (unit == 1) ? Traits<UART>::COM2 : (unit == 2) ?Traits<UART>::COM3 : Traits<UART>::COM4) {
         config(brate, dbits, par, sbits);
     }
 
@@ -138,18 +138,18 @@ private:
     IO_Port _port;
 };
 
-class PC_UART: private UART_Common, private NS16550AF
+class UART: private UART_Common, private NS16550AF
 {
 private:
     typedef NS16550AF Engine;
 
-    static const unsigned int BAUD_RATE = Traits<PC_UART>::DEF_BAUD_RATE;
-    static const unsigned int DATA_BITS = Traits<PC_UART>::DEF_DATA_BITS;
-    static const unsigned int PARITY = Traits<PC_UART>::DEF_PARITY;
-    static const unsigned int STOP_BITS = Traits<PC_UART>::DEF_STOP_BITS;
+    static const unsigned int BAUD_RATE = Traits<UART>::DEF_BAUD_RATE;
+    static const unsigned int DATA_BITS = Traits<UART>::DEF_DATA_BITS;
+    static const unsigned int PARITY = Traits<UART>::DEF_PARITY;
+    static const unsigned int STOP_BITS = Traits<UART>::DEF_STOP_BITS;
 
 public:
-    PC_UART(unsigned int baud_rate = BAUD_RATE, unsigned int data_bits = DATA_BITS, unsigned int parity = PARITY, unsigned int stop_bits = STOP_BITS, unsigned int unit = 0)
+    UART(unsigned int baud_rate = BAUD_RATE, unsigned int data_bits = DATA_BITS, unsigned int parity = PARITY, unsigned int stop_bits = STOP_BITS, unsigned int unit = 0)
     : Engine(unit, baud_rate, data_bits, parity, stop_bits) {}
 
     void config(unsigned int baud_rate, unsigned int data_bits, unsigned int parity, unsigned int stop_bits) {

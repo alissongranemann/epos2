@@ -26,7 +26,7 @@ template<> struct Traits<Build>
     enum {PC, ATmega, Cortex};
     static const unsigned int MACHINE = Cortex;
 
-    enum {Legacy_PC, eMote1, eMote2, eMote3, Arduino, LM3S811, Zynq};
+    enum {Legacy_PC, eMote3, LM3S811, Zynq};
     static const unsigned int MODEL = Zynq;
 
     static const unsigned int CPUS = 1;
@@ -88,7 +88,6 @@ __END_SYS
 
 #include __ARCH_TRAITS_H
 #include __MACH_TRAITS_H
-#include __MACH_CONFIG_H
 
 __BEGIN_SYS
 

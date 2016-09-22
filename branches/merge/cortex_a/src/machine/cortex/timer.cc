@@ -7,11 +7,11 @@
 __BEGIN_SYS
 
 // Class attributes
-//Cortex_Timer::Handler* Cortex_Timer::handlers[4];
-Cortex_Timer * Cortex_Timer::_channels[CHANNELS];
+//Timer::Handler* Timer::handlers[4];
+Timer * Timer::_channels[CHANNELS];
 
 // Class methods
-void Cortex_Timer::int_handler(const Interrupt_Id & i)
+void Timer::int_handler(const Interrupt_Id & i)
 {
     // When emulating Zynq on on, the bit the triggered the interrupt must be
     // cleared before re-enabling them to avoid calling the same interrupt in a

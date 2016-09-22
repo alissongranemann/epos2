@@ -123,7 +123,7 @@ public:
     static unsigned int int_id() { return 0; }
 };
 
-class ARMv7: private IF<Traits<Build>::MODEL == Traits<Build>::Zynq, ARMv7_A, ARMv7_M>::Result
+class CPU: private IF<Traits<Build>::MODEL == Traits<Build>::Zynq, ARMv7_A, ARMv7_M>::Result
 {
     friend class Init_System;
 
@@ -216,7 +216,7 @@ public:
     typedef void (FSR)();
 
 public:
-    ARMv7() {}
+    CPU() {}
 
     static Hertz clock() { return _cpu_clock; }
     static Hertz bus_clock() { return _bus_clock; }

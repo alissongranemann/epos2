@@ -5,7 +5,7 @@
 
 __BEGIN_SYS
 
-void Cortex::panic()
+void Machine::panic()
 {
     CPU::int_disable();
     if(Traits<Display>::enabled)
@@ -16,7 +16,7 @@ void Cortex::panic()
         CPU::halt();
 }
 
-void Cortex::reboot()
+void Machine::reboot()
 {
     db<Machine>(WRN) << "Machine::reboot()" << endl;
     Cortex_Model::reboot();

@@ -8,14 +8,14 @@
 
 __BEGIN_SYS
 
-class IA32_TSC: private TSC_Common
+class TSC: private TSC_Common
 {
 public:
     using TSC_Common::Hertz;
     using TSC_Common::Time_Stamp;
 
 public:
-    IA32_TSC() {}
+    TSC() {}
 
     static Hertz frequency() { return CPU::clock(); }
 

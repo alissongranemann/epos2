@@ -147,6 +147,10 @@ __END_SYS
 
 #ifdef __DISPLAY_H
 #include __DISPLAY_H
+#else
+__BEGIN_SYS
+class Display: public IF<Traits<Serial_Display>::enabled, Serial_Display, Dummy>::Result {};
+__END_SYS
 #endif
 
 #endif

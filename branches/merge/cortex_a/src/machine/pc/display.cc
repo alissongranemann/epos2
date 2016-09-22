@@ -5,6 +5,6 @@
 __BEGIN_SYS
 
 // Class attributes
-PC_Display::Frame_Buffer PC_Display::_frame_buffer;
+VGA::Frame_Buffer VGA::_frame_buffer;
 
 __END_SYS

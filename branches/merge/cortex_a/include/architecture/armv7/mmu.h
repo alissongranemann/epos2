@@ -12,14 +12,14 @@
 
 __BEGIN_SYS
 
-class ARMv7_MMU: public MMU_Common<0, 0, 0>
+class MMU: public MMU_Common<0, 0, 0>
 {
-    friend class ARMv7;
+    friend class CPU;
 
 private:
     typedef Grouping_List<unsigned int> List;
 
-    static const unsigned int PHY_MEM = Memory_Map<Machine>::PHY_MEM;
+    static const unsigned int PHY_MEM = Memory_Map::PHY_MEM;
 
 public:
     // Page Flags
@@ -78,7 +78,7 @@ public:
     {
     public:
         DMA_Buffer(unsigned int s): Chunk(s, Flags::CT) {
-            db<ARMv7_MMU>(TRC) << "ARMv7_MMU::DMA_Buffer() => " << *this << endl;
+            db<MMU>(TRC) << "MMU::DMA_Buffer() => " << *this << endl;
         }
 
         Log_Addr log_address() const { return phy_address(); }
@@ -93,7 +93,7 @@ public:
     };
 
 public:
-    ARMv7_MMU() {}
+    MMU() {}
 
     static Phy_Addr alloc(unsigned int bytes = 1) {
         Phy_Addr phy(false);
@@ -102,9 +102,9 @@ public:
             if(e)
                 phy = reinterpret_cast<unsigned int>(e->object()) + e->size();
             else
-                db<ARMv7_MMU>(ERR) << "ARMv7_MMU::alloc() failed!" << endl;
+                db<MMU>(ERR) << "MMU::alloc() failed!" << endl;
         }
-        db<ARMv7_MMU>(TRC) << "ARMv7_MMU::alloc(bytes=" << bytes << ") => " << phy << endl;
+        db<MMU>(TRC) << "MMU::alloc(bytes=" << bytes << ") => " << phy << endl;
 
         return phy;
     };
@@ -116,7 +116,7 @@ public:
     }
 
     static void free(Phy_Addr addr, unsigned int n = 1) {
-        db<ARMv7_MMU>(TRC) << "ARMv7_MMU::free(addr=" << addr << ",n=" << n << ")" << endl;
+        db<MMU>(TRC) << "MMU::free(addr=" << addr << ",n=" << n << ")" << endl;
 
         // No unaligned addresses if the CPU doesn't support it
         assert(Traits<CPU>::unaligned_memory_access || !(addr % 4));

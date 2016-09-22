@@ -1,4 +1,4 @@
-// EPOS EPOSMoteIII (ARM Cortex-M3) MCU Mediator Declarations
+// EPOS EPOSMoteIII (Cortex-M3) MCU Mediator Declarations
 
 #ifndef __emote3_h
 #define __emote3_h
