@@ -118,7 +118,7 @@ namespace EPOS {
 #define __GPIO_H                __HEADER_MACH(gpio)
 #endif
 
-#ifdef __emote3__
+#ifdef __mmod_emote3__
 #define __CPU_H                 __HEADER_ARCH(cpu)
 #define __TSC_H                 __HEADER_ARCH(tsc)
 #define __MMU_H                 __HEADER_ARCH(mmu)
@@ -136,7 +136,7 @@ namespace EPOS {
 #define __GPIO_H                __HEADER_MACH(gpio)
 #endif
 
-#ifdef __zinq__
+#ifdef __mmod_zinq__
 #endif
 
 //============================================================================

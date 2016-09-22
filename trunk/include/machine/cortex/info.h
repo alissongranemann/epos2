@@ -1,7 +1,7 @@
-// EPOS Cortex-M Run-Time System Information
+// EPOS ARM Cortex Run-Time System Information
 
-#ifndef __cortex_m_info_h
-#define __cortex_m_info_h
+#ifndef __cortex_info_h
+#define __cortex_info_h
 
 #include <system/info.h>
 

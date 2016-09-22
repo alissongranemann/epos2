@@ -3,8 +3,8 @@
 #include <usb.h>
 #include <cpu.h>
 
-#ifndef __cortex_m_usb_h
-#define __cortex_m_usb_h
+#ifndef __cortex_usb_h
+#define __cortex_usb_h
 
 #include __MODEL_H
 

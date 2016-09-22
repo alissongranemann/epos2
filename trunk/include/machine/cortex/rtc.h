@@ -1,5 +1,7 @@
-#ifndef __cortex_m_rtc_h
-#define __cortex_m_rtc_h
+// EPOS ARM Cortex RTC Mediator Declarations
+
+#ifndef __cortex_rtc_h
+#define __cortex_rtc_h
 
 #include <rtc.h>
 

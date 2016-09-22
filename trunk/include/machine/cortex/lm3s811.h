@@ -1,4 +1,4 @@
-// EPOS LM3S811 (Cortex-M3) MCU Mediator Declarations
+// EPOS LM3S811 (ARM Cortex-M3) MCU Mediator Declarations
 
 #ifndef __lm3s811_h
 #define __lm3s811_h

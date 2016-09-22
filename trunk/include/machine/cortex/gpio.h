@@ -1,7 +1,7 @@
 // EPOS Cortex-M GPIO Mediator Declarations
 
-#ifndef __cortex_m_gpio_h_
-#define __cortex_m_gpio_h_
+#ifndef __cortex_gpio_h_
+#define __cortex_gpio_h_
 
 #include <machine.h>
 #include <ic.h>

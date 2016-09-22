@@ -1,9 +1,9 @@
-// EPOS Cortex-M NIC Mediator Declarations
+// EPOS ARM Cortex NIC Mediator Declarations
 
 #include <nic.h>
 
-#ifndef __cortex_m_nic_h
-#define __cortex_m_nic_h
+#ifndef __cortex_nic_h
+#define __cortex_nic_h
 
 #include <ieee802_15_4.h>
 #include <system.h>

@@ -23,7 +23,7 @@ template <> struct Traits<MMU>: public Traits<void>
 
 template <> struct Traits<TSC>: public Traits<void>
 {
-    static const bool enabled = (Traits<Build>::MACHINE == Traits<Build>::Cortex_A);
+    static const bool enabled = (Traits<Build>::MODEL == Traits<Build>::Zynq);
 //TODO: http://stackoverflow.com/questions/16236460/arm-cortex-a9-event-counters-return-0
 };
 

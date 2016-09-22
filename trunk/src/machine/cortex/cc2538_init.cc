@@ -4,8 +4,8 @@
 #ifndef __no_networking__
 
 #include <system.h>
-#include <machine/cortex_m/machine.h>
-#include <machine/cortex_m/cc2538.h>
+#include <machine/cortex/machine.h>
+#include <machine/cortex/cc2538.h>
 
 __BEGIN_SYS
 

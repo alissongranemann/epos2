@@ -1,7 +1,7 @@
 // EPOS Cortex-M IC Mediator Declarations
 
-#ifndef __cortex_m_ic_h
-#define __cortex_m_ic_h
+#ifndef __cortex_ic_h
+#define __cortex_ic_h
 
 #include <cpu.h>
 #include <ic.h>

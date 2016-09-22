@@ -2,7 +2,7 @@
 
 #include <machine.h>
 #include <ic.h>
-#include <machine/cortex_m/timer.h>
+#include <machine/cortex/timer.h>
 
 __BEGIN_SYS
 

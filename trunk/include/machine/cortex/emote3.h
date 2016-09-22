@@ -1,4 +1,4 @@
-// EPOS EPOSMoteIII (Cortex-M3) MCU Mediator Declarations
+// EPOS EPOSMoteIII (ARM Cortex-M3) MCU Mediator Declarations
 
 #ifndef __emote3_h
 #define __emote3_h
@@ -909,9 +909,7 @@ protected:
 
             //5. Set GPIO pins A1 and A0 to peripheral mode
             gpioa(AFSEL) |= (PIN0) + (PIN1);
-        }
-        else
-        {
+        } else {
             /*ioc(PB3_SEL) = UART1_TXD;
             ioc(PB3_OVER) = OE;
             ioc(PB4_OVER) = 0;

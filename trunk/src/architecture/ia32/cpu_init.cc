@@ -32,7 +32,7 @@ void CPU::init()
 //        // IA32_SYSENTER_CS (MSR address 174H)
 //        wrmsr(0x174, SEL_SYS_CODE);
 //        // IA32_SYSENTER_ESP (MSR address 175H)
-//        wrmsr(0x175, Memory_Map::STACK_SIZE * (Machine::cpu_id() + 1) - 2 * sizeof(int));
+//        wrmsr(0x175, Memory_Map::SYS_STACK + Traits<System>::STACK_SIZE * (Machine::cpu_id() + 1) - 2 * sizeof(int));
 //        // IA32_SYSENTER_EIP (MSR address 176H)
 //        wrmsr(0x176, reinterpret_cast<Reg64>(&syscalled));
 //        db<IA32>(INF) << "IA32::init() => MSR="

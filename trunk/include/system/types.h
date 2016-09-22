@@ -109,6 +109,7 @@ class C905;
 class E100;
 class CC2538;
 class AT86RF;
+class GEM;
 
 // Abstractions
 class System;

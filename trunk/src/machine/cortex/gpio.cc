@@ -2,7 +2,7 @@
 
 #include <machine.h>
 #include <ic.h>
-#include <machine/cortex_m/gpio.h>
+#include <machine/cortex/gpio.h>
 
 __BEGIN_SYS
 

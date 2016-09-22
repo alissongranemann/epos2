@@ -121,12 +121,12 @@ public:
     static void msr12() { ASM("msr cpsr, r12"); }
 };
 
-class CPU: private IF<Traits<Build>::MACHINE == Traits<Build>::Cortex_A, ARMv7_A, ARMv7_M>::Result
+class CPU: private IF<Traits<Build>::MODEL == Traits<Build>::Zynq, ARMv7_A, ARMv7_M>::Result
 {
     friend class Init_System;
 
 private:
-    typedef IF<Traits<Build>::MACHINE == Traits<Build>::Cortex_A, ARMv7_A, ARMv7_M>::Result Base;
+    typedef IF<Traits<Build>::MODEL == Traits<Build>::Zynq, ARMv7_A, ARMv7_M>::Result Base;
 
 public:
     // CPU Native Data Types

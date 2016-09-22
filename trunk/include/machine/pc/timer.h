@@ -260,13 +260,11 @@ public:
     using Timer_Common::Tick;
     using Timer_Common::Microsecond;
     using Timer_Common::Handler;
-    using Timer_Common::Channel;
 
 protected:
-    Timer(const Hertz & frequency, const Handler & handler, const Channel & channel, bool retrigger = true)
+    Timer(unsigned int channel, const Hertz & frequency, const Handler & handler, bool retrigger = true)
     : _channel(channel), _initial(FREQUENCY / frequency), _retrigger(retrigger), _handler(handler) {
-        db<Timer>(TRC) << "Timer(f=" << frequency << ",h=" << reinterpret_cast<void*>(handler)
-                       << ",ch=" << channel << ") => {count=" << _initial << "}" << endl;
+        db<Timer>(TRC) << "Timer(f=" << frequency << ",h=" << reinterpret_cast<void*>(handler) << ",ch=" << channel << ") => {count=" << _initial << "}" << endl;
 
         if(_initial && (unsigned(channel) < CHANNELS) && !_channels[channel])
             _channels[channel] = this;
@@ -279,8 +277,7 @@ protected:
 
 public:
     ~Timer() {
-        db<Timer>(TRC) << "~Timer(f=" << frequency() << ",h=" << reinterpret_cast<void*>(_handler)
-        	       << ",ch=" << _channel << ") => {count=" << _initial << "}" << endl;
+        db<Timer>(TRC) << "~Timer(f=" << frequency() << ",h=" << reinterpret_cast<void*>(_handler) << ",ch=" << _channel << ") => {count=" << _initial << "}" << endl;
 
         _channels[_channel] = 0;
     }
@@ -327,22 +324,22 @@ protected:
 class Scheduler_Timer: public Timer
 {
 public:
-    Scheduler_Timer(const Microsecond & quantum, const Handler & handler): Timer(1000000 / quantum, handler, SCHEDULER) {}
+    Scheduler_Timer(const Microsecond & quantum, const Handler & handler): Timer(SCHEDULER, 1000000 / quantum, handler) {}
 };
 
 // Timer used by Alarm
 class Alarm_Timer: public Timer
 {
 public:
-    Alarm_Timer(const Handler & handler): Timer(FREQUENCY, handler, ALARM) {}
+    Alarm_Timer(const Handler & handler): Timer(ALARM, FREQUENCY, handler) {}
 };
 
 // Timer available for users
 class User_Timer: public Timer
 {
 public:
-    User_Timer(const Microsecond & time, const Handler & handler, const Channel & channel, bool retrigger = false)
-    : Timer(1000000 / time, handler, USER, retrigger) {}
+    User_Timer(unsigned int channel, const Microsecond & time, const Handler & handler, bool retrigger = false)
+    : Timer(USER, 1000000 / time, handler, retrigger) {}
 };
 
 __END_SYS

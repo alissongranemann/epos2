@@ -1,7 +1,7 @@
 // EPOS Cortex_M Timer Mediator Declarations
 
-#ifndef __cortex_m_timer_h
-#define __cortex_m_timer_h
+#ifndef __cortex_timer_h
+#define __cortex_timer_h
 
 #include <cpu.h>
 #include <ic.h>
@@ -99,7 +99,6 @@ public:
     using Timer_Common::Hertz;
     using Timer_Common::Tick;
     using Timer_Common::Handler;
-    using Timer_Common::Channel;
 
     // Channels
     enum {
@@ -109,7 +108,7 @@ public:
     };
 
 protected:
-    Timer(const Hertz & frequency, const Handler & handler, const Channel & channel, bool retrigger = true)
+    Timer(unsigned int channel, const Hertz & frequency, const Handler & handler, bool retrigger = true)
     : _channel(channel), _initial(FREQUENCY / frequency), _retrigger(retrigger), _handler(handler) {
         db<Timer>(TRC) << "Timer(f=" << frequency << ",h=" << reinterpret_cast<void*>(handler) << ",ch=" << channel << ") => {count=" << _initial << "}" << endl;
 
@@ -124,8 +123,7 @@ protected:
 
 public:
     ~Timer() {
-        db<Timer>(TRC) << "~Timer(f=" << frequency() << ",h=" << reinterpret_cast<void*>(_handler)
-                       << ",ch=" << _channel << ") => {count=" << _initial << "}" << endl;
+        db<Timer>(TRC) << "~Timer(f=" << frequency() << ",h=" << reinterpret_cast<void*>(_handler) << ",ch=" << _channel << ") => {count=" << _initial << "}" << endl;
 
         _channels[_channel] = 0;
     }
@@ -176,7 +174,7 @@ private:
     typedef RTC::Microsecond Microsecond;
 
 public:
-    Scheduler_Timer(const Microsecond & quantum, const Handler & handler): Timer(1000000 / quantum, handler, SCHEDULER) {}
+    Scheduler_Timer(const Microsecond & quantum, const Handler & handler): Timer(SCHEDULER, 1000000 / quantum, handler) {}
 };
 
 // Timer used by Alarm
@@ -186,7 +184,7 @@ public:
     static const unsigned int FREQUENCY = Timer::FREQUENCY;
 
 public:
-    Alarm_Timer(const Handler & handler): Timer(FREQUENCY, handler, ALARM) {}
+    Alarm_Timer(const Handler & handler): Timer(ALARM, FREQUENCY, handler) {}
 };
 
 
@@ -196,10 +194,9 @@ class User_Timer: private Timer_Common, private Cortex_M_GPTM
 public:
     using Timer_Common::Microsecond;
     using Timer_Common::Handler;
-    using Timer_Common::Channel;
 
 public:
-    User_Timer(const Handler & handler, const Channel & channel, const Microsecond & time, bool periodic = false)
+    User_Timer(unsigned int channel, const Microsecond & time, const Handler & handler, bool periodic = false)
     : Cortex_M_GPTM(channel, us2count(time), handler ? true : false, periodic), _handler(handler) {}
     ~User_Timer() {}
 

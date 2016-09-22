@@ -2,8 +2,8 @@
 
 #include __MODEL_H
 
-#ifndef __cortex_m_uart_h__
-#define __cortex_m_uart_h__
+#ifndef __cortex_uart_h__
+#define __cortex_uart_h__
 
 #include <cpu.h>
 #include <uart.h>

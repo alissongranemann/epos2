@@ -1,6 +1,6 @@
 // EPOS Cortex_M NIC Mediator Initialization
 
-#include <machine/cortex_m/nic.h>
+#include <machine/cortex/nic.h>
 
 __BEGIN_SYS
 

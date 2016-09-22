@@ -1,7 +1,7 @@
-// EPOS Cortex_M Memory Map
+// EPOS Cortex Memory Map
 
-#ifndef __cortex_m_memory_map_h
-#define __cortex_m_memory_map_h
+#ifndef __cortex_memory_map_h
+#define __cortex_memory_map_h
 
 #include <system/memory_map.h>
 

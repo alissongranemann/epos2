@@ -1,6 +1,6 @@
 // EPOS Cortex_M Mediator Initialization
 
-#include <machine/cortex_m/machine.h>
+#include <machine/cortex/machine.h>
 
 __BEGIN_SYS
 

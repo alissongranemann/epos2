@@ -1,6 +1,6 @@
 // EPOS Cortex_M IC Mediator Implementation
 
-#include <machine/cortex_m/ic.h>
+#include <machine/cortex/ic.h>
 #include <machine.h>
 
 //extern "C" { void _exit(int s); }

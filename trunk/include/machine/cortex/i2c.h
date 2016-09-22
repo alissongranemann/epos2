@@ -2,8 +2,8 @@
 
 #include __MODEL_H
 
-#ifndef __cortex_m_i2c_h__
-#define __cortex_m_i2c_h__
+#ifndef __cortex_i2c_h__
+#define __cortex_i2c_h__
 
 #include <i2c.h>
 

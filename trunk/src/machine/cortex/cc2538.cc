@@ -1,8 +1,8 @@
 // EPOS TI CC2538 IEEE 802.15.4 NIC Mediator Implementation
 
 
-#include <machine/cortex_m/machine.h>
-#include <machine/cortex_m/cc2538.h>
+#include <machine/cortex/machine.h>
+#include <machine/cortex/cc2538.h>
 #include <utility/malloc.h>
 #include <utility/random.h>
 
