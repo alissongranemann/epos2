@@ -13,7 +13,7 @@ template <> struct Traits<Cortex_M_Common>: public Traits<void>
     static const bool debugged = Traits<void>::debugged;
 };
 
-template <> struct Traits<Cortex_M>: public Traits<Cortex_M_Common>
+template <> struct Traits<Machine>: public Traits<Cortex_M_Common>
 {
     static const unsigned int CPUS = Traits<Build>::CPUS;
 
@@ -41,12 +41,12 @@ template <> struct Traits<Cortex_M>: public Traits<Cortex_M_Common>
     static const unsigned int MAX_THREADS = 7;
 };
 
-template <> struct Traits<Cortex_M_IC>: public Traits<Cortex_M_Common>
+template <> struct Traits<IC>: public Traits<Cortex_M_Common>
 {
     static const bool debugged = hysterically_debugged;
 };
 
-template <> struct Traits<Cortex_M_Timer>: public Traits<Cortex_M_Common>
+template <> struct Traits<Timer>: public Traits<Cortex_M_Common>
 {
     static const bool debugged = hysterically_debugged;
 
@@ -56,7 +56,7 @@ template <> struct Traits<Cortex_M_Timer>: public Traits<Cortex_M_Common>
     static const int FREQUENCY = 1000; // Hz
 };
 
-template <> struct Traits<Cortex_M_UART>: public Traits<Cortex_M_Common>
+template <> struct Traits<UART>: public Traits<Cortex_M_Common>
 {
     static const unsigned int UNITS = 2;
 
@@ -68,7 +68,7 @@ template <> struct Traits<Cortex_M_UART>: public Traits<Cortex_M_Common>
     static const unsigned int DEF_STOP_BITS = 1;
 };
 
-template <> struct Traits<Cortex_M_USB>: public Traits<Cortex_M_Common>
+template <> struct Traits<USB>: public Traits<Cortex_M_Common>
 {
     // Some observed objects are created before initializing the Display, which may use the USB.
     // Enabling debug may cause trouble in some Machines
@@ -84,7 +84,7 @@ template <> struct Traits<Cortex_M_Scratchpad>: public Traits<Cortex_M_Common>
     static const bool enabled = false;
 };
 
-template <> struct Traits<Cortex_M_IEEE802_15_4>: public Traits<Cortex_M_Common>
+template <> struct Traits<IEEE802_15_4>: public Traits<Cortex_M_Common>
 {
     static const bool enabled = (Traits<Build>::NODES > 1);
 
@@ -92,7 +92,7 @@ template <> struct Traits<Cortex_M_IEEE802_15_4>: public Traits<Cortex_M_Common>
     static const unsigned int UNITS = NICS::Length;
 };
 
-template <> struct Traits<CC2538>: public Traits<Cortex_M_IEEE802_15_4>
+template <> struct Traits<CC2538>: public Traits<IEEE802_15_4>
 {
     static const unsigned int UNITS = NICS::Count<CC2538>::Result;
     static const unsigned int RECEIVE_BUFFERS = 8; // per unit

@@ -6,11 +6,11 @@
 __BEGIN_SYS
 
 // Class attributes
-unsigned int ARMv7::_cpu_clock;
-unsigned int ARMv7::_bus_clock;
+unsigned int CPU::_cpu_clock;
+unsigned int CPU::_bus_clock;
 
 // Class methods
-void ARMv7::Context::save() volatile
+void CPU::Context::save() volatile
 {
     ASM("       mov     r12, pc                 \n"
         "       push    {r12}                   \n"
@@ -21,9 +21,9 @@ void ARMv7::Context::save() volatile
         : : "r"(this));
 }
 
-void ARMv7::Context::load() const volatile
+void CPU::Context::load() const volatile
 {
-    System::_heap->free(reinterpret_cast<void *>(Memory_Map<Machine>::SYS_STACK), Traits<System>::STACK_SIZE);
+    System::_heap->free(reinterpret_cast<void *>(Memory_Map::SYS_STACK), Traits<System>::STACK_SIZE);
     ASM("       mov     sp, %0                  \n"
         "       isb                             \n"     // serialize the pipeline so that SP gets updated before the pop
         "       pop     {r12}                   \n" : : "r"(this));
@@ -32,7 +32,7 @@ void ARMv7::Context::load() const volatile
         "       pop     {pc}                    \n");
 }
 
-void ARMv7::switch_context(Context * volatile * o, Context * volatile n)
+void CPU::switch_context(Context * volatile * o, Context * volatile n)
 {
     ASM("       adr     r12, .ret               \n"
         "       push    {r12}                   \n"

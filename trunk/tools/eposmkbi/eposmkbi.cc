@@ -44,7 +44,7 @@ struct Configuration
 };
 
 // System_Info
-typedef _SYS::System_Info<_SYS::Machine> System_Info;
+typedef _SYS::System_Info System_Info;
 
 // PROTOTYPES
 bool parse_config(FILE * cfg_file, Configuration * cfg);

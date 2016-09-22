@@ -19,7 +19,7 @@ public:
 	Display::init();
 
 	if(Traits<System>::multicore) {
-	    System_Info<Machine> * si = reinterpret_cast<System_Info<Machine> *>(Memory_Map<Machine>::SYS_INFO);
+	    System_Info * si = reinterpret_cast<System_Info *>(Memory_Map::SYS_INFO);
 
 	    Machine::smp_init(si->bm.n_cpus);
 	}
@@ -34,7 +34,7 @@ OStream kout;
 OStream kerr;
 
 // System class attributes
-System_Info<Machine> * System::_si = reinterpret_cast<System_Info<Machine> *>(Memory_Map<Machine>::SYS_INFO);
+System_Info * System::_si = reinterpret_cast<System_Info *>(Memory_Map::SYS_INFO);
 char System::_preheap[];
 Segment * System::_heap_segment;
 Heap * System::_heap;

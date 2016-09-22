@@ -121,7 +121,7 @@ public:
     static void msr12() { ASM("msr cpsr, r12"); }
 };
 
-class ARMv7: private IF<Traits<Build>::MACHINE == Traits<Build>::Cortex_A, ARMv7_A, ARMv7_M>::Result
+class CPU: private IF<Traits<Build>::MACHINE == Traits<Build>::Cortex_A, ARMv7_A, ARMv7_M>::Result
 {
     friend class Init_System;
 
@@ -213,7 +213,7 @@ public:
     typedef void (FSR)();
 
 public:
-    ARMv7() {}
+    CPU() {}
 
     static Hertz clock() { return _cpu_clock; }
     static Hertz bus_clock() { return _bus_clock; }

@@ -76,9 +76,9 @@ protected:
 
 
 // PC FPGA
-class PC_FPGA: private FPGA_Common, private XAP1052
+class FPGA: private FPGA_Common, private XAP1052
 {
-    friend class PC;
+    friend class Machine;
 
 private:
     // Traits
@@ -88,7 +88,7 @@ public:
     typedef XAP1052 Engine;
 
 public:
-    PC_FPGA() {}
+    FPGA() {}
 
     static void reset() { return Engine::reset(); }
 

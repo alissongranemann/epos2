@@ -5,7 +5,7 @@
 
 __BEGIN_SYS
 
-Debug & operator<<(Debug & db, const System_Info<PC> & si)
+Debug & operator<<(Debug & db, const System_Info & si)
 {
     db << "{"
        << "\nBoot_Map={"

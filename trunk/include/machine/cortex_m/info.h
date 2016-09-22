@@ -7,8 +7,7 @@
 
 __BEGIN_SYS
 
-template<>
-struct System_Info<Cortex_M>
+struct System_Info
 {
 private:
     typedef unsigned int LAddr;
@@ -52,7 +51,7 @@ public:
     };
 
 public:
-    friend Debug & operator<<(Debug & db, const System_Info<Cortex_M> & si) { return db; }
+    friend Debug & operator<<(Debug & db, const System_Info & si) { return db; }
 
 public:
     Boot_Map bm;

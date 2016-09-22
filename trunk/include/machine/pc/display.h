@@ -51,19 +51,20 @@ public:
     }
 };
 
-class PC_Display: public Display_Common, private MC6845
+// VGA (actually CGA) PC Display
+class VGA: public Display_Common, private MC6845
 {
     friend class PC_Setup;
     friend class First_Object;
 
 public:
     static const unsigned int FB_PHY_ADDR = 0xb8000;
-    static const unsigned int FB_LOG_ADDR = Memory_Map<PC>::VGA;
+    static const unsigned int FB_LOG_ADDR = Memory_Map::VGA;
     static const unsigned int FB_SIZE = 32 * 1024; // 32 KB
 
-    static const int LINES = Traits<PC_Display>::LINES;
-    static const int COLUMNS = Traits<PC_Display>::COLUMNS;
-    static const int TAB_SIZE = Traits<PC_Display>::TAB_SIZE;
+    static const int LINES = Traits<Display>::LINES;
+    static const int COLUMNS = Traits<Display>::COLUMNS;
+    static const int TAB_SIZE = Traits<Display>::TAB_SIZE;
 
 public:
     // Frame Buffer
@@ -77,7 +78,7 @@ public:
     };
 
 public:
-    PC_Display() {}
+    VGA() {}
 
     static void putc(char c) {
         unsigned int pos = MC6845::position();
@@ -152,6 +153,8 @@ private:
 private:
     static Frame_Buffer _frame_buffer;
 };
+
+class Display: public IF<Traits<Serial_Display>::enabled, Serial_Display, VGA>::Result {};
 
 __END_SYS
 

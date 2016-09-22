@@ -184,9 +184,9 @@ protected:
     };
 };
 
-class Cortex_M_USB: private eMote3_USB, private Cortex_M_Model, public USB_2_0
+class USB: private eMote3_USB, private Cortex_M_Model, public USB_2_0
 {
-    friend class Cortex_M;
+    friend class Machine;
 
 private:
     typedef CPU::Reg32 Reg32;
@@ -238,7 +238,7 @@ private:
     static bool _was_locked;
 
 public:
-    Cortex_M_USB() { }
+    USB() { }
 
     static USB_2_0::STATE state() { return _state; }
 

@@ -6,17 +6,17 @@
 __USING_SYS
 
 // Class attributes
-const char * Cortex_M_USB::_send_buffer = reinterpret_cast<const char *>(0);
-unsigned int Cortex_M_USB::_send_buffer_size = 0;
+const char * USB::_send_buffer = reinterpret_cast<const char *>(0);
+unsigned int USB::_send_buffer_size = 0;
 
 // Class methods
-void Cortex_M_USB::disable()
+void USB::disable()
 {
     reg(CTRL) &= ~USBEN;
     Cortex_M_Model::usb_power(0, OFF);
 }
 
-char Cortex_M_USB::get()
+char USB::get()
 {
     lock();
     input();
@@ -30,7 +30,7 @@ char Cortex_M_USB::get()
     return ret;
 }
 
-unsigned int Cortex_M_USB::get(char * out, unsigned int max_size)
+unsigned int USB::get(char * out, unsigned int max_size)
 {
     lock();
     input();
@@ -45,9 +45,9 @@ unsigned int Cortex_M_USB::get(char * out, unsigned int max_size)
     return i;
 }
 
-void Cortex_M_USB::put(char c)
+void USB::put(char c)
 {
-    if(Traits<Cortex_M_USB>::blocking) {
+    if(Traits<USB>::blocking) {
         while(!ready_to_put());
     } else {
         if(!ready_to_put())
@@ -64,9 +64,9 @@ void Cortex_M_USB::put(char c)
     unlock();
 }
 
-void Cortex_M_USB::put(const char * c, unsigned int size)
+void USB::put(const char * c, unsigned int size)
 {
-    if(Traits<Cortex_M_USB>::blocking) {
+    if(Traits<USB>::blocking) {
         while(!ready_to_put());
     } else {
         if(!ready_to_put())
@@ -84,14 +84,14 @@ void Cortex_M_USB::put(const char * c, unsigned int size)
     unlock();
 }
 
-bool Cortex_M_USB::handle_ep0(const USB_2_0::Request::Device_Request & data)
+bool USB::handle_ep0(const USB_2_0::Request::Device_Request & data)
 {
     switch(data.bRequest)
     {
         case SET_ADDRESS:
             if(auto d = data.morph<Request::Set_Address>())
             {
-                db<Cortex_M_USB>(TRC) << *d << endl;
+                db<USB>(TRC) << *d << endl;
                 reg(ADDR) = d->device_address;
                 _state = USB_2_0::STATE::ADDRESS;
                 return true;
@@ -101,7 +101,7 @@ bool Cortex_M_USB::handle_ep0(const USB_2_0::Request::Device_Request & data)
         case GET_DESCRIPTOR:
             if(auto d = data.morph<Request::Get_Descriptor>())
             {
-                db<Cortex_M_USB>(TRC) << *d << endl;
+                db<USB>(TRC) << *d << endl;
                 if(d->descriptor_type == DESC_DEVICE)
                 {
                     _send_buffer = reinterpret_cast<const char *>(&_device_descriptor);
@@ -123,7 +123,7 @@ bool Cortex_M_USB::handle_ep0(const USB_2_0::Request::Device_Request & data)
         case SET_CONFIGURATION:
             if(auto d = data.morph<Request::Set_Configuration>())
             {
-                db<Cortex_M_USB>(TRC) << *d << endl;
+                db<USB>(TRC) << *d << endl;
                 bool ret = (d->configuration_number == 1);
                 if(ret) {
                     _state = USB_2_0::STATE::CONFIGURED;
@@ -136,15 +136,15 @@ bool Cortex_M_USB::handle_ep0(const USB_2_0::Request::Device_Request & data)
             if(auto d = data.morph<CDC::Request::Get_Line_Coding>())
             {
                 static CDC::Request::Get_Line_Coding::Data_Format data;// = new CDC::Request::Get_Line_Coding::Data_Format();
-                data.dwDTERate = 1/Traits<Cortex_M_UART>::DEF_BAUD_RATE;
-                switch(Traits<Cortex_M_UART>::DEF_STOP_BITS)
+                data.dwDTERate = 1/Traits<UART>::DEF_BAUD_RATE;
+                switch(Traits<UART>::DEF_STOP_BITS)
                 {
                     case 1: data.bCharFormat = 0; break;
                     case 2: data.bCharFormat = 2; break;
                     default: return false;
                 }
-                data.bParityType = Traits<Cortex_M_UART>::DEF_PARITY;
-                data.bDataBits = Traits<Cortex_M_UART>::DEF_DATA_BITS;
+                data.bParityType = Traits<UART>::DEF_PARITY;
+                data.bDataBits = Traits<UART>::DEF_DATA_BITS;
 
                 _send_buffer = reinterpret_cast<const char *>(&data);
                 _send_buffer_size = (sizeof (data)) > (d->size_of_data) ? (d->size_of_data) : (sizeof (data));
@@ -158,7 +158,7 @@ bool Cortex_M_USB::handle_ep0(const USB_2_0::Request::Device_Request & data)
         case CDC::SET_CONTROL_LINE_STATE:
             if(auto d = data.morph<CDC::Request::Set_Control_Line_State>())
             {
-                db<Cortex_M_USB>(TRC) << *d << endl;
+                db<USB>(TRC) << *d << endl;
                 _ready_to_put_next = d->DTE_present;
                 return true;
             }
@@ -171,22 +171,22 @@ bool Cortex_M_USB::handle_ep0(const USB_2_0::Request::Device_Request & data)
     return false;
 }
 
-void Cortex_M_USB::int_handler(const IC::Interrupt_Id & interrupt)
+void USB::int_handler(const IC::Interrupt_Id & interrupt)
 {
     Reg32 index = endpoint(); // Save old index
 
-    //db<Cortex_M_USB>(TRC) << "Cortex_M_USB::int_handler" << endl;
-    //db<Cortex_M_USB>(TRC) << "CS0_CSIL = " << reg(CS0_CSIL) << endl;
-    //db<Cortex_M_USB>(TRC) << "CIF = " << cif << endl;
-    //db<Cortex_M_USB>(TRC) << "OIF = " << reg(OIF) << endl;
-    //db<Cortex_M_USB>(TRC) << "IIF = " << reg(IIF) << endl;
+    //db<USB>(TRC) << "USB::int_handler" << endl;
+    //db<USB>(TRC) << "CS0_CSIL = " << reg(CS0_CSIL) << endl;
+    //db<USB>(TRC) << "CIF = " << cif << endl;
+    //db<USB>(TRC) << "OIF = " << reg(OIF) << endl;
+    //db<USB>(TRC) << "IIF = " << reg(IIF) << endl;
 
     Reg32 flags;
     if((flags = reg(CIF))) // USB interrupt flags are cleared when read
     {
         if(flags & INT_RESET)
             reset();
-        db<Cortex_M_USB>(TRC) << "CIF = " << flags << endl;
+        db<USB>(TRC) << "CIF = " << flags << endl;
     }
 
     if((flags = reg(IIF))) // USB interrupt flags are cleared when read
@@ -201,18 +201,18 @@ void Cortex_M_USB::int_handler(const IC::Interrupt_Id & interrupt)
             control();
             if(reg(CS0_CSIL) & CS0_OUTPKTRDY) // Data present
             {
-                db<Cortex_M_USB>(TRC) << "Endpoint 0 command received:";
+                db<USB>(TRC) << "Endpoint 0 command received:";
                 // Read command from endpoint 0 FIFO
                 USB_2_0::Request::Device_Request data;
                 Reg8 fifocnt = reg(CNT0_CNTL);
                 for(unsigned int i=0; (i < 8) && (i < fifocnt); i++)
                 {
                     data[i] = reg(F0);
-                    db<Cortex_M_USB>(TRC) << " " << (int) data[i];
+                    db<USB>(TRC) << " " << (int) data[i];
                 }
-                db<Cortex_M_USB>(TRC) << endl;
+                db<USB>(TRC) << endl;
 
-                db<Cortex_M_USB>(TRC) << data << endl;
+                db<USB>(TRC) << data << endl;
 
                 if(handle_ep0(data))
                 {
@@ -220,13 +220,13 @@ void Cortex_M_USB::int_handler(const IC::Interrupt_Id & interrupt)
                         reg(CS0_CSIL) |= CS0_CLROUTPKTRDY;
                     else
                         reg(CS0_CSIL) |= CS0_CLROUTPKTRDY | CS0_DATAEND;
-                    db<Cortex_M_USB>(TRC) << "command processed" << endl;
+                    db<USB>(TRC) << "command processed" << endl;
                 }
                 else
                 {
                     // Signal that the command could not be executed
                     reg(CS0_CSIL) |= CS0_CLROUTPKTRDY | CS0_SENDSTALL;
-                    db<Cortex_M_USB>(WRN) << "Cortex_M_USB::int_handler: command NOT processed" << endl;
+                    db<USB>(WRN) << "USB::int_handler: command NOT processed" << endl;
                 }
             }
 
@@ -249,11 +249,11 @@ void Cortex_M_USB::int_handler(const IC::Interrupt_Id & interrupt)
         }
 
 
-        db<Cortex_M_USB>(TRC) << "IIF = " << flags << endl;
+        db<USB>(TRC) << "IIF = " << flags << endl;
     }
     if((flags = reg(OIF))) // USB interrupt flags are cleared when read
     {
-        db<Cortex_M_USB>(TRC) << "OIF = " << flags << endl;
+        db<USB>(TRC) << "OIF = " << flags << endl;
     }
     endpoint(index); // Restore old index
 }

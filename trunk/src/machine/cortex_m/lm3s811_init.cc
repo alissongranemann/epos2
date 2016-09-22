@@ -1,14 +1,15 @@
 // EPOS LM3S811 (Cortex-M3) MCU Initialization
 
 #include <system/config.h>
-#include __MODEL_H
-#ifdef __lm3s811_h
+#include <machine.h>
+
+#ifdef __mmod_lm3s811__
 
 __BEGIN_SYS
 
-void LM3S811::init()
+void Machine::init()
 {
-    db<Init, Cortex_M>(TRC) << "LM3S811::init()" << endl;
+    db<Init, Machine>(TRC) << "Machine::init()" << endl;
 
     // Initialize the clock
     CPU::Reg32 rcc = scr(RCC);

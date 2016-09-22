@@ -7,11 +7,11 @@
 __BEGIN_SYS
 
 // Class attributes
-CPU::Log_Addr PC_FPGA::Engine::_base;
-MMU::DMA_Buffer * PC_FPGA::Engine::_dma_buf;
+CPU::Log_Addr FPGA::Engine::_base;
+MMU::DMA_Buffer * FPGA::Engine::_dma_buf;
 
 // Class methods
-void PC_FPGA::int_handler(const IC::Interrupt_Id & i)
+void FPGA::int_handler(const IC::Interrupt_Id & i)
 {
 
 }

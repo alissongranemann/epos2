@@ -4,7 +4,7 @@
 
 __BEGIN_SYS
 
-PC_RTC::Date PC_RTC::date()
+RTC::Date RTC::date()
 {
     unsigned int tmp = reg(SECONDS);
     Date date(reg(YEAR), reg(MONTH), reg(DAY),
@@ -23,7 +23,7 @@ PC_RTC::Date PC_RTC::date()
     return date;
 }
 
-void PC_RTC::date(const Date & d)
+void RTC::date(const Date & d)
 {
     db<RTC>(TRC) << "RTC::date(date= " << d << ")" << endl;
 

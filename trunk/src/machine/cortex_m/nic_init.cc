@@ -7,7 +7,7 @@ __BEGIN_SYS
 template<int unit>
 inline static void call_init()
 {
-    typedef typename Traits<Cortex_M_IEEE802_15_4>::NICS::template Get<unit>::Result NIC;
+    typedef typename Traits<NIC>::NICS::template Get<unit>::Result NIC;
 
     // TODO: unit should be reset for each different NIC
     if(Traits<NIC>::enabled)
@@ -17,11 +17,11 @@ inline static void call_init()
 };
 
 template<>
-inline void call_init<Traits<Cortex_M_IEEE802_15_4>::NICS::Length>()
+inline void call_init<Traits<NIC>::NICS::Length>()
 {
 };
 
-void Cortex_M_IEEE802_15_4::init()
+void NIC::init()
 {
     call_init<0>();
 }

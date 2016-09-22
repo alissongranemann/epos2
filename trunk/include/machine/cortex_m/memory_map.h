@@ -7,31 +7,30 @@
 
 __BEGIN_SYS
 
-template <>
-struct Memory_Map<Cortex_M>
+struct Memory_Map
 {
     // Physical Memory
     enum {
-        MEM_BASE        = Traits<Cortex_M>::MEM_BASE,
-        MEM_TOP         = Traits<Cortex_M>::MEM_TOP
+        MEM_BASE        = Traits<Machine>::MEM_BASE,
+        MEM_TOP         = Traits<Machine>::MEM_TOP
     };
 
     // Logical Address Space
     enum {
-        APP_LOW         = Traits<Cortex_M>::APP_LOW,
-        APP_CODE        = Traits<Cortex_M>::APP_CODE,
-        APP_DATA        = Traits<Cortex_M>::APP_DATA,
-        APP_HIGH        = Traits<Cortex_M>::APP_HIGH,
+        APP_LOW         = Traits<Machine>::APP_LOW,
+        APP_CODE        = Traits<Machine>::APP_CODE,
+        APP_DATA        = Traits<Machine>::APP_DATA,
+        APP_HIGH        = Traits<Machine>::APP_HIGH,
 
-        PHY_MEM         = Traits<Cortex_M>::PHY_MEM,
-        IO              = Traits<Cortex_M>::IO_BASE,
+        PHY_MEM         = Traits<Machine>::PHY_MEM,
+        IO              = Traits<Machine>::IO_BASE,
 
-        SYS             = Traits<Cortex_M>::SYS,
+        SYS             = Traits<Machine>::SYS,
         SYS_INFO        = unsigned(-1),                 // Not used during boot. Dynamically built during initialization.
-        SYS_CODE        = Traits<Cortex_M>::SYS_CODE,
-        SYS_DATA        = Traits<Cortex_M>::SYS_DATA,
+        SYS_CODE        = Traits<Machine>::SYS_CODE,
+        SYS_DATA        = Traits<Machine>::SYS_DATA,
         SYS_HEAP        = SYS_DATA,                     // Not used (because multiheap can only be enabled with an MMU)
-        SYS_STACK       = MEM_TOP + 1 - Traits<Cortex_M>::STACK_SIZE      // This stack is used before main(). The stack pointer is initialized at crt0.S
+        SYS_STACK       = MEM_TOP + 1 - Traits<Machine>::STACK_SIZE      // This stack is used before main(). The stack pointer is initialized at crt0.S
     };
 };
 

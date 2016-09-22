@@ -78,71 +78,37 @@ class Init;
 class Utility;
 
 // Architecture Hardware Mediators
-class IA32;
-class IA32_TSC;
-class IA32_MMU;
-class IA32_FPU;
-class IA32_PMU;
-
-class ARMv7;
-class ARMv7_TSC;
-class ARMv7_MMU;
-
-class AVR8;
-class AVR8_TSC;
-class AVR8_MMU;
+class CPU;
+class TSC;
+class MMU;
+class FPU;
+class PMU;
 
 // Machine Hardware Mediators
-class PC;
-class PC_PCI;
-class PC_IC;
-class PC_Timer;
-class PC_RTC;
-class PC_UART;
-class PC_EEPROM;
-class PC_Display;
-class PC_Keyboard;
-class PC_Scratchpad;
-class PC_NIC;
-class PC_Ethernet;
-class PC_FPGA;
-
-class Cortex_M;
-class Cortex_M_IC;
-class Cortex_M_Timer;
-class Cortex_M_RTC;
-class Cortex_M_UART;
-class Cortex_M_USB;
-class Cortex_M_GPIO;
-class Cortex_M_EEPROM;
-class Cortex_M_Display;
-class Cortex_M_Scratchpad;
-class Cortex_M_NIC;
-class Cortex_M_IEEE802_15_4;
-class Cortex_M_I2C;
-
-class ATmega;
-class ATmega_IC;
-class ATmega_Timer;
-class ATmega_RTC;
-class ATmega_EEPROM;
-class ATmega_Flash;
-class ATmega_Scratchpad;
-class ATmega_UART;
-class ATmega_USART;
-class ATmega_SPI;
-class ATmega_ADC;
-class ATmega_Battery;
-class ATmega_Radio;
-
+class Machine;
+class PCI;
+class IC;
+class Timer;
+class RTC;
+class UART;
+class USB;
+class EEPROM;
+class Display;
+class Serial_Display;
+class Keyboard;
+class Serial_Keyboard;
+class Scratchpad;
+class GPIO;
+class I2C;
+class FPGA;
+class NIC;
+class Ethernet;
+class IEEE802_15_4;
 class PCNet32;
 class C905;
 class E100;
 class CC2538;
 class AT86RF;
-
-class Serial_Display;
-class Serial_Keyboard;
 
 // Abstractions
 class System;
@@ -273,37 +239,23 @@ enum
 // Type IDs for system components
 template<typename T> struct Type { static const Type_Id ID = UNKNOWN_TYPE_ID; };
 
-template<> struct Type<IA32> { static const Type_Id ID = CPU_ID; };
-template<> struct Type<IA32_TSC> { static const Type_Id ID = TSC_ID; };
-template<> struct Type<IA32_MMU> { static const Type_Id ID = MMU_ID; };
-template<> struct Type<IA32_FPU> { static const Type_Id ID = FPU_ID; };
-template<> struct Type<IA32_PMU> { static const Type_Id ID = PMU_ID; };
+template<> struct Type<CPU> { static const Type_Id ID = CPU_ID; };
+template<> struct Type<TSC> { static const Type_Id ID = TSC_ID; };
+template<> struct Type<MMU> { static const Type_Id ID = MMU_ID; };
+template<> struct Type<FPU> { static const Type_Id ID = FPU_ID; };
+template<> struct Type<PMU> { static const Type_Id ID = PMU_ID; };
 
-template<> struct Type<ARMv7> { static const Type_Id ID = CPU_ID; };
-template<> struct Type<ARMv7_TSC> { static const Type_Id ID = TSC_ID; };
-template<> struct Type<ARMv7_MMU> { static const Type_Id ID = MMU_ID; };
-
-
-template<> struct Type<PC> { static const Type_Id ID = MACHINE_ID; };
-template<> struct Type<PC_IC> { static const Type_Id ID = IC_ID; };
-template<> struct Type<PC_Timer> { static const Type_Id ID = TIMER_ID; };
-template<> struct Type<PC_UART> { static const Type_Id ID = UART_ID; };
-template<> struct Type<PC_RTC> { static const Type_Id ID = RTC_ID; };
-template<> struct Type<PC_PCI> { static const Type_Id ID = PCI_ID; };
-template<> struct Type<PC_Display> { static const Type_Id ID = DISPLAY_ID; };
-template<> struct Type<PC_Keyboard> { static const Type_Id ID = KEYBOARD_ID; };
-template<> struct Type<PC_Scratchpad> { static const Type_Id ID = SCRATCHPAD_ID; };
-template<> struct Type<PC_Ethernet> { static const Type_Id ID = NIC_ID; };
-
-template<> struct Type<Cortex_M> { static const Type_Id ID = MACHINE_ID; };
-template<> struct Type<Cortex_M_IC> { static const Type_Id ID = IC_ID; };
-template<> struct Type<Cortex_M_Timer> { static const Type_Id ID = TIMER_ID; };
-template<> struct Type<Cortex_M_UART> { static const Type_Id ID = UART_ID; };
-template<> struct Type<Cortex_M_RTC> { static const Type_Id ID = RTC_ID; };
-template<> struct Type<Cortex_M_Display> { static const Type_Id ID = DISPLAY_ID; };
-template<> struct Type<Cortex_M_Scratchpad> { static const Type_Id ID = SCRATCHPAD_ID; };
-template<> struct Type<Cortex_M_IEEE802_15_4> { static const Type_Id ID = NIC_ID; };
-
+template<> struct Type<Machine> { static const Type_Id ID = MACHINE_ID; };
+template<> struct Type<IC> { static const Type_Id ID = IC_ID; };
+template<> struct Type<Timer> { static const Type_Id ID = TIMER_ID; };
+template<> struct Type<UART> { static const Type_Id ID = UART_ID; };
+template<> struct Type<RTC> { static const Type_Id ID = RTC_ID; };
+template<> struct Type<PCI> { static const Type_Id ID = PCI_ID; };
+template<> struct Type<Display> { static const Type_Id ID = DISPLAY_ID; };
+template<> struct Type<Keyboard> { static const Type_Id ID = KEYBOARD_ID; };
+template<> struct Type<Scratchpad> { static const Type_Id ID = SCRATCHPAD_ID; };
+template<> struct Type<Ethernet> { static const Type_Id ID = NIC_ID; };
+template<> struct Type<IEEE802_15_4> { static const Type_Id ID = NIC_ID; };
 
 template<> struct Type<Thread> { static const Type_Id ID = THREAD_ID; };
 template<> struct Type<Periodic_Thread> { static const Type_Id ID = THREAD_ID; };

@@ -5,7 +5,7 @@
 
 __BEGIN_SYS
 
-void Cortex_M_Timer::init()
+void Timer::init()
 {
     db<Init, Timer>(TRC) << "Timer::init()" << endl;
 

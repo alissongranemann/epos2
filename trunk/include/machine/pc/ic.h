@@ -89,14 +89,14 @@ public:
 
         // Configure Master PIC
         CPU::out8(MASTER_CMD, ICW1);
-        CPU::out8(MASTER_DAT, base);              // ICW2 is the base
-        CPU::out8(MASTER_DAT, 1 << IRQ_CASCADE);  // ICW3 = IRQ2 cascaded
+        CPU::out8(MASTER_DAT, base);            // ICW2 is the base
+        CPU::out8(MASTER_DAT, 1 << IRQ_CASCADE);// ICW3 = IRQ2 cascaded
         CPU::out8(MASTER_DAT, ICW4);
 
         // Configure Slave PIC
         CPU::out8(SLAVE_CMD, ICW1);
-        CPU::out8(SLAVE_DAT, base + 8); // ICW2 is the base
-        CPU::out8(SLAVE_DAT, 0x02);     // ICW3 = cascaded from IRQ1
+        CPU::out8(SLAVE_DAT, base + 8);         // ICW2 is the base
+        CPU::out8(SLAVE_DAT, 0x02);             // ICW3 = cascaded from IRQ1
         CPU::out8(SLAVE_DAT, ICW4);
 
         CPU::out8(MASTER_DAT, m_imr);           // restore saved IMRs
@@ -172,11 +172,11 @@ public:
     // Default mapping addresses
     enum {
         LOCAL_APIC_PHY_ADDR = 0xfee00000,
-        LOCAL_APIC_LOG_ADDR = Memory_Map<PC>::APIC,
-        LOCAL_APIC_SIZE     = Memory_Map<PC>::IO_APIC - Memory_Map<PC>::APIC,
+        LOCAL_APIC_LOG_ADDR = Memory_Map::APIC,
+        LOCAL_APIC_SIZE     = Memory_Map::IO_APIC - Memory_Map::APIC,
         IO_APIC_PHY_ADDR    = 0xfec00000,
-        IO_APIC_LOG_ADDR    = Memory_Map<PC>::IO_APIC,
-        IO_APIC_SIZE        = Memory_Map<PC>::VGA - Memory_Map<PC>::IO_APIC
+        IO_APIC_LOG_ADDR    = Memory_Map::IO_APIC,
+        IO_APIC_SIZE        = Memory_Map::VGA - Memory_Map::IO_APIC
     };
 
     // Memory-mapped registers
@@ -453,10 +453,10 @@ private:
     static Log_Addr _base;
 };
 
-// PC_IC uses i8259A on single-processor machines and the APIC timer on MPs
-class PC_IC: private IC_Common, private IF<Traits<System>::multicore, APIC, i8259A>::Result
+// IC uses i8259A on single-processor machines and the APIC timer on MPs
+class IC: private IC_Common, private IF<Traits<System>::multicore, APIC, i8259A>::Result
 {
-    friend class PC;
+    friend class Machine;
 
 private:
     typedef IF<Traits<System>::multicore, APIC, i8259A>::Result Engine;
@@ -475,7 +475,7 @@ public:
     using Engine::ipi_send;
 
 public:
-    PC_IC() {}
+    IC() {}
 
     static Interrupt_Handler int_vector(const Interrupt_Id & i) {
         assert(i < INTS);

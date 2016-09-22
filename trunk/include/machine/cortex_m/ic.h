@@ -9,9 +9,9 @@
 
 __BEGIN_SYS
 
-class Cortex_M_IC: private IC_Common, private Cortex_M_Model
+class IC: private IC_Common, private Cortex_M_Model
 {
-    friend class Cortex_M;
+    friend class Machine;
 
 private:
     typedef CPU::Reg32 Reg32;
@@ -74,7 +74,7 @@ public:
     };
 
 public:
-    Cortex_M_IC() {}
+    IC() {}
 
     static Interrupt_Handler int_vector(const Interrupt_Id & i) {
         assert(i < INTS);

@@ -18,7 +18,7 @@ void eMote3::init()
     scr(I_MAP) |= I_MAP_ALTMAP;
 
     // Set the vector table offset (must be 512-byte aligned)
-    scs(VTOR) = (Traits<Cortex_M>::SYS_CODE) & ~(1 << 29);
+    scs(VTOR) = (Traits<Machine>::SYS_CODE) & ~(1 << 29);
 }
 
 void eMote3::init_clock()

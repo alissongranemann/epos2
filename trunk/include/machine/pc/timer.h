@@ -236,9 +236,9 @@ public:
 
 
 // Tick timer used by the system
-class PC_Timer: private Timer_Common
+class Timer: private Timer_Common
 {
-    friend class PC;
+    friend class Machine;
     friend class Init_System;
 
 protected:
@@ -247,7 +247,7 @@ protected:
     typedef IC::Interrupt_Id Interrupt_Id;
 
     static const unsigned int CHANNELS = 3;
-    static const unsigned int FREQUENCY = Traits<PC_Timer>::FREQUENCY;
+    static const unsigned int FREQUENCY = Traits<Timer>::FREQUENCY;
 
 public:
     enum {
@@ -263,7 +263,7 @@ public:
     using Timer_Common::Channel;
 
 protected:
-    PC_Timer(const Hertz & frequency, const Handler & handler, const Channel & channel, bool retrigger = true)
+    Timer(const Hertz & frequency, const Handler & handler, const Channel & channel, bool retrigger = true)
     : _channel(channel), _initial(FREQUENCY / frequency), _retrigger(retrigger), _handler(handler) {
         db<Timer>(TRC) << "Timer(f=" << frequency << ",h=" << reinterpret_cast<void*>(handler)
                        << ",ch=" << channel << ") => {count=" << _initial << "}" << endl;
@@ -278,7 +278,7 @@ protected:
     }
 
 public:
-    ~PC_Timer() {
+    ~Timer() {
         db<Timer>(TRC) << "~Timer(f=" << frequency() << ",h=" << reinterpret_cast<void*>(_handler)
         	       << ",ch=" << _channel << ") => {count=" << _initial << "}" << endl;
 
@@ -319,30 +319,30 @@ protected:
     volatile Count _current[Traits<Machine>::CPUS];
     Handler _handler;
 
-    static PC_Timer * _channels[CHANNELS];
+    static Timer * _channels[CHANNELS];
 };
 
 
 // Timer used by Thread::Scheduler
-class Scheduler_Timer: public PC_Timer
+class Scheduler_Timer: public Timer
 {
 public:
-    Scheduler_Timer(const Microsecond & quantum, const Handler & handler): PC_Timer(1000000 / quantum, handler, SCHEDULER) {}
+    Scheduler_Timer(const Microsecond & quantum, const Handler & handler): Timer(1000000 / quantum, handler, SCHEDULER) {}
 };
 
 // Timer used by Alarm
-class Alarm_Timer: public PC_Timer
+class Alarm_Timer: public Timer
 {
 public:
-    Alarm_Timer(const Handler & handler): PC_Timer(FREQUENCY, handler, ALARM) {}
+    Alarm_Timer(const Handler & handler): Timer(FREQUENCY, handler, ALARM) {}
 };
 
 // Timer available for users
-class User_Timer: public PC_Timer
+class User_Timer: public Timer
 {
 public:
     User_Timer(const Microsecond & time, const Handler & handler, const Channel & channel, bool retrigger = false)
-    : PC_Timer(1000000 / time, handler, USER, retrigger) {}
+    : Timer(1000000 / time, handler, USER, retrigger) {}
 };
 
 __END_SYS

@@ -7,10 +7,10 @@
 __BEGIN_SYS
 
 // Class attributes
-volatile unsigned int PC::_n_cpus;
+volatile unsigned int Machine::_n_cpus;
 
 // Class methods
-void PC::panic()
+void Machine::panic()
 {
     CPU::int_disable();
     Display::position(24, 73);
@@ -21,7 +21,7 @@ void PC::panic()
         CPU::halt();
 }
 
-void PC::reboot()
+void Machine::reboot()
 {
     for(int i = 0; (i < 300) && (i8042::status() & i8042::IN_BUF_FULL); i++)
         i8255::ms_delay(1);

@@ -5,10 +5,10 @@
 
 __BEGIN_SYS
 
-class Cortex_M_RTC: public RTC_Common
+class RTC: public RTC_Common
 {
 public:
-    Cortex_M_RTC() {}
+    RTC() {}
 
     static Date date();
     static void date(const Date & d);

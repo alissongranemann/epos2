@@ -16,12 +16,12 @@
 
 __BEGIN_SYS
 
-class Cortex_M: private Machine_Common, private Cortex_M_Model
+class Machine: private Machine_Common, private Cortex_M_Model
 {
     friend class Init_System;
 
 public:
-    Cortex_M() {}
+    Machine() {}
 
     static void delay(const RTC::Microsecond & time) {
 //        eMote3_GPTM g(3, time_microseconds);

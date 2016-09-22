@@ -4,21 +4,21 @@
 
 __BEGIN_SYS
 
-void Cortex_M::init()
+void Machine::init()
 {
-    db<Init, Cortex_M>(TRC) << "Cortex_M::init()" << endl;
+    db<Init, Machine>(TRC) << "Cortex_M::init()" << endl;
 
     Cortex_M_Model::init();
 
-    if(Traits<Cortex_M_IC>::enabled)
-        Cortex_M_IC::init();
-    if(Traits<Cortex_M_Timer>::enabled)
-        Cortex_M_Timer::init();
-    if(Traits<Cortex_M_USB>::enabled)
-        Cortex_M_USB::init();
+    if(Traits<IC>::enabled)
+        IC::init();
+    if(Traits<Timer>::enabled)
+        Timer::init();
+    if(Traits<USB>::enabled)
+        USB::init();
 #ifndef __no_networking__
-    if(Traits<Cortex_M_IEEE802_15_4>::enabled)
-        Cortex_M_IEEE802_15_4::init();
+    if(Traits<NIC>::enabled)
+        NIC::init();
 #endif
 }
 

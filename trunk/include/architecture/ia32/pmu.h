@@ -1140,12 +1140,12 @@ class PMU_Select_Engine<Traits<PMU>::V2>: public Intel_PMU_V2 {};
 template<>
 class PMU_Select_Engine<Traits<PMU>::V3>: public Intel_PMU_V3 {};
 
-class IA32_PMU: public PMU_Select_Engine<Traits<PMU>::VERSION>
+class PMU: public PMU_Select_Engine<Traits<PMU>::VERSION>
 {
-    friend class IA32;
+    friend class CPU;
 
 public:
-    IA32_PMU() {}
+    PMU() {}
 
 private:
     static void init();

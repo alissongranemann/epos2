@@ -9,7 +9,7 @@
 
 __BEGIN_SYS
 
-class Cortex_M_GPIO: private GPIO_Common, private Cortex_M_Model
+class GPIO: private GPIO_Common, private Cortex_M_Model
 {
 private:
     static const bool supports_power_up = Cortex_M_Model::supports_gpio_power_up;
@@ -29,7 +29,7 @@ public:
         OUTPUT,
     };
 
-    Cortex_M_GPIO(char port, unsigned int pin, const Direction & dir, const IC::Interrupt_Handler & handler = 0)
+    GPIO(char port, unsigned int pin, const Direction & dir, const IC::Interrupt_Handler & handler = 0)
     : _port(port - 'A'), _pin(pin), _pin_bit(1 << pin), _data(&gpio(_port, _pin_bit << 2)), _handler(handler) {
         assert((port >= 'A') && (port <= 'A' + GPIO_PORTS));
         gpio(_port, AFSEL) &= ~_pin_bit; // Set pin as software controlled
@@ -73,7 +73,7 @@ private:
     volatile Reg32 * _data;
     IC::Interrupt_Handler _handler;
 
-    static Cortex_M_GPIO * _devices[GPIO_PORTS][8];
+    static GPIO * _devices[GPIO_PORTS][8];
 };
 
 __END_SYS

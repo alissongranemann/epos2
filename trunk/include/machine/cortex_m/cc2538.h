@@ -515,12 +515,12 @@ protected:
 };
 
 // CC2538 IEEE 802.15.4 EPOSMote III NIC Mediator
-class CC2538: public IF<EQUAL<Traits<Network>::NETWORKS::Get<Traits<Cortex_M_IEEE802_15_4>::NICS::Find<CC2538>::Result>::Result, TSTP>::Result, TSTP_MAC<CC2538RF>, IEEE802_15_4_MAC<CC2538RF>>::Result
+class CC2538: public IF<EQUAL<Traits<Network>::NETWORKS::Get<Traits<NIC>::NICS::Find<CC2538>::Result>::Result, TSTP>::Result, TSTP_MAC<CC2538RF>, IEEE802_15_4_MAC<CC2538RF>>::Result
 {
     template <int unit> friend void call_init();
 
 private:
-    typedef IF<EQUAL<Traits<Network>::NETWORKS::Get<Traits<Cortex_M_IEEE802_15_4>::NICS::Find<CC2538>::Result>::Result, _SYS::TSTP>::Result, TSTP_MAC<CC2538RF>, IEEE802_15_4_MAC<CC2538RF>>::Result MAC;
+    typedef IF<EQUAL<Traits<Network>::NETWORKS::Get<Traits<NIC>::NICS::Find<CC2538>::Result>::Result, _SYS::TSTP>::Result, TSTP_MAC<CC2538RF>, IEEE802_15_4_MAC<CC2538RF>>::Result MAC;
 
     // Transmit and Receive Ring sizes
     static const unsigned int UNITS = Traits<CC2538>::UNITS;

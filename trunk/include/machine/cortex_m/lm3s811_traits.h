@@ -7,13 +7,13 @@
 
 __BEGIN_SYS
 
-class Cortex_M_Common;
-template <> struct Traits<Cortex_M_Common>: public Traits<void>
+class Machine_Common;
+template <> struct Traits<Machine_Common>: public Traits<void>
 {
     static const bool debugged = Traits<void>::debugged;
 };
 
-template <> struct Traits<Cortex_M>: public Traits<Cortex_M_Common>
+template <> struct Traits<Machine>: public Traits<Machine_Common>
 {
     static const unsigned int CPUS = Traits<Build>::CPUS;
 
@@ -41,12 +41,12 @@ template <> struct Traits<Cortex_M>: public Traits<Cortex_M_Common>
     static const unsigned int MAX_THREADS = 5;
 };
 
-template <> struct Traits<Cortex_M_IC>: public Traits<Cortex_M_Common>
+template <> struct Traits<IC>: public Traits<Machine_Common>
 {
     static const bool debugged = hysterically_debugged;
 };
 
-template <> struct Traits<Cortex_M_Timer>: public Traits<Cortex_M_Common>
+template <> struct Traits<Timer>: public Traits<Machine_Common>
 {
     static const bool debugged = hysterically_debugged;
 
@@ -56,11 +56,11 @@ template <> struct Traits<Cortex_M_Timer>: public Traits<Cortex_M_Common>
     static const int FREQUENCY = 1000; // Hz
 };
 
-template <> struct Traits<Cortex_M_UART>: public Traits<Cortex_M_Common>
+template <> struct Traits<UART>: public Traits<Machine_Common>
 {
     static const unsigned int UNITS = 2;
 
-    static const unsigned int CLOCK = Traits<ARMv7>::CLOCK;
+    static const unsigned int CLOCK = Traits<CPU>::CLOCK;
 
     static const unsigned int DEF_BAUD_RATE = 115200;
     static const unsigned int DEF_DATA_BITS = 8;
@@ -68,19 +68,19 @@ template <> struct Traits<Cortex_M_UART>: public Traits<Cortex_M_Common>
     static const unsigned int DEF_STOP_BITS = 1;
 };
 
-template <> struct Traits<Cortex_M_USB>: public Traits<Cortex_M_Common>
+template <> struct Traits<USB>: public Traits<Machine_Common>
 {
     static const bool enabled = false;
     static const unsigned int UNITS = 0;
     static const bool blocking = true;
 };
 
-template <> struct Traits<Cortex_M_Scratchpad>: public Traits<Cortex_M_Common>
+template <> struct Traits<Scratchpad>: public Traits<Machine_Common>
 {
     static const bool enabled = false;
 };
 
-template <> struct Traits<Cortex_M_IEEE802_15_4>: public Traits<Cortex_M_Common>
+template <> struct Traits<NIC>: public Traits<Machine_Common>
 {
     static const bool enabled = (Traits<Build>::NODES > 1);
 
@@ -88,7 +88,7 @@ template <> struct Traits<Cortex_M_IEEE802_15_4>: public Traits<Cortex_M_Common>
     static const unsigned int UNITS = NICS::Length;
 };
 
-template <> struct Traits<CC2538>: public Traits<Cortex_M_IEEE802_15_4>
+template <> struct Traits<CC2538>: public Traits<NIC>
 {
     static const unsigned int UNITS = NICS::Count<CC2538>::Result;
     static const unsigned int SEND_BUFFERS = 64; // per unit

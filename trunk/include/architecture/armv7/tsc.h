@@ -7,8 +7,10 @@
 
 __BEGIN_SYS
 
-class ARMv7_TSC: private TSC_Common
+class TSC: private TSC_Common
 {
+    friend class CPU;
+
 private:
     static const unsigned int CLOCK = Traits<CPU>::CLOCK;
 
@@ -17,11 +19,14 @@ public:
     using TSC_Common::Time_Stamp;
 
 public:
-    ARMv7_TSC() {}
+    TSC() {}
 
     static Hertz frequency() { return CLOCK; }
 
     static Time_Stamp time_stamp();
+
+private:
+    static void init() {}
 };
 
 __END_SYS

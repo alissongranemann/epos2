@@ -7,13 +7,13 @@
 
 __BEGIN_SYS
 
-class PC_Common;
-template<> struct Traits<PC_Common>: public Traits<void>
+class Machine_Common;
+template<> struct Traits<Machine_Common>: public Traits<void>
 {
     static const bool debugged = Traits<void>::debugged;
 };
 
-template<> struct Traits<PC>: public Traits<PC_Common>
+template<> struct Traits<Machine>: public Traits<Machine_Common>
 {
     static const unsigned int CPUS = Traits<Build>::CPUS;
 
@@ -50,19 +50,19 @@ template<> struct Traits<PC>: public Traits<PC_Common>
     static const unsigned int MAX_THREADS = 16;
 };
 
-template<> struct Traits<PC_PCI>: public Traits<PC_Common>
+template<> struct Traits<PCI>: public Traits<Machine_Common>
 {
     static const int MAX_BUS = 16;
     static const int MAX_DEV_FN = 0xff;
     static const unsigned int MAX_REGION_SIZE = 0x04000000; // 64 MB
 };
 
-template<> struct Traits<PC_IC>: public Traits<PC_Common>
+template<> struct Traits<IC>: public Traits<Machine_Common>
 {
     static const bool debugged = hysterically_debugged;
 };
 
-template<> struct Traits<PC_Timer>: public Traits<PC_Common>
+template<> struct Traits<Timer>: public Traits<Machine_Common>
 {
     static const bool debugged = hysterically_debugged;
 
@@ -72,7 +72,7 @@ template<> struct Traits<PC_Timer>: public Traits<PC_Common>
     static const int FREQUENCY = 1000; // Hz
 };
 
-template<> struct Traits<PC_RTC>: public Traits<PC_Common>
+template<> struct Traits<RTC>: public Traits<Machine_Common>
 {
     static const unsigned int EPOCH_DAY = 1;
     static const unsigned int EPOCH_MONTH = 1;
@@ -80,11 +80,11 @@ template<> struct Traits<PC_RTC>: public Traits<PC_Common>
     static const unsigned int EPOCH_DAYS = 719499;
 };
 
-template<> struct Traits<PC_EEPROM>: public Traits<PC_Common>
+template<> struct Traits<EEPROM>: public Traits<Machine_Common>
 {
 };
 
-template<> struct Traits<PC_UART>: public Traits<PC_Common>
+template<> struct Traits<UART>: public Traits<Machine_Common>
 {
     static const unsigned int UNITS = 2;
 
@@ -101,7 +101,7 @@ template<> struct Traits<PC_UART>: public Traits<PC_Common>
     static const unsigned int COM4 = 0x2e8; // to 0x2ef, no IRQ
 };
 
-template<> struct Traits<PC_Display>: public Traits<PC_Common>
+template<> struct Traits<Display>: public Traits<Machine_Common>
 {
     static const bool enabled = !Traits<Serial_Display>::enabled;
     static const int COLUMNS = 80;
@@ -109,19 +109,19 @@ template<> struct Traits<PC_Display>: public Traits<PC_Common>
     static const int TAB_SIZE = 8;
 };
 
-template<> struct Traits<PC_Keyboard>: public Traits<PC_Common>
+template<> struct Traits<Keyboard>: public Traits<Machine_Common>
 {
     static const bool enabled = !Traits<Serial_Keyboard>::enabled;
 };
 
-template<> struct Traits<PC_Scratchpad>: public Traits<PC_Common>
+template<> struct Traits<Scratchpad>: public Traits<Machine_Common>
 {
     static const bool enabled = false;
     static const unsigned int ADDRESS = 0xa0000; // VGA Graphic mode frame buffer
     static const unsigned int SIZE = 96 * 1024;
 };
 
-template<> struct Traits<PC_Ethernet>: public Traits<PC_Common>
+template<> struct Traits<NIC>: public Traits<Machine_Common>
 {
     static const bool enabled = (Traits<Build>::NODES > 1);
 
@@ -129,28 +129,28 @@ template<> struct Traits<PC_Ethernet>: public Traits<PC_Common>
     static const unsigned int UNITS = NICS::Length;
 };
 
-template<> struct Traits<PCNet32>: public Traits<PC_Ethernet>
+template<> struct Traits<PCNet32>: public Traits<NIC>
 {
     static const unsigned int UNITS = NICS::Count<PCNet32>::Result;
     static const unsigned int SEND_BUFFERS = 64; // per unit
     static const unsigned int RECEIVE_BUFFERS = 256; // per unit
 };
 
-template<> struct Traits<E100>: public Traits<PC_Ethernet>
+template<> struct Traits<E100>: public Traits<NIC>
 {
     static const unsigned int UNITS = NICS::Count<E100>::Result;
     static const unsigned int SEND_BUFFERS = 64; // per unit
     static const unsigned int RECEIVE_BUFFERS = 64; // per unit
 };
 
-template<> struct Traits<C905>: public Traits<PC_Ethernet>
+template<> struct Traits<C905>: public Traits<NIC>
 {
     static const unsigned int UNITS = NICS::Count<C905>::Result;
     static const unsigned int SEND_BUFFERS = 64; // per unit
     static const unsigned int RECEIVE_BUFFERS = 64; // per unit
 };
 
-template<> struct Traits<PC_FPGA>: public Traits<PC_Common>
+template<> struct Traits<FPGA>: public Traits<Machine_Common>
 {
     static const bool enabled = false;
 

@@ -176,18 +176,18 @@ private:
 };
 
 
-class Cortex_M_UART: private UART_Common, private PL011
+class UART: private UART_Common, private PL011
 {
 private:
     typedef PL011 Engine;
 
-    static const unsigned int BAUD_RATE = Traits<Cortex_M_UART>::DEF_BAUD_RATE;
-    static const unsigned int DATA_BITS = Traits<Cortex_M_UART>::DEF_DATA_BITS;
-    static const unsigned int PARITY = Traits<Cortex_M_UART>::DEF_PARITY;
-    static const unsigned int STOP_BITS = Traits<Cortex_M_UART>::DEF_STOP_BITS;
+    static const unsigned int BAUD_RATE = Traits<UART>::DEF_BAUD_RATE;
+    static const unsigned int DATA_BITS = Traits<UART>::DEF_DATA_BITS;
+    static const unsigned int PARITY = Traits<UART>::DEF_PARITY;
+    static const unsigned int STOP_BITS = Traits<UART>::DEF_STOP_BITS;
 
 public:
-    Cortex_M_UART(unsigned int baud_rate = BAUD_RATE, unsigned int data_bits = DATA_BITS, unsigned int parity = PARITY, unsigned int stop_bits = STOP_BITS, unsigned int unit = 0)
+    UART(unsigned int baud_rate = BAUD_RATE, unsigned int data_bits = DATA_BITS, unsigned int parity = PARITY, unsigned int stop_bits = STOP_BITS, unsigned int unit = 0)
     : Engine(unit, baud_rate, data_bits, parity, stop_bits) {}
 
     void config(unsigned int baud_rate, unsigned int data_bits, unsigned int parity, unsigned int stop_bits) {

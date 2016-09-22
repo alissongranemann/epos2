@@ -7,7 +7,7 @@ extern "C" { void __exit(); }
 
 __BEGIN_SYS
 
-void PC_IC::entry()
+void IC::entry()
 {
     // id must be static because we don't have a stack frame
     static int id;
@@ -791,20 +791,20 @@ void PC_IC::entry()
 };
 
 // Default logical handler
-void PC_IC::int_not(const Interrupt_Id & i)
+void IC::int_not(const Interrupt_Id & i)
 {
     db<IC,Machine>(WRN) << "IC::int_not(i=" << i << ")" << endl;
 }
 
 // Exception and fault handlers
-void PC_IC::exc_not(Reg32 eip, Reg32 cs, Reg32 eflags, Reg32 error)
+void IC::exc_not(Reg32 eip, Reg32 cs, Reg32 eflags, Reg32 error)
 {
     db<IC,Machine>(WRN) << "IC::exc_not(cs=" << hex << cs << ",ip=" << reinterpret_cast<void *>(eip) << ",fl=" << eflags << ")" << endl;
     db<IC,Machine>(WRN) << "The running thread will now be terminated!" << endl;
     _exit(-1);
 }
 
-void PC_IC::exc_pf(Reg32 eip, Reg32 cs, Reg32 eflags, Reg32 error)
+void IC::exc_pf(Reg32 eip, Reg32 cs, Reg32 eflags, Reg32 error)
 {
     register Reg32 fr = CPU::fr();
 
@@ -828,14 +828,14 @@ void PC_IC::exc_pf(Reg32 eip, Reg32 cs, Reg32 eflags, Reg32 error)
     _exit(-1);
 }
 
-void PC_IC::exc_gpf(Reg32 eip, Reg32 cs, Reg32 eflags, Reg32 error)
+void IC::exc_gpf(Reg32 eip, Reg32 cs, Reg32 eflags, Reg32 error)
 {
     db<IC,Machine>(WRN) << "IC::exc_gpf(cs=" << hex << cs << ",ip=" << reinterpret_cast<void *>(eip) << ",fl=" << eflags << ")" << endl;
     db<IC,Machine>(WRN) << "The running thread will now be terminated!" << endl;
     _exit(-1);
 }
 
-void PC_IC::exc_fpu(Reg32 eip, Reg32 cs, Reg32 eflags, Reg32 error)
+void IC::exc_fpu(Reg32 eip, Reg32 cs, Reg32 eflags, Reg32 error)
 {
     db<IC,Machine>(WRN) << "IC::exc_fpu(cs=" << hex << cs << ",ip=" << reinterpret_cast<void *>(eip) << ",fl=" << eflags << ")" << endl;
     db<IC,Machine>(WRN) << "The running thread will now be terminated!" << endl;

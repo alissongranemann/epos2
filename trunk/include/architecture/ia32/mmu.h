@@ -12,16 +12,16 @@
 
 __BEGIN_SYS
 
-class IA32_MMU: public MMU_Common<10, 10, 12>
+class MMU: public MMU_Common<10, 10, 12>
 {
-    friend class IA32;
+    friend class CPU;
 
 private:
     typedef Grouping_List<Frame> List;
 
     static const bool colorful = Traits<MMU>::colorful;
     static const unsigned int COLORS = Traits<MMU>::COLORS;
-    static const unsigned int PHY_MEM = Memory_Map<Machine>::PHY_MEM;
+    static const unsigned int PHY_MEM = Memory_Map::PHY_MEM;
 
 public:
     // Page Flags
@@ -215,7 +215,7 @@ public:
 
         Phy_Addr pd() const { return _pd; }
 
-        void activate() const { IA32::pdp(reinterpret_cast<IA32::Reg32>(_pd)); }
+        void activate() const { CPU::pdp(reinterpret_cast<CPU::Reg32>(_pd)); }
 
         Log_Addr attach(const Chunk & chunk, unsigned int from = 0) {
             for(unsigned int i = from; i < PD_ENTRIES; i++)
@@ -306,7 +306,7 @@ public:
     };
 
 public:
-    IA32_MMU() {}
+    MMU() {}
 
     static Phy_Addr alloc(unsigned int frames = 1, const Color & color = WHITE) {
         Phy_Addr phy(false);

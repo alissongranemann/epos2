@@ -7,30 +7,29 @@
 
 __BEGIN_SYS
 
-template<>
-struct Memory_Map<PC>
+struct Memory_Map
 {
     // Physical Memory
     enum {
-        MEM_BASE      = Traits<PC>::MEM_BASE,
-        MEM_TOP       = Traits<PC>::MEM_TOP
+        MEM_BASE      = Traits<Machine>::MEM_BASE,
+        MEM_TOP       = Traits<Machine>::MEM_TOP
     };
 
     // Logical Address Space
     enum {
-        APP_LOW       = Traits<PC>::APP_LOW,
-        APP_CODE      = Traits<PC>::APP_CODE,
-        APP_DATA      = Traits<PC>::APP_DATA,
-        APP_HIGH      = Traits<PC>::APP_HIGH,
+        APP_LOW       = Traits<Machine>::APP_LOW,
+        APP_CODE      = Traits<Machine>::APP_CODE,
+        APP_DATA      = Traits<Machine>::APP_DATA,
+        APP_HIGH      = Traits<Machine>::APP_HIGH,
 
-        PHY_MEM       = Traits<PC>::PHY_MEM,
-        IO            = Traits<PC>::IO_BASE,
+        PHY_MEM       = Traits<Machine>::PHY_MEM,
+        IO            = Traits<Machine>::IO_BASE,
         APIC          = IO,
         IO_APIC       = APIC    +  4 * 1024,
         VGA           = IO_APIC +  4 * 1024,
         PCI           = VGA + 32 * 1024, // VGA text mode
 
-        SYS           = Traits<PC>::SYS,
+        SYS           = Traits<Machine>::SYS,
         IDT           = SYS + 0x00000000,
         GDT           = SYS + 0x00001000,
         SYS_PT        = SYS + 0x00002000,
