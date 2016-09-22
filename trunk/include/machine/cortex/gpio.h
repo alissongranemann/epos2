@@ -9,10 +9,10 @@
 
 __BEGIN_SYS
 
-class GPIO: private GPIO_Common, private Cortex_M_Model
+class GPIO: private GPIO_Common, private Machine_Model
 {
 private:
-    static const bool supports_power_up = Cortex_M_Model::supports_gpio_power_up;
+    static const bool supports_power_up = Machine_Model::supports_gpio_power_up;
 
 public:
     enum Level {

@@ -9,7 +9,7 @@
 
 __BEGIN_SYS
 
-class IC: private IC_Common, private Cortex_M_Model
+class IC: private IC_Common, private Machine_Model
 {
     friend class Machine;
 
@@ -22,7 +22,7 @@ public:
     using IC_Common::Interrupt_Handler;
 
     // IRQs
-    static const unsigned int IRQS = Cortex_M_Model::IRQS;
+    static const unsigned int IRQS = Machine_Model::IRQS;
     typedef Interrupt_Id IRQ;
     enum {
         IRQ_GPIOA       = 0,

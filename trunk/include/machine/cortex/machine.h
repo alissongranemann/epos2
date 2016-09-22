@@ -16,7 +16,7 @@
 
 __BEGIN_SYS
 
-class Machine: private Machine_Common, private Cortex_M_Model
+class Machine: private Machine_Common, private Machine_Model
 {
     friend class Init_System;
 

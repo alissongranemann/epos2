@@ -11,7 +11,7 @@
 __BEGIN_SYS
 
 // PrimeCell UART (PL011)
-class PL011: protected Cortex_M_Model
+class PL011: protected Machine_Model
 {
 private:
     typedef CPU::Log_Addr Log_Addr;
@@ -103,7 +103,7 @@ public:
     PL011(unsigned int unit, unsigned int baud_rate, unsigned int data_bits, unsigned int parity, unsigned int stop_bits):
         _base(reinterpret_cast<Log_Addr *>(unit ? UART1_BASE : UART0_BASE)) {
         assert(unit < UNITS);
-        Cortex_M_Model::uart_init(unit);
+        Machine_Model::uart_init(unit);
         config(baud_rate, data_bits, parity, stop_bits);
     }
 

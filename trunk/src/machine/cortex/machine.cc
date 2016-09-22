@@ -19,7 +19,7 @@ void Machine::panic()
 void Machine::reboot()
 {
     db<Machine>(WRN) << "Machine::reboot()" << endl;
-    Cortex_M_Model::reboot();
+    Machine_Model::reboot();
 }
 
 __END_SYS

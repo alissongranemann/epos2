@@ -452,7 +452,7 @@ protected:
     static void init();
 };
 
-typedef LM3S811 Cortex_M_Model;
+typedef LM3S811 Machine_Model;
 
 __END_SYS
 

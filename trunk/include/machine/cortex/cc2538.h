@@ -10,7 +10,7 @@
 __BEGIN_SYS
 
 // IT CC2538 IEEE 802.15.4 RF Transceiver
-class CC2538RF: private Cortex_M_Model
+class CC2538RF: private Machine_Model
 {
 protected:
     typedef CPU::Reg8 Reg8;

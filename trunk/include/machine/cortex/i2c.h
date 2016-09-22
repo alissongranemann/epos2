@@ -10,12 +10,12 @@
 __BEGIN_SYS
 
 // WARNING: TODO: It looks like this class only implements Master operation
-class I2C : private Cortex_M_Model, private I2C_Common {
+class I2C : private Machine_Model, private I2C_Common {
 public:
     I2C(Role r = I2C_Common::MASTER, char port_sda = 'B', unsigned int pin_sda = 1, char port_scl = 'B', unsigned int pin_scl = 0)
         : _base(r == I2C_Common::MASTER ? reinterpret_cast<Log_Addr*>(I2C_MASTER_BASE) : reinterpret_cast<Log_Addr*>(I2C_SLAVE_BASE))
     {
-        Cortex_M_Model::i2c_config(port_sda, pin_sda, port_scl, pin_scl);
+        Machine_Model::i2c_config(port_sda, pin_sda, port_scl, pin_scl);
         if(r == I2C_Common::MASTER) {
             reg(I2C_CR) = I2C_CR_MFE; //0x10;
             reg(I2C_TPR) = 0x3; // For a system clock = 32MHz, 400.000

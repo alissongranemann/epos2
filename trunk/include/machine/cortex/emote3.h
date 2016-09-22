@@ -1155,7 +1155,7 @@ protected:
     static bool _init_clock_done;
 };
 
-typedef eMote3 Cortex_M_Model;
+typedef eMote3 Machine_Model;
 
 __END_SYS
 

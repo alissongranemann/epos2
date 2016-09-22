@@ -12,7 +12,7 @@
 
 __BEGIN_SYS
 
-class Cortex_M_Sys_Tick: public Cortex_M_Model
+class Cortex_M_Sys_Tick: public Machine_Model
 {
 private:
     typedef TSC::Hertz Hertz;
@@ -42,7 +42,7 @@ public:
     }
 };
 
-class Cortex_M_GPTM: public Cortex_M_Model
+class Cortex_M_GPTM: public Machine_Model
 {
 protected:
     const static unsigned int CLOCK = Traits<CPU>::CLOCK;
@@ -71,7 +71,7 @@ public:
     void enable() { reg(GPTMICR) = -1; reg(GPTMCTL) |= TAEN; } // TODO: Why are pending interrupts discharted?
     void disable() { reg(GPTMCTL) &= ~TAEN; }
 
-    void power(const Power_Mode & mode) { Cortex_M_Model::timer_power(_channel, mode); }
+    void power(const Power_Mode & mode) { Machine_Model::timer_power(_channel, mode); }
 
 private:
     volatile Reg32 & reg(unsigned int o) { return _base[o / sizeof(Reg32)]; }

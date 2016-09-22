@@ -6,9 +6,9 @@ __BEGIN_SYS
 
 void Machine::init()
 {
-    db<Init, Machine>(TRC) << "Cortex_M::init()" << endl;
+    db<Init, Machine>(TRC) << "Cortex::init()" << endl;
 
-    Cortex_M_Model::init();
+    Machine_Model::init();
 
     if(Traits<IC>::enabled)
         IC::init();

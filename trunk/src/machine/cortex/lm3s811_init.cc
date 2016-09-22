@@ -7,9 +7,9 @@
 
 __BEGIN_SYS
 
-void Machine::init()
+void Machine_Model::init()
 {
-    db<Init, Machine>(TRC) << "Machine::init()" << endl;
+    db<Init, Machine>(TRC) << "LM3S811::init()" << endl;
 
     // Initialize the clock
     CPU::Reg32 rcc = scr(RCC);

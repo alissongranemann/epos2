@@ -184,7 +184,7 @@ protected:
     };
 };
 
-class USB: private eMote3_USB, private Cortex_M_Model, public USB_2_0
+class USB: private eMote3_USB, private Machine_Model, public USB_2_0
 {
     friend class Machine;
 
