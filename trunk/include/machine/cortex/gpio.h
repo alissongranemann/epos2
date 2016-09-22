@@ -1,4 +1,4 @@
-// EPOS Cortex-M GPIO Mediator Declarations
+// EPOS Cortex GPIO Mediator Declarations
 
 #ifndef __cortex_gpio_h_
 #define __cortex_gpio_h_

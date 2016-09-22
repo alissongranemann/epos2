@@ -1,4 +1,4 @@
-// EPOS Cortex-M IC Mediator Declarations
+// EPOS Cortex IC Mediator Declarations
 
 #ifndef __cortex_ic_h
 #define __cortex_ic_h
@@ -140,7 +140,7 @@ private:
     }
 
     static void dispatch() {
-        register Interrupt_Id id = CPU::int_id();
+        register Interrupt_Id id = CPU::flags() & 0x3f;
 
         if((id != INT_TIMER) || Traits<IC>::hysterically_debugged)
             db<IC>(TRC) << "IC::dispatch(i=" << id << ")" << endl;

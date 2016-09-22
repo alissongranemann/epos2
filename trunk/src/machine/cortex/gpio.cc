@@ -1,4 +1,4 @@
-// EPOS Cortex-M GPIO Mediator Implementation
+// EPOS Cortex GPIO Mediator Implementation
 
 #include <machine.h>
 #include <ic.h>

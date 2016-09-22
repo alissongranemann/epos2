@@ -1,9 +1,9 @@
-// EPOS Cortex_M UART Mediator Declarations
-
-#include __MODEL_H
+// EPOS Cortex UART Mediator Declarations
 
 #ifndef __cortex_uart_h__
 #define __cortex_uart_h__
+
+#include __MODEL_H
 
 #include <cpu.h>
 #include <uart.h>

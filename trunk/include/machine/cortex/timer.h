@@ -1,4 +1,4 @@
-// EPOS Cortex_M Timer Mediator Declarations
+// EPOS Cortex Timer Mediator Declarations
 
 #ifndef __cortex_timer_h
 #define __cortex_timer_h
