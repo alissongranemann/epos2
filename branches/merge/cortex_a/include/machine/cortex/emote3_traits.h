@@ -13,7 +13,7 @@ template <> struct Traits<Cortex_Common>: public Traits<void>
     static const bool debugged = Traits<void>::debugged;
 };
 
-template <> struct Traits<Cortex>: public Traits<Cortex_Common>
+template <> struct Traits<Machine>: public Traits<Cortex_Common>
 {
     static const unsigned int CPUS = Traits<Build>::CPUS;
 

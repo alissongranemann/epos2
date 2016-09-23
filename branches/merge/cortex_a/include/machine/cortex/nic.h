@@ -15,12 +15,12 @@
 
 __BEGIN_SYS
 
-class Cortex_Ethernet: public Ethernet
+class NIC: public Ethernet
 {
     friend class Machine;
 
 private:
-    typedef Traits<Cortex_Ethernet>::NICS NICS;
+    typedef Traits<NIC>::NICS NICS;
     typedef IF<NICS::Polymorphic, NIC_Base<Ethernet>, NICS::Get<0>::Result>::Result Device;
     static const unsigned int UNITS = NICS::Length;
 
@@ -30,11 +30,11 @@ public:
 
 public:
     template<unsigned int UNIT = 0>
-    Cortex_Ethernet(unsigned int u = UNIT) {
+    NIC(unsigned int u = UNIT) {
         _dev = reinterpret_cast<Device *>(NICS::Get<UNIT>::Result::get(u));
-        db<Ethernet>(TRC) << "NIC::NIC(u=" << UNIT << ",d=" << _dev << ") => " << this << endl;
+        db<NIC>(TRC) << "NIC::NIC(u=" << UNIT << ",d=" << _dev << ") => " << this << endl;
     }
-    ~Cortex_Ethernet() { _dev = 0; }
+    ~NIC() { _dev = 0; }
 
     int send(const Address & dst, const Protocol & prot, const void * data, unsigned int size) { return _dev->send(dst, prot, data, size); }
     int receive(Address * src, Protocol * prot, void * data, unsigned int size) { return _dev->receive(src, prot, data, size); }

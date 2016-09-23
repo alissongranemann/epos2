@@ -87,7 +87,6 @@ namespace EPOS {
 #define __MMU_H         __HEADER_ARCH(mmu)
 #define __FPU_H         __HEADER_ARCH(fpu)
 #define __PMU_H         __HEADER_ARCH(pmu)
-
 #define __MACH_H        __HEADER_MACH(machine)
 #define __PCI_H         __HEADER_MACH(pci)
 #define __IC_H          __HEADER_MACH(ic)
@@ -106,9 +105,8 @@ namespace EPOS {
 #define __CPU_H                 __HEADER_ARCH(cpu)
 #define __TSC_H                 __HEADER_ARCH(tsc)
 #define __MMU_H                 __HEADER_ARCH(mmu)
-
 #define __MACH_H                __HEADER_MACH(machine)
-#define __MODEL_H               __HEADER_MACH(MMOD)
+#define __MODEL_H               __HEADER_MACH(lm3s811)
 #define __IC_H                  __HEADER_MACH(ic)
 #define __TIMER_H               __HEADER_MACH(timer)
 #define __RTC_H                 __HEADER_MACH(rtc)
@@ -122,9 +120,8 @@ namespace EPOS {
 #define __CPU_H                 __HEADER_ARCH(cpu)
 #define __TSC_H                 __HEADER_ARCH(tsc)
 #define __MMU_H                 __HEADER_ARCH(mmu)
-
 #define __MACH_H                __HEADER_MACH(machine)
-#define __MODEL_H               __HEADER_MACH(MMOD)
+#define __MODEL_H               __HEADER_MACH(emote3)
 #define __IC_H                  __HEADER_MACH(ic)
 #define __TIMER_H               __HEADER_MACH(timer)
 #define __RTC_H                 __HEADER_MACH(rtc)
@@ -136,7 +133,17 @@ namespace EPOS {
 #define __GPIO_H                __HEADER_MACH(gpio)
 #endif
 
-#ifdef __mmod_zinq__
+#ifdef __mmod_zynq__
+#define __CPU_H                 __HEADER_ARCH(cpu)
+#define __TSC_H                 __HEADER_ARCH(tsc)
+#define __MMU_H                 __HEADER_ARCH(mmu)
+#define __MACH_H                __HEADER_MACH(machine)
+#define __MODEL_H               __HEADER_MACH(zynq)
+#define __IC_H                  __HEADER_MACH(ic)
+#define __TIMER_H               __HEADER_MACH(timer)
+#define __RTC_H                 __HEADER_MACH(rtc)
+#define __UART_H                __HEADER_MACH(uart)
+#define __NIC_H                 __HEADER_MACH(nic)
 #endif
 
 //============================================================================

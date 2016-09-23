@@ -7,7 +7,7 @@
 
 __BEGIN_SYS
 
-class GEM: public Ethernet::NIC_Base<Ethernet, Traits<Cortex_Ethernet>::NICS::Polymorphic> //, private Engine
+class GEM: public Ethernet::NIC_Base<Ethernet, Traits<NIC>::NICS::Polymorphic> //, private Engine
 {
     template <typename Type, int unit> friend void call_init();
 

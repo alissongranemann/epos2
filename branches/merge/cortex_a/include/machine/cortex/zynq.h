@@ -196,7 +196,7 @@ protected:
         }
     }
 
-    static void power_timer(unsigned int unit, const Power_Mode & mode) {
+    static void power_user_timer(unsigned int unit, const Power_Mode & mode) {
         // TODO: complete pertaining clock gating actions
         assert(unit < UARTS);
         switch(mode) {
@@ -211,7 +211,7 @@ protected:
     static int fpga0_clk_freq(unsigned int freq) {
         const unsigned int div_max = 63, tol = 20;
         unsigned int div0 = 0, div1 = 0,
-                io_pll_clock = Traits<Cortex>::IO_PLL_CLOCK;
+                io_pll_clock = Traits<Machine>::IO_PLL_CLOCK;
         Reg32 tmp;
 
         while(++div1 <= div_max) {
