@@ -368,7 +368,7 @@ public:
 public:
     CC2538RF() {
         // Enable clock to RF module
-        ieee802_15_4_power(FULL);
+        power_ieee802_15_4(FULL);
 
         // Disable interrupts
         xreg(RFIRQM0) = 0;

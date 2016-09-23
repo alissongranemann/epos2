@@ -763,12 +763,12 @@ public:
         SLEEPDEEP = 1 << 2,
     };
     enum WAKE_UP_EVENT {
-        SLEEP_MODE_TIMER = 1 << 5,
-        USB = 1 << 4,
-        GPIO_D = 1 << 3,
-        GPIO_C = 1 << 2,
-        GPIO_B = 1 << 1,
-        GPIO_A = 1 << 0,
+        EVENT_SLEEP_MODE_TIMER = 1 << 5,
+        EVENT_USB = 1 << 4,
+        EVENT_GPIO_D = 1 << 3,
+        EVENT_GPIO_C = 1 << 2,
+        EVENT_GPIO_B = 1 << 1,
+        EVENT_GPIO_A = 1 << 0,
     };
 
     // Change in power mode will only be effective when ASM("wfi") is called
@@ -1008,7 +1008,7 @@ protected:
 
 
 // GPTM
-    static void timer_power(unsigned int unit, const Power_Mode & mode) {
+    static void power_user_timer(unsigned int unit, const Power_Mode & mode) {
         assert(unit < TIMERS);
         switch(mode) {
         case FULL:
@@ -1082,7 +1082,7 @@ protected:
 
 
 // USB
-    static void usb_power(unsigned int unit, const Power_Mode & mode) {
+    static void power_usb(unsigned int unit, const Power_Mode & mode) {
         assert(unit < USBS);
         switch(mode) {
         case FULL: {
@@ -1120,7 +1120,7 @@ protected:
 
 
 // IEEE 802.15.4
-    static void ieee802_15_4_power(const Power_Mode & mode) {
+    static void power_ieee802_15_4(const Power_Mode & mode) {
         switch(mode) {
         case FULL:
         case LIGHT:
@@ -1140,7 +1140,7 @@ protected:
 // PWM
     static void pwm_config(unsigned int timer, char gpio_port, unsigned int gpio_pin)
     {
-        timer_power(timer, FULL);
+        power_user_timer(timer, FULL);
         unsigned int port = gpio_port - 'A';
         unsigned int sel = PA0_SEL + 0x20*port + 0x4*gpio_pin;
 
