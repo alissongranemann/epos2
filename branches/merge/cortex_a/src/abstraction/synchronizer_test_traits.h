@@ -26,8 +26,8 @@ template<> struct Traits<Build>
     enum {PC, ATmega, Cortex};
     static const unsigned int MACHINE = Cortex;
 
-    enum {Legacy_PC, eMote3, LM3S811, Zynq};
-    static const unsigned int MODEL = Zynq;
+    enum {Legacy_PC, eMote1, eMote2, eMote3, Arduino, LM3S811, Zynq};
+    static const unsigned int MODEL = LM3S811;
 
     static const unsigned int CPUS = 1;
     static const unsigned int NODES = 1; // > 1 => NETWORKING

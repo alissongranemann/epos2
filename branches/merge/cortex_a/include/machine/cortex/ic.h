@@ -1,4 +1,4 @@
-// EPOS Cortex IC Mediator Declarations
+// EPOS ARM Cortex IC Mediator Declarations
 
 #ifndef __cortex_ic_h
 #define __cortex_ic_h
@@ -14,7 +14,7 @@ class GIC;
 
 #ifdef __mmod_zynq__
 
-class GIC: public IC_Common, protected Cortex_Model
+class GIC: public IC_Common, protected Machine_Model
 {
 private:
 //    typedef CPU::Reg32 Reg32;
@@ -23,7 +23,7 @@ private:
 public:
     // IRQs
     // FIXME: a real list with typical A9 assignments must come here. In last case, use Xilinx's for Zynq
-    //    static const unsigned int IRQS = Cortex_Model::IRQS;
+    //    static const unsigned int IRQS = Machine_Model::IRQS;
     typedef Interrupt_Id IRQ;
     enum {
         IRQ_XXXXX       = 0,
@@ -90,7 +90,7 @@ protected:
 
 #else
 
-class NVIC: public IC_Common, protected Cortex_Model
+class NVIC: public IC_Common, protected Machine_Model
 {
 private:
 //    typedef CPU::Reg32 Reg32;
@@ -98,7 +98,7 @@ private:
 
 public:
     // IRQs
-    static const unsigned int IRQS = Cortex_Model::IRQS;
+    static const unsigned int IRQS = Machine_Model::IRQS;
     typedef Interrupt_Id IRQ;
     enum {
         IRQ_GPIOA       = 0,
@@ -207,9 +207,9 @@ private:
 #endif
 
 
-class Cortex_IC: private IF<Traits<Build>::MODEL == Traits<Build>::Zynq, GIC, NVIC>::Result
+class IC: private IF<Traits<Build>::MODEL == Traits<Build>::Zynq, GIC, NVIC>::Result
 {
-    friend class Cortex;
+    friend class Machine;
 
 private:
     typedef IF<Traits<Build>::MODEL == Traits<Build>::Zynq, GIC, NVIC>::Result Engine;
@@ -225,7 +225,7 @@ public:
     using Engine::INT_RESCHEDULER;
 
 public:
-    Cortex_IC() {}
+    IC() {}
 
     static Interrupt_Handler int_vector(const Interrupt_Id & i) {
         assert(i < INTS);
@@ -281,8 +281,8 @@ private:
     static void int_not(const Interrupt_Id & i);
     static void hard_fault(const Interrupt_Id & i);
 
-    // Physical handler
-    static void entry() __attribute__((naked));
+    // Physical handlers
+    static void entry();
 
     static void init();
 

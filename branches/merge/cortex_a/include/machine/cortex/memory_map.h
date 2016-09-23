@@ -36,7 +36,7 @@ struct Memory_Map
 
 /*
 template <>
-struct IO_Map<Cortex>
+struct IO_Map<Cortex_M>
 {
     enum {
         ITC_BASE                = 0x80020000,

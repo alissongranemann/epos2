@@ -20,6 +20,7 @@ void IC::init()
     // Set all interrupt handlers to int_not()
     for(Interrupt_Id i = 0; i < INTS; i++)
         _int_vector[i] = int_not;
+
     _int_vector[INT_HARD_FAULT] = hard_fault;
 }
 

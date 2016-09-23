@@ -1,4 +1,4 @@
-// EPOS Cortex Mediator Declarations
+// EPOS ARM Cortex Mediator Declarations
 
 #ifndef __cortex_h
 #define __cortex_h
@@ -16,18 +16,19 @@
 
 __BEGIN_SYS
 
-class Machine: private Machine_Common, private Cortex_Model
+class Machine: private Machine_Common, private Machine_Model
 {
     friend class Init_System;
 
 public:
     Machine() {}
 
-    static void delay(const RTC::Microsecond & time) {
+    static void delay(const RTC::Microsecond & time);
+//    {
 //        eMote3_GPTM g(3, time_microseconds);
 //        g.enable();
 //        while(g.running());
-    }
+//    }
 
     static void panic();
     static void reboot();
@@ -38,20 +39,6 @@ public:
 
     static void smp_barrier() {};
     static void smp_init(unsigned int) {};
-//
-//    using Cortex_M_Model::uart_config;
-//    using Cortex_M_Model::uart_enable;
-//    using Cortex_M_Model::uart_disable;
-//
-//    using Cortex_M_Model::usb_config;
-//    using Cortex_M_Model::usb_enable;
-//    using Cortex_M_Model::usb_disable;
-//
-//    using Cortex_M_Model::gpio_pull_up;
-//    using Cortex_M_Model::gpio_pull_down;
-//
-//    using Cortex_M_Model::radio_enable;
-//    using Cortex_M_Model::radio_disable;
 
 private:
     static void init();

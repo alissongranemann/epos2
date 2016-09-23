@@ -1,4 +1,4 @@
-// EPOS eMote3 (Cortex-M3) MCU Initialization
+// EPOS eMote3 (ARM Cortex) MCU Initialization
 
 #include <system/config.h>
 #include __MODEL_H

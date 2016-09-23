@@ -65,13 +65,7 @@ public:
     void stop() { lap(); }
 
     // The cast provides resolution for intermediate calculations
-    Microsecond read() {
-        #if defined(__mmod_lm3s811__) || defined(__mmod_emote3__)
-        return ticks() * 1000000 / frequency();
-        #else
-        return static_cast<unsigned long long>(ticks()) * 1000000 / frequency();
-        #endif
-    }
+    Microsecond read() { return static_cast<unsigned long long>(ticks()) * 1000000 / frequency(); }
 
 private:
     Time_Stamp ticks() {

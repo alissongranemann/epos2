@@ -4,7 +4,11 @@ include	../makedefs
 
 SYSTEM := $(shell find . -name $(MACH)_\* -and -not -name $(MACH)_boot)
 IMAGE  := $(addsuffix .img,$(APPLICATION))
+ifeq ($(MMOD),zynq)
+FLASH  := $(IMAGE)
+else
 FLASH  := $(addsuffix .hex,$(APPLICATION))
+endif
 OUTPUT := $(addsuffix .out,$(APPLICATION))
 EMULATORR := $(EMULATOR)
 EMULATORS := $(subst 1235,1236,$(EMULATOR))
@@ -13,13 +17,8 @@ DEBUGGERS := $(subst 1235,1236,$(DEBUGGER))
 
 all:		strip $(IMAGE)
 
-ifeq ($(MMOD),zynq)
-flash:		strip $(IMAGE)
-		$(FLASHER) $(IMG)/$(IMAGE)
-else
 flash:		strip $(FLASH)
 		$(FLASHER) $(IMG)/$(FLASH)
-endif
 
 run:		strip $(IMAGE)
 ifeq ($(NODES),1)

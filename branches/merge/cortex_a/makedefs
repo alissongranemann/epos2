@@ -234,7 +234,7 @@ TCPDUMP		:= tcpdump -tttttennvvvXXr
 
 TEE		:= tee
 
-TERM		:= urxvt -e
+TERM		:= xterm -e
 
 TOUCH		:= touch
 

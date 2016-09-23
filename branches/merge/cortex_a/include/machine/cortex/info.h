@@ -1,4 +1,4 @@
-// EPOS Cortex Run-Time System Information
+// EPOS ARM Cortex Run-Time System Information
 
 #ifndef __cortex_info_h
 #define __cortex_info_h

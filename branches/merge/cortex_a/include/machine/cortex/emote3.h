@@ -1,4 +1,4 @@
-// EPOS EPOSMoteIII (Cortex-M3) MCU Mediator Declarations
+// EPOS EPOSMoteIII (ARM Cortex-M3) MCU Mediator Declarations
 
 #ifndef __emote3_h
 #define __emote3_h
@@ -888,11 +888,11 @@ protected:
 
 
 // UART
-    void uart_init(unsigned int unit)
+    unsigned int enable_uart(unsigned int unit)
     {
         init_clock(); // Setup the clock first!
 
-        uart_power(unit, FULL);
+        power_uart(unit, FULL);
 
         if(unit == 0) {
             //2. Set the GPIO pin configuration through the Pxx_SEL registers for the desired output
@@ -909,9 +909,7 @@ protected:
 
             //5. Set GPIO pins A1 and A0 to peripheral mode
             gpioa(AFSEL) |= (PIN0) + (PIN1);
-        }
-        else
-        {
+        } else {
             /*ioc(PB3_SEL) = UART1_TXD;
             ioc(PB3_OVER) = OE;
             ioc(PB4_OVER) = 0;
@@ -924,9 +922,11 @@ protected:
            ioc(UARTRXD_UART1) = (3 << 3) + 0;
            gpiod(AFSEL) |= (PIN0) + (PIN1);
         }
+
+        return unit;
     }
 
-    static void uart_power(unsigned int unit, const Power_Mode & mode) {
+    static void power_uart(unsigned int unit, const Power_Mode & mode) {
         assert(unit < UARTS);
         switch(mode) {
         case FULL:
@@ -1157,7 +1157,7 @@ protected:
     static bool _init_clock_done;
 };
 
-typedef eMote3 Cortex_Model;
+typedef eMote3 Machine_Model;
 
 __END_SYS
 

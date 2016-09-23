@@ -42,6 +42,7 @@ public:
 public:
     NS16550AF(unsigned int unit, unsigned int brate, unsigned int dbits, unsigned int par, unsigned int sbits):
         _port((unit == 0) ? Traits<UART>::COM1 : (unit == 1) ? Traits<UART>::COM2 : (unit == 2) ?Traits<UART>::COM3 : Traits<UART>::COM4) {
+        assert(unit < UNITS);
         config(brate, dbits, par, sbits);
     }
 
@@ -149,7 +150,7 @@ private:
     static const unsigned int STOP_BITS = Traits<UART>::DEF_STOP_BITS;
 
 public:
-    UART(unsigned int baud_rate = BAUD_RATE, unsigned int data_bits = DATA_BITS, unsigned int parity = PARITY, unsigned int stop_bits = STOP_BITS, unsigned int unit = 0)
+    UART(unsigned int unit = 0, unsigned int baud_rate = BAUD_RATE, unsigned int data_bits = DATA_BITS, unsigned int parity = PARITY, unsigned int stop_bits = STOP_BITS)
     : Engine(unit, baud_rate, data_bits, parity, stop_bits) {}
 
     void config(unsigned int baud_rate, unsigned int data_bits, unsigned int parity, unsigned int stop_bits) {
@@ -172,7 +173,9 @@ public:
         Engine::int_disable(receive, send, line, modem);
     }
 
-    void loopback(bool flag) { NS16550AF::loopback(flag); }
+    void loopback(bool flag) { Engine::loopback(flag); }
+
+    void power(const Power_Mode & mode);
 };
 
 __END_SYS

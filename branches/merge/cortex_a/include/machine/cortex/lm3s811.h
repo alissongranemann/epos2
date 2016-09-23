@@ -1,4 +1,4 @@
-// EPOS LM3S811 (Cortex-M3) MCU Mediator Declarations
+// EPOS LM3S811 (ARM Cortex-M3) MCU Mediator Declarations
 
 #ifndef __lm3s811_h
 #define __lm3s811_h
@@ -369,31 +369,17 @@ protected:
     }
 
 
-// GPTM
-    static void timer_power(unsigned int unit, const Power_Mode & mode) {
-        assert(unit < TIMERS);
-        switch(mode) {
-        case FULL:
-        case LIGHT:
-        case SLEEP:
-            scr(RCGC1) |= 1 << (unit + 16);             // Activate GPTM "unit" clock
-            break;
-        case OFF:
-            scr(RCGC1) &= ~(1 << (unit + 16));          // Deactivate GPTM "unit" clock
-            break;
-        }
-    }
-
-
- // UART
-    void uart_init(unsigned int unit) {
+// Device enabling
+    static void enable_uart(unsigned int unit) {
         assert(unit < UARTS);
-        uart_power(unit, FULL);
+        power_uart(unit, FULL);
         gpioa(AFSEL) |= 3 << (unit * 2);                // Pins A[1:0] are multiplexed between GPIO and UART 0. Select UART.
         gpioa(DEN) |= 3 << (unit * 2);                  // Enable digital I/O on Pins A[1:0]
     }
+    static void enable_usb(unsigned int unit) {}
 
-    static void uart_power(unsigned int unit, const Power_Mode & mode) {
+// PM
+    static void power_uart(unsigned int unit, const Power_Mode & mode) {
         assert(unit < UARTS);
         switch(mode) {
         case FULL:
@@ -409,10 +395,21 @@ protected:
         }
     }
 
+    static void power_user_timer(unsigned int unit, const Power_Mode & mode) {
+        assert(unit < TIMERS);
+        switch(mode) {
+        case FULL:
+        case LIGHT:
+        case SLEEP:
+            scr(RCGC1) |= 1 << (unit + 16);             // Activate GPTM "unit" clock
+            break;
+        case OFF:
+            scr(RCGC1) &= ~(1 << (unit + 16));          // Deactivate GPTM "unit" clock
+            break;
+        }
+    }
 
-// USB (not present in this model)
-    static void usb_init(unsigned int unit) {}
-    static void usb_power(unsigned int unit, const Power_Mode & mode) {}
+    static void power_usb(unsigned int unit, const Power_Mode & mode) {}
 
 
 // GPIO
@@ -452,7 +449,7 @@ protected:
     static void init();
 };
 
-typedef LM3S811 Cortex_Model;
+typedef LM3S811 Machine_Model;
 
 __END_SYS
 

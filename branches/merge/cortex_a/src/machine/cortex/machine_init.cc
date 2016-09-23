@@ -6,9 +6,9 @@ __BEGIN_SYS
 
 void Machine::init()
 {
-    db<Init, Machine>(TRC) << "Cortex::init()" << endl;
+    db<Init, Machine>(TRC) << "Machine::init()" << endl;
 
-    Cortex_Model::init();
+    Machine_Model::init();
 
     if(Traits<IC>::enabled)
         IC::init();
@@ -17,10 +17,8 @@ void Machine::init()
 #ifndef __mmod_zynq__
     if(Traits<USB>::enabled)
         USB::init();
-#ifndef __no_networking__
     if(Traits<NIC>::enabled)
         NIC::init();
-#endif
 #endif
 }
 

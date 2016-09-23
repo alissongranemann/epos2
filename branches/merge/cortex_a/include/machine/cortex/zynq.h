@@ -180,6 +180,33 @@ protected:
         return id & 0x3;
     }
 
+    static void enable_uart(unsigned int unit) {
+
+    }
+
+// PM
+    static void power_uart(unsigned int unit, const Power_Mode & mode) {
+        // TODO: complete pertaining clock gating actions
+        assert(unit < UARTS);
+        switch(mode) {
+        case FULL:
+        case LIGHT:
+        case SLEEP:
+        case OFF: break;
+        }
+    }
+
+    static void power_timer(unsigned int unit, const Power_Mode & mode) {
+        // TODO: complete pertaining clock gating actions
+        assert(unit < UARTS);
+        switch(mode) {
+        case FULL:
+        case LIGHT:
+        case SLEEP:
+        case OFF: break;
+        }
+    }
+
     // Returns the frequency set, -1 if frequency can't be set
     static int fpga0_clk_freq(unsigned int freq) {
         const unsigned int div_max = 63, tol = 20;
@@ -235,7 +262,7 @@ public:
     static void init();
 };
 
-typedef Zynq Cortex_Model;
+typedef Zynq Machine_Model;
 
 __END_SYS
 

@@ -16,7 +16,6 @@ public:
     typedef int Tick;
     typedef RTC::Microsecond Microsecond;
     typedef IC::Interrupt_Handler Handler;
-    typedef unsigned int Channel;
 
 protected:
     Timer_Common() {}

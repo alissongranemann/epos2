@@ -1,4 +1,4 @@
-// EPOS EPOSMoteIII (Cortex-M3) MCU Metainfo and Configuration
+// EPOS EPOSMoteIII (ARM Cortex-M3) MCU Metainfo and Configuration
 
 #ifndef __machine_traits_h
 #define __machine_traits_h
@@ -13,7 +13,7 @@ template <> struct Traits<Cortex_Common>: public Traits<void>
     static const bool debugged = Traits<void>::debugged;
 };
 
-template <> struct Traits<Machine>: public Traits<Cortex_Common>
+template <> struct Traits<Cortex>: public Traits<Cortex_Common>
 {
     static const unsigned int CPUS = Traits<Build>::CPUS;
 
@@ -80,12 +80,12 @@ template <> struct Traits<USB>: public Traits<Cortex_Common>
     static const bool enabled = Traits<Serial_Display>::enabled && (Traits<Serial_Display>::ENGINE == Traits<Serial_Display>::USB);
 };
 
-template <> struct Traits<Cortex_Scratchpad>: public Traits<Cortex_Common>
+template <> struct Traits<Scratchpad>: public Traits<Cortex_Common>
 {
     static const bool enabled = false;
 };
 
-template <> struct Traits<IEEE802_15_4>: public Traits<Cortex_Common>
+template <> struct Traits<NIC>: public Traits<Cortex_Common>
 {
     static const bool enabled = (Traits<Build>::NODES > 1);
 
@@ -93,7 +93,7 @@ template <> struct Traits<IEEE802_15_4>: public Traits<Cortex_Common>
     static const unsigned int UNITS = NICS::Length;
 };
 
-template <> struct Traits<CC2538>: public Traits<IEEE802_15_4>
+template <> struct Traits<CC2538>: public Traits<NIC>
 {
     static const unsigned int UNITS = NICS::Count<CC2538>::Result;
     static const unsigned int RECEIVE_BUFFERS = 8; // per unit

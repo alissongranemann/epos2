@@ -184,9 +184,9 @@ protected:
     };
 };
 
-class Cortex_USB: private eMote3_USB, private Cortex_Model, public USB_2_0
+class USB: private eMote3_USB, private Machine_Model, public USB_2_0
 {
-    friend class Cortex;
+    friend class Machine;
 
 private:
     typedef CPU::Reg32 Reg32;

@@ -7,13 +7,13 @@
 
 __BEGIN_SYS
 
-class Cortex_Common;
-template <> struct Traits<Cortex_Common>: public Traits<void>
+class Machine_Common;
+template <> struct Traits<Machine_Common>: public Traits<void>
 {
     static const bool debugged = Traits<void>::debugged;
 };
 
-template <> struct Traits<Cortex>: public Traits<Cortex_Common>
+template <> struct Traits<Machine>: public Traits<Machine_Common>
 {
     static const unsigned int CPUS = Traits<Build>::CPUS;
 
@@ -50,11 +50,11 @@ template <> struct Traits<Cortex>: public Traits<Cortex_Common>
     static const unsigned int DDR_PLL_CLOCK = 1066666666;
 };
 
-template <> struct Traits<Cortex_IC>: public Traits<Cortex_Common>
+template <> struct Traits<IC>: public Traits<Machine_Common>
 {
 };
 
-template <> struct Traits<Cortex_Timer>: public Traits<Cortex_Common>
+template <> struct Traits<Timer>: public Traits<Machine_Common>
 {
     static const bool debugged = hysterically_debugged;
 
@@ -64,13 +64,13 @@ template <> struct Traits<Cortex_Timer>: public Traits<Cortex_Common>
     static const int FREQUENCY = 1000; // Hz
 };
 
-template <> struct Traits<Cortex_UART>: public Traits<Cortex_Common>
+template <> struct Traits<UART>: public Traits<Machine_Common>
 {
     static const unsigned int UNITS = 2;
 
     // CLOCK_DIVISOR is hard coded in ps7_init.tcl
     static const unsigned int CLOCK_DIVISOR = 20;
-    static const unsigned int CLOCK = Traits<Cortex>::IO_PLL_CLOCK/CLOCK_DIVISOR;
+    static const unsigned int CLOCK = Traits<Machine>::IO_PLL_CLOCK/CLOCK_DIVISOR;
 
     static const unsigned int DEF_UNIT = 1;
     static const unsigned int DEF_BAUD_RATE = 115200;
@@ -79,20 +79,17 @@ template <> struct Traits<Cortex_UART>: public Traits<Cortex_Common>
     static const unsigned int DEF_STOP_BITS = 1;
 };
 
-template<> struct Traits<Cortex_Scratchpad>: public Traits<Cortex_Common>
+template<> struct Traits<Scratchpad>: public Traits<Machine_Common>
 {
     static const bool enabled = false;
 };
 
-template<> struct Traits<Ethernet>: public Traits<Cortex_Common>
+template<> struct Traits<NIC>: public Traits<Machine_Common>
 {
     static const bool enabled = (Traits<Build>::NODES > 1);
 
     typedef LIST<GEM> NICS;
     static const unsigned int UNITS = NICS::Length;
-};
-template<> struct Traits<Cortex_Ethernet>: public Traits<Ethernet>
-{
 };
 
 __END_SYS

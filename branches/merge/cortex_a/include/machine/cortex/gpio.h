@@ -1,6 +1,6 @@
-// EPOS Cortex GPIO Mediator Declarations
+// EPOS ARM Cortex GPIO Mediator Declarations
 
-#ifndef __cortex_gpio_h_
+#if !defined(__cortex_gpio_h_) && !defined(__mmod_zynq__)
 #define __cortex_gpio_h_
 
 #include <machine.h>
@@ -9,10 +9,10 @@
 
 __BEGIN_SYS
 
-class GPIO: private GPIO_Common, private Cortex_Model
+class GPIO: private GPIO_Common, private Machine_Model
 {
 private:
-    static const bool supports_power_up = Cortex_M_Model::supports_gpio_power_up;
+    static const bool supports_power_up = Machine_Model::supports_gpio_power_up;
 
 public:
     enum Level {

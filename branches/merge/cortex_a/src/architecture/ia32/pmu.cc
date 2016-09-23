@@ -5,7 +5,6 @@
 __BEGIN_SYS
 
 // Class attributes
-//PMU::Log_Addr PMU::_base;
 const CPU::Reg32 Intel_PMU_V1::_events[EVENTS] = {
                          /* CLOCK              */ UNHALTED_CORE_CYCLES,
                          /* DVS_CLOCK          */ UNHALTED_REFERENCE_CYCLES,
