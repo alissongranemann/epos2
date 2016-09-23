@@ -45,7 +45,12 @@ public:
         reg(CONTROL_REG0) = RXRES | TXRES | RXEN | TXEN;
     }
     void config(unsigned int * baud_rate, unsigned int * data_bits, unsigned int * parity, unsigned int * stop_bits) {
-        //FIXME: this is a mandatory method
+        Reg32 mode = reg(MODE_REG0);
+
+        *baud_rate = CLOCK/(7*reg(BAUD_RATE_GEN_REG0));
+        *data_bits = (mode & 0x6) == CHRL8 ? 8 : (mode & 0x6) == CHRL7 ? 7 : 6;
+        *parity = (mode & 0x38) == PAREVEN ? 2 : (mode & 0x38) == PARODD ? 1 : 0;
+        *stop_bits = (mode & 0xC0) == NBSTOP2 ? 2 : 1;
     }
 
     unsigned char rxd() { return reg(TX_RX_FIFO0); }
