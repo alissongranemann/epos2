@@ -100,6 +100,7 @@ class Serial_Keyboard;
 class Scratchpad;
 class GPIO;
 class I2C;
+class ADC;
 class FPGA;
 class NIC;
 class Ethernet;

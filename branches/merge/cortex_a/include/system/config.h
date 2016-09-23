@@ -131,6 +131,7 @@ namespace EPOS {
 #define __USB_H                 __HEADER_MACH(usb)
 #define __I2C_H                 __HEADER_MACH(i2c)
 #define __GPIO_H                __HEADER_MACH(gpio)
+#define __ADC_H                 __HEADER_MACH(adc)
 #endif
 
 #ifdef __mmod_zynq__

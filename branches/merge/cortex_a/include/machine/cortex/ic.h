@@ -92,10 +92,6 @@ protected:
 
 class NVIC: public IC_Common, protected Machine_Model
 {
-private:
-//    typedef CPU::Reg32 Reg32;
-//    typedef CPU::Log_Addr Log_Addr;
-
 public:
     // IRQs
     static const unsigned int IRQS = Machine_Model::IRQS;
@@ -183,12 +179,8 @@ public:
         unpend(i);
     }
 
-    // This is meant to be called only by IC::dispatch()
-    static Interrupt_Id int_id() {
-        register Interrupt_Id id;
-        ASM("mov %0, r0" : "=r"(id) :);
-        return id;
-    }
+    // Only works in handler mode (inside IC::entry())
+    static Interrupt_Id int_id() { return CPU::flags() & 0x3f; }
 
     static void init(void) {};
 
@@ -218,9 +210,6 @@ class IC: private IF<Traits<Build>::MODEL == Traits<Build>::Zynq, GIC, NVIC>::Re
 
 private:
     typedef IF<Traits<Build>::MODEL == Traits<Build>::Zynq, GIC, NVIC>::Result Engine;
-//
-//    typedef CPU::Reg32 Reg32;
-//    typedef CPU::Log_Addr Log_Addr;
 
 public:
     using IC_Common::Interrupt_Id;
@@ -279,7 +268,7 @@ private:
     static void int_not(const Interrupt_Id & i);
     static void hard_fault(const Interrupt_Id & i);
 
-    // Physical handlers
+    // Physical handler
     static void entry();
 
     static void init();

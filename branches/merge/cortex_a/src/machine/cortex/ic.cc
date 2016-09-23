@@ -50,8 +50,100 @@ void IC::entry()
         "ldmfd sp!, {r0-r3, r12, lr, pc}^           \n" : : "i"(dispatch));
 }
 
-#else
+void IC::dispatch(unsigned int i) {
+    Interrupt_Id id = int_id();
 
+    if((id != INT_TIMER) || Traits<IC>::hysterically_debugged)
+        db<IC>(TRC) << "IC::dispatch(i=" << id << ")" << endl;
+
+    _int_vector[id](id);
+}
+
+#else
+/*
+We need to get around Cortex M3's interrupt handling to be able to make it re-entrant
+The problem is that interrupts are handled in Handler mode, and in this mode the processor
+is only preempted by interrupts of higher (not equal!) priority.
+Moreover, the processor automatically pushes information into the stack when an interrupt happens,
+and it only pops this information and gets out of Handler mode when a specific value (called EXC_RETURN)
+is loaded to PC, representing the final return from the interrupt handler.
+When an interrupt happens, the processor pushes this information into the current stack:
+
+   (1) Stack pushed by processor
+         +-----------+
+SP + 32  |<alignment>| (one word of padding if necessary, to make the stack 8-byte-aligned)
+         +-----------+
+SP + 28  |xPSR       | (with bit 9 set if there is alignment)
+         +-----------+
+SP + 24  |PC         | (return address)
+         +-----------+
+SP + 20  |LR         | (link register before being overwritten with EXC_RETURN)
+         +-----------+
+SP + 16  |R12        | (general purpose register 12)
+         +-----------+
+SP + 12  |R3         | (general purpose register 3)
+         +-----------+
+SP +  8  |R2         | (general purpose register 2)
+         +-----------+
+SP +  4  |R1         | (general purpose register 1)
+         +-----------+
+SP       |R0         | (general purpose register 0)
+         +-----------+
+
+Also, it enters Handler mode and the value of LR is overwritten with EXC_RETURN
+(in our case, it is always 0xFFFFFFF9).
+To execute dispatch() in Thread mode, which is preemptable, we extend this stack with the following:
+
+   (2) Stack built to make the processor execute dispatch() outside of Handler mode
+         +-----------+
+SP + 32  |EXC_RETURN | (value used later on)
+         +-----------+
+SP + 28  |1 << 24    | (xPSR with Thumb bit set (the only mandatory bit for Cortex-M3))
+         +-----------+
+SP + 24  |dispatch   | (address of the actual dispatch method)
+         +-----------+
+SP + 20  |exit       | (address of the interrupt epilogue)
+         +-----------+
+SP + 16  |Don't Care | (general purpose register 12)
+         +-----------+
+SP + 12  |Don't Care | (general purpose register 3)
+         +-----------+
+SP +  8  |Don't Care | (general purpose register 2)
+         +-----------+
+SP +  4  |Don't Care | (general purpose register 1)
+         +-----------+
+SP       |int_id     | (to be passed as argument to dispatch())
+         +-----------+
+
+And then load EXC_RETURN into pc. This will cause stack (2) to the popped up until the EXC_RETURN value pushed.
+The stack will return to state (1) with the addition of EXC_RETURN, the processor will be in Thread mode, and
+the followingregisters of interest will be updated:
+    r0 = int_id
+    pc = dispatch
+    lr = exit
+
+Then dispatch(int_id) will be executed and return to _int_exit, which simply issues a supervisor call (SVC).
+The processor then enters handler mode and pushes a new stack like (1) to execute the SVC. The svc handler
+simply ignores this stack, sets the stack back to (1) and returns from the interrupt, making the processor
+restore the context it saved in (1).
+
+We use SVC to return because the processor does things when returning from an interrupt that are hard to be
+replicated in software. For instance, it might consistently return to the middle (not the beginning) of
+an stm (Store Multiple) instruction.
+
+Known issues:
+- If the handler executed disables interrupts, the svc instruction in _int_exit will cause a hard fault.
+This can be detected and revert if necessary. One would need to make the hard fault handler detect that the
+fault was generated in _int_exit, and in this case simply call svc_handler.
+
+More information can be found at:
+[1] ARMv7-M Architecture Reference Manual:
+        Section B1.5.6 (Exception entry behavior)
+        Section B1.5.7 (Stack alignment on exception entry)
+        Section B1.5.8 (Exception return behavior)
+[2] https://sites.google.com/site/sippeyfunlabs/embedded-system/how-to-run-re-entrant-task-scheduler-on-arm-cortex-m4
+[3] https://community.arm.com/thread/4919
+*/
 void IC::entry()
 {
 
@@ -96,16 +188,14 @@ void IC::entry()
                                             // And we're back to pre-interrupt code
 }
 
-#endif
-
-void IC::dispatch(unsigned int i) {
-    Interrupt_Id id = int_id();
-
+void IC::dispatch(unsigned int id) {
     if((id != INT_TIMER) || Traits<IC>::hysterically_debugged)
         db<IC>(TRC) << "IC::dispatch(i=" << id << ")" << endl;
 
     _int_vector[id](id);
 }
+
+#endif
 
 void IC::int_not(const Interrupt_Id & i)
 {

@@ -16,7 +16,7 @@ int main()
         volatile bool lock = false;
         if(cpu.tsl(lock))
             cout << "tsl(): doesn't function properly!(1)" << endl;
-        else		
+        else
             if(cpu.tsl(lock))
         	cout << "tsl(): ok" << endl;
             else
