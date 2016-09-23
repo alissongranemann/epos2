@@ -6,6 +6,12 @@
 //extern "C" { void _exit(int s); }
 extern "C" { void _int_entry() __attribute__ ((alias("_ZN4EPOS1S2IC5entryEv"))); }
 extern "C" { void _dispatch() __attribute__ ((alias("_ZN4EPOS1S2IC8dispatchEj"))); }
+extern "C" { void _undefined_instruction() __attribute__ ((alias("_ZN4EPOS1S2IC21undefined_instructionEv"))); }
+extern "C" { void _software_interrupt() __attribute__ ((alias("_ZN4EPOS1S2IC18software_interruptEv"))); }
+extern "C" { void _prefetch_abort() __attribute__ ((alias("_ZN4EPOS1S2IC14prefetch_abortEv"))); }
+extern "C" { void _data_abort() __attribute__ ((alias("_ZN4EPOS1S2IC10data_abortEv"))); }
+extern "C" { void _reserved() __attribute__ ((alias("_ZN4EPOS1S2IC8reservedEv"))); }
+extern "C" { void _fiq() __attribute__ ((alias("_ZN4EPOS1S2IC3fiqEv"))); }
 
 __BEGIN_SYS
 
@@ -208,5 +214,40 @@ void IC::hard_fault(const Interrupt_Id & i)
     Machine::panic();
 }
 
-__END_SYS
+void IC::undefined_instruction()
+{
+    db<IC>(ERR) << "Undefined instruction" << endl;
+    Machine::panic();
+}
 
+void IC::software_interrupt()
+{
+    db<IC>(ERR) << "Software interrupt" << endl;
+    Machine::panic();
+}
+
+void IC::prefetch_abort()
+{
+    db<IC>(ERR) << "Prefetch abort" << endl;
+    Machine::panic();
+}
+
+void IC::data_abort()
+{
+    db<IC>(ERR) << "Data abort" << endl;
+    Machine::panic();
+}
+
+void IC::reserved()
+{
+    db<IC>(ERR) << "Reserved" << endl;
+    Machine::panic();
+}
+
+void IC::fiq()
+{
+    db<IC>(ERR) << "FIQ handler" << endl;
+    Machine::panic();
+}
+
+__END_SYS

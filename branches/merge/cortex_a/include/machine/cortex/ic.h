@@ -341,6 +341,13 @@ public:
 
     static void ipi_send(unsigned int cpu, Interrupt_Id int_id) {}
 
+    void undefined_instruction();
+    void software_interrupt();
+    void prefetch_abort();
+    void data_abort();
+    void reserved();
+    void fiq();
+
 private:
     static void dispatch(unsigned int i);
 
