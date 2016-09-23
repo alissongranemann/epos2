@@ -67,5 +67,8 @@ __END_SYS
 #ifdef __NIC_H
 #include __NIC_H
 #endif
+#ifdef __ADC_H
+#include __ADC_H
+#endif
 
 #endif

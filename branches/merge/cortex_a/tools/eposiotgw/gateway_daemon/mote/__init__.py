@@ -15,7 +15,7 @@ class Mote:
         self.serial.open()
         Mote.lock.release()
 
-    def put(self, s):        
+    def put(self, s):
         Mote.lock.acquire()
         while (time.time() - Mote.last_write) <= Mote.inter_write_time:
             pass

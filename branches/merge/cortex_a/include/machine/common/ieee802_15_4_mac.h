@@ -61,11 +61,11 @@ public:
         if(do_ack) {
             bool acked = sent && Radio::wait_for_ack(ACK_TIMEOUT);
 
-            for(unsigned int i = 0; !acked && (i < Traits<_API::ELP>::RETRIES); i++) {
-                db<CC2538>(TRC) << "CC2538::retransmitting" << endl;
-                sent = backoff_and_send();
-                acked = sent && Radio::wait_for_ack(ACK_TIMEOUT);
-            }
+            //for(unsigned int i = 0; !acked && (i < Traits<_API::ELP>::RETRIES); i++) {
+            //    db<CC2538>(TRC) << "CC2538::retransmitting" << endl;
+            //    sent = backoff_and_send();
+            //    acked = sent && Radio::wait_for_ack(ACK_TIMEOUT);
+            //}
 
             if(acked) {
 //                sfr(RFIRQF0) &= ~INT_FIFOP; // Clear FIFOP flag

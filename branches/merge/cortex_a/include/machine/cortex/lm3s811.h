@@ -278,6 +278,17 @@ public:
         TPLO            = 1 << 11,      // Legacy PWM operation (0 -> legacy operation, 1 -> CCP is set to 1 on time-out)
     };
 
+    enum GPTMICR {          // Description                         Type Reset value
+        TATOCINT = 1 << 0,  // Timer A time-out interrupt clear      RW 0
+        CAMCINT  = 1 << 1,  // Timer A capture match interrupt clear RW 0
+        CAECINT  = 1 << 2,  // Timer A capture event Interrupt clear RW 0
+        TAMCINT  = 1 << 4,  // Timer A match interrupt clear         RW 0
+        TBTOCINT = 1 << 8,  // Timer B time-out interrupt clear      RW 0
+        CBMCINT  = 1 << 9,  // Timer B capture match interrupt clear RW 0
+        CBECINT  = 1 << 10, // Timer B capture event Interrupt clear RW 0
+        TBMCINT  = 1 << 11, // Timer B match interrupt clear         RW 0
+        WUECINT  = 1 << 16, // write update error interrupt clear    RW 0
+    };
 
 // GPIO
     // Base address for memory-mapped GPIO Ports Registers
@@ -430,6 +441,9 @@ protected:
     void gpio_pull_up(unsigned int port, unsigned int pin) { gpio(port, PUR) &= 1 << pin; }
     void gpio_pull_down(unsigned int port, unsigned int pin) { gpio(port, PDR) &= 1 << pin; }
 
+
+// PWM (not implemented for this model)
+    static void pwm_config(unsigned int timer, char gpio_port, unsigned int gpio_pin) {}
 
 // IEEE 802.15.4 (not present in this model)
     static void ieee802_15_4_power(const Power_Mode & mode) {}
