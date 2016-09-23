@@ -174,6 +174,9 @@ protected:
         slcr(PSS_RST_CTRL) = 1;
     }
 
+    // FIXME: implement
+    static void delay(unsigned int time);
+
     static unsigned int cpu_id() {
         int id;
         ASM("mrc p15, 0, %0, c0, c0, 5"

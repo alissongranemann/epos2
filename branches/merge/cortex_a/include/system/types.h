@@ -49,6 +49,7 @@ enum Power_Mode
 
 // Utilities
 __BEGIN_UTIL
+typedef unsigned char Percent;
 class Dummy {};
 class Bitmaps;
 class CRC;

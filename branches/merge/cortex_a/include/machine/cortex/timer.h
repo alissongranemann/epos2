@@ -140,8 +140,23 @@ public:
     void enable() { reg(GPTMICR) |= TATOCINT; reg(GPTMCTL) |= TAEN; }
     void disable() { reg(GPTMCTL) &= ~TAEN; }
 
+    void pwm(const Percent & duty_cycle) {
+        disable();
+        reg(GPTMCFG) = 4; // 4 -> 16-bit, only possible value for PWM
+        reg(GPTMTAMR) = TCMR | TAMS | 2; // 2 -> Periodic, 1 -> One-shot
+        reg(GPTMTAPR) = reg(GPTMTAILR) >> 16;
+        reg(GPTMTAMATCHR) = percent2match(duty_cycle, reg(GPTMTAILR));
+        reg(GPTMTAPMR) = reg(GPTMTAMATCHR) >> 16;
+        reg(GPTMCTL) &= ~TBPWML; // never inverted
+        enable();
+    }
+
 private:
     volatile Reg32 & reg(unsigned int o) { return _base[o / sizeof(Reg32)]; }
+
+    static Count percent2count(const Percent & duty_cycle, const Count & period) {
+        return period - ((period * duty_cycle) / 100);
+    }
 
 private:
     unsigned int _channel;
@@ -259,6 +274,8 @@ public:
 // User timer
 class User_Timer: private Timer_Common, private User_Timer_Engine
 {
+    friend class PWM;
+
 private:
     typedef User_Timer_Engine Engine;
 

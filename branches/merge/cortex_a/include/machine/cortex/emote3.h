@@ -1006,6 +1006,8 @@ protected:
         scs(AIRCR) = val;
     }
 
+    // FIXME: implement
+    static void delay(unsigned int time);
 
 // GPTM
     static void power_user_timer(unsigned int unit, const Power_Mode & mode) {
@@ -1138,22 +1140,18 @@ protected:
 
 
 // PWM
-    static void pwm_config(unsigned int timer, char gpio_port, unsigned int gpio_pin)
+    static void enable_pwm(unsigned int timer, char gpio_port, unsigned int gpio_pin)
     {
-        power_user_timer(timer, FULL);
         unsigned int port = gpio_port - 'A';
-        unsigned int sel = PA0_SEL + 0x20*port + 0x4*gpio_pin;
+        unsigned int sel = PA0_SEL + 0x20 * port + 0x4 * gpio_pin;
 
-        switch(timer)
-        {
+        switch(timer) {
             case 0: ioc(sel) = GPT0CP1; break;
             case 1: ioc(sel) = GPT1CP1; break;
             case 2: ioc(sel) = GPT2CP1; break;
             case 3: ioc(sel) = GPT3CP1; break;
         }
-
-        unsigned int over = sel + 0x80;
-        ioc(over) = OE;
+        ioc(sel + 0x80) = OE;
 
         unsigned int pin_bit = 1 << gpio_pin;
         switch(gpio_port)

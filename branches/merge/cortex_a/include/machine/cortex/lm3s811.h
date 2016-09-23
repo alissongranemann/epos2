@@ -379,6 +379,8 @@ protected:
         scs(AIRCR) = val;
     }
 
+    // FIXME: implement
+    static void delay(unsigned int time);
 
 // Device enabling
     static void enable_uart(unsigned int unit) {
