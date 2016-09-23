@@ -82,6 +82,7 @@ public:
     enum {                                      // Description
         SLCR_LOCK                   = 0x004,    // Lock the SLCR
         SLCR_UNLOCK                 = 0x008,    // Unlock the SLCR
+        UART_CLK_CTRL               = 0x154,    // UART Ref Clock Control
         FPGA0_CLK_CTRL              = 0x170,    // PL Clock 0 Output control
         PSS_RST_CTRL                = 0x200,    // PS Software Reset Control
         FPGA_RST_CTRL               = 0x240     // FPGA Software Reset Control
@@ -186,24 +187,30 @@ protected:
 
 // PM
     static void power_uart(unsigned int unit, const Power_Mode & mode) {
-        // TODO: complete pertaining clock gating actions
         assert(unit < UARTS);
         switch(mode) {
         case FULL:
+            slcr(UART_CLK_CTRL) |= 1 << unit;
+            break;
         case LIGHT:
+            break;
         case SLEEP:
-        case OFF: break;
+            break;
+        case OFF:
+            slcr(UART_CLK_CTRL) &= ~(1 << unit);
+            break;
         }
     }
 
+    // Zynq's Global Timer clock cannot be powered off
     static void power_user_timer(unsigned int unit, const Power_Mode & mode) {
-        // TODO: complete pertaining clock gating actions
         assert(unit < UARTS);
         switch(mode) {
         case FULL:
         case LIGHT:
         case SLEEP:
-        case OFF: break;
+        case OFF:
+            break;
         }
     }
 

@@ -42,7 +42,7 @@ public:
     }
 };
 
-// Cortex-A Private Timer
+// Cortex-A Global Timer
 class User_Timer_Engine: public Machine_Model
 {
 private:
