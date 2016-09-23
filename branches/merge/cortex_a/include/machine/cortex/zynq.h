@@ -15,7 +15,7 @@ protected:
     typedef CPU::Log_Addr Log_Addr;
 
 public:
-    static const unsigned int IRQS = 30;
+    static const unsigned int IRQS = 96;
     static const unsigned int TIMERS = 3;
     static const unsigned int UARTS = 2;
     static const unsigned int GPIO_PORTS = 5;
