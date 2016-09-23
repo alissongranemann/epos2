@@ -3,6 +3,7 @@
 
 __BEGIN_SYS
 
+// FIXME: incorporate in IC as methods and alias them at Setup.S
 extern "C" {
 
 void _undefined_instruction() __attribute__ ((naked));

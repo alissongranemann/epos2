@@ -39,7 +39,7 @@ void CPU::Context::load() const volatile
 
 void CPU::switch_context(Context * volatile * o, Context * volatile n)
 {
-    ASM("       sub     sp, #4                  \n"
+    ASM("       sub     sp, #4                  \n" // FIXME: documment the need of saving r12
         "       push    {r12}                   \n"
         "       adr     r12, .ret               \n"
         "       str     r12, [sp,#4]            \n"

@@ -134,54 +134,10 @@ public:
     ~User_Timer_Engine() { disable(); power_user_timer(_channel, OFF); }
 
     unsigned int clock() const { return CLOCK; }
-    bool running() { return !(reg(GPTMRIS) & TATOCINT); }
 
     Count read() { return reg(GPTMTAR); }
 
     void enable() { reg(GPTMICR) |= TATOCINT; reg(GPTMCTL) |= TAEN; }
-    void disable() { reg(GPTMCTL) &= ~TAEN; }
-
-private:
-    volatile Reg32 & reg(unsigned int o) { return _base[o / sizeof(Reg32)]; }
-
-private:
-    unsigned int _channel;
-    Reg32 * _base;
-};
-
-// Cortex-M General Purpose Timer configured for PWM
-class PWM_Timer_Engine: public Machine_Model
-{
-protected:
-    const static unsigned int CLOCK = Traits<CPU>::CLOCK;
-
-    typedef CPU::Reg32 Count;
-
-protected:
-    PWM_Timer_Engine(unsigned int channel, const Count & reload, const Count & match, bool invert = false)
-    : _channel(channel), _base(reinterpret_cast<Reg32 *>(TIMER0_BASE + 0x1000 * channel)) {
-        assert(_channel < TIMERS);
-        disable();
-        power_user_timer(channel, FULL);
-        reg(GPTMCFG) = 4; // 4 -> 16-bit, only possible value for PWM
-        reg(GPTMTAMR) = TCMR | TAMS | 2; // 2 -> Periodic, 1 -> One-shot
-        reg(GPTMTAPR) = reload >> 16;
-        reg(GPTMTAILR) = reload;
-        reg(GPTMTAPMR) = match >> 16;
-        reg(GPTMTAMATCHR) = match;
-        if(invert)
-            reg(GPTMCTL) |= TBPWML;
-        else
-            reg(GPTMCTL) &= ~TBPWML;
-        enable();
-    }
-
-public:
-    ~PWM_Timer_Engine() { disable(); power_user_timer(_channel, OFF); }
-
-    unsigned int clock() const { return CLOCK; }
-
-    void enable() { reg(GPTMCTL) |= TAEN; }
     void disable() { reg(GPTMCTL) &= ~TAEN; }
 
 private:
@@ -317,7 +273,6 @@ public:
 
     Microsecond read() { return count2us(Engine::read()); }
 
-    bool running() { return Engine::running(); }
     void enable() { Engine::enable(); }
     void disable() { Engine::disable(); }
     void power(const Power_Mode & mode) { power_user_timer(_channel, mode); }
@@ -332,40 +287,6 @@ private:
     unsigned int _channel;
     Handler _handler;
 };
-
-#infdef __mmod_zynq__
-
-// PWM Mediator
-class PWM: private Timer_Common, private PWM_Timer_Engine
-{
-private:
-    typedef PWM_Timer_Engine Engine;
-
-public:
-    using Timer_Common::Hertz;
-
-public:
-    PWM(unsigned int channel, const Hertz & frequency, unsigned char duty_cycle_percent, char gpio_port = 'A', unsigned int gpio_pin = 0)
-    : PWM_Timer_Engine(channel, freq2reload(frequency), percent2match(duty_cycle_percent, freq2reload(frequency))), _channel(channel) {
-        Machine_Model::pwm_config(channel, gpio_port, gpio_pin);
-    }
-
-    ~PWM() {}
-
-    void enable() { Engine::enable(); }
-    void disable() { Engine::disable(); }
-    void power(const Power_Mode & mode) { power_user_timer(_channel, mode); }
-
-private:
-    static Count freq2reload(const Hertz & freq) { return CLOCK / freq; }
-    static Count percent2match(unsigned char duty_cycle_percent, const Count & period) {
-        return period - ((period * duty_cycle_percent) / 100);
-    }
-
-    unsigned int _channel;
-};
-
-#endif
 
 __END_SYS
 

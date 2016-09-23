@@ -23,12 +23,7 @@ class Machine: private Machine_Common, private Machine_Model
 public:
     Machine() {}
 
-    static void delay(const RTC::Microsecond & time);
-//    {
-//        eMote3_GPTM g(3, time_microseconds);
-//        g.enable();
-//        while(g.running());
-//    }
+    static void delay(const RTC::Microsecond & time) { Machine_Model::delay(time); }
 
     static void panic();
     static void reboot();

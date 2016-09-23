@@ -47,9 +47,11 @@ public:
     bool get() const { return *_data; }
     void set(bool value) { *_data = 0xff * value; }
 
+    // FIXME: change to void direction(const Direction &) e Direction direction() com enum Direction {OUT, IN, BOTH};
     void output() { gpio(_port, DIR) |= _pin_bit; }
     void input() { gpio(_port, DIR) &= ~_pin_bit; }
 
+    // FIXME: change to void pull(const Pull &) e Pull pull() com enum Pull {UP, DOWN, FLOATING};
     void pull_up() { gpio_pull_up(_port, _pin); }
     void pull_down() { gpio_pull_down(_port, _pin); }
 
