@@ -183,7 +183,12 @@ public:
         unpend(i);
     }
 
-    static Interrupt_Id int_id() { return CPU::flags() & 0x3f; }
+    // This is meant to be called only by IC::dispatch()
+    static Interrupt_Id int_id() {
+        register Interrupt_Id id;
+        ASM("mov %0, r0" : "=r"(id) :);
+        return id;
+    }
 
     static void init(void) {};
 
@@ -268,14 +273,7 @@ public:
     static void ipi_send(unsigned int cpu, Interrupt_Id int_id) {}
 
 private:
-    static void dispatch(unsigned int i) {
-        Interrupt_Id id = int_id();
-
-        if((id != INT_TIMER) || Traits<IC>::hysterically_debugged)
-            db<IC>(TRC) << "IC::dispatch(i=" << id << ")" << endl;
-
-        _int_vector[id](id);
-    }
+    static void dispatch(unsigned int i);
 
     // Logical handlers
     static void int_not(const Interrupt_Id & i);

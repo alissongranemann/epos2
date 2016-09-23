@@ -54,16 +54,58 @@ void IC::entry()
 
 void IC::entry()
 {
-    // The processor pushes r0-r3, r12, lr, pc, psr and eventually an alignment before getting here, so we just save r4-r11
-    // lr is pushed again because the processor updates it with a code which when loaded to pc signals exception return
-    ASM("       push    {lr}            \n"
-        "       push    {r4-r11}        \n"
-        "       bl      %0              \n"
-        "       pop     {r4-r11}        \n"
-        "       pop     {pc}            \n" : : "i"(dispatch));
+
+    ASM("   mrs     r0, xpsr           \n"
+        "   and     r0, #0x3f          \n"); // Store int_id in r0 (which will be passed as argument to dispatch())
+
+    if(Traits<USB>::enabled) {
+        // This is a workaround for the USB interrupt (60). It is level-enabled, so we need to process it in handler mode, otherwise the handler will never exit
+        ASM("   cmp     r0, #60            \n" // Check if this is the USB IRQ
+            "   bne     NOT_USB            \n"
+            "   b       _dispatch          \n" // Execute USB interrupt in handler mode
+            "   bx      lr                 \n" // Return from handler mode directly to pre-interrupt code
+            "NOT_USB:                      \n");
+    }
+
+    ASM("   mov     r3, #1             \n"
+        "   lsl     r3, #24            \n" // xPSR with Thumb bit only. Other bits are Don't Care
+        "   ldr     r1, =_int_exit     \n" // Fake LR (will cause _int_exit to execute after dispatch())
+        "   orr     r1, #1             \n"
+        "   ldr     r2, =_dispatch     \n" // Fake PC (will cause dispatch() to execute after entry())
+        "   sub     r2, #1             \n"
+        "   push    {lr}               \n" // Push EXC_RETURN code, which will be popped by svc_handler
+        "   push    {r1-r3}            \n" // Fake stack (2): xPSR, PC, LR
+        "   push    {r0-r3, r12}       \n" // Push rest of fake stack (2)
+        "   bx      lr                 \n" // Return from handler mode. Will proceed to dispatch()
+        "_int_exit:                    \n"
+        "   svc     #7                 \n" // 7 is an arbitrary number. Will proceed to _svc_handler in handler mode
+        ".global _svc_handler          \n"
+        "_svc_handler:                 \n" // Set the stack back to state (1) and tell the processor to recover the pre-interrupt context
+        "   ldr r0, [sp, #28]          \n" // Read stacked xPSR
+        "   ldr r0, [sp, #28]          \n" // Read stacked xPSR
+        "   ldr r0, [sp, #28]          \n" // Read stacked xPSR
+        "   and r0, #0x200             \n" // Bit 9 indicating alignment existence
+        "   lsr r0, #7                 \n" // if bit9==1 then r0=4 else r0=0
+        "   add r0, sp                 \n"
+        "   add r0, #32                \n" // r0 now points to were EXC_RETURN was pushed
+        "   mov sp, r0                 \n" // Set stack pointer to that address
+        "   isb                        \n"
+        "   pop {pc}                   \n");// Pops EXC_RETURN, so that stack is in state (1)
+                                            // Load EXC_RETURN code to pc
+                                            // Processor unrolls stack (1)
+                                            // And we're back to pre-interrupt code
 }
 
 #endif
+
+void IC::dispatch(unsigned int i) {
+    Interrupt_Id id = int_id();
+
+    if((id != INT_TIMER) || Traits<IC>::hysterically_debugged)
+        db<IC>(TRC) << "IC::dispatch(i=" << id << ")" << endl;
+
+    _int_vector[id](id);
+}
 
 void IC::int_not(const Interrupt_Id & i)
 {

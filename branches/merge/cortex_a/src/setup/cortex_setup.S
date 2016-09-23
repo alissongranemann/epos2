@@ -52,7 +52,7 @@ _vector_table:
         .word   _int_entry + 1          // Reserved
         .word   _int_entry + 1          // Reserved
         .word   _int_entry + 1          // Reserved
-        .word   _int_entry + 1          // SVCall
+        .word   _svc_handler + 1        // SVCall
         .word   _int_entry + 1          // Reserved
         .word   _int_entry + 1          // Reserved
         .word   _int_entry + 1          // PendSV
