@@ -3,6 +3,7 @@
 #ifndef __zynq_h
 #define __zynq_h
 
+#include <tsc.h>
 #include <cpu.h>
 #include <rtc.h>
 
@@ -174,8 +175,10 @@ protected:
         slcr(PSS_RST_CTRL) = 1;
     }
 
-    // FIXME: implement
-    static void delay(unsigned int time);
+    static void delay(const RTC::Microsecond & time) {
+        TSC::Time_Stamp end = TSC::time_stamp() + time * (TSC::frequency() / 1000000);
+        while(end > TSC::time_stamp());
+    }
 
     static unsigned int cpu_id() {
         int id;
@@ -261,8 +264,6 @@ protected:
 
     static void unlock_slcr() { slcr(SLCR_UNLOCK) = UNLOCK_KEY; }
     static void lock_slcr() { slcr(SLCR_LOCK) = LOCK_KEY; }
-
-    static void delay(const RTC::Microsecond & time) {}
 
 public:
     static volatile Reg32 & slcr(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(SLCR_BASE)[o / sizeof(Reg32)]; }
