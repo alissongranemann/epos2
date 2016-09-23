@@ -4,6 +4,7 @@
 #define __armv7_tsc_h
 
 #include <tsc.h>
+#include <cpu.h>
 
 __BEGIN_SYS
 
@@ -23,10 +24,15 @@ public:
 
     static Hertz frequency() { return CLOCK; }
 
-    static Time_Stamp time_stamp();
+    static Time_Stamp time_stamp() {
+        // The MRC instruction doesn't to work correctly if ts is a Time_Stamp
+        CPU::Reg32 ts;
+        ASM("mrc p15, 0, %0, c9, c13, 0" : "=r"(ts));
+        return ((Time_Stamp)ts);
+    }
 
 private:
-    static void init() {}
+    static void init();
 };
 
 __END_SYS
