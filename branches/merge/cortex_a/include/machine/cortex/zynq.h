@@ -4,6 +4,7 @@
 #define __zynq_h
 
 #include <cpu.h>
+#include <rtc.h>
 
 __BEGIN_SYS
 
@@ -257,6 +258,8 @@ protected:
 
     static void unlock_slcr() { slcr(SLCR_UNLOCK) = UNLOCK_KEY; }
     static void lock_slcr() { slcr(SLCR_LOCK) = LOCK_KEY; }
+
+    static void delay(const RTC::Microsecond & time) {}
 
 public:
     static volatile Reg32 & slcr(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(SLCR_BASE)[o / sizeof(Reg32)]; }
