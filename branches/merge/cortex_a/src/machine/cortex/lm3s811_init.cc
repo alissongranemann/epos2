@@ -38,6 +38,10 @@ void Machine_Model::init()
     // enable use of PLL by clearing BYPASS
     rcc &= ~RCC_BYPASS;
     scr(RCC) = rcc;
+
+    db<Init, Machine_Model>(TRC) << "Machine_Model::init:CCR = " << scs(CCR) << endl;
+    scs(CCR) |= BASETHR; // BUG: on LM3S811 this register is not updated, but it doesn't seem to cause any errors
+    db<Init, Machine_Model>(TRC) << "Machine_Model::init:CCR = " << scs(CCR) << endl;
 }
 
 __END_SYS
