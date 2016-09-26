@@ -322,7 +322,7 @@ public:
         DEN		= 0x51c,	// Digital Enable 	        rw 	0x0000.00ff
         P_EDGE_CTRL     = 0x704,        // Power-up Int. Edge Control   rw      0x0000.0000
         PI_IEN          = 0x710,	// Power-up Interrupt Enable    rw 	0x0000.0000
-        IRQ_DETECT_ACK  = 0x718,        // TODO: document this!
+        IRQ_DETECT_ACK  = 0x718, // Power-up Interrupt Status/Clear R/W 0x0000.0000
         PeriphID4	= 0xfd0,	// Peripheral Identification 4	ro	0x0000.0000
         PeriphID5	= 0xfd4,	// Peripheral Identification 5 	ro	0x0000.0000
         PeriphID6	= 0xfd8,	// Peripheral Identification 6	ro	0x0000.0000
@@ -442,6 +442,7 @@ protected:
     }
     void gpio_pull_up(unsigned int port, unsigned int pin) { gpio(port, PUR) &= 1 << pin; }
     void gpio_pull_down(unsigned int port, unsigned int pin) { gpio(port, PDR) &= 1 << pin; }
+    void gpio_floating(unsigned int port, unsigned int pin) { gpio(port, ODR) &= 1 << pin; }
 
 
 // PWM (not implemented for this model)

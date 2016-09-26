@@ -191,22 +191,10 @@ public:
     }
 
     void config(unsigned int baud_rate, unsigned int data_bits, unsigned int parity, unsigned int stop_bits) {
-        unsigned int lcrh_config = 0;
-
-        // config data bits
-        lcrh_config = data_bits == 8 ? WLEN8 : data_bits == 7 ? WLEN7 : data_bits = 6 ? WLEN6 : WLEN5;
-
-        // always use FIFO
-        lcrh_config |= FEN;
-
-        // config stop bits
-        lcrh_config |= stop_bits == 2 ? STP2 : 0;
-
-        // config and enable even parity
-        lcrh_config |= parity == 1 ? EPS | PEN : 0;
-
-        // config and enable odd parity
-        lcrh_config |= parity == 2 ? PEN : 0;
+        Reg32 lcrh = data_bits == 8 ? WLEN8 : data_bits == 7 ? WLEN7 : data_bits = 6 ? WLEN6 : WLEN5; // config data bits
+        lcrh |= FEN; // always use FIFO
+        lcrh |= stop_bits == 2 ? STP2 : 0; // config stop bits
+        lcrh |= (parity == 2) ? (EPS | PEN) : (parity == 1) ? PEN : 0; // config and enable even/odd parity
 
         reg(UCR) &= ~UEN;                       // Disable UART for configuration
         reg(ICR) = ~0;                          // Clear all interrupts
@@ -214,13 +202,17 @@ public:
         Reg32 br = CLOCK / (baud_rate / 300);   // Factor by the minimum BR to preserve meaningful bits of FBRD
         reg(IBRD) = br / 300;                   // IBRD = int(CLOCK / baud_rate)
         reg(FBRD) = br / 1000;                  // FBRD = int(0.1267 * 64 + 0.5) = 8
-        reg(LCRH) = WLEN8 | FEN;                // 8 bit word length (no parity bits, one stop bit, FIFOs)
-        reg(UCR) |= UEN | TXE | RXE;            // Enable UART
+        reg(LCRH) = lcrh;                       // Write the serial parameters configuration
         reg(UIM) = UIMTX | UIMRX;               // Mask TX and RX interrupts for polling operation
+        reg(UCR) |= UEN | TXE | RXE;            // Enable UART
     }
+
     void config(unsigned int * baud_rate, unsigned int * data_bits, unsigned int * parity, unsigned int * stop_bits) {
+        Reg32 lcrh = reg(LCRH);
+        *data_bits = 5 + (lcrh & WLEN8);
+        *parity = (lcrh & PEN) ? (1 + (lcrh & EPS)) : 0;
+        *baud_rate = (CLOCK * 300) / (reg(FBRD) * 1000 + reg(IBRD) * 300);
         *stop_bits = (reg(LCRH) & STP2) ? 2 : 1;
-        //FIXME: this method is used at reset() with unbound baud_rate, data and parity.
     }
 
     Reg8 rxd() { return reg(DR); }

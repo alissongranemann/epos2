@@ -65,7 +65,7 @@ public:
                 gpio_pull_down(_port, _pin);
                 break;
             case FLOATING:
-                gpio_analog(_port, _pin);
+                gpio_floating(_port, _pin);
                 break;
         }
     }

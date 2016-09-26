@@ -709,7 +709,7 @@ public:
         DEN		= 0x51c,	// Digital Enable 	        R/W	0x0000.00ff
         P_EDGE_CTRL = 0x704, // Power-up Interrupt Edge Control R/W 0x0000.0000
         PI_IEN  = 0x710,	// Power-up Interrupt Enable       R/W	0x0000.0000
-        IRQ_DETECT_ACK = 0x718,
+        IRQ_DETECT_ACK = 0x718, // Power-up Interrupt Status/Clear R/W 0x0000.0000
     /*
         PeriphID4	= 0xfd0,	// Peripheral Identification 4	RO	0x0000.0000
         PeriphID5	= 0xfd4,	// Peripheral Identification 5 	RO	0x0000.0000
@@ -1107,18 +1107,9 @@ protected:
 
 
 // GPIO
-    static void gpio_pull_up(unsigned int port, unsigned int pin) {
-        Reg32 over = PA0_OVER + 0x20*port + 0x4*pin;
-        ioc(over) = PUE;
-    }
-    static void gpio_pull_down(unsigned int port, unsigned int pin) {
-        Reg32 over = PA0_OVER + 0x20*port + 0x4*pin;
-        ioc(over) = PDE;
-    }
-    static void gpio_analog(unsigned int port, unsigned int pin) {
-        Reg32 over = PA0_OVER + 0x20*port + 0x4*pin;
-        ioc(over) = ANA;
-    }
+    static void gpio_pull_up(unsigned int port, unsigned int pin) { ioc(PA0_OVER + 0x20*port + 0x4*pin) = PUE; }
+    static void gpio_pull_down(unsigned int port, unsigned int pin) { ioc(PA0_OVER + 0x20*port + 0x4*pin) = PDE; }
+    static void gpio_floating(unsigned int port, unsigned int pin) { ioc(PA0_OVER + 0x20*port + 0x4*pin) = ANA; }
 
 // IEEE 802.15.4
     static void power_ieee802_15_4(const Power_Mode & mode) {
@@ -1271,7 +1262,7 @@ protected:
     static void adc_config(unsigned char channel)
     {
         gpioa(DIR) &= ~(1 << channel);
-        gpio_analog(0, channel);
+        gpio_floating(0, channel);
     }
 
 public:
