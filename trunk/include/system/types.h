@@ -49,6 +49,7 @@ enum Power_Mode
 
 // Utilities
 __BEGIN_UTIL
+typedef unsigned char Percent;
 class Dummy {};
 class Bitmaps;
 class CRC;
@@ -100,6 +101,7 @@ class Serial_Keyboard;
 class Scratchpad;
 class GPIO;
 class I2C;
+class ADC;
 class FPGA;
 class NIC;
 class Ethernet;

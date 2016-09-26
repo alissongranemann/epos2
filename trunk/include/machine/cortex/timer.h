@@ -12,27 +12,96 @@
 
 __BEGIN_SYS
 
-class Cortex_M_Sys_Tick: public Machine_Model
+#ifdef __mmod_zynq__
+
+// Cortex-A Private Timer
+class System_Timer_Engine: public Machine_Model
+{
+public:
+    typedef CPU::Reg32 Count;
+    static const unsigned int CLOCK = Traits<CPU>::CLOCK/2;
+
+protected:
+    System_Timer_Engine() {}
+
+public:
+    static TSC::Hertz clock() { return CLOCK; }
+
+    static void enable() { priv_timer(PTCLR) |= TIMER_ENABLE; }
+    static void disable() { priv_timer(PTCLR) &= ~TIMER_ENABLE; }
+
+    static void isr_clr() { priv_timer(PTISR) = INT_CLR; }
+
+    void power(const Power_Mode & mode);
+
+    static void init(unsigned int f) {
+        priv_timer(PTCLR) = 0;
+        isr_clr();
+        priv_timer(PTLR) = CLOCK / f;
+        priv_timer(PTCLR) = IRQ_EN | AUTO_RELOAD;
+    }
+};
+
+// Cortex-A Global Timer
+class User_Timer_Engine: public Machine_Model
 {
 private:
+    typedef CPU::Reg64 Count;
     typedef TSC::Hertz Hertz;
 
 public:
-    typedef CPU::Reg32 Count;
-    static const unsigned int CLOCK = Traits<CPU>::CLOCK;
-
-protected:
-    Cortex_M_Sys_Tick() {}
+    static const Hertz CLOCK = Traits<CPU>::CLOCK/2;
 
 public:
-    static void enable() {
-        scs(STCTRL) |= ENABLE;
-    }
-    static void disable() {
-        scs(STCTRL) &= ~ENABLE;
-    }
+    User_Timer_Engine(unsigned int channel, const Count & count, bool interrupt = true, bool periodic = true);
 
     static Hertz clock() { return CLOCK; }
+
+    Count read() {
+        Reg32 high, low;
+
+        do {
+            high = global_timer(GTCTRH);
+            low = global_timer(GTCTRL);
+        } while(global_timer(GTCTRH) != high);
+
+        return static_cast<Count>(high) << 32 | low;
+    }
+
+    static void enable();
+    static void disable();
+
+    void set(const Count & count) {
+        // Disable counting before programming
+        global_timer(GTCLR) = 0;
+
+        global_timer(GTCTRL) = count & 0xffffffff;
+        global_timer(GTCTRH) = count >> 32;
+
+        // Re-enable counting
+        global_timer(GTCLR) = 1;
+    }
+};
+
+#else
+
+// Cortex-M SysTick Timer
+class System_Timer_Engine: public Machine_Model
+{
+public:
+    typedef CPU::Reg32 Count;
+    static const TSC::Hertz CLOCK = Traits<CPU>::CLOCK;
+
+protected:
+    System_Timer_Engine() {}
+
+public:
+    static TSC::Hertz clock() { return CLOCK; }
+
+    static void enable() { scs(STCTRL) |= ENABLE; }
+    static void disable() { scs(STCTRL) &= ~ENABLE; }
+
+    static void isr_clr() {}
 
     static void init(unsigned int f) {
         scs(STCTRL) = 0;
@@ -42,7 +111,8 @@ public:
     }
 };
 
-class Cortex_M_GPTM: public Machine_Model
+// Cortex-M General Purpose Timer
+class User_Timer_Engine: public Machine_Model
 {
 protected:
     const static unsigned int CLOCK = Traits<CPU>::CLOCK;
@@ -50,10 +120,10 @@ protected:
     typedef CPU::Reg32 Count;
 
 protected:
-    Cortex_M_GPTM(int channel, const Count & count, bool interrupt = true, bool periodic = true)
+    User_Timer_Engine(unsigned int channel, const Count & count, bool interrupt = true, bool periodic = true)
     : _channel(channel), _base(reinterpret_cast<Reg32 *>(TIMER0_BASE + 0x1000 * channel)) {
         disable();
-        power(FULL);
+        power_user_timer(channel, FULL);
         reg(GPTMCFG) = 0; // 32-bit timer
         reg(GPTMTAMR) = periodic ? 2 : 1; // 2 -> Periodic, 1 -> One-shot
         reg(GPTMTAILR) = count;
@@ -61,28 +131,43 @@ protected:
     }
 
 public:
-    ~Cortex_M_GPTM() { disable(); power(OFF); }
+    ~User_Timer_Engine() { disable(); power_user_timer(_channel, OFF); }
 
     unsigned int clock() const { return CLOCK; }
-    bool running() { return !reg(GPTMRIS); }
 
     Count read() { return reg(GPTMTAR); }
 
-    void enable() { reg(GPTMICR) = -1; reg(GPTMCTL) |= TAEN; } // TODO: Why are pending interrupts discharted?
+    void enable() { reg(GPTMCTL) |= TAEN; }
     void disable() { reg(GPTMCTL) &= ~TAEN; }
 
-    void power(const Power_Mode & mode) { Machine_Model::timer_power(_channel, mode); }
+    void pwm(const Percent & duty_cycle) {
+        disable();
+        Count count = reg(GPTMTAILR);
+        reg(GPTMCFG) = 4; // 4 -> 16-bit, only possible value for PWM
+        reg(GPTMTAMR) = TCMR | TAMS | 2; // 2 -> Periodic, 1 -> One-shot
+        reg(GPTMTAPR) = count >> 16;
+        reg(GPTMTAMATCHR) = percent2count(duty_cycle, count);
+        reg(GPTMTAPMR) = reg(GPTMTAMATCHR) >> 16;
+        reg(GPTMCTL) &= ~TBPWML; // never inverted
+        enable();
+    }
 
 private:
     volatile Reg32 & reg(unsigned int o) { return _base[o / sizeof(Reg32)]; }
 
+    static Count percent2count(const Percent & duty_cycle, const Count & period) {
+        return period - ((period * duty_cycle) / 100);
+    }
+
 private:
-    int _channel;
+    unsigned int _channel;
     Reg32 * _base;
 };
 
+#endif
+
 // Tick timer used by the system
-class Timer: private Timer_Common
+class Timer: private Timer_Common, private System_Timer_Engine
 {
     friend class Machine;
     friend class Init_System;
@@ -91,7 +176,7 @@ protected:
     static const unsigned int CHANNELS = 2;
     static const unsigned int FREQUENCY = Traits<Timer>::FREQUENCY;
 
-    typedef Cortex_M_Sys_Tick Engine;
+    typedef System_Timer_Engine Engine;
     typedef Engine::Count Count;
     typedef IC::Interrupt_Id Interrupt_Id;
 
@@ -146,8 +231,8 @@ public:
 
     void handler(const Handler & handler) { _handler = handler; }
 
-    static void enable() { Engine::enable(); }
-    static void disable() { Engine::disable(); }
+    // TODO: rename as eoi
+    static void isr_clr() { Engine::isr_clr(); }
 
 private:
     static Hertz count2freq(const Count & c) { return c ? Engine::clock() / c : 0; }
@@ -189,24 +274,27 @@ public:
 
 
 // User timer
-class User_Timer: private Timer_Common, private Cortex_M_GPTM
+class User_Timer: private Timer_Common, private User_Timer_Engine
 {
+    friend class PWM;
+
+private:
+    typedef User_Timer_Engine Engine;
+
 public:
     using Timer_Common::Microsecond;
     using Timer_Common::Handler;
 
 public:
     User_Timer(unsigned int channel, const Microsecond & time, const Handler & handler, bool periodic = false)
-    : Cortex_M_GPTM(channel, us2count(time), handler ? true : false, periodic), _handler(handler) {}
+    : Engine(channel, us2count(time), handler ? true : false, periodic), _channel(channel), _handler(handler) {}
     ~User_Timer() {}
 
-    using Cortex_M_GPTM::running;
+    Microsecond read() { return count2us(Engine::read()); }
 
-    Microsecond read() { return count2us(Cortex_M_GPTM::read()); }
-
-    using Cortex_M_GPTM::enable;
-    using Cortex_M_GPTM::disable;
-    using Cortex_M_GPTM::power;
+    void enable() { Engine::enable(); }
+    void disable() { Engine::disable(); }
+    void power(const Power_Mode & mode) { power_user_timer(_channel, mode); }
 
 private:
     static void int_handler(const IC::Interrupt_Id & i);
@@ -215,6 +303,7 @@ private:
     static Microsecond count2us(Reg32 count) { return count / (CLOCK / 1000000); }
 
 private:
+    unsigned int _channel;
     Handler _handler;
 };
 

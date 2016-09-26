@@ -1,4 +1,4 @@
-// EPOS eMote3 (Cortex-M3) MCU Initialization
+// EPOS eMote3 (ARM Cortex) MCU Initialization
 
 #include <system/config.h>
 #include __MODEL_H
@@ -14,11 +14,11 @@ void eMote3::init()
 {
     init_clock();
 
-    // Enable alternate interrupt mapping
-    scr(I_MAP) |= I_MAP_ALTMAP;
+    scs(CCR) |= BASETHR; // The processor can enter thread mode from any level
 
-    // Set the vector table offset (must be 512-byte aligned)
-    scs(VTOR) = (Traits<Machine>::SYS_CODE) & ~(1 << 29);
+    scr(I_MAP) |= I_MAP_ALTMAP; // Enable alternate interrupt mapping
+
+    scs(VTOR) = (Traits<Machine>::SYS_CODE) & ~(1 << 29); // Set the vector table offset (must be 512-byte aligned)
 }
 
 void eMote3::init_clock()
@@ -26,7 +26,7 @@ void eMote3::init_clock()
     // Since the clock is configured in traits and never changes,
     // this needs to be done only once, but this method will be
     // called at least twice during EPOS' initialization
-    // (in eMote3::uart_config() and Cortex_M::init())
+    // (in eMote3::uart_config() and Cortex::init())
     if(_init_clock_done)
         return;
 

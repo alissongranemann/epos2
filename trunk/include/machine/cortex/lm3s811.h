@@ -278,6 +278,17 @@ public:
         TPLO            = 1 << 11,      // Legacy PWM operation (0 -> legacy operation, 1 -> CCP is set to 1 on time-out)
     };
 
+    enum GPTMICR {          // Description                         Type Reset value
+        TATOCINT = 1 << 0,  // Timer A time-out interrupt clear      RW 0
+        CAMCINT  = 1 << 1,  // Timer A capture match interrupt clear RW 0
+        CAECINT  = 1 << 2,  // Timer A capture event Interrupt clear RW 0
+        TAMCINT  = 1 << 4,  // Timer A match interrupt clear         RW 0
+        TBTOCINT = 1 << 8,  // Timer B time-out interrupt clear      RW 0
+        CBMCINT  = 1 << 9,  // Timer B capture match interrupt clear RW 0
+        CBECINT  = 1 << 10, // Timer B capture event Interrupt clear RW 0
+        TBMCINT  = 1 << 11, // Timer B match interrupt clear         RW 0
+        WUECINT  = 1 << 16, // write update error interrupt clear    RW 0
+    };
 
 // GPIO
     // Base address for memory-mapped GPIO Ports Registers
@@ -311,7 +322,7 @@ public:
         DEN		= 0x51c,	// Digital Enable 	        rw 	0x0000.00ff
         P_EDGE_CTRL     = 0x704,        // Power-up Int. Edge Control   rw      0x0000.0000
         PI_IEN          = 0x710,	// Power-up Interrupt Enable    rw 	0x0000.0000
-        IRQ_DETECT_ACK  = 0x718,        // TODO: document this!
+        IRQ_DETECT_ACK  = 0x718,	// Power-up Interrupt Status/Clear R/W 0x0000.0000
         PeriphID4	= 0xfd0,	// Peripheral Identification 4	ro	0x0000.0000
         PeriphID5	= 0xfd4,	// Peripheral Identification 5 	ro	0x0000.0000
         PeriphID6	= 0xfd8,	// Peripheral Identification 6	ro	0x0000.0000
@@ -368,32 +379,20 @@ protected:
         scs(AIRCR) = val;
     }
 
+    // FIXME: implement
+    static void delay(unsigned int time);
 
-// GPTM
-    static void timer_power(unsigned int unit, const Power_Mode & mode) {
-        assert(unit < TIMERS);
-        switch(mode) {
-        case FULL:
-        case LIGHT:
-        case SLEEP:
-            scr(RCGC1) |= 1 << (unit + 16);             // Activate GPTM "unit" clock
-            break;
-        case OFF:
-            scr(RCGC1) &= ~(1 << (unit + 16));          // Deactivate GPTM "unit" clock
-            break;
-        }
-    }
-
-
- // UART
-    void uart_init(unsigned int unit) {
+// Device enabling
+    static void enable_uart(unsigned int unit) {
         assert(unit < UARTS);
-        uart_power(unit, FULL);
+        power_uart(unit, FULL);
         gpioa(AFSEL) |= 3 << (unit * 2);                // Pins A[1:0] are multiplexed between GPIO and UART 0. Select UART.
         gpioa(DEN) |= 3 << (unit * 2);                  // Enable digital I/O on Pins A[1:0]
     }
+    static void enable_usb(unsigned int unit) {}
 
-    static void uart_power(unsigned int unit, const Power_Mode & mode) {
+// PM
+    static void power_uart(unsigned int unit, const Power_Mode & mode) {
         assert(unit < UARTS);
         switch(mode) {
         case FULL:
@@ -409,15 +408,26 @@ protected:
         }
     }
 
+    static void power_user_timer(unsigned int unit, const Power_Mode & mode) {
+        assert(unit < TIMERS);
+        switch(mode) {
+        case FULL:
+        case LIGHT:
+        case SLEEP:
+            scr(RCGC1) |= 1 << (unit + 16);             // Activate GPTM "unit" clock
+            break;
+        case OFF:
+            scr(RCGC1) &= ~(1 << (unit + 16));          // Deactivate GPTM "unit" clock
+            break;
+        }
+    }
 
-// USB (not present in this model)
-    static void usb_init(unsigned int unit) {}
-    static void usb_power(unsigned int unit, const Power_Mode & mode) {}
+    static void power_usb(unsigned int unit, const Power_Mode & mode) {}
 
 
 // GPIO
     static void gpio_init() {}
-    static void gpio_power(unsigned int unit, const Power_Mode & mode) {
+    static void power_gpio(unsigned int unit, const Power_Mode & mode) {
         assert(unit < UARTS);
         switch(mode) {
         case FULL:
@@ -432,10 +442,14 @@ protected:
     }
     void gpio_pull_up(unsigned int port, unsigned int pin) { gpio(port, PUR) &= 1 << pin; }
     void gpio_pull_down(unsigned int port, unsigned int pin) { gpio(port, PDR) &= 1 << pin; }
+    void gpio_floating(unsigned int port, unsigned int pin) { gpio(port, ODR) &= 1 << pin; }
 
+
+// PWM (not implemented for this model)
+    static void pwm_config(unsigned int timer, char gpio_port, unsigned int gpio_pin) {}
 
 // IEEE 802.15.4 (not present in this model)
-    static void ieee802_15_4_power(const Power_Mode & mode) {}
+    static void power_ieee802_15_4(const Power_Mode & mode) {}
 
 public:
     static volatile Reg32 & scr(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(SCR_BASE)[o / sizeof(Reg32)]; }

@@ -24,6 +24,21 @@ public:
         FLAG_DEFAULTS   = FLAG_THUMB
     };
 
+    // Exceptions
+    typedef Reg32 Exception_Id;
+    enum {                      // Priority
+        EXC_RESET       = 1,    // -3 (highest)
+        EXC_NMI         = 2,    // -2
+        EXC_HARD        = 3,    // -1
+        EXC_MPU         = 4,    // programmable
+        EXC_BUS         = 5,    // programmable
+        EXC_USAGE       = 6,    // programmable
+        EXC_SVCALL      = 11,   // programmable
+        EXC_DEBUG       = 12,   // programmable
+        EXC_PENDSV      = 14,   // programmable
+        EXC_SYSTICK     = 15    // programmable
+    };
+
 protected:
     ARMv7_M() {};
 
@@ -84,6 +99,19 @@ public:
         FLAG_DEFAULTS   = FLAG_SVC
     };
 
+    // Exceptions
+    typedef Reg32 Exception_Id;
+    enum {
+        EXC_START                   = 1,
+        EXC_UNDEFINED_INSTRUCTION   = 2,
+        EXC_SWI                     = 3,
+        EXC_PREFETCH_ABORT          = 4,
+        EXC_DATA_ABORT              = 5,
+        EXC_RESERVED                = 6,
+        EXC_IRQ                     = 7,
+        EXC_FIQ                     = 8
+    };
+
 protected:
     ARMv7_A() {};
 
@@ -133,23 +161,9 @@ public:
     using CPU_Common::Reg8;
     using CPU_Common::Reg16;
     using CPU_Common::Reg32;
+    using CPU_Common::Reg64;
     using CPU_Common::Log_Addr;
     using CPU_Common::Phy_Addr;
-
-    // Exceptions
-    typedef Reg32 Exception_Id;
-    enum {                      // Priority
-        EXC_RESET       = 1,    // -3 (highest)
-        EXC_NMI         = 2,    // -2
-        EXC_HARD        = 3,    // -1
-        EXC_MPU         = 4,    // programmable
-        EXC_BUS         = 5,    // programmable
-        EXC_USAGE       = 6,    // programmable
-        EXC_SVCALL      = 11,   // programmable
-        EXC_DEBUG       = 12,   // programmable
-        EXC_PENDSV      = 14,   // programmable
-        EXC_SYSTICK     = 15    // programmable
-    };
 
     // CPU Context
     class Context

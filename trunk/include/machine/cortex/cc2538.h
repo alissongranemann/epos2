@@ -1,6 +1,6 @@
 // EPOS TI CC2538 IEEE 802.15.4 NIC Mediator Declarations
 
-#ifndef __cc2538_h
+#if !defined(__cc2538_h) && !defined(__mmod_zynq__)
 #define __cc2538_h
 
 #include <ieee802_15_4.h>
@@ -9,7 +9,7 @@
 
 __BEGIN_SYS
 
-// IT CC2538 IEEE 802.15.4 RF Transceiver
+// TI CC2538 IEEE 802.15.4 RF Transceiver
 class CC2538RF: private Machine_Model
 {
 protected:
@@ -326,7 +326,8 @@ public:
         static void int_enable(const Reg32 & interrupt) { mactimer(MTIRQM) |= interrupt; }
         static void int_disable() { mactimer(MTIRQM) = INT_OVERFLOW_PER; }
 
-        static Time_Stamp us_to_ts(const Microsecond & us) { return us * CLOCK / 1000000; }
+        static Time_Stamp us_to_ts(const Microsecond & us) { return static_cast<Time_Stamp>(us) * CLOCK / 1000000; }
+        static Time_Stamp ts_to_us(const Microsecond & ts) { return static_cast<Time_Stamp>(ts) * 1000000 / CLOCK; }
 
     private:
         static Time_Stamp read(unsigned int sel) {
@@ -356,16 +357,7 @@ public:
             }
         }
 
-        static void init() {
-            mactimer(MTCTRL) |= MTCTRL_RUN; // Stop counting
-            mactimer(MTIRQM) = 0; // Mask interrupts
-            mactimer(MTIRQF) = 0; // Clear interrupts
-            mactimer(MTCTRL) &= ~MTCTRL_SYNC; // We can't use the sync feature because we want to change the count and overflow values when the timer is stopped
-            mactimer(MTCTRL) |= MTCTRL_LATCH_MODE; // count and overflow will be latched at once
-            IC::int_vector(IC::INT_MACTIMER, &int_handler);
-            IC::enable(33);
-            int_enable(INT_OVERFLOW_PER);
-        }
+        static void init();
 
     private:
         static Time_Stamp _offset;
@@ -377,7 +369,7 @@ public:
 public:
     CC2538RF() {
         // Enable clock to RF module
-        ieee802_15_4_power(FULL);
+        power_ieee802_15_4(FULL);
 
         // Disable interrupts
         xreg(RFIRQM0) = 0;
@@ -402,10 +394,8 @@ public:
         // Set FIFOP threshold to maximum
         xreg(FIFOPCTRL) = 0xff;
 
-        // Set TXPOWER (this is the value Contiki uses by default)
-        xreg(TXPOWER) = 0xd5;
-
-        xreg(FRMCTRL0) = (xreg(FRMCTRL0) & ~(3 * RX_MODE)) | (RX_MODE_NORMAL * RX_MODE);
+        // Maximize transmission power
+        xreg(TXPOWER) = 0xff;
 
         // Disable counting of MAC overflows
         xreg(CSPT) = 0xff;
@@ -424,46 +414,72 @@ public:
     }
 
     bool cca(const Microsecond & time) {
-        xreg(FRMCTRL0) = (xreg(FRMCTRL0) & ~(3 * RX_MODE)) | (RX_MODE_NO_SYMBOL_SEARCH * RX_MODE);
-        sfr(RFST) = ISRXON;
-        for(Timer::Time_Stamp final = Timer::read() + Timer::us_to_ts(time); Timer::read() < final;);
-        xreg(FRMCTRL0) = (xreg(FRMCTRL0) & ~(3 * RX_MODE)) | (RX_MODE_NORMAL * RX_MODE);
-        return (xreg(RSSISTAT) & RSSI_VALID);
+        Timer::Time_Stamp end = Timer::read() + Timer::us_to_ts(time);
+        while(!(xreg(RSSISTAT) & RSSI_VALID));
+        bool channel_free;
+        while((channel_free = xreg(FSMSTAT1) & CCA) && (Timer::read() < end));
+        return channel_free;
     }
 
     bool transmit() { sfr(RFST) = ISTXONCCA; return (xreg(FSMSTAT1) & SAMPLED_CCA); }
 
-    bool wait_for_ack(const Microsecond & time) {
-        while(!(sfr(RFIRQF1) & INT_TXDONE));
-        sfr(RFIRQF1) &= ~INT_TXDONE;
-        //    if(not Traits<CC2538>::auto_listen) {
-//        xreg(RFST) = ISRXON;
-        //    }
+    bool wait_for_ack(const Microsecond & timeout) {
+        // Disable and clear FIFOP int. We'll poll the interrupt flag
+        xreg(RFIRQM0) &= ~INT_FIFOP;
+        sfr(RFIRQF0) &= ~INT_FIFOP;
+
+        // Save radio configuration
+        Reg32 saved_filter_settings = xreg(FRMFILT1);
+        bool was_promiscuous = promiscuous();
+
+        // Accept only ACK frames now
+        promiscuous(false);
+        xreg(FRMFILT1) = ACCEPT_FT2_ACK;
+
+        while(!tx_done());
+
+        // Wait for either ACK or timeout
         bool acked = false;
-        for(Timer::Time_Stamp final = Timer::read() + Timer::us_to_ts(time); (Timer::read() < final) && !(acked = (sfr(RFIRQF0) & INT_FIFOP)););
+        for(Timer::Time_Stamp end = Timer::read() + Timer::us_to_ts(timeout); (Timer::read() < end) && !(acked = sfr(RFIRQF0) & INT_FIFOP););
+
+        // Restore radio configuration
+        if(acked) {
+            sfr(RFST) = ISFLUSHRX;
+            sfr(RFIRQF0) &= ~INT_FIFOP;
+        }
+        xreg(FRMFILT1) = saved_filter_settings;
+        promiscuous(was_promiscuous);
+        xreg(RFIRQM0) |= INT_FIFOP;
+
         return acked;
     }
 
-    bool tx_done() {
+    void listen() { sfr(RFST) = ISRXON; }
+
+    //FIXME: this doesn't work without the noinline attribute
+    bool tx_done()__attribute__((noinline)) {
         bool ret = (sfr(RFIRQF1) & INT_TXDONE);
         if(ret)
             sfr(RFIRQF1) &= ~INT_TXDONE;
         return ret;
     }
 
-    void listen()
-    {
-        // Clear interrupts
-        sfr(RFIRQF0) = 0;
-        sfr(RFIRQF1) = 0;
-        // Enable device interrupts
-        xreg(RFIRQM0) = INT_FIFOP;
-        xreg(RFIRQM1) = 0;
-        // Issue the listen command
-        sfr(RFST) = ISRXON;
+    //FIXME: this doesn't work without the noinline attribute
+    bool rx_done()__attribute__((noinline)) {
+        bool ret = (sfr(RFIRQF0) & INT_RXPKTDONE);
+        if(ret)
+            sfr(RFIRQF0) &= ~INT_RXPKTDONE;
+        return ret;
     }
 
-    bool rx_done() { return ((xreg(FSMSTAT1) & FIFOP) && (xreg(RXFIFOCNT) > 0)); }
+    void promiscuous(bool on) {
+        if(on)
+            xreg(FRMFILT0) &= ~FRAME_FILTER_EN;
+        else
+            xreg(FRMFILT0) |= FRAME_FILTER_EN;
+    }
+
+    bool promiscuous() { return !(xreg(FRMFILT0) & FRAME_FILTER_EN); }
 
     void channel(unsigned int c) {
         assert((c > 10) && (c < 27));
@@ -471,7 +487,7 @@ public:
     }
 
     void copy_to_nic(IEEE802_15_4::Phy_Frame * frame) {
-        // Wait for TXFIFO to get empty
+        // Clear TXFIFO
         sfr(RFST) = ISFLUSHTX;
         while(xreg(TXFIFOCNT) != 0);
 
@@ -490,20 +506,41 @@ public:
         sfr(RFST) = ISFLUSHRX;
     }
 
+    bool filter() {
+        bool valid_frame = false;
+        if(xreg(RXFIFOCNT) > sizeof(IEEE802_15_4::Phy_Header) + sizeof(IEEE802_15_4::CRC)) {
+            volatile unsigned int * rxfifo = reinterpret_cast<volatile unsigned int*>(RXFIFO);
+            unsigned char mac_frame_size = rxfifo[0];
+            // On RX, last two bytes in the frame are replaced by info like CRC result
+            // (obs: mac frame is preceded by one byte containing the frame length,
+            // so total RXFIFO data size is 1 + mac_frame_size)
+            valid_frame = (mac_frame_size <= 127) && (rxfifo[mac_frame_size] & AUTO_CRC_OK);
+        }
+        if(!valid_frame)
+            sfr(RFST) = ISFLUSHRX;
+
+        return valid_frame;
+    }
+
     static void power(const Power_Mode & mode) {
          switch(mode) {
-         case FULL:
-         case LIGHT:
-         case SLEEP:
+         case FULL: // Able to receive and transmit
+             power_ieee802_15_4(FULL);
+             xreg(FRMCTRL0) = (xreg(FRMCTRL0) & ~(3 * RX_MODE)) | (RX_MODE_NORMAL * RX_MODE);
              break;
-         case OFF:
-             // Disable device interrupts
-             xreg(RFIRQM0) = 0;
-             xreg(RFIRQM1) = 0;
-             // Issue the OFF command
+         case LIGHT: // Able to sense channel and transmit
+             xreg(FRMCTRL0) = (xreg(FRMCTRL0) & ~(3 * RX_MODE)) | (RX_MODE_NO_SYMBOL_SEARCH * RX_MODE);
+             power_ieee802_15_4(LIGHT);
+             break;
+         case SLEEP: // Receiver off
              sfr(RFST) = ISRFOFF;
-             sfr(RFST) = ISFLUSHRX;
-             sfr(RFIRQF0) = 0;          }
+             power_ieee802_15_4(SLEEP);
+             break;
+         case OFF: // Radio unit shut down
+             sfr(RFST) = ISRFOFF;
+             power_ieee802_15_4(OFF);
+             break;
+         }
      }
 
 protected:
@@ -517,7 +554,7 @@ protected:
 // CC2538 IEEE 802.15.4 EPOSMote III NIC Mediator
 class CC2538: public IF<EQUAL<Traits<Network>::NETWORKS::Get<Traits<NIC>::NICS::Find<CC2538>::Result>::Result, TSTP>::Result, TSTP_MAC<CC2538RF>, IEEE802_15_4_MAC<CC2538RF>>::Result
 {
-    template <int unit> friend void call_init();
+    template <typename Type, int unit> friend void call_init();
 
 private:
     typedef IF<EQUAL<Traits<Network>::NETWORKS::Get<Traits<NIC>::NICS::Find<CC2538>::Result>::Result, _SYS::TSTP>::Result, TSTP_MAC<CC2538RF>, IEEE802_15_4_MAC<CC2538RF>>::Result MAC;
@@ -592,6 +629,7 @@ private:
     unsigned int _channel;
     Statistics _statistics;
 
+    Buffer::List _received_buffers;
     static Device _devices[UNITS];
 };
 

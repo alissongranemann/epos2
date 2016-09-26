@@ -12,20 +12,25 @@ unsigned int CPU::_bus_clock;
 // Class methods
 void CPU::Context::save() volatile
 {
-    ASM("       mov     r12, pc                 \n"
+    ASM("       sub     sp, #4                  \n"
         "       push    {r12}                   \n"
-        "       push    {r0-r12, lr}            \n");
+        "       mov     r12, pc                 \n"
+        "       str     r12, [sp,#4]            \n"
+        "       pop     {r12}                   \n"
+        "       push    {r0-r12, lr}            \n"
+        "       sub     sp, #4                  \n"
+        "       push    {r12}                   \n");
     mrs12();
-    ASM("       push    {r12}                   \n"
-        "       str     sp, [%0]                \n"
-        : : "r"(this));
+    ASM("       str     r12, [sp,#4]            \n"
+        "       pop     {r12}                   \n"
+        "       str     sp, [%0]                \n" : : "r"(this));
 }
 
 void CPU::Context::load() const volatile
 {
     System::_heap->free(reinterpret_cast<void *>(Memory_Map::SYS_STACK), Traits<System>::STACK_SIZE);
     ASM("       mov     sp, %0                  \n"
-        "       isb                             \n"     // serialize the pipeline so that SP gets updated before the pop
+        "       isb                             \n" // serialize the pipeline so that SP gets updated before the pop
         "       pop     {r12}                   \n" : : "r"(this));
     msr12();
     ASM("       pop     {r0-r12, lr}            \n"
@@ -34,20 +39,26 @@ void CPU::Context::load() const volatile
 
 void CPU::switch_context(Context * volatile * o, Context * volatile n)
 {
-    ASM("       adr     r12, .ret               \n"
+    ASM("       sub     sp, #4                  \n" // FIXME: documment the need of saving r12
         "       push    {r12}                   \n"
+        "       adr     r12, .ret               \n"
+        "       str     r12, [sp,#4]            \n"
+        "       pop     {r12}                   \n"
         "       push    {r0-r12, lr}            \n");
     mrs12();
     ASM("       push    {r12}                   \n"
         "       str     sp, [%0]                \n"
         "       mov     sp, %1                  \n"
-        "       isb                             \n"     // serialize the pipeline so that SP gets updated before the pop
+        "       isb                             \n" // serialize the pipeline so that SP gets updated before the pop
         "       pop     {r12}                   \n" : : "r"(o), "r"(n));
     msr12();
     ASM("       pop     {r0-r12, lr}            \n"
-        "       pop     {r12}                   \n"
-        "       mov     pc, r12                 \n"     // popping directly into PC causes an Usage Fault???
-        ".ret:  bx      lr                      \n");
+        "       push    {r12}                   \n"
+        "       ldr     r12, [sp, #4]           \n"
+        "       mov     pc, r12                 \n" // popping directly into PC causes a Usage Fault???
+        ".ret:  pop     {r12}                   \n"
+        "       add     sp, #4                  \n"
+        "       bx      lr                      \n");
 }
 
 __END_SYS

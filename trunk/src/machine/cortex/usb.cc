@@ -1,7 +1,9 @@
-// EPOS Cortex_M USB Mediator Implementation
+// EPOS Cortex USB Mediator Implementation
 
 #include <usb.h>
 #include <ic.h>
+
+#ifndef __mmod_zynq__
 
 __USING_SYS
 
@@ -13,7 +15,7 @@ unsigned int USB::_send_buffer_size = 0;
 void USB::disable()
 {
     reg(CTRL) &= ~USBEN;
-    Machine_Model::usb_power(0, OFF);
+    Machine_Model::power_usb(0, OFF);
 }
 
 char USB::get()
@@ -257,3 +259,5 @@ void USB::int_handler(const IC::Interrupt_Id & interrupt)
     }
     endpoint(index); // Restore old index
 }
+
+#endif

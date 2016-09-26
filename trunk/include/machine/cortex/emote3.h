@@ -707,9 +707,9 @@ public:
         PDR		= 0x514,	// Pull-Down Select 	        R/W	0x0000.0000
         SLR		= 0x518,	// Slew Rate Control Select	R/W	0x0000.0000
         DEN		= 0x51c,	// Digital Enable 	        R/W	0x0000.00ff
-        P_EDGE_CTRL = 0x704, // Power-up Interrupt Edge Control R/W 0x0000.0000
+        P_EDGE_CTRL  = 0x704, // Power-up Interrupt Edge Control R/W 0x0000.0000
         PI_IEN  = 0x710,	// Power-up Interrupt Enable       R/W	0x0000.0000
-        IRQ_DETECT_ACK = 0x718,
+        IRQ_DETECT_ACK = 0x718, // Power-up Interrupt Status/Clear R/W 0x0000.0000
     /*
         PeriphID4	= 0xfd0,	// Peripheral Identification 4	RO	0x0000.0000
         PeriphID5	= 0xfd4,	// Peripheral Identification 5 	RO	0x0000.0000
@@ -763,12 +763,12 @@ public:
         SLEEPDEEP = 1 << 2,
     };
     enum WAKE_UP_EVENT {
-        SLEEP_MODE_TIMER = 1 << 5,
-        USB = 1 << 4,
-        GPIO_D = 1 << 3,
-        GPIO_C = 1 << 2,
-        GPIO_B = 1 << 1,
-        GPIO_A = 1 << 0,
+        EVENT_SLEEP_MODE_TIMER = 1 << 5,
+        EVENT_USB = 1 << 4,
+        EVENT_GPIO_D = 1 << 3,
+        EVENT_GPIO_C = 1 << 2,
+        EVENT_GPIO_B = 1 << 1,
+        EVENT_GPIO_A = 1 << 0,
     };
 
     // Change in power mode will only be effective when ASM("wfi") is called
@@ -802,7 +802,7 @@ public:
 
     // GPTM registers offsets
     enum
-    {                                   //Type  Width  Reset Value
+    {                                //Type  Width  Reset Value
         GPTMCFG           =   0x00,  //RW    32    0x00000000
         GPTMTAMR          =   0x04,  //RW    32    0x00000000
         GPTMTBMR          =   0x08,  //RW    32    0x00000000
@@ -858,6 +858,144 @@ public:
         TPLO            = 1 << 11,      // Legacy PWM operation (0 -> legacy operation, 1 -> CCP is set to 1 on time-out)
     };
 
+    enum GPTMICR {          // Description                         Type Reset value
+        TATOCINT = 1 << 0,  // Timer A time-out interrupt clear      RW 0
+        CAMCINT  = 1 << 1,  // Timer A capture match interrupt clear RW 0
+        CAECINT  = 1 << 2,  // Timer A capture event Interrupt clear RW 0
+        TAMCINT  = 1 << 4,  // Timer A match interrupt clear         RW 0
+        TBTOCINT = 1 << 8,  // Timer B time-out interrupt clear      RW 0
+        CBMCINT  = 1 << 9,  // Timer B capture match interrupt clear RW 0
+        CBECINT  = 1 << 10, // Timer B capture event Interrupt clear RW 0
+        TBMCINT  = 1 << 11, // Timer B match interrupt clear         RW 0
+        WUECINT  = 1 << 16, // write update error interrupt clear    RW 0
+    };
+
+// ADC
+    // Base address for memory-mapped ADC registers
+    enum
+    {
+        ADC_BASE = 0x400d7000,
+    };
+
+    // ADC registers offsets
+    enum {
+        //Register Name      Offset   Type  Width  Reset Value
+        ADCCON1           =  0x00, // RW    32     0x00000033
+        ADCCON2           =  0x04, // RW    32     0x00000010
+        ADCCON3           =  0x08, // RW    32     0x00000000
+        ADCL              =  0x0C, // RW    32     0x00000000
+        ADCH              =  0x10, // RO    32     0x00000000
+    };
+
+    enum ADCCON1 {              // Description
+        ADCCON1_EOC   = 1 << 7, // End of conversion. Cleared when ADCH has been read. If a new
+                                // conversion is completed before the previous data has been read,
+                                // the EOC bit remains high.
+                                // 0: Conversion not complete
+                                // 1: Conversion completed 
+        ADCCON1_ST    = 1 << 6, // Start conversion
+                                // Read as 1 until conversion completes
+                                // 0: No conversion in progress.
+                                // 1: Start a conversion sequence if ADCCON1.STSEL = 11 and no
+                                // sequence is running.
+        ADCCON1_STSEL = 1 << 4, // Start select
+                                // Selects the event that starts a new conversion sequence
+                                // 00: Not implemented
+                                // 01: Full speed. Do not wait for triggers
+                                // 10: Timer 1 channel 0 compare event
+                                // 11: ADCCON1.ST = 1
+        ADCCON1_RCTRL = 1 << 2, //Controls the 16-bit random-number generator (see User Guide
+                                // Chapter 16)
+                                // When 01 is written, the setting automatically returns to 00 when the
+                                // operation completes.
+                                // 00: Normal operation (13x unrolling)
+                                // 01: Clock the LFSR once (13x unrolling)
+                                // 10: Reserved
+                                // 11: Stopped. The random-number generator is turned off.
+    };
+
+    enum ADCCON2 {             // Description
+        ADCCON2_SREF = 1 << 6, // Selects reference voltage used for the sequence of conversions
+                               // 00: Internal reference
+                               // 01: External reference on AIN7 pin
+                               // 10: AVDD5 pin
+                               // 11: External reference on AIN6-AIN7 differential input
+        ADCCON2_SDIV = 1 << 4, // Sets the decimation rate for channels included in the sequence of
+                               // conversions. The decimation
+                               // rate also determines the resolution and time required to complete a
+                               // conversion.
+                               // 00: 64 decimation rate (7 bits ENOB setting)
+                               // 01: 128 decimation rate (9 bits ENOB setting)
+                               // 10: 256 decimation rate (10 bits ENOB setting)
+                               // 11: 512 decimation rate (12 bits ENOB setting)
+        ADCCON2_SCH  = 1 << 0, // Sequence channel select
+                               // Selects the end of the sequence
+                               // A sequence can either be from AIN0 to AIN7 (SCH <= 7) or from
+                               // differential input AIN0-AIN1 to AIN6-AIN7 (8 <= SCH <= 11). For
+                               // other
+                               // settings, only one conversions is performed.
+                               // When read, these bits indicate the channel number on which a
+                               // conversion is ongoing:
+                               // 0000: AIN0
+                               // 0001: AIN1
+                               // 0010: AIN2
+                               // 0011: AIN3
+                               // 0100: AIN4
+                               // 0101: AIN5
+                               // 0110: AIN6
+                               // 0111: AIN7
+                               // 1000: AIN0-AIN1
+                               // 1001: AIN2-AIN3
+                               // 1010: AIN4-AIN5
+                               // 1011: AIN6-AIN7
+                               // 1100: GND
+                               // 1101: Reserved
+                               // 1110: Temperature sensor
+                               // 1111: VDD/3
+    };
+
+    enum ADCCON3 {             // Description
+        ADCCON3_EREF = 1 << 6, // Selects reference voltage used for the extra conversion
+                               // 00: Internal reference
+                               // 01: External reference on AIN7 pin
+                               // 10: AVDD5 pin
+                               // 11: External reference on AIN6-AIN7 differential input
+        ADCCON3_EDIV = 1 << 4, // Sets the decimation rate used for the extra conversion
+                               // The decimation rate also determines the resolution and the time
+                               // required to complete the conversion.
+                               // 00: 64 decimation rate (7 bits ENOB)
+                               // 01: 128 decimation rate (9 bits ENOB)
+                               // 10: 256 decimation rate (10 bits ENOB)
+                               // 11: 512 decimation rate (12 bits ENOB)
+        ADCCON3_ECH  = 1 << 0, // Single channel select. Selects the channel number of the single
+                               // conversion that is triggered by
+                               // writing to ADCCON3.
+                               // 0000: AIN0
+                               // 0001: AIN1
+                               // 0010: AIN2
+                               // 0011: AIN3
+                               // 0100: AIN4
+                               // 0101: AIN5
+                               // 0110: AIN6
+                               // 0111: AIN7
+                               // 1000: AIN0-AIN1
+                               // 1001: AIN2-AIN3
+                               // 1010: AIN4-AIN5
+                               // 1011: AIN6-AIN7
+                               // 1100: GND
+                               // 1101: Reserved
+                               // 1110: Temperature sensor
+                               // 1111: VDD/3
+    };
+
+    enum ADCL {            // Description
+        ADCL_ADC = 1 << 2, // Least-significant part of ADC conversion result
+    };
+
+    enum ADCH {            // Description
+        ADCH_ADC = 1 << 0, // Most-significant part of ADC conversion result
+    };
+
 protected:
     eMote3() {}
 
@@ -868,10 +1006,12 @@ protected:
         scs(AIRCR) = val;
     }
 
+    // FIXME: implement
+    static void delay(unsigned int time);
 
 // GPTM
-    static void timer_power(unsigned int unit, const Power_Mode & mode) {
-        assert(timer < TIMERS);
+    static void power_user_timer(unsigned int unit, const Power_Mode & mode) {
+        assert(unit < TIMERS);
         switch(mode) {
         case FULL:
         case LIGHT:
@@ -888,11 +1028,11 @@ protected:
 
 
 // UART
-    void uart_init(unsigned int unit)
+    unsigned int enable_uart(unsigned int unit)
     {
         init_clock(); // Setup the clock first!
 
-        uart_power(unit, FULL);
+        power_uart(unit, FULL);
 
         if(unit == 0) {
             //2. Set the GPIO pin configuration through the Pxx_SEL registers for the desired output
@@ -922,9 +1062,11 @@ protected:
            ioc(UARTRXD_UART1) = (3 << 3) + 0;
            gpiod(AFSEL) |= (PIN0) + (PIN1);
         }
+
+        return unit;
     }
 
-    static void uart_power(unsigned int unit, const Power_Mode & mode) {
+    static void power_uart(unsigned int unit, const Power_Mode & mode) {
         assert(unit < UARTS);
         switch(mode) {
         case FULL:
@@ -942,20 +1084,17 @@ protected:
 
 
 // USB
-    // Set D+ USB pull-up resistor, which is controlled by GPIO pin C2 in eMote3
-    static void usb_init(unsigned int unit)
-    {
-        init_clock();
-        const unsigned int pin_bit = 1 << 2;
-        gpioc(AFSEL) &= ~pin_bit; // Set pin C2 as software-controlled
-        gpioc(DIR) |= pin_bit; // Set pin C2 as output
-        gpioc(pin_bit << 2) = 0xff; // Set pin C2 (high)
-    }
-
-    static void usb_power(unsigned int unit, const Power_Mode & mode) {
+    static void power_usb(unsigned int unit, const Power_Mode & mode) {
         assert(unit < USBS);
         switch(mode) {
-        case FULL:
+        case FULL: {
+            init_clock();
+            // Set D+ USB pull-up resistor, which is controlled by GPIO pin C2 in eMote3
+            const unsigned int pin_bit = 1 << 2;
+            gpioc(AFSEL) &= ~pin_bit; // Set pin C2 as software-controlled
+            gpioc(DIR) |= pin_bit; // Set pin C2 as output
+            gpioc(pin_bit << 2) = 0xff; // Set pin C2 (high)
+        } break;
         case LIGHT:
         case SLEEP:
             break;
@@ -968,18 +1107,12 @@ protected:
 
 
 // GPIO
-    void gpio_pull_up(unsigned int port, unsigned int pin) {
-        auto over = PA0_OVER + 0x20*port + 0x4*pin;
-        ioc(over) = PUE;
-    }
-    void gpio_pull_down(unsigned int port, unsigned int pin) {
-        auto over = PA0_OVER + 0x20*port + 0x4*pin;
-        ioc(over) = PDE;
-    }
-
+    static void gpio_pull_up(unsigned int port, unsigned int pin) { ioc(PA0_OVER + 0x20*port + 0x4*pin) = PUE; }
+    static void gpio_pull_down(unsigned int port, unsigned int pin) { ioc(PA0_OVER + 0x20*port + 0x4*pin) = PDE; }
+    static void gpio_floating(unsigned int port, unsigned int pin) { ioc(PA0_OVER + 0x20*port + 0x4*pin) = ANA; }
 
 // IEEE 802.15.4
-    static void ieee802_15_4_power(const Power_Mode & mode) {
+    static void power_ieee802_15_4(const Power_Mode & mode) {
         switch(mode) {
         case FULL:
         case LIGHT:
@@ -997,37 +1130,26 @@ protected:
 
 
 // PWM
-    static void config_PWM(unsigned int which_timer, char gpio_port, unsigned int gpio_pin)
+    static void enable_pwm(unsigned int timer, char gpio_port, unsigned int gpio_pin)
     {
-        timer_power(which_timer, FULL);
+        unsigned int port = gpio_port - 'A';
+        unsigned int sel = PA0_SEL + 0x20 * port + 0x4 * gpio_pin;
 
-        if((gpio_port >= 'A') && (gpio_port <= 'D'))
-            gpio_port += ('a'-'A');
-        assert((gpio_port >= 'a') && (gpio_port <= 'd'));
-        assert(gpio_pin <= 7);
-
-        // Calculate the offset for the GPIO's IOC_Pxx_SEL
-        auto n = gpio_port - 'a';
-        auto sel = PA0_SEL + 0x20*n + 0x4*gpio_pin;
-
-        switch(which_timer)
-        {
+        switch(timer) {
             case 0: ioc(sel) = GPT0CP1; break;
             case 1: ioc(sel) = GPT1CP1; break;
             case 2: ioc(sel) = GPT2CP1; break;
             case 3: ioc(sel) = GPT3CP1; break;
         }
+        ioc(sel + 0x80) = OE;
 
-        auto over = sel + 0x80;
-        ioc(over) = OE;
-
-        auto pin_bit = 1 << gpio_pin;
+        unsigned int pin_bit = 1 << gpio_pin;
         switch(gpio_port)
         {
-            case 'a': gpioa(AFSEL) |= pin_bit; break;
-            case 'b': gpiob(AFSEL) |= pin_bit; break;
-            case 'c': gpioc(AFSEL) |= pin_bit; break;
-            case 'd': gpiod(AFSEL) |= pin_bit; break;
+            case 'A': gpioa(AFSEL) |= pin_bit; break;
+            case 'B': gpiob(AFSEL) |= pin_bit; break;
+            case 'C': gpioc(AFSEL) |= pin_bit; break;
+            case 'D': gpiod(AFSEL) |= pin_bit; break;
         }
     }
 
@@ -1135,6 +1257,12 @@ protected:
 
         ioc(I2CMSSDA) = (n_sda << 3) + gpio_pin_sda;
         ioc(I2CMSSCL) = (n_scl << 3) + gpio_pin_scl;
+    }
+
+    static void adc_config(unsigned char channel)
+    {
+        gpioa(DIR) &= ~(1 << channel);
+        gpio_floating(0, channel);
     }
 
 public:

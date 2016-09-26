@@ -494,7 +494,7 @@ public:
         Engine::enable();
     }
 
-    static void enable(int i) {
+    static void enable(const Interrupt_Id & i) {
         db<IC>(TRC) << "IC::enable(int=" << i << ")" << endl;
         assert(i < INTS);
         Engine::enable(i);
@@ -506,15 +506,13 @@ public:
         Engine::disable();
     }
 
-    static void disable(int i) {
+    static void disable(const Interrupt_Id & i) {
         db<IC>(TRC) << "IC::disable(int=" << i << ")" << endl;
         assert(i < INTS);
         Engine::disable(i);
     }
 
-    using Engine::eoi;
     using Engine::irq2int;
-    using Engine::int2irq;
 
 private:
     static void dispatch(unsigned int i) {

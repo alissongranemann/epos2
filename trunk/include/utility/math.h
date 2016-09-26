@@ -49,19 +49,32 @@ inline T sqrt(const T & x)
     T xlo = 0;
     T guess = x/2;
 
-    while (guess * guess != x) {
-        if (guess * guess > x)
+    while(guess * guess != x) {
+        if(guess * guess > x)
             xhi = guess;
         else
             xlo = guess;
 
         float new_guess = (xhi + xlo) / 2;
-        if (new_guess == guess)
+        if(new_guess == guess)
             break; // not getting closer
         guess = new_guess;
     }
 
     return guess;
+}
+
+template <typename T>
+inline T pow(const T & x, unsigned int e)
+{
+    if(e == 0) 
+        return 1;
+    else if(e == 1)
+        return x;
+    else if(e & 1)
+        return pow(x * x, e / 2);
+    else
+        return x * pow(x * x, (e - 1) / 2);
 }
 
 inline float fast_log2(float val)

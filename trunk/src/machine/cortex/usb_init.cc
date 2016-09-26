@@ -1,9 +1,11 @@
-// EPOS Cortex_M USB Mediator Initialization
+// EPOS Cortex USB Mediator Initialization
 
 #include <ic.h>
 #include <usb.h>
 
 __USING_SYS
+
+#ifndef __mmod_zynq__
 
 volatile USB_2_0::STATE USB::_state = USB_2_0::STATE::ATTACHED;
 volatile bool USB::_ready_to_put = false;
@@ -163,7 +165,7 @@ void USB::init()
     // Make sure that eMote3::init_clock() has been called and
     // the crystal oscillator is selected as source and stable.
     // Also, set D+ USB pull-up resistor, which is controlled by GPIO pin C2 in eMote3
-    Machine_Model::usb_power(0, FULL);
+    Machine_Model::power_usb(0, FULL);
 
     // Reset USB
     //reg(CTRL) = 0;
@@ -186,3 +188,6 @@ void USB::init()
     IC::enable(USB_IRQ);
     CPU::int_enable();
 }
+
+#endif
+

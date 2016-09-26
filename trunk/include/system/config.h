@@ -81,17 +81,20 @@ namespace EPOS {
 #include <system/meta.h>
 #include __APPL_TRAITS_H
 
-#ifdef __mmod_legacy_pc__
 #define __CPU_H         __HEADER_ARCH(cpu)
-#define __TSC_H         __HEADER_ARCH(tsc)
 #define __MMU_H         __HEADER_ARCH(mmu)
+
+#define __MACH_H        __HEADER_MACH(machine)
+#define __MODEL_H       __HEADER_MACH(MMOD)
+#define __IC_H          __HEADER_MACH(ic)
+#define __TIMER_H       __HEADER_MACH(timer)
+
+#ifdef __mmod_legacy_pc__
+#define __TSC_H         __HEADER_ARCH(tsc)
 #define __FPU_H         __HEADER_ARCH(fpu)
 #define __PMU_H         __HEADER_ARCH(pmu)
 
-#define __MACH_H        __HEADER_MACH(machine)
 #define __PCI_H         __HEADER_MACH(pci)
-#define __IC_H          __HEADER_MACH(ic)
-#define __TIMER_H       __HEADER_MACH(timer)
 #define __RTC_H         __HEADER_MACH(rtc)
 #define __EEPROM_H      __HEADER_MACH(eeprom)
 #define __UART_H        __HEADER_MACH(uart)
@@ -103,14 +106,8 @@ namespace EPOS {
 #endif
 
 #ifdef __mmod_lm3s811__
-#define __CPU_H                 __HEADER_ARCH(cpu)
 #define __TSC_H                 __HEADER_ARCH(tsc)
-#define __MMU_H                 __HEADER_ARCH(mmu)
 
-#define __MACH_H                __HEADER_MACH(machine)
-#define __MODEL_H               __HEADER_MACH(MMOD)
-#define __IC_H                  __HEADER_MACH(ic)
-#define __TIMER_H               __HEADER_MACH(timer)
 #define __RTC_H                 __HEADER_MACH(rtc)
 #define __UART_H                __HEADER_MACH(uart)
 #define __USB_H                 __HEADER_MACH(usb)
@@ -119,14 +116,8 @@ namespace EPOS {
 #endif
 
 #ifdef __mmod_emote3__
-#define __CPU_H                 __HEADER_ARCH(cpu)
 #define __TSC_H                 __HEADER_ARCH(tsc)
-#define __MMU_H                 __HEADER_ARCH(mmu)
 
-#define __MACH_H                __HEADER_MACH(machine)
-#define __MODEL_H               __HEADER_MACH(MMOD)
-#define __IC_H                  __HEADER_MACH(ic)
-#define __TIMER_H               __HEADER_MACH(timer)
 #define __RTC_H                 __HEADER_MACH(rtc)
 #define __EEPROM_H              __HEADER_MACH(eeprom)
 #define __UART_H                __HEADER_MACH(uart)
@@ -134,9 +125,15 @@ namespace EPOS {
 #define __USB_H                 __HEADER_MACH(usb)
 #define __I2C_H                 __HEADER_MACH(i2c)
 #define __GPIO_H                __HEADER_MACH(gpio)
+#define __ADC_H                 __HEADER_MACH(adc)
 #endif
 
-#ifdef __mmod_zinq__
+#ifdef __mmod_zynq__
+#define __TSC_H                 __HEADER_ARCH(tsc)
+
+#define __RTC_H                 __HEADER_MACH(rtc)
+#define __UART_H                __HEADER_MACH(uart)
+#define __NIC_H                 __HEADER_MACH(nic)
 #endif
 
 //============================================================================

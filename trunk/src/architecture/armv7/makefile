@@ -9,13 +9,13 @@ CRTSI := $(subst .S,.s,$(shell find *.S | grep crt))
 INITS := $(subst .cc,.o,$(shell find *.cc | grep _init))
 
 all:		crts $(LIBARCH) $(LIBINIT)
-		
+
 crts:		$(CRTS)
 		$(INSTALL) $^ $(LIB)
 
 .INTERMEDIATE:	$(CRTSI)
 
-$(LIBARCH):	$(LIBARCH)($(OBJS))	
+$(LIBARCH):	$(LIBARCH)($(OBJS))
 
 $(LIBINIT):	$(LIBINIT)($(INITS))
 

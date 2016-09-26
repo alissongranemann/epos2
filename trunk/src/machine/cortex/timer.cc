@@ -1,4 +1,4 @@
-// EPOS Cortex_M Timer Mediator Implementation
+// EPOS Cortex Timer Mediator Implementation
 
 #include <machine.h>
 #include <ic.h>

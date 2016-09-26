@@ -1,6 +1,6 @@
-// EPOS Cortex GPIO Mediator Declarations
+// EPOS ARM Cortex GPIO Mediator Declarations
 
-#ifndef __cortex_gpio_h_
+#if !defined(__cortex_gpio_h_) && !defined(__mmod_zynq__)
 #define __cortex_gpio_h_
 
 #include <machine.h>
@@ -9,34 +9,18 @@
 
 __BEGIN_SYS
 
-class GPIO: private GPIO_Common, private Machine_Model
+class GPIO: public GPIO_Common, private Machine_Model
 {
 private:
     static const bool supports_power_up = Machine_Model::supports_gpio_power_up;
 
 public:
-    enum Level {
-        HIGH,
-        LOW,
-    };
-    enum Edge {
-        RISING,
-        FALLING,
-        BOTH,
-    };
-    enum Direction {
-        INPUT,
-        OUTPUT,
-    };
-
-    GPIO(char port, unsigned int pin, const Direction & dir, const IC::Interrupt_Handler & handler = 0)
+    GPIO(char port, unsigned int pin, const Direction & dir, const Pull & p = UP, const IC::Interrupt_Handler & handler = 0)
     : _port(port - 'A'), _pin(pin), _pin_bit(1 << pin), _data(&gpio(_port, _pin_bit << 2)), _handler(handler) {
         assert((port >= 'A') && (port <= 'A' + GPIO_PORTS));
         gpio(_port, AFSEL) &= ~_pin_bit; // Set pin as software controlled
-        if(dir == OUTPUT)
-            gpio(port, DIR) |= _pin_bit;
-        else
-            gpio(port, DIR) &= ~_pin_bit;
+        direction(dir);
+        pull(p);
         clear_interrupt();
         if(handler) {
             _devices[_port][_pin] = this;
@@ -44,14 +28,47 @@ public:
         }
     }
 
-    bool get() const { return *_data; }
-    void set(bool value) { *_data = 0xff * value; }
+    bool get() const {
+        assert(_direction == IN);
+        return *_data;
+    }
 
-//    void output() { gpio(_port, DIR) |= _pin_bit; }
-//    void input() { gpio(_port, DIR) &= ~_pin_bit; }
+    void set(bool value) {
+        assert(_direction == INOUT || _direction == OUT);
+        if(_direction == INOUT) {
+            gpio(_port, DIR) |= _pin_bit;
+            *_data = 0xff * value;
+            gpio(_port, DIR) &= ~_pin_bit;
+        } else
+            *_data = 0xff * value;
+    }
 
-    void pull_up() { gpio_pull_up(_port, _pin); }
-    void pull_down() { gpio_pull_down(_port, _pin); }
+    void direction(const Direction & dir) {
+        _direction = dir;
+        switch(dir) {
+            case OUT:
+                gpio(_port, DIR) |= _pin_bit;
+                break;
+            case IN:
+            case INOUT:
+                gpio(_port, DIR) &= ~_pin_bit;
+                break;
+        }
+    }
+
+    void pull(const Pull & p) {
+        switch(p) {
+            case UP:
+                gpio_pull_up(_port, _pin);
+                break;
+            case DOWN:
+                gpio_pull_down(_port, _pin);
+                break;
+            case FLOATING:
+                gpio_floating(_port, _pin);
+                break;
+        }
+    }
 
     void int_enable() { gpio(_port, IM) |= _pin_bit; }
     void int_enable(const Level & level, bool power_up = false, const Level & power_up_level = HIGH);
@@ -70,6 +87,7 @@ private:
     unsigned char _port;
     unsigned char _pin;
     unsigned int _pin_bit;
+    Direction _direction;
     volatile Reg32 * _data;
     IC::Interrupt_Handler _handler;
 

@@ -1,5 +1,8 @@
 // EPOS TI CC2538 IEEE 802.15.4 NIC Mediator Implementation
 
+#include <system/config.h>
+
+#ifdef __mmod_emote3__
 
 #include <machine/cortex/machine.h>
 #include <machine/cortex/cc2538.h>
@@ -24,59 +27,48 @@ int CC2538::send(const Address & dst, const Type & type, const void * data, unsi
 {
     db<CC2538>(TRC) << "CC2538::send(s=" << address() << ",d=" << dst << ",p=" << hex << type << dec << ",d=" << data << ",s=" << size << ")" << endl;
 
-    Phy_Frame frame;
-    MAC::marshal(&frame, address(), dst, type, data, size); // size adjustments are handled by the MAC
-    copy_to_nic(&frame);
-
-    db<CC2538>(INF) << "CC2538::send:frame=" << &frame << " => " << frame << endl;
-
-    size = MAC::send();
-
-    if(size) {
-        _statistics.tx_packets++;
-        _statistics.tx_bytes += size;
-    } else
-        db<CC2538>(WRN) << "CC2538::send(s=" << address() << ",d=" << dst << ",p=" << hex << type << dec << ",d=" << data << ",s=" << size << ")" << " => failed!" << endl;
-
-    return size;
+    Buffer * b;
+    if((b = alloc(reinterpret_cast<NIC*>(this), dst, type, 0, 0, size))) {
+        // Assemble the Frame Header and buffer Metainformation
+        MAC::marshal(b, address(), dst, type, data, size);
+        return send(b);
+    }
+    return 0;
 }
-
 
 int CC2538::receive(Address * src, Type * type, void * data, unsigned int size)
 {
     db<CC2538>(TRC) << "CC2538::receive(s=" << *src << ",p=" << hex << *type << dec << ",d=" << data << ",s=" << size << ") => " << endl;
 
-    Phy_Frame frame;
-    MAC::receive();
-    copy_from_nic(&frame);
-    Address dst;
-    size = MAC::unmarshal(&frame, src, &dst, type, data, size);
+    unsigned int ret = 0;
 
-    _statistics.rx_packets++;
-    _statistics.rx_bytes += size;
+    Buffer::Element * el = _received_buffers.remove_head();
+    if(el) {
+        Buffer * buf = el->object();
+        Address dst;
+        ret = MAC::unmarshal(buf, src, &dst, type, data, size);
+        free(buf);
+    }
 
-    db<CC2538>(INF) << "CC2538::receive:frame=" << &frame  << " => " << frame << endl;
+    db<CC2538>(INF) << "CC2538::received " << ret << " bytes" << endl;
 
-    return size;
+    return ret;
 }
-
 
 CC2538::Buffer * CC2538::alloc(NIC * nic, const Address & dst, const Type & type, unsigned int once, unsigned int always, unsigned int payload)
 {
     db<CC2538>(TRC) << "CC2538::alloc(s=" << address() << ",d=" << dst << ",p=" << hex << type << dec << ",on=" << once << ",al=" << always << ",ld=" << payload << ")" << endl;
 
-    // Initialize the buffer and assemble the Ethernet Frame Header
+    // Initialize the buffer
     return new (SYSTEM) Buffer(nic, once + always + payload, once + always + payload); // the last parameter is passed to Phy_Frame as the length
 }
-
 
 int CC2538::send(Buffer * buf)
 {
     db<CC2538>(TRC) << "CC2538::send(buf=" << buf << ")" << endl;
     db<CC2538>(INF) << "CC2538::send:frame=" << buf->frame() << " => " << *(buf->frame()) << endl;
 
-    copy_to_nic(buf->frame());
-    unsigned int size = MAC::send();
+    unsigned int size = MAC::send(buf);
 
     if(size) {
         _statistics.tx_packets++;
@@ -85,9 +77,9 @@ int CC2538::send(Buffer * buf)
         db<CC2538>(WRN) << "CC2538::send(buf=" << buf << ")" << " => failed!" << endl;
 
     delete buf;
+
     return size;
 }
-
 
 void CC2538::free(Buffer * buf)
 {
@@ -96,7 +88,7 @@ void CC2538::free(Buffer * buf)
     _statistics.rx_packets++;
     _statistics.rx_bytes += buf->size();
 
-    buf->unlock();
+    delete buf;
 }
 
 void CC2538::reset()
@@ -107,7 +99,6 @@ void CC2538::reset()
     new (&_statistics) Statistics;
 }
 
-
 void CC2538::handle_int()
 {
     db<CC2538>(TRC) << "CC2538::handle_int()" << endl;
@@ -115,28 +106,35 @@ void CC2538::handle_int()
     Reg32 irqrf0 = sfr(RFIRQF0);
     Reg32 irqrf1 = sfr(RFIRQF1);
     Reg32 errf = sfr(RFERRF);
-    sfr(RFIRQF0) = 0;
-    sfr(RFIRQF1) = 0;
+    sfr(RFIRQF0) = irqrf0 & INT_RXPKTDONE; //INT_RXPKTDONE is polled by rx_done()
+    sfr(RFIRQF1) = irqrf1 & INT_TXDONE; //INT_TXDONE is polled by tx_done()
     sfr(RFERRF) = 0;
     db<CC2538>(INF) << "CC2538::handle_int:RFIRQF0=" << hex << irqrf0 << endl;
     db<CC2538>(INF) << "CC2538::handle_int:RFIRQF1=" << hex << irqrf1 << endl;
     db<CC2538>(INF) << "CC2538::handle_int:RFERRF=" << hex << errf << endl;
 
     if(irqrf0 & INT_FIFOP) { // Frame received
-        sfr(RFIRQF0) &= ~INT_FIFOP;
-        if((xreg(RXFIFOCNT) > 0)) {
-            db<CC2538>(TRC) << "CC2538::handle_int:receive()" << endl;
+        db<CC2538>(TRC) << "CC2538::handle_int:receive()" << endl;
+        if(CC2538RF::filter()) {
             Buffer * buf = new (SYSTEM) Buffer(0);
-            Phy_Frame * frame = buf->frame();
-            copy_from_nic(frame);
-            buf->size(frame->length() - (sizeof(Header) + sizeof(CRC) - sizeof(Phy_Header))); // Phy_Header is included in Header, but is already discounted in frame_length
-            db<CC2538>(TRC) << "CC2538::handle_int:receive(b=" << buf << ") => " << *buf << endl;
-            if(!notify(0, buf)) // No one was waiting for this frame, so let it free for receive()
-                free(buf);
+            if(MAC::copy_from_nic(buf)) {
+                db<CC2538>(TRC) << "CC2538::handle_int:receive(b=" << buf << ") => " << *buf << endl;
+                if(!notify(reinterpret_cast<Frame*>(buf->frame())->type(), buf)) {
+                    // No one was waiting for this frame, so store it for receive()
+                    if(_received_buffers.size() < RX_BUFS) {
+                        _received_buffers.insert(buf->link());
+                    } else {
+                        db<CC2538>(WRN) << "CC2538::handle_int: frame dropped, too many buffers in queue!"  << endl;
+                        delete buf;
+                    }
+                }
+            } else {
+                db<CC2538>(TRC) << "CC2538::handle_int: frame dropped by MAC"  << endl;
+                delete buf;
+            }
         }
     }
 }
-
 
 void CC2538::int_handler(const IC::Interrupt_Id & interrupt)
 {
@@ -151,3 +149,5 @@ void CC2538::int_handler(const IC::Interrupt_Id & interrupt)
 }
 
 __END_SYS
+
+#endif

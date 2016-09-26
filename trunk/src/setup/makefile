@@ -20,7 +20,7 @@ $(MACH)_setup:	$(MACH)_setup.o
 
 install:	$(MACH)_setup
 		$(INSTALL) $< $(IMG)
-		
+
 install.o:	$(MACH)_setup.o
 		$(INSTALL) $< $(LIB)
 

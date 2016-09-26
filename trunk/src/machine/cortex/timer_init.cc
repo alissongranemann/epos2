@@ -1,4 +1,4 @@
-// EPOS Cortex_M Timer Mediator Initialization
+// EPOS Cortex Timer Mediator Initialization
 
 #include <timer.h>
 #include <ic.h>
@@ -11,6 +11,7 @@ void Timer::init()
 
     Engine::init(FREQUENCY);
     IC::int_vector(IC::INT_TIMER, int_handler);
+    IC::enable(IC::INT_TIMER);
     Engine::enable();
 }
 

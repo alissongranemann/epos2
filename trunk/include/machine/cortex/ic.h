@@ -1,4 +1,4 @@
-// EPOS Cortex IC Mediator Declarations
+// EPOS ARM Cortex IC Mediator Declarations
 
 #ifndef __cortex_ic_h
 #define __cortex_ic_h
@@ -9,18 +9,165 @@
 
 __BEGIN_SYS
 
-class IC: private IC_Common, private Machine_Model
-{
-    friend class Machine;
+class NVIC;
+class GIC;
 
-private:
-    typedef CPU::Reg32 Reg32;
-    typedef CPU::Log_Addr Log_Addr;
+#ifdef __mmod_zynq__
+
+class GIC: public IC_Common, protected Machine_Model
+{
+public:
+    // IRQs
+    static const unsigned int IRQS = Machine_Model::IRQS;
+    typedef Interrupt_Id IRQ;
+    enum {
+        IRQ_SOFTWARE0           = 0,
+        IRQ_SOFTWARE1           = 1,
+        IRQ_SOFTWARE2           = 2,
+        IRQ_SOFTWARE3           = 3,
+        IRQ_SOFTWARE4           = 4,
+        IRQ_SOFTWARE5           = 5,
+        IRQ_SOFTWARE6           = 6,
+        IRQ_SOFTWARE7           = 7,
+        IRQ_SOFTWARE8           = 8,
+        IRQ_SOFTWARE9           = 9,
+        IRQ_SOFTWARE10          = 10,
+        IRQ_SOFTWARE11          = 11,
+        IRQ_SOFTWARE12          = 12,
+        IRQ_SOFTWARE13          = 13,
+        IRQ_SOFTWARE14          = 14,
+        IRQ_SOFTWARE15          = 15,
+        IRQ_GLOBAL_TIMER        = 27,
+        IRQ_NFIQ                = 28,
+        IRQ_PRIVATE_TIMER       = 29,
+        IRQ_AWDT                = 30,
+        IRQ_NIRQ                = 31,
+        IRQ_APU0                = 32,
+        IRQ_APU1                = 33,
+        IRQ_L2                  = 34,
+        IRQ_OCM                 = 35,
+        IRQ_PMU0                = 37,
+        IRQ_PMU1                = 38,
+        IRQ_XADC                = 39,
+        IRQ_DEVC                = 40,
+        IRQ_SWDT                = 41,
+        IRQ_TTC0_0              = 42,
+        IRQ_TTC0_1              = 43,
+        IRQ_TTC0_2              = 44,
+        IRQ_DMAC_ABORT          = 45,
+        IRQ_DMAC0               = 46,
+        IRQ_DMAC1               = 47,
+        IRQ_DMAC2               = 48,
+        IRQ_DMAC3               = 49,
+        IRQ_SMC                 = 50,
+        IRQ_QSPI                = 51,
+        IRQ_GPIO                = 52,
+        IRQ_USB0                = 53,
+        IRQ_ETHERNET0           = 54,
+        IRQ_ETHERNET0_WAKEUP    = 55,
+        IRQ_SDIO0               = 56,
+        IRQ_I2C0                = 57,
+        IRQ_SPI0                = 58,
+        IRQ_UART0               = 59,
+        IRQ_CAN0                = 60,
+        IRQ_PL0                 = 61,
+        IRQ_PL1                 = 62,
+        IRQ_PL2                 = 63,
+        IRQ_PL3                 = 64,
+        IRQ_PL4                 = 65,
+        IRQ_PL5                 = 66,
+        IRQ_PL6                 = 67,
+        IRQ_PL7                 = 68,
+        IRQ_TTC1_0              = 69,
+        IRQ_TTC1_1              = 70,
+        IRQ_TTC1_2              = 71,
+        IRQ_DMAC4               = 72,
+        IRQ_DMAC5               = 73,
+        IRQ_DMAC6               = 74,
+        IRQ_DMAC7               = 75,
+        IRQ_USB1                = 76,
+        IRQ_ETHERNET1           = 76,
+        IRQ_ETHERNET1_WAKEUP    = 78,
+        IRQ_SDIO1               = 79,
+        IRQ_I2C1                = 80,
+        IRQ_SPI1                = 81,
+        IRQ_UART1               = 82,
+        IRQ_CAN1                = 83,
+        IRQ_PL8                 = 84,
+        IRQ_PL9                 = 85,
+        IRQ_PL10                = 86,
+        IRQ_PL11                = 87,
+        IRQ_PL12                = 88,
+        IRQ_PL13                = 89,
+        IRQ_PL14                = 90,
+        IRQ_PL15                = 91,
+        IRQ_PARITY              = 92,
+    };
+
+    // Interrupts
+    static const unsigned int INTS = 93 + 1;
+    static const unsigned int EXC_INT = 0; // Not mapped by IC. Exceptions are hard configured by SETUP.
+    static const unsigned int HARD_INT = 16;
+    static const unsigned int SOFT_INT = 0;
+    enum {
+        INT_TIMER       = IRQ_PRIVATE_TIMER,
+        INT_FIRST_HARD  = HARD_INT,
+        INT_LAST_HARD   = IRQ_PARITY,
+        INT_RESCHEDULER = IRQ_SOFTWARE0
+    };
 
 public:
-    using IC_Common::Interrupt_Id;
-    using IC_Common::Interrupt_Handler;
+    GIC() {}
 
+    static int irq2int(int i) { return i; }
+    static int int2irq(int i) { return i; }
+
+    static void enable() {
+        dist(ICDISER0) = ~0;
+        dist(ICDISER1) = ~0;
+        dist(ICDISER2) = ~0;
+    }
+
+    static void enable(int i) { dist(ICDISER0 + (i/32)*4) = 1 << (i%32); }
+
+    static void disable() {
+        dist(ICDICER0) = ~0;
+        dist(ICDICER1) = ~0;
+        dist(ICDICER1) = ~0;
+    }
+
+    static void disable(int i) { dist(ICDICER0 + (i/32)*4) = 1 << (i%32); }
+
+    static Interrupt_Id int_id() {
+        Reg32 icciar = cpu_itf(ICCIAR) & INT_ID_MASK;
+
+        // For every read of a valid interrupt id from the ICCIAR, the ISR must
+        // perform a matching write to the ICCEOIR
+        cpu_itf(ICCEOIR) = icciar;
+        return icciar;
+    }
+
+    static void init(void) {
+        // Enable distributor
+        dist(ICDDCR) = DIST_EN_S;
+
+        // Mask no interrupt
+        cpu_itf(ICCPMR) = 0xF0;
+
+        // Enable interrupts signaling by the CPU interfaces to the connected
+        // processors
+        cpu_itf(ICCICR) = ACK_CTL | ITF_EN_NS | ITF_EN_S;
+    }
+
+protected:
+    static const unsigned int INT_ID_MASK = 0x3FF;
+};
+
+#else
+
+class NVIC: public IC_Common, protected Machine_Model
+{
+public:
     // IRQs
     static const unsigned int IRQS = Machine_Model::IRQS;
     typedef Interrupt_Id IRQ;
@@ -65,13 +212,95 @@ public:
     static const unsigned int HARD_INT = 16;
     static const unsigned int SOFT_INT = HARD_INT + IRQS;
     enum {
-        INT_HARD_FAULT  = EXC_INT + CPU::EXC_HARD,
-        INT_TIMER       = 15,
         INT_FIRST_HARD  = HARD_INT,
+        INT_TIMER       = ARMv7_M::EXC_SYSTICK,
+        INT_GPIOA       = HARD_INT + IRQ_GPIOA,
+        INT_RADIO_RX    = HARD_INT + IRQ_RFTXRX,
+        INT_RADIO_TX    = HARD_INT + IRQ_RFTXRX,
         INT_MACTIMER    = HARD_INT + IRQ_MACTIMER,
         INT_LAST_HARD   = SOFT_INT - 1,
         INT_RESCHEDULER = SOFT_INT
     };
+
+public:
+    NVIC() {}
+
+    static int irq2int(int i) { return i + HARD_INT; }
+    static int int2irq(int i) { return i - HARD_INT; }
+
+    static void enable() {
+        db<IC>(TRC) << "IC::enable()" << endl;
+        scs(IRQ_ENABLE0) = ~0;
+        if(IRQS > 32) scs(IRQ_ENABLE1) = ~0;
+        if(IRQS > 64) scs(IRQ_ENABLE2) = ~0;
+    }
+
+    static void enable(const Interrupt_Id & id) {
+        IRQ i = int2irq(id);
+        db<IC>(TRC) << "IC::enable(irq=" << i << ")" << endl;
+        assert(i < IRQS);
+        if(i < 32) scs(IRQ_ENABLE0) = 1 << i;
+        else if((IRQS > 32) && (i < 64)) scs(IRQ_ENABLE1) = 1 << (i - 32);
+        else if(IRQS > 64) scs(IRQ_ENABLE2) = 1 << (i - 64);
+    }
+
+    static void disable() {
+        db<IC>(TRC) << "IC::disable()" << endl;
+        scs(IRQ_DISABLE0) = ~0;
+        if(IRQS > 32) scs(IRQ_DISABLE1) = ~0;
+        if(IRQS > 64) scs(IRQ_DISABLE2) = ~0;
+    }
+
+    static void disable(const Interrupt_Id & id) {
+        IRQ i = int2irq(id);
+        db<IC>(TRC) << "IC::disable(irq=" << i << ")" << endl;
+        assert(i < IRQS);
+        if(i < 32) scs(IRQ_DISABLE0) = 1 << i;
+        else if((IRQS > 32) && (i < 64)) scs(IRQ_DISABLE1) = 1 << (i - 32);
+        else if(IRQS > 64) scs(IRQ_DISABLE2) = 1 << (i - 64);
+        unpend(i);
+    }
+
+    // Only works in handler mode (inside IC::entry())
+    static Interrupt_Id int_id() { return CPU::flags() & 0x3f; }
+
+    static void init(void) {};
+
+private:
+    static void unpend() {
+        db<IC>(TRC) << "IC::unpend()" << endl;
+        scs(IRQ_UNPEND0) = ~0;
+        scs(IRQ_UNPEND1) = ~0;
+        scs(IRQ_UNPEND2) = ~0;
+    }
+
+    static void unpend(const IRQ & i) {
+        db<IC>(TRC) << "IC::unpend(irq=" << i << ")" << endl;
+        assert(i < IRQS);
+        if(i < 32) scs(IRQ_UNPEND0) = 1 << i;
+        else if((IRQS > 32) && (i < 64)) scs(IRQ_UNPEND1) = 1 << (i - 32);
+        else if(IRQS > 64) scs(IRQ_UNPEND2) = 1 << (i - 64);
+    }
+};
+
+#endif
+
+
+class IC: private IF<Traits<Build>::MODEL == Traits<Build>::Zynq, GIC, NVIC>::Result
+{
+    friend class Machine;
+
+private:
+    typedef IF<Traits<Build>::MODEL == Traits<Build>::Zynq, GIC, NVIC>::Result Engine;
+
+public:
+    using IC_Common::Interrupt_Id;
+    using IC_Common::Interrupt_Handler;
+    using Engine::INT_TIMER;
+    using Engine::INT_GPIOA;
+    using Engine::INT_RADIO_RX;
+    using Engine::INT_RADIO_TX;
+    using Engine::INT_RESCHEDULER;
 
 public:
     IC() {}
@@ -89,71 +318,49 @@ public:
 
     static void enable() {
         db<IC>(TRC) << "IC::enable()" << endl;
-        scs(IRQ_ENABLE0) = ~0;
-        if(IRQS > 32) scs(IRQ_ENABLE1) = ~0;
-        if(IRQS > 64) scs(IRQ_ENABLE2) = ~0;
+        assert(i < INTS);
+        Engine::enable();
     }
 
-    static void enable(const IRQ & i) {
-        db<IC>(TRC) << "IC::enable(irq=" << i << ")" << endl;
-        assert(i < IRQS);
-        if(i < 32) scs(IRQ_ENABLE0) = 1 << i;
-        else if((IRQS > 32) && (i < 64)) scs(IRQ_ENABLE1) = 1 << (i - 32);
-        else if(IRQS > 64) scs(IRQ_ENABLE2) = 1 << (i - 64);
+    static void enable(const Interrupt_Id & i) {
+        db<IC>(TRC) << "IC::enable(int=" << i << ")" << endl;
+        assert(i < INTS);
+        Engine::enable(i);
     }
 
     static void disable() {
         db<IC>(TRC) << "IC::disable()" << endl;
-        scs(IRQ_DISABLE0) = ~0;
-        if(IRQS > 32) scs(IRQ_DISABLE1) = ~0;
-        if(IRQS > 64) scs(IRQ_DISABLE2) = ~0;
+        assert(i < INTS);
+        Engine::disable();
     }
 
-    static void disable(const IRQ & i) {
-        db<IC>(TRC) << "IC::disable(irq=" << i << ")" << endl;
-        assert(i < IRQS);
-        if(i < 32) scs(IRQ_DISABLE0) = 1 << i;
-        else if((IRQS > 32) && (i < 64)) scs(IRQ_DISABLE1) = 1 << (i - 32);
-        else if(IRQS > 64) scs(IRQ_DISABLE2) = 1 << (i - 64);
-        unpend(i);
+    static void disable(const Interrupt_Id & i) {
+        db<IC>(TRC) << "IC::disable(int=" << i << ")" << endl;
+        assert(i < INTS);
+        Engine::disable(i);
     }
 
-    static int irq2int(int i) { return i + HARD_INT; }
-    static int int2irq(int i) { return i - HARD_INT; }
+    using Engine::irq2int;
+//    using Engine::int2irq;
 
-    static void ipi_send(int dest, int interrupt) {}
+    static void ipi_send(unsigned int cpu, Interrupt_Id int_id) {}
+
+    void undefined_instruction();
+    void software_interrupt();
+    void prefetch_abort();
+    void data_abort();
+    void reserved();
+    void fiq();
 
 private:
-    static void unpend() {
-        db<IC>(TRC) << "IC::unpend()" << endl;
-        scs(IRQ_UNPEND0) = ~0;
-        scs(IRQ_UNPEND1) = ~0;
-        scs(IRQ_UNPEND2) = ~0;
-    }
-
-    static void unpend(const IRQ & i) {
-        db<IC>(TRC) << "IC::unpend(irq=" << i << ")" << endl;
-        assert(i < IRQS);
-        if(i < 32) scs(IRQ_UNPEND0) = 1 << i;
-        else if((IRQS > 32) && (i < 64)) scs(IRQ_UNPEND1) = 1 << (i - 32);
-        else if(IRQS > 64) scs(IRQ_UNPEND2) = 1 << (i - 64);
-    }
-
-    static void dispatch() {
-        register Interrupt_Id id = CPU::flags() & 0x3f;
-
-        if((id != INT_TIMER) || Traits<IC>::hysterically_debugged)
-            db<IC>(TRC) << "IC::dispatch(i=" << id << ")" << endl;
-
-        _int_vector[id](id);
-    }
+    static void dispatch(unsigned int i);
 
     // Logical handlers
     static void int_not(const Interrupt_Id & i);
     static void hard_fault(const Interrupt_Id & i);
 
     // Physical handler
-    static void entry() __attribute__((naked));
+    static void entry();
 
     static void init();
 

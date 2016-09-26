@@ -1,8 +1,10 @@
-// EPOS Cortex GPIO Mediator Implementation
+// EPOS Cortex-M GPIO Mediator Implementation
 
 #include <machine.h>
 #include <ic.h>
 #include <machine/cortex/gpio.h>
+
+#ifndef __mmod_zynq__
 
 __BEGIN_SYS
 
@@ -12,7 +14,7 @@ GPIO * GPIO::_devices[GPIO_PORTS][8];
 // Class methods
 void GPIO::handle_int(const IC::Interrupt_Id & i)
 {
-    unsigned int port = IC::int2irq(i);
+    unsigned int port = i - IC::INT_GPIOA;
 
     for(unsigned int i = 0; i < 8; ++i) {
         const bool regular_interrupt = gpio(port, MIS) & (1 << i);
@@ -78,3 +80,5 @@ void GPIO::int_enable(const Edge & edge, bool power_up, const Edge & power_up_ed
 }
 
 __END_SYS
+
+#endif

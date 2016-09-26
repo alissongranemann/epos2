@@ -4,6 +4,7 @@
 #define __ieee802_15_4_mac_h
 
 #include <utility/random.h>
+#include <utility/math.h>
 #include <ieee802_15_4.h>
 
 __BEGIN_SYS
@@ -15,9 +16,11 @@ private:
     static const unsigned int CSMA_CA_MIN_BACKOFF_EXPONENT = 3;
     static const unsigned int CSMA_CA_MAX_BACKOFF_EXPONENT = 5;
     static const unsigned int CSMA_CA_UNIT_BACKOFF_PERIOD = 320; // us
-    static const unsigned int CSMA_CA_RETRIES = 4;
+    static const unsigned int CSMA_CA_RETRIES = Traits<_API::ELP>::RETRIES > 4 ? 4 : Traits<_API::ELP>::RETRIES;
 
-    static const unsigned int ACK_TIMEOUT = 4;
+    static const unsigned int ACK_TIMEOUT = 352 * 2;
+
+    static const bool acknowledged = Traits<_API::ELP>::acknowledged;
 
 public:
     using IEEE802_15_4::Address;
@@ -25,16 +28,25 @@ public:
 protected:
     IEEE802_15_4_MAC() {}
 
+    // Called after the Radio's constructor
+    void constructor_epilogue() {
+        Radio::promiscuous(false);
+        Radio::power(Power_Mode::FULL);
+        Radio::listen();
+    }
+
 public:
-    unsigned int marshal(IEEE802_15_4::Phy_Frame * frame, const Address & src, const Address & dst, const Type & type, const void * data, unsigned int size) {
+    unsigned int marshal(Buffer * buf, const Address & src, const Address & dst, const Type & type, const void * data, unsigned int size) {
         if(size > Frame::MTU)
             size = Frame::MTU;
-        new (frame) Frame(type, src, dst, data, size);
+        Frame * frame = new (buf->frame()) Frame(type, src, dst, size, data);
+        frame->ack_request(acknowledged && dst != broadcast());
+        buf->size(size);
         return size;
     }
 
-    unsigned int unmarshal(IEEE802_15_4::Phy_Frame * f, Address * src, Address * dst, Type * type, void * data, unsigned int size) {
-        Frame * frame = reinterpret_cast<Frame *>(f);
+    unsigned int unmarshal(Buffer * buf, Address * src, Address * dst, Type * type, void * data, unsigned int size) {
+        Frame * frame = reinterpret_cast<Frame *>(buf->frame());
         unsigned int data_size = frame->length() - sizeof(Header) - sizeof(CRC) + sizeof(Phy_Header); // Phy_Header is included in Header, but is already discounted in frame_length
         if(size > data_size)
             size = data_size;
@@ -45,55 +57,59 @@ public:
         return size;
     }
 
-    int send() {
-//        Frame * frame = reinterpret_cast<Frame *>(buf->data()); // Buffer uses Physical Frames
-//        bool do_ack = Traits<_API::ELP>::acknowledged && (frame->dst() != broadcast());
-//        Reg32 saved_filter_settings = 0;
-//        if(do_ack) {
-//            saved_filter_settings = xreg(FRMFILT1);
-//            xreg(RFIRQM0) &= ~INT_FIFOP; // Disable FIFOP int. We'll poll the interrupt flag
-//            xreg(FRMFILT1) = ACCEPT_FT2_ACK; // Accept only ACK frames now
-//        }
+    int send(Buffer * buf) {
+        bool do_ack = acknowledged && reinterpret_cast<Frame *>(buf->frame())->ack_request();
 
-        bool do_ack = true;
-        bool sent = backoff_and_send();
+        Radio::power(Power_Mode::LIGHT);
+
+        Radio::copy_to_nic(buf->frame());
+        bool sent, ack_ok;
+        ack_ok = sent = backoff_and_send();
 
         if(do_ack) {
-            bool acked = sent && Radio::wait_for_ack(ACK_TIMEOUT);
-
-            for(unsigned int i = 0; !acked && (i < Traits<_API::ELP>::RETRIES); i++) {
-                db<CC2538>(TRC) << "CC2538::retransmitting" << endl;
-                sent = backoff_and_send();
-                acked = sent && Radio::wait_for_ack(ACK_TIMEOUT);
+            if(sent) {
+                Radio::power(Power_Mode::FULL);
+                ack_ok = Radio::wait_for_ack(ACK_TIMEOUT);
             }
 
-            if(acked) {
-//                sfr(RFIRQF0) &= ~INT_FIFOP; // Clear FIFOP flag
-//                clear_rxfifo();
+            for(unsigned int i = 0; !ack_ok && (i < CSMA_CA_RETRIES); i++) {
+                Radio::power(Power_Mode::LIGHT);
+                db<IEEE802_15_4_MAC>(TRC) << "IEEE802_15_4_MAC::retransmitting" << endl;
+                ack_ok = sent = backoff_and_send();
+                if(sent) {
+                    Radio::power(Power_Mode::FULL);
+                    ack_ok = Radio::wait_for_ack(ACK_TIMEOUT);
+            }
             }
 
-            // TODO: how does the following maps to higher level protocols?
-    //        if(not Traits<CC2538>::auto_listen) {
-    //            xreg(RFST) = ISRFOFF;
-    //        }
+            if(!sent)
+                Radio::power(Power_Mode::FULL);
 
-//            xreg(FRMFILT1) = saved_filter_settings; // Done with ACKs
-//            xreg(RFIRQM0) |= INT_FIFOP; // Enable FIFOP int
-            return acked;
-        } else if(sent)
+        } else {
+            if(sent)
             while(!Radio::tx_done());
+            Radio::power(Power_Mode::FULL);
+        }
 
-        return sent;
+        return ack_ok ? buf->size() : 0;
     }
 
-    void receive() { while(!Radio::rx_done()); }
+    // TODO: move to radio
+    bool copy_from_nic(Buffer * buf) {
+        IEEE802_15_4::Phy_Frame * frame = buf->frame();
+        Radio::copy_from_nic(frame);
+        int size = frame->length() - sizeof(Header) + sizeof(Phy_Header) - sizeof(CRC); // Phy_Header is included in Header, but is already discounted in frame_length
+        if(size > 0) {
+            buf->size(size);
+            return true;
+        } else
+            return false;
+    }
 
 private:
     bool backoff_and_send() {
-        unsigned int exp = 0;
-        unsigned int backoff = 1;
-        for(; exp < CSMA_CA_MIN_BACKOFF_EXPONENT; exp++)
-            backoff *= 2;
+        unsigned int exp = CSMA_CA_MIN_BACKOFF_EXPONENT;
+        unsigned int backoff = pow(2, exp);
 
         unsigned int retry = 0;
         for(; (retry < CSMA_CA_RETRIES) ; retry++) {

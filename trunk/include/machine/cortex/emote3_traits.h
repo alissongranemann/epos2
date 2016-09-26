@@ -7,13 +7,13 @@
 
 __BEGIN_SYS
 
-class Cortex_Common;
-template<> struct Traits<Cortex_Common>: public Traits<void>
+class Machine_Common;
+template<> struct Traits<Machine_Common>: public Traits<void>
 {
     static const bool debugged = Traits<void>::debugged;
 };
 
-template<> struct Traits<Machine>: public Traits<Cortex_Common>
+template<> struct Traits<Machine>: public Traits<Machine_Common>
 {
     static const unsigned int CPUS = Traits<Build>::CPUS;
 
@@ -41,12 +41,12 @@ template<> struct Traits<Machine>: public Traits<Cortex_Common>
     static const unsigned int MAX_THREADS = 7;
 };
 
-template<> struct Traits<IC>: public Traits<Cortex_Common>
+template<> struct Traits<IC>: public Traits<Machine_Common>
 {
     static const bool debugged = hysterically_debugged;
 };
 
-template<> struct Traits<Timer>: public Traits<Cortex_Common>
+template<> struct Traits<Timer>: public Traits<Machine_Common>
 {
     static const bool debugged = hysterically_debugged;
 
@@ -56,11 +56,11 @@ template<> struct Traits<Timer>: public Traits<Cortex_Common>
     static const int FREQUENCY = 1000; // Hz
 };
 
-template<> struct Traits<UART>: public Traits<Cortex_Common>
+template<> struct Traits<UART>: public Traits<Machine_Common>
 {
     static const unsigned int UNITS = 2;
 
-    static const unsigned int CLOCK = Traits<ARMv7>::CLOCK;
+    static const unsigned int CLOCK = Traits<CPU>::CLOCK;
 
     static const unsigned int DEF_UNIT = 0;
     static const unsigned int DEF_BAUD_RATE = 115200;
@@ -69,7 +69,7 @@ template<> struct Traits<UART>: public Traits<Cortex_Common>
     static const unsigned int DEF_STOP_BITS = 1;
 };
 
-template<> struct Traits<USB>: public Traits<Cortex_Common>
+template<> struct Traits<USB>: public Traits<Machine_Common>
 {
     // Some observed objects are created before initializing the Display, which may use the USB.
     // Enabling debug may cause trouble in some Machines
@@ -80,12 +80,12 @@ template<> struct Traits<USB>: public Traits<Cortex_Common>
     static const bool enabled = Traits<Serial_Display>::enabled && (Traits<Serial_Display>::ENGINE == Traits<Serial_Display>::USB);
 };
 
-template<> struct Traits<Scratchpad>: public Traits<Cortex_Common>
+template<> struct Traits<Scratchpad>: public Traits<Machine_Common>
 {
     static const bool enabled = false;
 };
 
-template<> struct Traits<NIC>: public Traits<Cortex_Common>
+template<> struct Traits<NIC>: public Traits<Machine_Common>
 {
     static const bool enabled = (Traits<Build>::NODES > 1);
 

@@ -22,7 +22,7 @@ public:
     typedef NIC_Common::Address<2> Short_Address;
     typedef NIC_Common::Address<8> Extended_Address;
     typedef Short_Address Address;
-    typedef CPU::Reg16 CRC;
+    typedef NIC_Common::CRC16 CRC;
 
     // IEEE 802.15.4 Physical Layer
     static const unsigned int MTU = 127;
@@ -162,13 +162,13 @@ public:
         Header() {}
 
         Header(const Type & type, const Reg8 & len)
-        : Phy_Header(len + sizeof(Header) - sizeof(Phy_Header)), _frame_control(), _sequence_number(0), _dst_pan_id(PAN_ID_BROADCAST) {};
+        : Phy_Header(len + sizeof(Header) - sizeof(Phy_Header)), _frame_control(type), _sequence_number(0), _dst_pan_id(PAN_ID_BROADCAST) {};
 
         Header(const Type & type, const Address & src, const Address & dst)
-        : Phy_Header(0 + sizeof(Header) - sizeof(Phy_Header)), _frame_control(), _sequence_number(0), _dst_pan_id(PAN_ID_BROADCAST), _dst(dst), _src(src) { ack_request(dst != broadcast()); }
+        : Phy_Header(0 + sizeof(Header) - sizeof(Phy_Header)), _frame_control(type), _sequence_number(0), _dst_pan_id(PAN_ID_BROADCAST), _dst(dst), _src(src) { ack_request(dst != broadcast()); }
 
         Header(const Type & type, const Address & src, const Address & dst, const Reg8 & len)
-        : Phy_Header(len + sizeof(Header) - sizeof(Phy_Header)), _frame_control(), _sequence_number(0), _dst_pan_id(PAN_ID_BROADCAST), _dst(dst), _src(src) { ack_request(dst != broadcast());}
+        : Phy_Header(len + sizeof(Header) - sizeof(Phy_Header)), _frame_control(type), _sequence_number(0), _dst_pan_id(PAN_ID_BROADCAST), _dst(dst), _src(src) { ack_request(dst != broadcast()); }
 
         const Address & src() const { return _src; }
         const Address & dst() const { return _dst; }
@@ -178,6 +178,7 @@ public:
 
         bool pending() const { return _frame_control.fp(); }
         unsigned int type() const { return _frame_control.type(); }
+
         void ack_request(bool val) { _frame_control.ar(val); }
         bool ack_request() { return _frame_control.ar(); }
 
