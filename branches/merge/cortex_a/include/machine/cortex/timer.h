@@ -30,9 +30,9 @@ public:
     static void enable() { priv_timer(PTCLR) |= TIMER_ENABLE; }
     static void disable() { priv_timer(PTCLR) &= ~TIMER_ENABLE; }
 
-    void power(const Power_Mode & mode);
-
     static void isr_clr() { priv_timer(PTISR) = INT_CLR; }
+
+    void power(const Power_Mode & mode);
 
     static void init(unsigned int f) {
         priv_timer(PTCLR) = 0;
@@ -231,13 +231,13 @@ public:
 
     void handler(const Handler & handler) { _handler = handler; }
 
+    static void isr_clr() { Engine::isr_clr(); }
+
 private:
     static Hertz count2freq(const Count & c) { return c ? Engine::clock() / c : 0; }
     static Count freq2count(const Hertz & f) { return f ? Engine::clock() / f : 0;}
 
     static void int_handler(const Interrupt_Id & i);
-
-    static void isr_clr() { Engine::isr_clr(); }
 
     static void init();
 

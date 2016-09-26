@@ -13,14 +13,6 @@ Timer * Timer::_channels[CHANNELS];
 // Class methods
 void Timer::int_handler(const Interrupt_Id & i)
 {
-    // When emulating Zynq on on, the bit the triggered the interrupt must be
-    // cleared before re-enabling them to avoid calling the same interrupt in a
-    // loop.
-#ifdef __mmod_zynq__
-    isr_clr();
-    CPU::int_enable();
-#endif
-
     if(_channels[SCHEDULER] && (--_channels[SCHEDULER]->_current[Machine::cpu_id()] <= 0)) {
         _channels[SCHEDULER]->_current[Machine::cpu_id()] = _channels[SCHEDULER]->_initial;
         _channels[SCHEDULER]->_handler(i);

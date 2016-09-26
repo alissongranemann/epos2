@@ -62,6 +62,9 @@ void IC::dispatch(unsigned int i) {
     if((id != INT_TIMER) || Traits<IC>::hysterically_debugged)
         db<IC>(TRC) << "IC::dispatch(i=" << id << ")" << endl;
 
+    Machine_Model::_eoi[id]();
+    CPU::int_enable();
+
     _int_vector[id](id);
 }
 
