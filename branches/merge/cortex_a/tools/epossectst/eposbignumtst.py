@@ -66,13 +66,13 @@ with open(test_output, 'r') as f:
     while True:
         a_raw = read_line(f)
         a = find_bignum(a_raw)
-    
+
         b_raw = read_line(f)
         b = find_bignum(b_raw)
-    
+
         c_raw = read_line(f)
         c = find_bignum(c_raw)
-    
+
         op = c_raw[2]
         if op == '+':
             expected = ((a + b) % mod)
@@ -83,7 +83,7 @@ with open(test_output, 'r') as f:
         elif op == '/':
             inv = pow(b, mod-2, mod)
             expected = ((a * inv) % mod)
-    
+
         if expected != c:
             errors += 1
             print("\nOperation FAILED!")

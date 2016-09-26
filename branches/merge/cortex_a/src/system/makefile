@@ -52,7 +52,7 @@ $(MACH)_system_kernel: $(OBJS)
 		--no-whole-archive \
 		-l$(LUTIL) -lgcc
 		$(LD) $(LDFLAGS) -i application_scaffold.o application_binding.o -o $(MACH)_application.o
-		
+
 clean:
 		$(CLEAN) *.o *_system
 
