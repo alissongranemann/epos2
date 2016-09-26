@@ -111,20 +111,17 @@ public:
 
 
     // Interrupts
-    static const unsigned int INTS = 96;
-    static const unsigned int EXC_INT = 0;
+    static const unsigned int INTS = 93 + 1;
+    static const unsigned int EXC_INT = 0; // Not mapped by IC. Exceptions are hard configured by SETUP.
     static const unsigned int HARD_INT = 16;
-//    static const unsigned int SOFT_INT = HARD_INT + IRQS;
-    static const unsigned int SOFT_INT = 42;
+    static const unsigned int SOFT_INT = 0;
     enum {
-        INT_HARD_FAULT  = EXC_INT + CPU::EXC_HARD,
-        INT_TIMER       = 29,
-//        INT_FIRST_HARD  = HARD_INT,
-//        INT_MACTIMER    = HARD_INT + IRQ_MACTIMER,
-//        INT_LAST_HARD   = SOFT_INT - 1,
-        INT_RESCHEDULER = SOFT_INT
+        INT_HARD_FAULT  = INTS - 1, // Not used, kept for compability with ARMv7_M
+        INT_TIMER       = IRQ_PRIVATE_TIMER,
+        INT_FIRST_HARD  = HARD_INT,
+        INT_LAST_HARD   = IRQ_PARITY,
+        INT_RESCHEDULER = IRQ_SOFTWARE0
     };
-
 
 public:
     static void enable() {
