@@ -1,8 +1,9 @@
 // EPOS LM3S811 (ARM Cortex) MCU Initialization
 
 #include <system/config.h>
-#include __MODEL_H
-#ifdef __lm3s811_h
+#include <machine.h>
+
+#ifdef __mmod_lm3s811__
 
 __BEGIN_SYS
 
@@ -39,9 +40,9 @@ void Machine_Model::init()
     rcc &= ~RCC_BYPASS;
     scr(RCC) = rcc;
 
-    db<Init, Machine_Model>(TRC) << "Machine_Model::init:CCR = " << scs(CCR) << endl;
+    db<Init, Machine>(TRC) << "Machine_Model::init:CCR = " << scs(CCR) << endl;
     scs(CCR) |= BASETHR; // BUG: on LM3S811 this register is not updated, but it doesn't seem to cause any errors
-    db<Init, Machine_Model>(TRC) << "Machine_Model::init:CCR = " << scs(CCR) << endl;
+    db<Init, Machine>(TRC) << "Machine_Model::init:CCR = " << scs(CCR) << endl;
 }
 
 __END_SYS

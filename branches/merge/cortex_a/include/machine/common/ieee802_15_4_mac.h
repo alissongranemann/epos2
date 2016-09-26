@@ -39,9 +39,8 @@ public:
     unsigned int marshal(Buffer * buf, const Address & src, const Address & dst, const Type & type, const void * data, unsigned int size) {
         if(size > Frame::MTU)
             size = Frame::MTU;
-        Frame * frame = new (buf->frame()) Frame(type, src, dst, size);
+        Frame * frame = new (buf->frame()) Frame(type, src, dst, size, data);
         frame->ack_request(acknowledged && dst != broadcast());
-        memcpy(frame->data<void>(), data, size);
         buf->size(size);
         return size;
     }

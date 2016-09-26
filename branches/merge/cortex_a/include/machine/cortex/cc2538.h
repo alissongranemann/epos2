@@ -326,8 +326,8 @@ public:
         static void int_enable(const Reg32 & interrupt) { mactimer(MTIRQM) |= interrupt; }
         static void int_disable() { mactimer(MTIRQM) = INT_OVERFLOW_PER; }
 
-        static Time_Stamp us_to_ts(const Microsecond & us) { return static_cast<long long>(us) * CLOCK / 1000000; }
-        static Time_Stamp ts_to_us(const Microsecond & ts) { return static_cast<long long>(ts) * 1000000 / CLOCK; }
+        static Time_Stamp us_to_ts(const Microsecond & us) { return static_cast<Time_Stamp>(us) * CLOCK / 1000000; }
+        static Time_Stamp ts_to_us(const Microsecond & ts) { return static_cast<Time_Stamp>(ts) * 1000000 / CLOCK; }
 
     private:
         static Time_Stamp read(unsigned int sel) {

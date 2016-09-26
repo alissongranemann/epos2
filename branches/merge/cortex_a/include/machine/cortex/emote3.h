@@ -707,9 +707,9 @@ public:
         PDR		= 0x514,	// Pull-Down Select 	        R/W	0x0000.0000
         SLR		= 0x518,	// Slew Rate Control Select	R/W	0x0000.0000
         DEN		= 0x51c,	// Digital Enable 	        R/W	0x0000.00ff
-        P_EDGE_CTRL = 0x704, // Power-up Interrupt Edge Control R/W 0x0000.0000
-        PI_IEN  = 0x710,	// Power-up Interrupt Enable       R/W	0x0000.0000
-        IRQ_DETECT_ACK = 0x718, // Power-up Interrupt Status/Clear R/W 0x0000.0000
+        P_EDGE_CTRL     = 0x704,        // Power-up Interrupt Edge Control R/W 0x0000.0000
+        PI_IEN          = 0x710,	// Power-up Interrupt Enable       R/W	0x0000.0000
+        IRQ_DETECT_ACK  = 0x718,        // Power-up Interrupt Status/Clear R/W 0x0000.0000
     /*
         PeriphID4	= 0xfd0,	// Peripheral Identification 4	RO	0x0000.0000
         PeriphID5	= 0xfd4,	// Peripheral Identification 5 	RO	0x0000.0000

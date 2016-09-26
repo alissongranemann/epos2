@@ -3,8 +3,8 @@
 #ifndef __armv7_tsc_h
 #define __armv7_tsc_h
 
-#include <tsc.h>
 #include <cpu.h>
+#include <tsc.h>
 
 __BEGIN_SYS
 
@@ -25,10 +25,10 @@ public:
     static Hertz frequency() { return CLOCK; }
 
     static Time_Stamp time_stamp() {
-        // The MRC instruction doesn't to work correctly if ts is a Time_Stamp
+        // FIXME: The MRC instruction doesn't to work correctly if ts is a Time_Stamp, but types are now incopatble
         CPU::Reg32 ts;
         ASM("mrc p15, 0, %0, c9, c13, 0" : "=r"(ts));
-        return ((Time_Stamp)ts);
+        return static_cast<Time_Stamp>(ts);
     }
 
 private:

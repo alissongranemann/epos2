@@ -204,8 +204,6 @@ public:
     public:
         Frame() {}
         Frame(const Type & type, const Address & src, const Address & dst): Header(type, src, dst) {}
-        Frame(const Type & type, const Address & src, const Address & dst, unsigned int size)
-        : Header(type, src, dst, ((size & (~0x7f)) ? 0x7f : size) + sizeof(CRC)) { }
         Frame(const Type & type, const Address & src, const Address & dst, const void * data, unsigned int size)
         : Header(type, src, dst, ((size & (~0x7f)) ? 0x7f : size) + sizeof(CRC)) { memcpy(_data, data, size); }
 

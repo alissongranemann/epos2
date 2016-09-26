@@ -16,14 +16,9 @@ class GIC;
 
 class GIC: public IC_Common, protected Machine_Model
 {
-private:
-//    typedef CPU::Reg32 Reg32;
-//    typedef CPU::Log_Addr Log_Addr;
-
 public:
     // IRQs
     static const unsigned int IRQS = Machine_Model::IRQS;
-    // Excluding reserved IRQs
     typedef Interrupt_Id IRQ;
     enum {
         IRQ_SOFTWARE0           = 0,
@@ -109,14 +104,12 @@ public:
         IRQ_PARITY              = 92,
     };
 
-
     // Interrupts
     static const unsigned int INTS = 93 + 1;
     static const unsigned int EXC_INT = 0; // Not mapped by IC. Exceptions are hard configured by SETUP.
     static const unsigned int HARD_INT = 16;
     static const unsigned int SOFT_INT = 0;
     enum {
-        INT_HARD_FAULT  = INTS - 1, // Not used, kept for compability with ARMv7_M
         INT_TIMER       = IRQ_PRIVATE_TIMER,
         INT_FIRST_HARD  = HARD_INT,
         INT_LAST_HARD   = IRQ_PARITY,
@@ -124,6 +117,11 @@ public:
     };
 
 public:
+    GIC() {}
+
+    static int irq2int(int i) { return i; }
+    static int int2irq(int i) { return i; }
+
     static void enable() {
         dist(ICDISER0) = ~0;
         dist(ICDISER1) = ~0;
@@ -214,7 +212,6 @@ public:
     static const unsigned int HARD_INT = 16;
     static const unsigned int SOFT_INT = HARD_INT + IRQS;
     enum {
-        INT_HARD_FAULT  = EXC_INT + ARMv7_M::EXC_HARD,
         INT_TIMER       = 15,
         INT_FIRST_HARD  = HARD_INT,
         INT_MACTIMER    = HARD_INT + IRQ_MACTIMER,
@@ -225,6 +222,9 @@ public:
 public:
     NVIC() {}
 
+    static int irq2int(int i) { return i + HARD_INT; }
+    static int int2irq(int i) { return i - HARD_INT; }
+
     static void enable() {
         db<IC>(TRC) << "IC::enable()" << endl;
         scs(IRQ_ENABLE0) = ~0;
@@ -232,7 +232,8 @@ public:
         if(IRQS > 64) scs(IRQ_ENABLE2) = ~0;
     }
 
-    static void enable(const IRQ & i) {
+    static void enable(const Interrupt_Id & id) {
+        IRQ i = int2irq(id);
         db<IC>(TRC) << "IC::enable(irq=" << i << ")" << endl;
         assert(i < IRQS);
         if(i < 32) scs(IRQ_ENABLE0) = 1 << i;
@@ -247,7 +248,8 @@ public:
         if(IRQS > 64) scs(IRQ_DISABLE2) = ~0;
     }
 
-    static void disable(const IRQ & i) {
+    static void disable(const Interrupt_Id & id) {
+        IRQ i = int2irq(id);
         db<IC>(TRC) << "IC::disable(irq=" << i << ")" << endl;
         assert(i < IRQS);
         if(i < 32) scs(IRQ_DISABLE0) = 1 << i;
@@ -291,7 +293,6 @@ private:
 public:
     using IC_Common::Interrupt_Id;
     using IC_Common::Interrupt_Handler;
-    using Engine::INT_HARD_FAULT;
     using Engine::INT_TIMER;
     using Engine::INT_RESCHEDULER;
 
@@ -315,7 +316,7 @@ public:
         Engine::enable();
     }
 
-    static void enable(int i) {
+    static void enable(const Interrupt_Id & i) {
         db<IC>(TRC) << "IC::enable(int=" << i << ")" << endl;
         assert(i < INTS);
         Engine::enable(i);
@@ -327,14 +328,13 @@ public:
         Engine::disable();
     }
 
-    static void disable(int i) {
+    static void disable(const Interrupt_Id & i) {
         db<IC>(TRC) << "IC::disable(int=" << i << ")" << endl;
         assert(i < INTS);
         Engine::disable(i);
     }
 
-    static int irq2int(int i) { return i + HARD_INT; }
-    static int int2irq(int i) { return i - HARD_INT; }
+    using Engine::irq2int;
 
     static void ipi_send(unsigned int cpu, Interrupt_Id int_id) {}
 

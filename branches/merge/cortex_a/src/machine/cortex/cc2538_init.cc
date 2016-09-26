@@ -1,4 +1,4 @@
-// EPOS Cortex TI CC2538 IEEE 802.15.4 NIC Mediator Initialization
+// EPOS TI CC2538 IEEE 802.15.4 NIC Mediator Initialization
 
 #include <system.h>
 #ifndef __mmod_zynq__
