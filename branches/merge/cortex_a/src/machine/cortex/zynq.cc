@@ -2,6 +2,8 @@
 
 #include <machine.h>
 
+#ifdef __mmod_zynq__
+
 __BEGIN_SYS
 
 Zynq::EOI_Handler Zynq::_eoi[IRQS] = {
@@ -101,3 +103,5 @@ Zynq::EOI_Handler Zynq::_eoi[IRQS] = {
 };
 
 __END_SYS
+
+#endif
