@@ -15,18 +15,25 @@ protected:
 public:
     enum Level {
         HIGH,
-        LOW,
+        LOW
     };
 
     enum Edge {
         RISING,
         FALLING,
-        BOTH,
+        BOTH
     };
 
     enum Direction {
-        INPUT,
-        OUTPUT,
+        IN,
+        OUT,
+        INOUT
+    };
+
+    enum Pull {
+        UP,
+        DOWN,
+        FLOATING
     };
 };
 

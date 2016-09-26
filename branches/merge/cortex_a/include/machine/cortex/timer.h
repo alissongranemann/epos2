@@ -137,15 +137,16 @@ public:
 
     Count read() { return reg(GPTMTAR); }
 
-    void enable() { reg(GPTMICR) |= TATOCINT; reg(GPTMCTL) |= TAEN; }
+    void enable() { reg(GPTMCTL) |= TAEN; }
     void disable() { reg(GPTMCTL) &= ~TAEN; }
 
     void pwm(const Percent & duty_cycle) {
         disable();
+        Count count = reg(GPTMTAILR);
         reg(GPTMCFG) = 4; // 4 -> 16-bit, only possible value for PWM
         reg(GPTMTAMR) = TCMR | TAMS | 2; // 2 -> Periodic, 1 -> One-shot
-        reg(GPTMTAPR) = reg(GPTMTAILR) >> 16;
-        reg(GPTMTAMATCHR) = percent2match(duty_cycle, reg(GPTMTAILR));
+        reg(GPTMTAPR) = count >> 16;
+        reg(GPTMTAMATCHR) = percent2count(duty_cycle, count);
         reg(GPTMTAPMR) = reg(GPTMTAMATCHR) >> 16;
         reg(GPTMCTL) &= ~TBPWML; // never inverted
         enable();

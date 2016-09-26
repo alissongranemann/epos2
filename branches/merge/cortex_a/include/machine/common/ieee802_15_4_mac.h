@@ -17,6 +17,8 @@ private:
     static const unsigned int CSMA_CA_UNIT_BACKOFF_PERIOD = 320; // us
     static const unsigned int CSMA_CA_RETRIES = 4;
 
+    static const unsigned int RETRANSMISSION_RETRIES = 4; //Traits<_API::ELP>::RETRIES
+
     static const unsigned int ACK_TIMEOUT = 4;
 
 public:
@@ -61,7 +63,7 @@ public:
         if(do_ack) {
             bool acked = sent && Radio::wait_for_ack(ACK_TIMEOUT);
 
-            for(unsigned int i = 0; !acked && (i < Traits<_API::ELP>::RETRIES); i++) {
+            for(unsigned int i = 0; !acked && (i < RETRANSMISSION_RETRIES); i++) {
                 db<CC2538>(TRC) << "CC2538::retransmitting" << endl;
                 sent = backoff_and_send();
                 acked = sent && Radio::wait_for_ack(ACK_TIMEOUT);

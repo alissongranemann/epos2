@@ -1108,18 +1108,17 @@ protected:
 
 // GPIO
     static void gpio_pull_up(unsigned int port, unsigned int pin) {
-        auto over = PA0_OVER + 0x20*port + 0x4*pin;
+        Reg32 over = PA0_OVER + 0x20*port + 0x4*pin;
         ioc(over) = PUE;
     }
     static void gpio_pull_down(unsigned int port, unsigned int pin) {
-        auto over = PA0_OVER + 0x20*port + 0x4*pin;
+        Reg32 over = PA0_OVER + 0x20*port + 0x4*pin;
         ioc(over) = PDE;
     }
     static void gpio_analog(unsigned int port, unsigned int pin) {
-        auto over = PA0_OVER + 0x20*port + 0x4*pin;
+        Reg32 over = PA0_OVER + 0x20*port + 0x4*pin;
         ioc(over) = ANA;
     }
-
 
 // IEEE 802.15.4
     static void power_ieee802_15_4(const Power_Mode & mode) {
