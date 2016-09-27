@@ -39,7 +39,7 @@ public:
     unsigned int marshal(Buffer * buf, const Address & src, const Address & dst, const Type & type, const void * data, unsigned int size) {
         if(size > Frame::MTU)
             size = Frame::MTU;
-        Frame * frame = new (buf->frame()) Frame(type, src, dst, size, data);
+        Frame * frame = new (buf->frame()) Frame(type, src, dst, data, size);
         frame->ack_request(acknowledged && dst != broadcast());
         buf->size(size);
         return size;

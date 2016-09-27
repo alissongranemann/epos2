@@ -270,7 +270,7 @@ public:
         INT_PER               = 1 << 0
     };
 
-    class Timer
+    class Timer // TODO: update this class
     {
     private:
         const static unsigned int CLOCK = 32 * 1000 * 1000; // 32MHz

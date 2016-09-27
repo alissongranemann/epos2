@@ -18,7 +18,7 @@ void IC::init()
     for(Interrupt_Id i = 0; i < INTS; i++)
         _int_vector[i] = int_not;
 
-    _int_vector[INT_HARD_FAULT] = hard_fault;
+    //_int_vector[INT_HARD_FAULT] = hard_fault; //TODO: not treating hard faults
 }
 
 __END_SYS

@@ -214,6 +214,9 @@ public:
     enum {
         INT_TIMER       = 15,
         INT_FIRST_HARD  = HARD_INT,
+        INT_GPIO        = HARD_INT + IRQ_GPIOA,
+        INT_RFTXRX      = HARD_INT + IRQ_RFTXRX,
+        INT_RFERR       = HARD_INT + IRQ_RFERR,
         INT_MACTIMER    = HARD_INT + IRQ_MACTIMER,
         INT_LAST_HARD   = SOFT_INT - 1,
         INT_RESCHEDULER = SOFT_INT
@@ -294,6 +297,8 @@ public:
     using IC_Common::Interrupt_Id;
     using IC_Common::Interrupt_Handler;
     using Engine::INT_TIMER;
+    using Engine::INT_GPIO;
+    using Engine::INT_RFTXRX;
     using Engine::INT_RESCHEDULER;
 
 public:
