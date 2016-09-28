@@ -45,7 +45,7 @@ public:
 // Cortex-A Global Timer
 class User_Timer_Engine: public Machine_Model
 {
-private:
+protected:
     typedef CPU::Reg64 Count;
     typedef TSC::Hertz Hertz;
 
@@ -121,12 +121,14 @@ protected:
 
 protected:
     User_Timer_Engine(unsigned int channel, const Count & count, bool interrupt = true, bool periodic = true)
-    : _channel(channel), _base(reinterpret_cast<Reg32 *>(TIMER0_BASE + 0x1000 * channel)) {
+    : _channel(channel), _base(reinterpret_cast<Reg32 *>(TIMER0_BASE + (TIMER1_BASE - TIMER0_BASE) * channel)) {
         disable();
         power_user_timer(channel, FULL);
         reg(GPTMCFG) = 0; // 32-bit timer
         reg(GPTMTAMR) = periodic ? 2 : 1; // 2 -> Periodic, 1 -> One-shot
         reg(GPTMTAILR) = count;
+        if(interrupt)
+            reg(GPTMIMR) |= TATO_INT;
         enable();
     }
 
@@ -135,7 +137,7 @@ public:
 
     unsigned int clock() const { return CLOCK; }
 
-    Count read() { return reg(GPTMTAR); }
+    Count read() { return reg(GPTMTAR); } // LM3S811 on QEMU (v2.7.50) does not support reading the value of general purpose timers
 
     void enable() { reg(GPTMCTL) |= TAEN; }
     void disable() { reg(GPTMCTL) &= ~TAEN; }
@@ -298,8 +300,8 @@ public:
 private:
     static void int_handler(const IC::Interrupt_Id & i);
 
-    static Reg32 us2count(const Microsecond & us) { return us * (CLOCK / 1000000); }
-    static Microsecond count2us(Reg32 count) { return count / (CLOCK / 1000000); }
+    static Count us2count(const Microsecond & us) { return static_cast<unsigned long long>(us) * CLOCK / 1000000; }
+    static Microsecond count2us(const Count & count) { return count * 1000000 / CLOCK; }
 
 private:
     unsigned int _channel;

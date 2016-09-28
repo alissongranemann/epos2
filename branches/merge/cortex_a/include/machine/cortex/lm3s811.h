@@ -4,18 +4,22 @@
 #define __lm3s811_h
 
 #include <cpu.h>
+#include <tsc.h>
+#include <rtc.h>
 
 __BEGIN_SYS
 
 class LM3S811
 {
+    friend class TSC;
 protected:
     typedef CPU::Reg32 Reg32;
     typedef CPU::Log_Addr Log_Addr;
 
 public:
     static const unsigned int IRQS = 30;
-    static const unsigned int TIMERS = 3;
+    static const unsigned int TIMERS = Traits<TSC>::enabled ? 1 : 2; // This model has 3 timers, but QEMU (v2.7.50) only implements 2
+                                                                     // TSC takes the last user timer channel
     static const unsigned int UARTS = 2;
     static const unsigned int GPIO_PORTS = 5;
     static const bool supports_gpio_power_up = false;
@@ -129,6 +133,8 @@ public:
         RCC_SYSDIV_1    = 0x0 << 23,    // System Clock Divisor = 2
         RCC_SYSDIV_4    = 0x3 << 23,    // System Clock Divisor = 4 -> 50 MHz
         RCC_SYSDIV_5    = 0x4 << 23,    // System Clock Divisor = 5 -> 40 HMz
+        RCC_SYSDIV_8    = 0x7 << 23,    // System Clock Divisor = 8 -> 25 MHz
+        RCC_SYSDIV_10   = 0x9 << 23,    // System Clock Divisor = 10 -> 20 MHz
         RCC_SYSDIV_16   = 0xf << 23,    // System Clock Divisor = 16 -> 12.5 HMz
         RCC_ACG         = 1 << 27       // ACG                                                  rw      0
     };
@@ -278,16 +284,16 @@ public:
         TPLO            = 1 << 11,      // Legacy PWM operation (0 -> legacy operation, 1 -> CCP is set to 1 on time-out)
     };
 
-    enum GPTMICR {          // Description                         Type Reset value
-        TATOCINT = 1 << 0,  // Timer A time-out interrupt clear      RW 0
-        CAMCINT  = 1 << 1,  // Timer A capture match interrupt clear RW 0
-        CAECINT  = 1 << 2,  // Timer A capture event Interrupt clear RW 0
-        TAMCINT  = 1 << 4,  // Timer A match interrupt clear         RW 0
-        TBTOCINT = 1 << 8,  // Timer B time-out interrupt clear      RW 0
-        CBMCINT  = 1 << 9,  // Timer B capture match interrupt clear RW 0
-        CBECINT  = 1 << 10, // Timer B capture event Interrupt clear RW 0
-        TBMCINT  = 1 << 11, // Timer B match interrupt clear         RW 0
-        WUECINT  = 1 << 16, // write update error interrupt clear    RW 0
+    enum GPTMIR {           // Description                    Type Reset value
+        TATO_INT = 1 << 0,  // Timer A time-out interrupt       RW 0
+        CAM_INT  = 1 << 1,  // Timer A capture match interrupt  RW 0
+        CAE_INT  = 1 << 2,  // Timer A capture event Interrupt  RW 0
+        TAM_INT  = 1 << 4,  // Timer A match interrupt          RW 0
+        TBTO_INT = 1 << 8,  // Timer B time-out interrupt       RW 0
+        CBM_INT  = 1 << 9,  // Timer B capture match interrupt  RW 0
+        CBE_INT  = 1 << 10, // Timer B capture event Interrupt  RW 0
+        TBM_INT  = 1 << 11, // Timer B match interrupt          RW 0
+        WUE_INT  = 1 << 16, // write update error interrupt     RW 0
     };
 
 // GPIO
@@ -379,12 +385,21 @@ protected:
         scs(AIRCR) = val;
     }
 
-    // FIXME: implement
-    static void delay(unsigned int time);
+    static void delay(const RTC::Microsecond & time) {
+        assert(Traits<TSC>::enabled);
+        unsigned long long ts = static_cast<unsigned long long>(time) * TSC::frequency() / 1000000;
+        tsc(GPTMTAILR) = ts;
+        tsc(GPTMTAPR) = ts >> 32;
+        tsc(GPTMCTL) |= TAEN;
+        while(!(tsc(GPTMRIS) & TATO_INT));
+        tsc(GPTMCTL) &= ~TAEN;
+        tsc(GPTMICR) |= TATO_INT;
+    }
 
 // Device enabling
     static void enable_uart(unsigned int unit) {
         assert(unit < UARTS);
+        init_clock(); // Setup the clock first!
         power_uart(unit, FULL);
         gpioa(AFSEL) |= 3 << (unit * 2);                // Pins A[1:0] are multiplexed between GPIO and UART 0. Select UART.
         gpioa(DEN) |= 3 << (unit * 2);                  // Enable digital I/O on Pins A[1:0]
@@ -420,6 +435,21 @@ protected:
             scr(RCGC1) &= ~(1 << (unit + 16));          // Deactivate GPTM "unit" clock
             break;
         }
+    }
+
+    // GPTM unit 1
+    static void power_tsc(const Power_Mode & mode) {
+        assert(Traits<TSC>::enabled);
+        switch(mode) {
+        case FULL:
+        case LIGHT:
+        case SLEEP:
+            scr(RCGC1) |= 1 << (1 + 16);             // Activate GPTM 1 clock
+            break;
+        case OFF:
+            scr(RCGC1) &= ~(1 << (1 + 16));          // Deactivate GPTM 1 clock
+            break;
+       }
     }
 
     static void power_usb(unsigned int unit, const Power_Mode & mode) {}
@@ -461,9 +491,12 @@ public:
     static volatile Reg32 & gpioc(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(GPIOC_BASE)[o / sizeof(Reg32)]; }
     static volatile Reg32 & gpiod(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(GPIOD_BASE)[o / sizeof(Reg32)]; }
     static volatile Reg32 & gpioe(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(GPIOE_BASE)[o / sizeof(Reg32)]; }
+    static volatile Reg32 & tsc(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(TIMER1_BASE)[o / sizeof(Reg32)]; }
 
 protected:
     static void init();
+    static void init_clock();
+    static bool _init_clock_done;
 };
 
 typedef LM3S811 Machine_Model;

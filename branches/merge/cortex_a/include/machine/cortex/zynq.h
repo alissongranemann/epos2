@@ -178,6 +178,7 @@ protected:
     }
 
     static void delay(const RTC::Microsecond & time) {
+        assert(Traits<TSC>::enabled);
         TSC::Time_Stamp end = TSC::time_stamp() + time * (TSC::frequency() / 1000000);
         while(end > TSC::time_stamp());
     }

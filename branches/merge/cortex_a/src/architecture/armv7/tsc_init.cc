@@ -2,6 +2,8 @@
 
 #include <tsc.h>
 
+#ifdef __mmod_zynq__
+
 __BEGIN_SYS
 
 // Adapted from http://stackoverflow.com/a/3250835/3574687
@@ -18,3 +20,35 @@ void TSC::init()
 
 __END_SYS
 
+#else
+
+#include <machine.h>
+#include <ic.h>
+
+__BEGIN_SYS
+
+volatile TSC::Time_Stamp TSC::_overflow = 0;
+
+void TSC::init()
+{
+    db<Init, TSC>(TRC) << "TSC::init()" << endl;
+
+    reg(Machine_Model::GPTMCTL) &= ~Machine_Model::TAEN; // Disable timer
+    Machine_Model::power_tsc(FULL);
+    reg(Machine_Model::GPTMCFG) = 0; // 32-bit timer
+    if(Traits<Build>::MODEL == Traits<Build>::LM3S811)
+        reg(Machine_Model::GPTMTAMR) = 1; // One-shot
+    else {
+        reg(Machine_Model::GPTMTAMR) = Machine_Model::TCDIR | 2; // Up-counting, periodic
+
+        IC::int_vector(IC::INT_TSC, int_handler);
+        IC::enable(IC::INT_TSC);
+
+        reg(Machine_Model::GPTMIMR) |= Machine_Model::TATO_INT; // Enable timeout interrupt
+        reg(Machine_Model::GPTMCTL) |= Machine_Model::TAEN; // Enable timer
+    }
+}
+
+__END_SYS
+
+#endif

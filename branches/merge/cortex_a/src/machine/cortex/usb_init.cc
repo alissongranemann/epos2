@@ -184,10 +184,8 @@ void USB::init()
 
     _state = USB_2_0::STATE::POWERED;
 
-    IC::int_vector(IC::irq2int(USB_IRQ), &int_handler);
-    IC::enable(USB_IRQ);
-    CPU::int_enable();
+    IC::int_vector(IC::INT_USB, &int_handler);
+    IC::enable(IC::INT_USB);
 }
 
 #endif
-

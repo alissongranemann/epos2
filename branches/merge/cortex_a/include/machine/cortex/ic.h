@@ -111,9 +111,13 @@ public:
     static const unsigned int SOFT_INT = 0;
     enum {
         INT_TIMER       = IRQ_PRIVATE_TIMER,
+        INT_TSC         = 0,
+        INT_GPIO        = IRQ_GPIO,
+        INT_RFTXRX      = IRQ_ETHERNET0,
         INT_FIRST_HARD  = HARD_INT,
         INT_LAST_HARD   = IRQ_PARITY,
-        INT_RESCHEDULER = IRQ_SOFTWARE0
+        INT_RESCHEDULER = IRQ_SOFTWARE0,
+        INT_USB         = IRQ_USB0,
     };
 
 public:
@@ -201,6 +205,7 @@ public:
         IRQ_SSI1        = 34,
         IRQ_GPT3A       = 35,
         IRQ_FPT3B       = 36,
+        IRQ_USB         = 44, // Using alternate interrupt mapping
         IRQ_UDMASW      = 46,
         IRQ_UDMAERR     = 47,
         IRQ_LAST        = IRQ_UDMAERR
@@ -214,10 +219,13 @@ public:
     enum {
         INT_TIMER       = 15,
         INT_FIRST_HARD  = HARD_INT,
+        INT_TSC         = HARD_INT + (Machine_Model::TIMERS == 0 ? IRQ_GPT0A : Machine_Model::TIMERS == 1 ? IRQ_GPT1A : Machine_Model::TIMERS == 2 ? IRQ_GPT2A : IRQ_GPT3A),
+
         INT_GPIO        = HARD_INT + IRQ_GPIOA,
         INT_RFTXRX      = HARD_INT + IRQ_RFTXRX,
         INT_RFERR       = HARD_INT + IRQ_RFERR,
         INT_MACTIMER    = HARD_INT + IRQ_MACTIMER,
+        INT_USB         = HARD_INT + IRQ_USB,
         INT_LAST_HARD   = SOFT_INT - 1,
         INT_RESCHEDULER = SOFT_INT
     };
@@ -236,6 +244,8 @@ public:
     }
 
     static void enable(const Interrupt_Id & id) {
+        if(id <= HARD_INT) 
+            return;
         IRQ i = int2irq(id);
         db<IC>(TRC) << "IC::enable(irq=" << i << ")" << endl;
         assert(i < IRQS);
@@ -252,6 +262,8 @@ public:
     }
 
     static void disable(const Interrupt_Id & id) {
+        if(id <= HARD_INT) 
+            return;
         IRQ i = int2irq(id);
         db<IC>(TRC) << "IC::disable(irq=" << i << ")" << endl;
         assert(i < IRQS);
@@ -297,9 +309,11 @@ public:
     using IC_Common::Interrupt_Id;
     using IC_Common::Interrupt_Handler;
     using Engine::INT_TIMER;
+    using Engine::INT_TSC;
     using Engine::INT_GPIO;
     using Engine::INT_RFTXRX;
     using Engine::INT_RESCHEDULER;
+    using Engine::INT_USB;
 
 public:
     IC() {}

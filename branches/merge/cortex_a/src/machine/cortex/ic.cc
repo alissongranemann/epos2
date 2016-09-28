@@ -56,7 +56,8 @@ void IC::entry()
         "ldmfd sp!, {r0-r3, r12, lr, pc}^           \n" : : "i"(dispatch));
 }
 
-void IC::dispatch(unsigned int i) {
+void IC::dispatch(unsigned int i)
+{
     Interrupt_Id id = int_id();
 
     if((id != INT_TIMER) || Traits<IC>::hysterically_debugged)
@@ -155,7 +156,6 @@ More information can be found at:
 */
 void IC::entry()
 {
-
     ASM("   mrs     r0, xpsr           \n"
         "   and     r0, #0x3f          \n"); // Store int_id in r0 (which will be passed as argument to dispatch())
 
@@ -197,7 +197,8 @@ void IC::entry()
                                             // And we're back to pre-interrupt code
 }
 
-void IC::dispatch(unsigned int id) {
+void IC::dispatch(unsigned int id)
+{
     if((id != INT_TIMER) || Traits<IC>::hysterically_debugged)
         db<IC>(TRC) << "IC::dispatch(i=" << id << ")" << endl;
 
