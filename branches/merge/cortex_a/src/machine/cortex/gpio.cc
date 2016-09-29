@@ -46,7 +46,7 @@ void GPIO::int_enable(const Edge & edge, bool power_up, const Edge & power_up_ed
     IC::disable(_port);
     int_disable();
     clear_interrupt();
-    IC::Interrupt_Id int_id = IC::INT_GPIO + _port;
+    IC::Interrupt_Id int_id = IC::INT_GPIOA + _port;
     IC::int_vector(int_id, GPIO::handle_int);
 
     gpio(_port, IS) &= ~_pin_bit; // Set interrupt to edge-triggered

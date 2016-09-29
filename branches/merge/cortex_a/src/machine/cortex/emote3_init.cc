@@ -1,6 +1,5 @@
-// EPOS eMote3 (ARM Cortex-M3) MCU Mediator Initialization
+// EPOS eMote3 (ARM Cortex-M3) MCU Initialization
 
-#include <system/config.h>
 #include <machine.h>
 
 #ifdef __mmod_emote3__

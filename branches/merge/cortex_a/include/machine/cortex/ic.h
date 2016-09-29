@@ -115,13 +115,12 @@ public:
         INT_USER_TIMER1 = 0,
         INT_USER_TIMER2 = 0,
         INT_USER_TIMER3 = 0,
-        INT_TSC         = 0,
-        INT_GPIO        = IRQ_GPIO,
+        INT_USB0         = IRQ_USB0,
+        INT_GPIOA       = IRQ_GPIO,
         INT_RFTXRX      = IRQ_ETHERNET0,
         INT_FIRST_HARD  = HARD_INT,
         INT_LAST_HARD   = IRQ_PARITY,
-        INT_RESCHEDULER = IRQ_SOFTWARE0,
-        INT_USB         = IRQ_USB0,
+        INT_RESCHEDULER = IRQ_SOFTWARE0
     };
 
 public:
@@ -227,14 +226,16 @@ public:
         INT_USER_TIMER1 = HARD_INT + IRQ_GPT1A,
         INT_USER_TIMER2 = HARD_INT + IRQ_GPT2A,
         INT_USER_TIMER3 = HARD_INT + IRQ_GPT3A,
-        INT_TSC         = Machine_Model::TIMERS == 0 ? INT_USER_TIMER0 : Machine_Model::TIMERS == 1 ? INT_USER_TIMER1 : Machine_Model::TIMERS == 2 ? INT_USER_TIMER2 : INT_USER_TIMER3,
-
-        INT_GPIO        = HARD_INT + IRQ_GPIOA,
-        INT_RFTXRX      = HARD_INT + IRQ_RFTXRX,
-        INT_RFERR       = HARD_INT + IRQ_RFERR,
         INT_MACTIMER    = HARD_INT + IRQ_MACTIMER,
-        INT_USB         = HARD_INT + IRQ_USB,
-        INT_LAST_HARD   = SOFT_INT - 1,
+        INT_GPIOA       = HARD_INT + IRQ_GPIOA,
+        INT_GPIOB       = HARD_INT + IRQ_GPIOB,
+        INT_GPIOC       = HARD_INT + IRQ_GPIOC,
+        INT_GPIOD       = HARD_INT + IRQ_GPIOD,
+        INT_NIC0_RX     = HARD_INT + IRQ_RFTXRX,
+        INT_NIC0_TX     = HARD_INT + IRQ_RFTXRX,
+        INT_NIC0_ERR   _= HARD_INT + IRQ_RFERR,
+        INT_USB0        = HARD_INT + IRQ_USB,
+        INT_LAST_HARD   = HARD_INT + IRQS,
         INT_RESCHEDULER = SOFT_INT
     };
 
@@ -321,11 +322,14 @@ public:
     using Engine::INT_USER_TIMER1;
     using Engine::INT_USER_TIMER2;
     using Engine::INT_USER_TIMER3;
-    using Engine::INT_TSC;
-    using Engine::INT_GPIO;
-    using Engine::INT_RFTXRX;
+    using Engine::INT_GPIOA;
+    using Engine::INT_GPIOB;
+    using Engine::INT_GPIOC;
+    using Engine::INT_GPIOD;
+    using Engine::INT_USB0;
+    using Engine::INT_NIC0_RX;
+    using Engine::INT_NIC0_TX;
     using Engine::INT_RESCHEDULER;
-    using Engine::INT_USB;
 
 public:
     IC() {}
@@ -391,7 +395,7 @@ private:
 
 private:
     static Interrupt_Handler _int_vector[INTS];
-    static EOI_Handler _eoi_vector[INTS];
+    static Interrupt_Handler _eoi_vector[INTS];
 };
 
 __END_SYS

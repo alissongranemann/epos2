@@ -4,30 +4,6 @@
 
 __BEGIN_SYS
 
-//template<int unit>
-//inline static void call_init()
-//{
-//    typedef typename Traits<Ethernet>::NICS::template Get<unit>::Result NIC;
-//    static const unsigned int OFFSET = Traits<Ethernet>::NICS::template Find<NIC>::Result;
-//
-//    if(Traits<NIC>::enabled)
-//        NIC::init(unit - OFFSET);
-//
-//    call_init<unit + 1>();
-//};
-//
-//template<>
-//inline void call_init<Traits<Ethernet>::NICS::Length>()
-//{
-//};
-//
-//void Ethernet::init()
-//{
-//    call_init<0>();
-//}
-//
-//__END_SYS
-
 template<typename Type, int unit>
 inline static void call_init()
 {

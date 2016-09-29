@@ -12,6 +12,7 @@ __BEGIN_SYS
 class eMote3
 {
     friend class TSC;
+    
 protected:
     typedef CPU::Reg32 Reg32;
     typedef CPU::Log_Addr Log_Addr;
@@ -1027,23 +1028,6 @@ protected:
         case OFF:
             scr(RCGCGPT) &= ~(1 << unit);
             scr(SCGCGPT) &= ~(1 << unit);
-            break;
-       }
-    }
-
-    // GPTM unit 3
-    static void power_tsc(const Power_Mode & mode) {
-        assert(Traits<TSC>::enabled);
-        switch(mode) {
-        case FULL:
-        case LIGHT:
-        case SLEEP:
-            scr(RCGCGPT) |= 1 << 3;
-            scr(SCGCGPT) |= 1 << 3;
-            break;
-        case OFF:
-            scr(RCGCGPT) &= ~(1 << 3);
-            scr(SCGCGPT) &= ~(1 << 3);
             break;
        }
     }

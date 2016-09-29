@@ -12,6 +12,7 @@ __BEGIN_SYS
 class LM3S811
 {
     friend class TSC;
+    
 protected:
     typedef CPU::Reg32 Reg32;
     typedef CPU::Log_Addr Log_Addr;
@@ -233,7 +234,7 @@ public:
         TIMER0_BASE     = 0x40030000,
         TIMER1_BASE     = 0x40031000,
         TIMER2_BASE     = 0x40032000,
-        TIMER3_BASE     = 0, // Not in this model
+        TIMER3_BASE     = 0, // Not present in this model
     };
 
     // GPTM registers offsets
@@ -400,7 +401,6 @@ protected:
 // Device enabling
     static void enable_uart(unsigned int unit) {
         assert(unit < UARTS);
-        init_clock(); // Setup the clock first!
         power_uart(unit, FULL);
         gpioa(AFSEL) |= 3 << (unit * 2);                // Pins A[1:0] are multiplexed between GPIO and UART 0. Select UART.
         gpioa(DEN) |= 3 << (unit * 2);                  // Enable digital I/O on Pins A[1:0]

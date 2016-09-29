@@ -19,10 +19,8 @@ void CPU::init()
     else
         db<Init, MMU>(WRN) << "MMU is disabled!" << endl;
 
-#ifdef __mmod_zynq__
     if(Traits<TSC>::enabled)
         TSC::init();
-#endif
 }
 
 __END_SYS

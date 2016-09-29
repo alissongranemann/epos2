@@ -15,7 +15,6 @@ protected:
 public:
     typedef unsigned int Interrupt_Id;
     typedef void (* Interrupt_Handler)(const Interrupt_Id &);
-    typedef void (* EOI_Handler)(const Interrupt_Id &);
 };
 
 __END_SYS

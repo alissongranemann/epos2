@@ -15,8 +15,6 @@ void Machine::init()
     if(Traits<Timer>::enabled)
         Timer::init();
 #ifndef __mmod_zynq__
-    if(Traits<TSC>::enabled)
-        TSC::init();
     if(Traits<USB>::enabled)
         USB::init();
     if(Traits<NIC>::enabled)

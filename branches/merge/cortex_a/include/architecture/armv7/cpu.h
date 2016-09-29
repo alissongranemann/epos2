@@ -288,23 +288,25 @@ public:
 
     template <typename T>
     static T finc(volatile T & value) {
-        T old;
-        static bool lock = false;
-        while(tsl(lock));
-        old = value;
-        value++;
-        lock = false;
+        register T old;
+        register T one = 1;
+        ASM("1: ldrexb  %0, [%1]        \n"
+            "   inc     %0"
+            "   strexb  r4, %0, [%1]    \n"
+            "   cmp     r4, #0          \n"
+            "   bne     1b              \n" : "=&r" (old) : "r"(&value) : "r4" );
         return old;
     }
 
     template <typename T>
     static T fdec(volatile T & value) {
-        T old;
-        static bool lock = false;
-        while(tsl(lock));
-        old = value;
-        value--;
-        lock = false;
+          register T old;
+        register T one = 1;
+        ASM("1: ldrexb  %0, [%1]        \n"
+            "   dec     %0"
+            "   strexb  r4, %0, [%1]    \n"
+            "   cmp     r4, #0          \n"
+            "   bne     1b              \n" : "=&r" (old) : "r"(&value) : "r4" );
         return old;
     }
 

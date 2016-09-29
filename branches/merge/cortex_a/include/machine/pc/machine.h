@@ -66,6 +66,13 @@ public:
     }
 
 private:
+    static void pre_init(System_Info * si) {
+        Display::init();
+
+        if(Traits<System>::multicore)
+            Machine::smp_init(si->bm.n_cpus);
+    }
+
     static void init();
 
 private:
