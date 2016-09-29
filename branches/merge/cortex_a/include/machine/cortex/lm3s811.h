@@ -12,7 +12,7 @@ __BEGIN_SYS
 class LM3S811
 {
     friend class TSC;
-    
+
 protected:
     typedef CPU::Reg32 Reg32;
     typedef CPU::Log_Addr Log_Addr;
@@ -495,6 +495,9 @@ public:
     static volatile Reg32 & tsc(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(TIMER1_BASE)[o / sizeof(Reg32)]; }
 
 protected:
+    static void pre_init() {
+        init_clock(); // TODO
+    }
     static void init();
     static void init_clock();
     static bool _init_clock_done;

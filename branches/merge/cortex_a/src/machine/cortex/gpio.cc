@@ -14,7 +14,7 @@ GPIO * GPIO::_devices[GPIO_PORTS][8];
 // Class methods
 void GPIO::handle_int(const IC::Interrupt_Id & i)
 {
-    unsigned int port = i - IC::INT_GPIO;
+    unsigned int port = i - IC::INT_GPIOA;
 
     for(unsigned int i = 0; i < 8; ++i) {
         bool regular_interrupt = gpio(port, MIS) & (1 << i);

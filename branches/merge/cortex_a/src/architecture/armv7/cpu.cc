@@ -45,9 +45,13 @@ void CPU::switch_context(Context * volatile * o, Context * volatile n)
         "       pop     {r12}                   \n" : : "r"(o), "r"(n));
     msr12();
     ASM("       pop     {r0-r12, lr}            \n"
-        "       pop     {r12}                   \n"
-        "       mov     pc, r12                 \n" // popping directly into PC causes a Usage Fault???
-        ".ret:  bx      lr                      \n");
+        "       pop     {r12}                   \n");
+// TODO: test the following line
+//    if(Traits<Build>::MODEL != Traits<Build>::Zynq)
+//        int_enable();
+    ASM("       mov     pc, r12                 \n" // popping directly into PC causes a Usage Fault???
+        ".ret:                                  \n"
+        "       bx      lr                      \n");
 }
 
 __END_SYS

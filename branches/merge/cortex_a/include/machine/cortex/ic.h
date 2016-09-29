@@ -117,7 +117,12 @@ public:
         INT_USER_TIMER3 = 0,
         INT_USB0         = IRQ_USB0,
         INT_GPIOA       = IRQ_GPIO,
-        INT_RFTXRX      = IRQ_ETHERNET0,
+        INT_GPIOB       = IRQ_GPIO,
+        INT_GPIOC       = IRQ_GPIO,
+        INT_GPIOD       = IRQ_GPIO,
+        INT_NIC0_RX     = IRQ_ETHERNET0,
+        INT_NIC0_TX     = IRQ_ETHERNET0,
+        INT_NIC0_ERR    = IRQ_ETHERNET0,
         INT_FIRST_HARD  = HARD_INT,
         INT_LAST_HARD   = IRQ_PARITY,
         INT_RESCHEDULER = IRQ_SOFTWARE0
@@ -233,7 +238,7 @@ public:
         INT_GPIOD       = HARD_INT + IRQ_GPIOD,
         INT_NIC0_RX     = HARD_INT + IRQ_RFTXRX,
         INT_NIC0_TX     = HARD_INT + IRQ_RFTXRX,
-        INT_NIC0_ERR   _= HARD_INT + IRQ_RFERR,
+        INT_NIC0_ERR    = HARD_INT + IRQ_RFERR,
         INT_USB0        = HARD_INT + IRQ_USB,
         INT_LAST_HARD   = HARD_INT + IRQS,
         INT_RESCHEDULER = SOFT_INT
@@ -253,7 +258,7 @@ public:
     }
 
     static void enable(const Interrupt_Id & id) {
-        if(id <= HARD_INT) 
+        if(id <= HARD_INT)
             return;
         IRQ i = int2irq(id);
         db<IC>(TRC) << "IC::enable(irq=" << i << ")" << endl;
@@ -271,7 +276,7 @@ public:
     }
 
     static void disable(const Interrupt_Id & id) {
-        if(id <= HARD_INT) 
+        if(id <= HARD_INT)
             return;
         IRQ i = int2irq(id);
         db<IC>(TRC) << "IC::disable(irq=" << i << ")" << endl;

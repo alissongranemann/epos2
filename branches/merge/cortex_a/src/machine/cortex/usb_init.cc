@@ -181,8 +181,8 @@ void USB::init()
 
     _state = USB_2_0::STATE::POWERED;
 
-    IC::int_vector(IC::INT_USB, &int_handler);
-    IC::enable(IC::INT_USB);
+    IC::int_vector(IC::INT_USB0, &int_handler);
+    IC::enable(IC::INT_USB0);
 }
 
 #endif

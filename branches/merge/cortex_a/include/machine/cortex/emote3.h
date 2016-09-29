@@ -1277,6 +1277,9 @@ public:
     static volatile Reg32 & gpiod(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(GPIOD_BASE)[o / sizeof(Reg32)]; }
 
 protected:
+    static void pre_init() {
+        init_clock(); // TODO
+    }
     static void init();
     static void init_clock();
     static bool _init_clock_done;

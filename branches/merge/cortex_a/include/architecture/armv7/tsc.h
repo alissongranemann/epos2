@@ -41,8 +41,7 @@ private:
 
 class TSC: private TSC_Common
 {
-    friend class LM3S811;
-    friend class Machine;
+    friend class CPU;
 
 private:
     static const unsigned int CLOCK = Traits<CPU>::CLOCK;

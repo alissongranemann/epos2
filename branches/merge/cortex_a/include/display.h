@@ -25,7 +25,7 @@ class Serial_Display: public Display_Common
 {
     friend class PC_Setup;
     friend class Serial_Keyboard;
-    friend class First_Object;
+    friend class Machine;
 
 private:
     static const int LINES = Traits<Serial_Display>::LINES;

@@ -41,8 +41,9 @@ void TSC::init()
     else {
         reg(Machine_Model::GPTMTAMR) = Machine_Model::TCDIR | 2; // Up-counting, periodic
 
-        IC::int_vector(IC::INT_TSC, int_handler);
-        IC::enable(IC::INT_TSC);
+        static const IC::Interrupt_Id int_id = Machine_Model::TIMERS == 1 ? IC::INT_USER_TIMER0 : Machine_Model::TIMERS == 2 ? IC::INT_USER_TIMER1 : Machine_Model::TIMERS == 3 ? IC::INT_USER_TIMER2 : IC::INT_USER_TIMER3;
+        IC::int_vector(int_id, int_handler);
+        IC::enable(int_id);
 
         reg(Machine_Model::GPTMIMR) |= Machine_Model::TATO_INT; // Enable timeout interrupt
         reg(Machine_Model::GPTMCTL) |= Machine_Model::TAEN; // Enable timer

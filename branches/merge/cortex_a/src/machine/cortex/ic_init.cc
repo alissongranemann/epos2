@@ -10,7 +10,7 @@ __BEGIN_SYS
 // Class attributes
 #ifdef __mmod_lm3s811__
 
-IC::EOI_Handler IC::_eoi_vector[INTS] = {
+IC::Interrupt_Handler IC::_eoi_vector[INTS] = {
     0, // Reset
     0, // NMI
     0, // Hard fault
@@ -76,7 +76,7 @@ IC::EOI_Handler IC::_eoi_vector[INTS] = {
 
 #elif defined(__mmod_zynq__)
 
-IC::EOI_Handler IC::_eoi_vector[INTS] = {
+IC::Interrupt_Handler IC::_eoi_vector[INTS] = {
     0,
     0,
     0,
@@ -174,7 +174,7 @@ IC::EOI_Handler IC::_eoi_vector[INTS] = {
 
 #else
 
-IC::EOI_Handler IC::_eoi_vector[INTS];
+IC::Interrupt_Handler IC::_eoi_vector[INTS];
 
 #endif
 

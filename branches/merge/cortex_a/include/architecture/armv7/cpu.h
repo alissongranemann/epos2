@@ -274,7 +274,6 @@ public:
     static Reg32 pdp() { return 0; }
     static void pdp(const Reg32 & pdp) {}
 
-    // FIXME: Shouldn't all atomic operations use the same lock? e.g. one thread trying to finc() and other trying to fdec() the same value
     template <typename T>
     static T tsl(volatile T & lock) {
         register T old;
@@ -288,10 +287,32 @@ public:
 
     template <typename T>
     static T finc(volatile T & value) {
+        T old;
+        static bool lock = false;
+        while(tsl(lock));
+        old = value;
+        value++;
+        lock = false;
+        return old;
+    }
+
+    template <typename T>
+    static T fdec(volatile T & value) {
+        T old;
+        static bool lock = false;
+        while(tsl(lock));
+        old = value;
+        value--;
+        lock = false;
+        return old;
+    }
+    /*
+    //FIXME: Test the finc() fdec() below
+    template <typename T>
+    static T finc(volatile T & value) {
         register T old;
-        register T one = 1;
         ASM("1: ldrexb  %0, [%1]        \n"
-            "   inc     %0"
+            "   add     %0, #1          \n"
             "   strexb  r4, %0, [%1]    \n"
             "   cmp     r4, #0          \n"
             "   bne     1b              \n" : "=&r" (old) : "r"(&value) : "r4" );
@@ -300,15 +321,15 @@ public:
 
     template <typename T>
     static T fdec(volatile T & value) {
-          register T old;
-        register T one = 1;
+        register T old;
         ASM("1: ldrexb  %0, [%1]        \n"
-            "   dec     %0"
+            "   sub     %0, #1          \n"
             "   strexb  r4, %0, [%1]    \n"
             "   cmp     r4, #0          \n"
             "   bne     1b              \n" : "=&r" (old) : "r"(&value) : "r4" );
         return old;
     }
+    */
 
     template <typename T>
     static T cas(volatile T & value, T compare, T replacement) {
