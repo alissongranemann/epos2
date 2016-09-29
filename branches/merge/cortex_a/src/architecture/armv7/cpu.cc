@@ -12,18 +12,13 @@ unsigned int CPU::_bus_clock;
 // Class methods
 void CPU::Context::save() volatile
 {
-    ASM("       sub     sp, #4                  \n"
+    ASM("       mov     r12, pc                 \n"
         "       push    {r12}                   \n"
-        "       mov     r12, pc                 \n"
-        "       str     r12, [sp,#4]            \n"
-        "       pop     {r12}                   \n"
-        "       push    {r0-r12, lr}            \n"
-        "       sub     sp, #4                  \n"
-        "       push    {r12}                   \n");
+        "       push    {r0-r12, lr}            \n");
     mrs12();
-    ASM("       str     r12, [sp,#4]            \n"
-        "       pop     {r12}                   \n"
-        "       str     sp, [%0]                \n" : : "r"(this));
+    ASM("       push    {r12}                   \n"
+        "       str     sp, [%0]                \n"
+        : : "r"(this));
 }
 
 void CPU::Context::load() const volatile
@@ -39,11 +34,8 @@ void CPU::Context::load() const volatile
 
 void CPU::switch_context(Context * volatile * o, Context * volatile n)
 {
-    ASM("       sub     sp, #4                  \n" // FIXME: documment the need of saving r12
+    ASM("       adr     r12, .ret               \n"
         "       push    {r12}                   \n"
-        "       adr     r12, .ret               \n"
-        "       str     r12, [sp,#4]            \n"
-        "       pop     {r12}                   \n"
         "       push    {r0-r12, lr}            \n");
     mrs12();
     ASM("       push    {r12}                   \n"
@@ -53,12 +45,9 @@ void CPU::switch_context(Context * volatile * o, Context * volatile n)
         "       pop     {r12}                   \n" : : "r"(o), "r"(n));
     msr12();
     ASM("       pop     {r0-r12, lr}            \n"
-        "       push    {r12}                   \n"
-        "       ldr     r12, [sp, #4]           \n"
+        "       pop     {r12}                   \n"
         "       mov     pc, r12                 \n" // popping directly into PC causes a Usage Fault???
-        ".ret:  pop     {r12}                   \n"
-        "       add     sp, #4                  \n"
-        "       bx      lr                      \n");
+        ".ret:  bx      lr                      \n");
 }
 
 __END_SYS

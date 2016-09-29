@@ -274,6 +274,7 @@ public:
     static Reg32 pdp() { return 0; }
     static void pdp(const Reg32 & pdp) {}
 
+    // FIXME: Shouldn't all atomic operations use the same lock? e.g. one thread trying to finc() and other trying to fdec() the same value
     template <typename T>
     static T tsl(volatile T & lock) {
         register T old;

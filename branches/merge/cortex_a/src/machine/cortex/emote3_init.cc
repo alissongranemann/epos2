@@ -1,4 +1,4 @@
-// EPOS eMote3 (ARM Cortex) MCU Initialization
+// EPOS eMote3 (ARM Cortex-M3) MCU Mediator Initialization
 
 #include <system/config.h>
 #include <machine.h>
@@ -8,8 +8,6 @@
 #include <ic.h>
 
 __BEGIN_SYS
-
-bool Machine_Model::_init_clock_done = false;
 
 void Machine_Model::init()
 {

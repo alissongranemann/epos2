@@ -15,8 +15,6 @@ protected:
     typedef CPU::Reg32 Reg32;
     typedef CPU::Log_Addr Log_Addr;
 
-    typedef void (* EOI_Handler)(void);
-
 public:
     static const unsigned int IRQS = 96;
     static const unsigned int TIMERS = 3;
@@ -274,8 +272,6 @@ public:
     static volatile Reg32 & global_timer(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(GLOBAL_TIMER_BASE)[o / sizeof(Reg32)]; }
     static volatile Reg32 & priv_timer(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(PRIV_TIMER_BASE)[o / sizeof(Log_Addr)]; }
     static volatile Reg32 & dist(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(DIST_BASE)[o / sizeof(Reg32)]; }
-
-    static EOI_Handler _eoi[IRQS];
 
     static void init();
 };

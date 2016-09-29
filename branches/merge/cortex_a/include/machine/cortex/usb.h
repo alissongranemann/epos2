@@ -2,6 +2,7 @@
 
 #include <usb.h>
 #include <cpu.h>
+#include <ic.h>
 
 #ifndef __cortex_usb_h
 #define __cortex_usb_h
@@ -251,6 +252,13 @@ public:
 
     static unsigned int get(char * out, unsigned int max_size);
 
+    static void eoi(const IC::Interrupt_Id & int_id) {
+        // USB interrupt flags are cleared when read
+        _cif |= reg(CIF);
+        _iif |= reg(IIF);
+        _oif |= reg(OIF);
+    }
+
 private:
     static bool configured() { return state() >= USB_2_0::STATE::CONFIGURED; }
 
@@ -279,6 +287,11 @@ private:
 
 protected:
     static volatile Reg32 & reg (unsigned int offset) { return *(reinterpret_cast<volatile Reg32*>(USB_BASE + offset)); }
+
+private:
+    static Reg32 _cif;
+    static Reg32 _iif;
+    static Reg32 _oif;
 };
 
 __END_SYS

@@ -111,6 +111,10 @@ public:
     static const unsigned int SOFT_INT = 0;
     enum {
         INT_TIMER       = IRQ_PRIVATE_TIMER,
+        INT_USER_TIMER0 = IRQ_GLOBAL_TIMER,
+        INT_USER_TIMER1 = 0,
+        INT_USER_TIMER2 = 0,
+        INT_USER_TIMER3 = 0,
         INT_TSC         = 0,
         INT_GPIO        = IRQ_GPIO,
         INT_RFTXRX      = IRQ_ETHERNET0,
@@ -192,7 +196,7 @@ public:
         IRQ_GPT1A       = 21,
         IRQ_GPT1B       = 22,
         IRQ_GPT2A       = 23,
-        IRQ_GPT2b       = 24,
+        IRQ_GPT2B       = 24,
         IRQ_AC          = 25,
         IRQ_RFTXRX      = 26,
         IRQ_RFERR       = 27,
@@ -204,7 +208,7 @@ public:
         IRQ_MACTIMER    = 33,
         IRQ_SSI1        = 34,
         IRQ_GPT3A       = 35,
-        IRQ_FPT3B       = 36,
+        IRQ_GPT3B       = 36,
         IRQ_USB         = 44, // Using alternate interrupt mapping
         IRQ_UDMASW      = 46,
         IRQ_UDMAERR     = 47,
@@ -219,7 +223,11 @@ public:
     enum {
         INT_TIMER       = 15,
         INT_FIRST_HARD  = HARD_INT,
-        INT_TSC         = HARD_INT + (Machine_Model::TIMERS == 0 ? IRQ_GPT0A : Machine_Model::TIMERS == 1 ? IRQ_GPT1A : Machine_Model::TIMERS == 2 ? IRQ_GPT2A : IRQ_GPT3A),
+        INT_USER_TIMER0 = HARD_INT + IRQ_GPT0A,
+        INT_USER_TIMER1 = HARD_INT + IRQ_GPT1A,
+        INT_USER_TIMER2 = HARD_INT + IRQ_GPT2A,
+        INT_USER_TIMER3 = HARD_INT + IRQ_GPT3A,
+        INT_TSC         = Machine_Model::TIMERS == 0 ? INT_USER_TIMER0 : Machine_Model::TIMERS == 1 ? INT_USER_TIMER1 : Machine_Model::TIMERS == 2 ? INT_USER_TIMER2 : INT_USER_TIMER3,
 
         INT_GPIO        = HARD_INT + IRQ_GPIOA,
         INT_RFTXRX      = HARD_INT + IRQ_RFTXRX,
@@ -309,6 +317,10 @@ public:
     using IC_Common::Interrupt_Id;
     using IC_Common::Interrupt_Handler;
     using Engine::INT_TIMER;
+    using Engine::INT_USER_TIMER0;
+    using Engine::INT_USER_TIMER1;
+    using Engine::INT_USER_TIMER2;
+    using Engine::INT_USER_TIMER3;
     using Engine::INT_TSC;
     using Engine::INT_GPIO;
     using Engine::INT_RFTXRX;
@@ -366,6 +378,7 @@ public:
 
 private:
     static void dispatch(unsigned int i);
+    static void eoi(unsigned int i);
 
     // Logical handlers
     static void int_not(const Interrupt_Id & i);
@@ -378,6 +391,7 @@ private:
 
 private:
     static Interrupt_Handler _int_vector[INTS];
+    static EOI_Handler _eoi_vector[INTS];
 };
 
 __END_SYS

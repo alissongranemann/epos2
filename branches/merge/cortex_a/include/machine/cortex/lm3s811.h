@@ -233,6 +233,7 @@ public:
         TIMER0_BASE     = 0x40030000,
         TIMER1_BASE     = 0x40031000,
         TIMER2_BASE     = 0x40032000,
+        TIMER3_BASE     = 0, // Not in this model
     };
 
     // GPTM registers offsets

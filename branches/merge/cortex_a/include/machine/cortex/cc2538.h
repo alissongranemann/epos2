@@ -367,7 +367,7 @@ public:
     };
 
 public:
-    CC2538RF() {
+    CC2538RF() : _fifop_lock(false) {
         // Enable clock to RF module
         power_ieee802_15_4(FULL);
 
@@ -424,6 +424,7 @@ public:
     bool transmit() { sfr(RFST) = ISTXONCCA; return (xreg(FSMSTAT1) & SAMPLED_CCA); }
 
     bool wait_for_ack(const Microsecond & timeout) {
+        while(!CPU::tsl(_fifop_lock));
         // Disable and clear FIFOP int. We'll poll the interrupt flag
         xreg(RFIRQM0) &= ~INT_FIFOP;
         sfr(RFIRQF0) &= ~INT_FIFOP;
@@ -451,21 +452,20 @@ public:
         promiscuous(was_promiscuous);
         xreg(RFIRQM0) |= INT_FIFOP;
 
+        _fifop_lock = false;
         return acked;
     }
 
     void listen() { sfr(RFST) = ISRXON; }
 
-    //FIXME: this doesn't work without the noinline attribute
-    bool tx_done()__attribute__((noinline)) {
+    bool tx_done() {
         bool ret = (sfr(RFIRQF1) & INT_TXDONE);
         if(ret)
             sfr(RFIRQF1) &= ~INT_TXDONE;
         return ret;
     }
 
-    //FIXME: this doesn't work without the noinline attribute
-    bool rx_done()__attribute__((noinline)) {
+    bool rx_done() {
         bool ret = (sfr(RFIRQF0) & INT_RXPKTDONE);
         if(ret)
             sfr(RFIRQF0) &= ~INT_RXPKTDONE;
@@ -549,6 +549,8 @@ protected:
     static volatile Reg32 & ffsm    (unsigned int offset) { return *(reinterpret_cast<volatile Reg32 *>(FFSM_BASE + offset)); }
     static volatile Reg32 & sfr     (unsigned int offset) { return *(reinterpret_cast<volatile Reg32 *>(SFR_BASE  + offset)); }
     static volatile Reg32 & mactimer(unsigned int offset) { return *(reinterpret_cast<volatile Reg32 *>(MACTIMER_BASE + offset)); }
+
+    volatile bool _fifop_lock;
 };
 
 // CC2538 IEEE 802.15.4 EPOSMote III NIC Mediator

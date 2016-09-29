@@ -36,6 +36,16 @@ protected:
     }
 
 public:
+    unsigned int marshal(Buffer * buf) {
+        IEEE802_15_4::Phy_Frame * frame = buf->frame();
+        int size = frame->length() - sizeof(Header) + sizeof(Phy_Header) - sizeof(CRC); // Phy_Header is included in Header, but is already discounted in frame_length
+        if(size > 0) {
+            buf->size(size);
+            return buf->size();
+        } else
+            return 0;
+    }
+
     unsigned int marshal(Buffer * buf, const Address & src, const Address & dst, const Type & type, const void * data, unsigned int size) {
         if(size > Frame::MTU)
             size = Frame::MTU;
@@ -92,17 +102,6 @@ public:
         }
 
         return ack_ok ? buf->size() : 0;
-    }
-
-    bool copy_from_nic(Buffer * buf) {
-        IEEE802_15_4::Phy_Frame * frame = buf->frame();
-        Radio::copy_from_nic(frame);
-        int size = frame->length() - sizeof(Header) + sizeof(Phy_Header) - sizeof(CRC); // Phy_Header is included in Header, but is already discounted in frame_length
-        if(size > 0) {
-            buf->size(size);
-            return true;
-        } else
-            return false;
     }
 
 private:
