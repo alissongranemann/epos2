@@ -178,7 +178,6 @@ template<> struct Traits<ELP>: public Traits<Network>
     static const bool enabled = NETWORKS::Count<ELP>::Result;
 
     static const bool acknowledged = true;
-    static const bool promiscuous = false;
 };
 
 template<> struct Traits<TSTP>: public Traits<Network>

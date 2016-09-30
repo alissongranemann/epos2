@@ -30,7 +30,6 @@ protected:
 
     // Called after the Radio's constructor
     void constructor_epilogue() {
-        Radio::promiscuous(Traits<_API::ELP>::promiscuous);
         Radio::power(Power_Mode::FULL);
         Radio::listen();
     }
