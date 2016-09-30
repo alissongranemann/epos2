@@ -34,7 +34,7 @@ void TSC::init()
     db<Init, TSC>(TRC) << "TSC::init()" << endl;
 
     reg(Machine_Model::GPTMCTL) &= ~Machine_Model::TAEN; // Disable timer
-    Machine_Model::power_tsc(FULL);
+    Machine_Model::power_user_timer((Traits<Build>::MODEL == Traits<Build>::eMote3) ? 3 : 1, FULL);
     reg(Machine_Model::GPTMCFG) = 0; // 32-bit timer
     if(Traits<Build>::MODEL == Traits<Build>::LM3S811)
         reg(Machine_Model::GPTMTAMR) = 1; // One-shot

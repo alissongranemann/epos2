@@ -438,21 +438,6 @@ protected:
         }
     }
 
-    // GPTM unit 1
-    static void power_tsc(const Power_Mode & mode) {
-        assert(Traits<TSC>::enabled);
-        switch(mode) {
-        case FULL:
-        case LIGHT:
-        case SLEEP:
-            scr(RCGC1) |= 1 << (1 + 16);             // Activate GPTM 1 clock
-            break;
-        case OFF:
-            scr(RCGC1) &= ~(1 << (1 + 16));          // Deactivate GPTM 1 clock
-            break;
-       }
-    }
-
     static void power_usb(unsigned int unit, const Power_Mode & mode) {}
 
 
@@ -495,12 +480,8 @@ public:
     static volatile Reg32 & tsc(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(TIMER1_BASE)[o / sizeof(Reg32)]; }
 
 protected:
-    static void pre_init() {
-        init_clock(); // TODO
-    }
+    static void pre_init(); // TODO
     static void init();
-    static void init_clock();
-    static bool _init_clock_done;
 };
 
 typedef LM3S811 Machine_Model;

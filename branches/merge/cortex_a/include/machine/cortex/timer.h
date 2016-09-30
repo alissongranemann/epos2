@@ -256,7 +256,7 @@ private:
     static Hertz count2freq(const Count & c) { return c ? Engine::clock() / c : 0; }
     static Count freq2count(const Hertz & f) { return f ? Engine::clock() / f : 0;}
 
-    static void int_handler(const IC::Interrupt_Id & i);
+    static void int_handler(const Interrupt_Id & i);
 
     static void init();
 

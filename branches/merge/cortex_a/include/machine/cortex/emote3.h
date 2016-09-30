@@ -710,9 +710,9 @@ public:
         PDR		= 0x514,	// Pull-Down Select 	        R/W	0x0000.0000
         SLR		= 0x518,	// Slew Rate Control Select	R/W	0x0000.0000
         DEN		= 0x51c,	// Digital Enable 	        R/W	0x0000.00ff
-        P_EDGE_CTRL     = 0x704,        // Power-up Interrupt Edge Control R/W 0x0000.0000
-        PI_IEN          = 0x710,	// Power-up Interrupt Enable       R/W	0x0000.0000
-        IRQ_DETECT_ACK  = 0x718,        // Power-up Interrupt Status/Clear R/W 0x0000.0000
+        P_EDGE_CTRL  = 0x704, // Power-up Interrupt Edge Control R/W 0x0000.0000
+        PI_IEN  = 0x710,	// Power-up Interrupt Enable       R/W	0x0000.0000
+        IRQ_DETECT_ACK = 0x718, // Power-up Interrupt Status/Clear R/W 0x0000.0000
     /*
         PeriphID4	= 0xfd0,	// Peripheral Identification 4	RO	0x0000.0000
         PeriphID5	= 0xfd4,	// Peripheral Identification 5 	RO	0x0000.0000
@@ -895,7 +895,7 @@ public:
                                 // conversion is completed before the previous data has been read,
                                 // the EOC bit remains high.
                                 // 0: Conversion not complete
-                                // 1: Conversion completed
+                                // 1: Conversion completed 
         ADCCON1_ST    = 1 << 6, // Start conversion
                                 // Read as 1 until conversion completes
                                 // 0: No conversion in progress.
@@ -1277,12 +1277,8 @@ public:
     static volatile Reg32 & gpiod(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(GPIOD_BASE)[o / sizeof(Reg32)]; }
 
 protected:
-    static void pre_init() {
-        init_clock(); // TODO
-    }
+    static void pre_init(); // TODO
     static void init();
-    static void init_clock();
-    static bool _init_clock_done;
 };
 
 typedef eMote3 Machine_Model;

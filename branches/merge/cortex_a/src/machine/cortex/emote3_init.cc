@@ -1,4 +1,4 @@
-// EPOS eMote3 (ARM Cortex-M3) MCU Initialization
+// EPOS eMote3 (ARM Cortex-M3) MCU Mediator Initialization
 
 #include <machine.h>
 

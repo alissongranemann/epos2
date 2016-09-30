@@ -61,7 +61,7 @@ public:
         return disabled;
     }
 
-    static void mrs12() { ASM("mrs r12, xpsr" : : : "r12"); }
+    static void mrs12() { ASM("mrs r12, xpsr" : : : "r12" ); }
     static void msr12() { ASM("msr xpsr, r12" : : : "cc"); }
 };
 
@@ -262,9 +262,10 @@ public:
 
     template <typename T>
     static T tsl(volatile T & lock) {
-        register T old, one = 1;
-        ASM("1: ldrexb  %0, [%1]        \n"
-            "   strexb  r3, %2, [%1]    \n"
+        register T old;
+        register T one = 1;
+        ASM("1: ldrex   %0, [%1]        \n"
+            "   strex   r3, %2, [%1]    \n"
             "   cmp     r3, #0          \n"
             "   bne     1b              \n" : "=&r" (old) : "r"(&lock), "r"(one) : "r3");
         return old;
@@ -272,50 +273,24 @@ public:
 
     template <typename T>
     static T finc(volatile T & value) {
-        register T ret;
-        if(sizeof(T) == sizeof(Reg8))
-            ASM("1: ldrexb  %0, [%1]        \n"
-                "   add     %0, #1          \n"
-                "   strexb  r3, %0, [%1]    \n"
-                "   cmp     r3, #0          \n"
-                "   bne     1b              \n" : "=&r" (ret) : "r"(&value) : "r3");
-        else if(sizeof(T) == sizeof(Reg16))
-            ASM("1: ldrexh  %0, [%1]        \n"
-                "   add     %0, #1          \n"
-                "   strexh  r3, %0, [%1]    \n"
-                "   cmp     r3, #0          \n"
-                "   bne     1b              \n" : "=&r" (ret) : "r"(&value) : "r3");
-        else if(sizeof(T) == sizeof(Reg32))
-            ASM("1: ldrex   %0, [%1]        \n"
-                "   add     %0, #1          \n"
-                "   strex   r3, %0, [%1]    \n"
-                "   cmp     r3, #0          \n"
-                "   bne     1b              \n" : "=&r" (ret) : "r"(&value) : "r3");
-        return ret - 1;
+        register T old;
+        ASM("1: ldrex   %0, [%1]        \n"
+            "   add     %0, #1          \n"
+            "   strex   r3, %0, [%1]    \n"
+            "   cmp     r3, #0          \n"
+            "   bne     1b              \n" : "=&r" (old) : "r"(&value) : "r3" );
+        return old;
     }
 
     template <typename T>
     static T fdec(volatile T & value) {
-        register T ret;
-        if(sizeof(T) == sizeof(Reg8))
-            ASM("1: ldrexb  %0, [%1]        \n"
-                "   sub     %0, #1          \n"
-                "   strexb  r3, %0, [%1]    \n"
-                "   cmp     r3, #0          \n"
-                "   bne     1b              \n" : "=&r" (ret) : "r"(&value) : "r3");
-        else if(sizeof(T) == sizeof(Reg16))
-            ASM("1: ldrexh  %0, [%1]        \n"
-                "   sub     %0, #1          \n"
-                "   strexh  r3, %0, [%1]    \n"
-                "   cmp     r3, #0          \n"
-                "   bne     1b              \n" : "=&r" (ret) : "r"(&value) : "r3");
-        else if(sizeof(T) == sizeof(Reg32))
-            ASM("1: ldrex   %0, [%1]        \n"
-                "   sub     %0, #1          \n"
-                "   strex   r3, %0, [%1]    \n"
-                "   cmp     r3, #0          \n"
-                "   bne     1b              \n" : "=&r" (ret) : "r"(&value) : "r3");
-        return ret + 1;
+        register T old;
+        ASM("1: ldrex   %0, [%1]        \n"
+            "   sub     %0, #1          \n"
+            "   strex   r3, %0, [%1]    \n"
+            "   cmp     r3, #0          \n"
+            "   bne     1b              \n" : "=&r" (old) : "r"(&value) : "r3" );
+        return old;
     }
 
     template <typename T>

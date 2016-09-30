@@ -7,27 +7,9 @@
 
 __BEGIN_SYS
 
-bool Machine_Model::_init_clock_done = false;
-
-void Machine_Model::init()
+void Machine_Model::pre_init()
 {
-    db<Init, Machine>(TRC) << "Machine_Model::init()" << endl;
-
-    init_clock();
-
-    db<Init, Machine>(TRC) << "Machine_Model::init:CCR = " << scs(CCR) << endl;
-    scs(CCR) |= BASETHR; // BUG: on LM3S811 this register is not updated, but it doesn't seem to cause any errors
-    db<Init, Machine>(TRC) << "Machine_Model::init:CCR = " << scs(CCR) << endl;
-}
-
-void Machine_Model::init_clock()
-{
-    // Since the clock is configured in traits and never changes,
-    // this needs to be done only once, but this method will be
-    // called at least twice during EPOS' initialization
-    // (in LM3S811::enable_uart() and Machine::init())
-    if(_init_clock_done)
-        return;
+    db<Init, Machine>(TRC) << "Machine_Model::pre_init()" << endl;
 
     // Initialize the clock
     CPU::Reg32 rcc = scr(RCC);
@@ -69,8 +51,13 @@ void Machine_Model::init_clock()
     // enable use of PLL by clearing BYPASS
     rcc &= ~RCC_BYPASS;
     scr(RCC) = rcc;
+}
 
-    _init_clock_done = true;
+void Machine_Model::init()
+{
+    db<Init, Machine>(TRC) << "Machine_Model::init:CCR = " << scs(CCR) << endl;
+    scs(CCR) |= BASETHR; // BUG: on LM3S811 this register is not updated, but it doesn't seem to cause any errors
+    db<Init, Machine>(TRC) << "Machine_Model::init:CCR = " << scs(CCR) << endl;
 }
 
 __END_SYS
