@@ -15,7 +15,22 @@ class TSC: private TSC_Common
     friend class CPU;
 
 private:
-    static const unsigned int CLOCK = Traits<CPU>::CLOCK;
+    typedef CPU::Reg32 Reg32;
+    typedef CPU::Reg64 Reg64;
+
+    static const unsigned int CLOCK = Traits<CPU>::CLOCK/2;
+
+    // Base address for Global Timer
+    enum {
+        GLOBAL_TIMER_BASE = 0xF8F00200,
+    };
+
+    // Global Timer Registers offsets
+    enum {              // Description
+        GTCTRL  = 0x00, // Low Counter
+        GTCTRH  = 0x04, // High Counter
+        GTCLR   = 0x08, // Control
+    };
 
 public:
     using TSC_Common::Hertz;
@@ -26,15 +41,34 @@ public:
 
     static Hertz frequency() { return CLOCK; }
 
-    static Time_Stamp time_stamp() {
-        // FIXME: The MRC instruction doesn't seem to work correctly if ts is a Time_Stamp, but types are now incompatible
-        CPU::Reg32 ts;
-        ASM("mrc p15, 0, %0, c9, c13, 0" : "=r"(ts));
-        return static_cast<Time_Stamp>(ts);
-    }
+    static Time_Stamp time_stamp() { return static_cast<Time_Stamp>(read()); }
 
 private:
     static void init();
+
+    static volatile Reg32 & global_timer(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(GLOBAL_TIMER_BASE)[o / sizeof(Reg32)]; }
+
+    static Reg64 read() {
+        Reg32 high, low;
+
+        do {
+            high = global_timer(GTCTRH);
+            low = global_timer(GTCTRL);
+        } while(global_timer(GTCTRH) != high);
+
+        return static_cast<Reg64>(high) << 32 | low;
+    }
+
+    static void set(const Reg64 & count) {
+        // Disable counting before programming
+        global_timer(GTCLR) = 0;
+
+        global_timer(GTCTRL) = count & 0xffffffff;
+        global_timer(GTCTRH) = count >> 32;
+
+        // Re-enable counting
+        global_timer(GTCLR) = 1;
+    }
 };
 
 #else

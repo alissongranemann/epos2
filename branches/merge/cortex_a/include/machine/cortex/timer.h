@@ -43,6 +43,8 @@ public:
 };
 
 // Cortex-A Global Timer
+// WARNING: This timer is also being used as the TSC for Zynq. Resetting it or
+// disabling it might corrupt the TSC's time stamps.
 class User_Timer_Engine: public Machine_Model
 {
 protected:
@@ -55,7 +57,7 @@ public:
 public:
     User_Timer_Engine(unsigned int channel, const Count & count, bool interrupt = true, bool periodic = true);
 
-    static Hertz clock() { return CLOCK; }
+    static Hertz clock() { return CLOCK/2; }
 
     Count read() {
         Reg32 high, low;
@@ -159,7 +161,7 @@ public:
 
 protected:
     static void eoi(const IC::Interrupt_Id & int_id) {
-        static const unsigned int NTIMERS = TIMERS + Traits<TSC>::enabled;        
+        static const unsigned int NTIMERS = TIMERS + Traits<TSC>::enabled;
         if(NTIMERS >= 1 && int_id == IC::INT_USER_TIMER0)
             reg(reinterpret_cast<Reg32 *>(TIMER0_BASE), GPTMICR) = -1;
         else if(NTIMERS >= 2 && int_id == IC::INT_USER_TIMER1)
