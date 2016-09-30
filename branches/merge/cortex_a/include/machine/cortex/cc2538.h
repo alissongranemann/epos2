@@ -550,7 +550,7 @@ protected:
     static volatile Reg32 & sfr     (unsigned int offset) { return *(reinterpret_cast<volatile Reg32 *>(SFR_BASE  + offset)); }
     static volatile Reg32 & mactimer(unsigned int offset) { return *(reinterpret_cast<volatile Reg32 *>(MACTIMER_BASE + offset)); }
 
-    volatile bool _fifop_lock;
+    volatile bool _fifop_lock; // FIXME: try to use the locks in the buffers, like for PCNet32
 };
 
 // CC2538 IEEE 802.15.4 EPOSMote III NIC Mediator
