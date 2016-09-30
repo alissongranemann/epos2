@@ -17,8 +17,8 @@ void GPIO::handle_int(const IC::Interrupt_Id & i)
     unsigned int port = i - IC::INT_GPIOA;
 
     for(unsigned int i = 0; i < 8; ++i) {
-        const bool regular_interrupt = gpio(port, MIS) & (1 << i);
-        const bool power_up_interrupt = gpio(port, IRQ_DETECT_ACK) & ((1 << i) << (8 * port));
+        bool regular_interrupt = gpio(port, MIS) & (1 << i);
+        bool power_up_interrupt = gpio(port, IRQ_DETECT_ACK) & ((1 << i) << (8 * port));
         if(regular_interrupt || power_up_interrupt) {
             GPIO * dev = _devices[port][i];
             if(dev && dev->_handler) {
@@ -46,7 +46,8 @@ void GPIO::int_enable(const Edge & edge, bool power_up, const Edge & power_up_ed
     IC::disable(_port);
     int_disable();
     clear_interrupt();
-    IC::int_vector(IC::irq2int(_port), GPIO::handle_int);
+    IC::Interrupt_Id int_id = IC::INT_GPIOA + _port;
+    IC::int_vector(int_id, GPIO::handle_int);
 
     gpio(_port, IS) &= ~_pin_bit; // Set interrupt to edge-triggered
 
@@ -76,7 +77,7 @@ void GPIO::int_enable(const Edge & edge, bool power_up, const Edge & power_up_ed
         gpio(_port, PI_IEN) |= (_pin_bit << (8 * _port));
     }
 
-    IC::enable(_port);
+    IC::enable(int_id);
 }
 
 __END_SYS

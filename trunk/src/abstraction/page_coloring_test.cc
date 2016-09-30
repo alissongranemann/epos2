@@ -121,7 +121,7 @@ int run(int test)
                                              set[i].f, (unsigned int)((set[i].c / 1730) * 10), i);
         else
             threads[i] = new Periodic_Thread(RTConf(set[i].p, ITERATIONS, Thread::READY, Thread::Criterion(Microsecond(set[i].p), Microsecond(set[i].d), Microsecond(set[i].c), set[i].affinity), Color(i + 1)),
-                                             set[i].f, (i == 12) ? set[i].c / 540 : set[i].c / 540 * 3, i);
+                                             set[i].f, (i == 12) ? (unsigned int)(set[i].c / 540) : (unsigned int)((set[i].c / 540) * 3), i);
     }
 
     chrono.start();

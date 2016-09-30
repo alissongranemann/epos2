@@ -53,13 +53,13 @@ void CC2538::init(unsigned int unit)
 
     // Register the device
     _devices[unit].device = dev;
-    _devices[unit].interrupt = IC::INT_RADIO_RX;
+    _devices[unit].interrupt = IC::INT_NIC0_RX;
 
     // Install interrupt handler
     IC::int_vector(_devices[unit].interrupt, &int_handler);
 
     // Enable interrupts for device
-    IC::enable(NVIC::IRQ_RFTXRX);
+    IC::enable(IC::INT_NIC0_RX);
 }
 
 void CC2538::Timer::init()

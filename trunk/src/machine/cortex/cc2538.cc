@@ -42,7 +42,10 @@ int CC2538::receive(Address * src, Type * type, void * data, unsigned int size)
 
     unsigned int ret = 0;
 
+    xreg(RFIRQM0) &= ~INT_FIFOP;
     Buffer::Element * el = _received_buffers.remove_head();
+    xreg(RFIRQM0) |= INT_FIFOP;
+
     if(el) {
         Buffer * buf = el->object();
         Address dst;
@@ -117,7 +120,8 @@ void CC2538::handle_int()
         db<CC2538>(TRC) << "CC2538::handle_int:receive()" << endl;
         if(CC2538RF::filter()) {
             Buffer * buf = new (SYSTEM) Buffer(0);
-            if(MAC::copy_from_nic(buf)) {
+            CC2538RF::copy_from_nic(buf->frame());
+            if(MAC::marshal(buf)) {
                 db<CC2538>(TRC) << "CC2538::handle_int:receive(b=" << buf << ") => " << *buf << endl;
                 if(!notify(reinterpret_cast<Frame*>(buf->frame())->type(), buf)) {
                     // No one was waiting for this frame, so store it for receive()

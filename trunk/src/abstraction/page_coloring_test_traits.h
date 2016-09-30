@@ -20,16 +20,16 @@ template<> struct Traits<Build>
     enum {LIBRARY, BUILTIN, KERNEL};
     static const unsigned int MODE = LIBRARY;
 
-    enum {IA32, ARMv7};
+    enum {IA32};
     static const unsigned int ARCHITECTURE = IA32;
 
-    enum {PC, Cortex};
+    enum {PC};
     static const unsigned int MACHINE = PC;
 
-    enum {Legacy_PC, eMote3, LM3S811, Zynq};
+    enum {Legacy_PC};
     static const unsigned int MODEL = Legacy_PC;
 
-    static const unsigned int CPUS = 1;
+    static const unsigned int CPUS = 4;
     static const unsigned int NODES = 1; // > 1 => NETWORKING
 };
 
@@ -126,7 +126,7 @@ template<> struct Traits<Thread>: public Traits<void>
 {
     static const bool smp = Traits<System>::multicore;
 
-    typedef Scheduling_Criteria::RR Criterion;
+    typedef Scheduling_Criteria::PEDF Criterion;
     static const unsigned int QUANTUM = 10000; // us
 
     static const bool trace_idle = hysterically_debugged;

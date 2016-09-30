@@ -2,6 +2,7 @@
 
 #include <usb.h>
 #include <cpu.h>
+#include <ic.h>
 
 #ifndef __cortex_usb_h
 #define __cortex_usb_h
@@ -14,16 +15,11 @@ __BEGIN_SYS
 class eMote3_USB
 {
 protected:
-    // Assuming alternate interrupt mapping
-    static const unsigned int USB_IRQ = 44;
-
-    enum Base
-    {
+    enum Base {
         USB_BASE = 0x40089000,
     };
 
-    enum USB
-    {
+    enum USB {
     //  Name        Offset   Type  Width   Reset Value    Physical Address
         ADDR      = 0x00, //   RW   32     0x0000 0000    0x4008 9000
         POW       = 0x04, //   RW   32     0x0000 0000    0x4008 9004
@@ -53,8 +49,7 @@ protected:
         F5        = 0xA8, //   RW   32     0x0000 0000    0x4008 90A8
     };
 
-    enum USB_CTRL
-    {
+    enum USB_CTRL {
       //Name        Offset     Description                                                        Type Reset Value
         PLLLOCKED = 1 << 7, // PLL lock status. The PLL is locked when USB_CTRL.PLLLOCKED is 1.     RO 0
         PLLEN     = 1 << 1, // 48 MHz USB PLL enable When this bit is set, the 48 MHz PLL is        RW 0
@@ -66,8 +61,7 @@ protected:
         USBEN     = 1 << 0, // USB enable. The USB controller is reset when this bit is cleared     RW 0
     };
 
-    enum USB_POW
-    {
+    enum USB_POW {
       //Name        Offset      Description                                                        Type Reset Value
         ISOWAITSOF = 1 << 7, // For isochronous mode IN endpoints:                                   RW 0
                              // When set, the USB controller will wait for an SOF token from the
@@ -88,8 +82,7 @@ protected:
     };
 
     // Common to CIE, CIF registers
-    enum INT_CI
-    {
+    enum INT_CI {
       //Name          Offset     Description
         INT_SOF     = 1 << 3, // Start-of-Frame interrupt flag/enable
         INT_RESET   = 1 << 2, // Reset interrupt flag/enable
@@ -97,8 +90,7 @@ protected:
         INT_SUSPEND = 1 << 0, // Suspend interrupt flag/enable
     };
 
-    enum CS0
-    {
+    enum CS0 {
       //Name              Offset     Description                                                     Type Reset
        CS0_CLROUTPKTRDY = 1 << 6, // Software sets this bit to clear the USB_CS0.OUTPKTRDY bit. It is  RW 0
                                   // cleared automatically.
@@ -128,8 +120,8 @@ protected:
                                   // Software must read the endpoint 0 FIFO empty, and clear this bit by
                                   // setting USB_CS0.CLROUTPKTRDY
     };
-    enum CSOL
-    {
+
+    enum CSOL {
       //Name              Offset     Description                                                     Type Reset
         CSOL_CLRDATATOG  = 1 << 7, // Software sets this bit to reset the endpoint data toggle to 0. RW 0
         CSOL_SENTSTALL   = 1 << 6, // This bit is set when a STALL handshake is transmitted. An interrupt is generated when this bit is set. Software should clear this bit. RW 0
@@ -141,8 +133,7 @@ protected:
         CSOL_OUTPKTRDY   = 1 << 0, // This bit is set when a data packet has been received. Software should clear this bit when the packet has been unloaded from the OUT endpoint FIFO. An interrupt is generated when the bit is set. RW 0
     };
 
-    enum CSIH
-    {
+    enum CSIH {
       //Name           Offset     Description                                                          Type Reset
         AUTISET      = 1 << 7, // If set by software, the CSIL.INPKTRDY bit is automatically set when    RW 0
                                // a data packet of maximum size (specified by USBMAXI) is loaded into
@@ -156,8 +147,7 @@ protected:
         INDBLBUF     = 1 << 0, // IN endpoint FIFO double-buffering enable.                              RW 0
     };
 
-    enum CSIL
-    {
+    enum CSIL {
       //Name              Offset     Description                                                         Type Reset
         CSIL_CLRDATATOG  = 1 << 6, // Software sets this bit to reset the IN endpoint data toggle to 0.    RW 0
         CSIL_SENTSTALL   = 1 << 5, // For bulk/interrupt mode IN endpoints: This bit is set when a STALL   RW 0
@@ -262,6 +252,13 @@ public:
 
     static unsigned int get(char * out, unsigned int max_size);
 
+    static void eoi(const IC::Interrupt_Id & int_id) {
+        // USB interrupt flags are cleared when read
+        _cif |= reg(CIF);
+        _iif |= reg(IIF);
+        _oif |= reg(OIF);
+    }
+
 private:
     static bool configured() { return state() >= USB_2_0::STATE::CONFIGURED; }
 
@@ -290,6 +287,11 @@ private:
 
 protected:
     static volatile Reg32 & reg (unsigned int offset) { return *(reinterpret_cast<volatile Reg32*>(USB_BASE + offset)); }
+
+private:
+    static Reg32 _cif;
+    static Reg32 _iif;
+    static Reg32 _oif;
 };
 
 __END_SYS

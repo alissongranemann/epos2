@@ -13,12 +13,14 @@
 #include "info.h"
 #include "memory_map.h"
 #include "ic.h"
+#include <display.h>
 
 __BEGIN_SYS
 
 class Machine: private Machine_Common, private Machine_Model
 {
     friend class Init_System;
+    friend class First_Object;
 
 public:
     Machine() {}
@@ -36,6 +38,15 @@ public:
     static void smp_init(unsigned int) {};
 
 private:
+    static void pre_init(System_Info * si) {
+        Machine_Model::pre_init();
+
+        Display::init();
+
+        if(Traits<System>::multicore)
+            smp_init(si->bm.n_cpus);
+    }
+
     static void init();
 };
 

@@ -12,12 +12,14 @@
 #include "info.h"
 #include "memory_map.h"
 #include "ic.h"
+#include <display.h>
 
 __BEGIN_SYS
 
 class Machine: public Machine_Common
 {
     friend class Init_System;
+    friend class First_Object;
 
 private:
     static const bool smp = Traits<System>::multicore;
@@ -66,6 +68,13 @@ public:
     }
 
 private:
+    static void pre_init(System_Info * si) {
+        Display::init();
+
+        if(Traits<System>::multicore)
+            smp_init(si->bm.n_cpus);
+    }
+
     static void init();
 
 private:

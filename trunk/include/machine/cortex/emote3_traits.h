@@ -88,6 +88,7 @@ template<> struct Traits<Scratchpad>: public Traits<Machine_Common>
 template<> struct Traits<NIC>: public Traits<Machine_Common>
 {
     static const bool enabled = (Traits<Build>::NODES > 1);
+    static const bool promiscuous = false;
 
     typedef LIST<CC2538> NICS;
     static const unsigned int UNITS = NICS::Length;

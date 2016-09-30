@@ -3,9 +3,9 @@
 #include <machine/cortex/ic.h>
 #include <machine.h>
 
-//extern "C" { void _exit(int s); }
 extern "C" { void _int_entry() __attribute__ ((alias("_ZN4EPOS1S2IC5entryEv"))); }
-extern "C" { void _dispatch() __attribute__ ((alias("_ZN4EPOS1S2IC8dispatchEj"))); }
+extern "C" { void _dispatch(unsigned int) __attribute__ ((alias("_ZN4EPOS1S2IC8dispatchEj"))); }
+extern "C" { void _eoi(unsigned int) __attribute__ ((alias("_ZN4EPOS1S2IC3eoiEj"))); }
 extern "C" { void _undefined_instruction() __attribute__ ((alias("_ZN4EPOS1S2IC21undefined_instructionEv"))); }
 extern "C" { void _software_interrupt() __attribute__ ((alias("_ZN4EPOS1S2IC18software_interruptEv"))); }
 extern "C" { void _prefetch_abort() __attribute__ ((alias("_ZN4EPOS1S2IC14prefetch_abortEv"))); }
@@ -56,13 +56,17 @@ void IC::entry()
         "ldmfd sp!, {r0-r3, r12, lr, pc}^           \n" : : "i"(dispatch));
 }
 
-void IC::dispatch(unsigned int i) {
+void IC::dispatch(unsigned int i)
+{
     Interrupt_Id id = int_id();
 
     if((id != INT_TIMER) || Traits<IC>::hysterically_debugged)
         db<IC>(TRC) << "IC::dispatch(i=" << id << ")" << endl;
 
-    Machine_Model::_eoi[id]();
+    assert(id < INTS);
+    if(_eoi_vector[id])
+        _eoi_vector[id](id);
+
     CPU::int_enable();
 
     _int_vector[id](id);
@@ -155,20 +159,12 @@ More information can be found at:
 */
 void IC::entry()
 {
-
     ASM("   mrs     r0, xpsr           \n"
-        "   and     r0, #0x3f          \n"); // Store int_id in r0 (which will be passed as argument to dispatch())
-
-    if(Traits<USB>::enabled) {
-        // This is a workaround for the USB interrupt (60). It is level-enabled, so we need to process it in handler mode, otherwise the handler will never exit
-        ASM("   cmp     r0, #60            \n" // Check if this is the USB IRQ
-            "   bne     NOT_USB            \n"
-            "   b       _dispatch          \n" // Execute USB interrupt in handler mode
-            "   bx      lr                 \n" // Return from handler mode directly to pre-interrupt code
-            "NOT_USB:                      \n");
-    }
-
-    ASM("   mov     r3, #1             \n"
+        "   and     r0, #0x3f          \n" // Store int_id in r0 (to be passed as argument to eoi() and dispatch())
+        "   push    {r0, lr}           \n"
+        "   bl      _eoi               \n" // Acknowledge the interrupt 
+        "   pop     {r0, lr}           \n"
+        "   mov     r3, #1             \n"
         "   lsl     r3, #24            \n" // xPSR with Thumb bit only. Other bits are Don't Care
         "   ldr     r1, =_int_exit     \n" // Fake LR (will cause _int_exit to execute after dispatch())
         "   orr     r1, #1             \n"
@@ -190,14 +186,15 @@ void IC::entry()
         "   add r0, sp                 \n"
         "   add r0, #32                \n" // r0 now points to were EXC_RETURN was pushed
         "   mov sp, r0                 \n" // Set stack pointer to that address
-        "   isb                        \n"
+        "   isb                        \n" // Make sure sp is updated before continuing
         "   pop {pc}                   \n");// Pops EXC_RETURN, so that stack is in state (1)
                                             // Load EXC_RETURN code to pc
                                             // Processor unrolls stack (1)
                                             // And we're back to pre-interrupt code
 }
 
-void IC::dispatch(unsigned int id) {
+void IC::dispatch(unsigned int id)
+{
     if((id != INT_TIMER) || Traits<IC>::hysterically_debugged)
         db<IC>(TRC) << "IC::dispatch(i=" << id << ")" << endl;
 
@@ -205,6 +202,13 @@ void IC::dispatch(unsigned int id) {
 }
 
 #endif
+
+void IC::eoi(unsigned int id)
+{
+    assert(id < INTS);
+    if(_eoi_vector[id])
+        _eoi_vector[id](id);
+}
 
 void IC::int_not(const Interrupt_Id & i)
 {

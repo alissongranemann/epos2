@@ -20,6 +20,8 @@ protected:
     typedef MMU::DMA_Buffer DMA_Buffer;
     typedef RTC::Microsecond Microsecond;
 
+    static const bool promiscuous = Traits<CC2538>::promiscuous;
+
 public:
     // Bases
     enum
@@ -270,7 +272,7 @@ public:
         INT_PER               = 1 << 0
     };
 
-    class Timer
+    class Timer // TODO: update this class
     {
     private:
         const static unsigned int CLOCK = 32 * 1000 * 1000; // 32MHz
@@ -327,7 +329,7 @@ public:
         static void int_disable() { mactimer(MTIRQM) = INT_OVERFLOW_PER; }
 
         static Time_Stamp us_to_ts(const Microsecond & us) { return static_cast<Time_Stamp>(us) * CLOCK / 1000000; }
-        static Time_Stamp ts_to_us(const Microsecond & ts) { return static_cast<Time_Stamp>(ts) * 1000000 / CLOCK; }
+        static Microsecond ts_to_us(const Time_Stamp & ts) { return ts * 1000000 / CLOCK; }
 
     private:
         static Time_Stamp read(unsigned int sel) {
@@ -400,6 +402,12 @@ public:
         // Disable counting of MAC overflows
         xreg(CSPT) = 0xff;
 
+        // Configure frame filtering by hardware
+        if(promiscuous)
+            xreg(FRMFILT0) &= ~FRAME_FILTER_EN;
+        else
+            xreg(FRMFILT0) |= FRAME_FILTER_EN;
+
         // Clear interrupts
         sfr(RFIRQF0) = 0;
         sfr(RFIRQF1) = 0;
@@ -430,10 +438,10 @@ public:
 
         // Save radio configuration
         Reg32 saved_filter_settings = xreg(FRMFILT1);
-        bool was_promiscuous = promiscuous();
 
         // Accept only ACK frames now
-        promiscuous(false);
+        if(promiscuous) // Exit promiscuous mode for now
+            xreg(FRMFILT0) |= FRAME_FILTER_EN;
         xreg(FRMFILT1) = ACCEPT_FT2_ACK;
 
         while(!tx_done());
@@ -448,7 +456,8 @@ public:
             sfr(RFIRQF0) &= ~INT_FIFOP;
         }
         xreg(FRMFILT1) = saved_filter_settings;
-        promiscuous(was_promiscuous);
+        if(promiscuous)
+            xreg(FRMFILT0) &= ~FRAME_FILTER_EN;
         xreg(RFIRQM0) |= INT_FIFOP;
 
         return acked;
@@ -456,30 +465,19 @@ public:
 
     void listen() { sfr(RFST) = ISRXON; }
 
-    //FIXME: this doesn't work without the noinline attribute
-    bool tx_done()__attribute__((noinline)) {
+    bool tx_done() {
         bool ret = (sfr(RFIRQF1) & INT_TXDONE);
         if(ret)
             sfr(RFIRQF1) &= ~INT_TXDONE;
         return ret;
     }
 
-    //FIXME: this doesn't work without the noinline attribute
-    bool rx_done()__attribute__((noinline)) {
+    bool rx_done() {
         bool ret = (sfr(RFIRQF0) & INT_RXPKTDONE);
         if(ret)
             sfr(RFIRQF0) &= ~INT_RXPKTDONE;
         return ret;
     }
-
-    void promiscuous(bool on) {
-        if(on)
-            xreg(FRMFILT0) &= ~FRAME_FILTER_EN;
-        else
-            xreg(FRMFILT0) |= FRAME_FILTER_EN;
-    }
-
-    bool promiscuous() { return !(xreg(FRMFILT0) & FRAME_FILTER_EN); }
 
     void channel(unsigned int c) {
         assert((c > 10) && (c < 27));
