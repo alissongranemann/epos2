@@ -5,18 +5,21 @@
 
 #include <cpu.h>
 #include <tsc.h>
+#include <rtc.h>
 
 __BEGIN_SYS
 
 class eMote3
 {
+    friend class TSC;
+    
 protected:
     typedef CPU::Reg32 Reg32;
     typedef CPU::Log_Addr Log_Addr;
 
 public:
     static const unsigned int IRQS = 64;
-    static const unsigned int TIMERS = 4;
+    static const unsigned int TIMERS = Traits<TSC>::enabled ? 3 : 4; // TSC takes the last user timer channel
     static const unsigned int UARTS = 2;
     static const unsigned int USBS = 1;
     static const unsigned int GPIO_PORTS = 4;
@@ -858,16 +861,16 @@ public:
         TPLO            = 1 << 11,      // Legacy PWM operation (0 -> legacy operation, 1 -> CCP is set to 1 on time-out)
     };
 
-    enum GPTMICR {          // Description                         Type Reset value
-        TATOCINT = 1 << 0,  // Timer A time-out interrupt clear      RW 0
-        CAMCINT  = 1 << 1,  // Timer A capture match interrupt clear RW 0
-        CAECINT  = 1 << 2,  // Timer A capture event Interrupt clear RW 0
-        TAMCINT  = 1 << 4,  // Timer A match interrupt clear         RW 0
-        TBTOCINT = 1 << 8,  // Timer B time-out interrupt clear      RW 0
-        CBMCINT  = 1 << 9,  // Timer B capture match interrupt clear RW 0
-        CBECINT  = 1 << 10, // Timer B capture event Interrupt clear RW 0
-        TBMCINT  = 1 << 11, // Timer B match interrupt clear         RW 0
-        WUECINT  = 1 << 16, // write update error interrupt clear    RW 0
+    enum GPTMIR {           // Description                    Type Reset value
+        TATO_INT = 1 << 0,  // Timer A time-out interrupt       RW 0
+        CAM_INT  = 1 << 1,  // Timer A capture match interrupt  RW 0
+        CAE_INT  = 1 << 2,  // Timer A capture event Interrupt  RW 0
+        TAM_INT  = 1 << 4,  // Timer A match interrupt          RW 0
+        TBTO_INT = 1 << 8,  // Timer B time-out interrupt       RW 0
+        CBM_INT  = 1 << 9,  // Timer B capture match interrupt  RW 0
+        CBE_INT  = 1 << 10, // Timer B capture event Interrupt  RW 0
+        TBM_INT  = 1 << 11, // Timer B match interrupt          RW 0
+        WUE_INT  = 1 << 16, // write update error interrupt     RW 0
     };
 
 // ADC
@@ -1006,8 +1009,11 @@ protected:
         scs(AIRCR) = val;
     }
 
-    // FIXME: implement
-    static void delay(unsigned int time);
+    static void delay(const RTC::Microsecond & time) {
+        assert(Traits<TSC>::enabled);
+        TSC::Time_Stamp end = TSC::time_stamp() + time * (TSC::frequency() / 1000000);
+        while(end > TSC::time_stamp());
+    }
 
 // GPTM
     static void power_user_timer(unsigned int unit, const Power_Mode & mode) {
@@ -1028,8 +1034,8 @@ protected:
 
 
 // UART
-    unsigned int enable_uart(unsigned int unit)
-    {
+    unsigned int enable_uart(unsigned int unit) {
+        assert(unit < UARTS);
         init_clock(); // Setup the clock first!
 
         power_uart(unit, FULL);
@@ -1050,17 +1056,11 @@ protected:
             //5. Set GPIO pins A1 and A0 to peripheral mode
             gpioa(AFSEL) |= (PIN0) + (PIN1);
         } else {
-            /*ioc(PB3_SEL) = UART1_TXD;
-            ioc(PB3_OVER) = OE;
-            ioc(PB4_OVER) = 0;
-            ioc(UARTRXD_UART1) = (1 << 3) + 4; //B4
-            gpiob(AFSEL) |= (PIN3) + (PIN4);*/
-
-           ioc(PD1_SEL) = UART1_TXD;
-           ioc(PD1_OVER) = OE;
-           ioc(PD0_OVER) = 0;
-           ioc(UARTRXD_UART1) = (3 << 3) + 0;
-           gpiod(AFSEL) |= (PIN0) + (PIN1);
+           ioc(PC4_SEL) = UART1_TXD;
+           ioc(PC4_OVER) = OE;
+           ioc(PC3_OVER) = 0;
+           ioc(UARTRXD_UART1) = (2 << 3) + 3;
+           gpioc(AFSEL) |= (PIN3) + (PIN4);
         }
 
         return unit;
@@ -1276,11 +1276,9 @@ public:
     static volatile Reg32 & gpioc(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(GPIOC_BASE)[o / sizeof(Reg32)]; }
     static volatile Reg32 & gpiod(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(GPIOD_BASE)[o / sizeof(Reg32)]; }
 
-    static void init();
-    static void init_clock();
-
 protected:
-    static bool _init_clock_done;
+    static void pre_init(); // TODO
+    static void init();
 };
 
 typedef eMote3 Machine_Model;

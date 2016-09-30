@@ -15,8 +15,6 @@ protected:
     typedef CPU::Reg32 Reg32;
     typedef CPU::Log_Addr Log_Addr;
 
-    typedef void (* EOI_Handler)(void);
-
 public:
     static const unsigned int IRQS = 96;
     static const unsigned int TIMERS = 3;
@@ -178,6 +176,7 @@ protected:
     }
 
     static void delay(const RTC::Microsecond & time) {
+        assert(Traits<TSC>::enabled);
         TSC::Time_Stamp end = TSC::time_stamp() + time * (TSC::frequency() / 1000000);
         while(end > TSC::time_stamp());
     }
@@ -274,8 +273,7 @@ public:
     static volatile Reg32 & priv_timer(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(PRIV_TIMER_BASE)[o / sizeof(Log_Addr)]; }
     static volatile Reg32 & dist(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(DIST_BASE)[o / sizeof(Reg32)]; }
 
-    static EOI_Handler _eoi[IRQS];
-
+    static void pre_init() {}
     static void init();
 };
 

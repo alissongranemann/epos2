@@ -49,7 +49,7 @@ public:
         return value;
     }
     static void flags(const Flags & flags) {
-        ASM("msr xpsr, %0" : : "r"(flags));
+        ASM("msr xpsr, %0" : : "r"(flags) : "cc");
     }
 
     static void int_enable() { ASM("cpsie i"); }
@@ -62,7 +62,7 @@ public:
     }
 
     static void mrs12() { ASM("mrs r12, xpsr" : : : "r12" ); }
-    static void msr12() { ASM("msr xpsr, r12"); }
+    static void msr12() { ASM("msr xpsr, r12" : : : "cc"); }
 };
 
 class ARMv7_A: public CPU_Common
@@ -122,29 +122,15 @@ public:
         return value;
     }
     static void flags(const Flags & flags) {
-        ASM("msr cpsr_c, %0" : : "r"(flags));
+        ASM("msr cpsr, %0" : : "r"(flags) : "cc");
     }
 
-    static void int_enable() {
-        ASM("   mrs r0, cpsr               \n"
-            "   bic r0, r0, #0xC0          \n"
-            "   msr cpsr_c, r0             \n" : : : "r0", "cc");
-    }
-    static void int_disable() {
-        ASM("   mrs r0, cpsr               \n"
-            "   orr r0, r0, #0xC0          \n"
-            "   msr cpsr_c, r0             \n" : : : "r0", "cc");
-    }
-
-    static bool int_disabled() {
-        bool disabled;
-        ASM("   mrs %0, cpsr               \n"
-            "   and %0, %0, #0xC0          \n" : "=r"(disabled));
-        return disabled;
-    }
+    static void int_enable() { flags(flags() & ~0xC0); }
+    static void int_disable() { flags(flags() | 0xC0); }
+    static bool int_disabled() { return flags() & 0xC0; }
 
     static void mrs12() { ASM("mrs r12, cpsr" : : : "r12"); }
-    static void msr12() { ASM("msr cpsr, r12"); }
+    static void msr12() { ASM("msr cpsr, r12" : : : "cc"); }
 
     static unsigned int int_id() { return 0; }
 };
@@ -278,32 +264,32 @@ public:
     static T tsl(volatile T & lock) {
         register T old;
         register T one = 1;
-        ASM("1: ldrexb  %0, [%1]        \n"
-            "   strexb  r4, %2, [%1]    \n"
-            "   cmp     r4, #0          \n"
-            "   bne     1b              \n" : "=&r" (old) : "r"(&lock), "r"(one) : "r4" );
+        ASM("1: ldrex   %0, [%1]        \n"
+            "   strex   r3, %2, [%1]    \n"
+            "   cmp     r3, #0          \n"
+            "   bne     1b              \n" : "=&r" (old) : "r"(&lock), "r"(one) : "r3");
         return old;
     }
 
     template <typename T>
     static T finc(volatile T & value) {
-        T old;
-        static bool lock = false;
-        while(tsl(lock));
-        old = value;
-        value++;
-        lock = false;
+        register T old;
+        ASM("1: ldrex   %0, [%1]        \n"
+            "   add     %0, #1          \n"
+            "   strex   r3, %0, [%1]    \n"
+            "   cmp     r3, #0          \n"
+            "   bne     1b              \n" : "=&r" (old) : "r"(&value) : "r3" );
         return old;
     }
 
     template <typename T>
     static T fdec(volatile T & value) {
-        T old;
-        static bool lock = false;
-        while(tsl(lock));
-        old = value;
-        value--;
-        lock = false;
+        register T old;
+        ASM("1: ldrex   %0, [%1]        \n"
+            "   sub     %0, #1          \n"
+            "   strex   r3, %0, [%1]    \n"
+            "   cmp     r3, #0          \n"
+            "   bne     1b              \n" : "=&r" (old) : "r"(&value) : "r3" );
         return old;
     }
 

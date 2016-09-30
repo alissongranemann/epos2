@@ -111,6 +111,18 @@ public:
     static const unsigned int SOFT_INT = 0;
     enum {
         INT_TIMER       = IRQ_PRIVATE_TIMER,
+        INT_USER_TIMER0 = IRQ_GLOBAL_TIMER,
+        INT_USER_TIMER1 = 0,
+        INT_USER_TIMER2 = 0,
+        INT_USER_TIMER3 = 0,
+        INT_USB0         = IRQ_USB0,
+        INT_GPIOA       = IRQ_GPIO,
+        INT_GPIOB       = IRQ_GPIO,
+        INT_GPIOC       = IRQ_GPIO,
+        INT_GPIOD       = IRQ_GPIO,
+        INT_NIC0_RX     = IRQ_ETHERNET0,
+        INT_NIC0_TX     = IRQ_ETHERNET0,
+        INT_NIC0_ERR    = IRQ_ETHERNET0,
         INT_FIRST_HARD  = HARD_INT,
         INT_LAST_HARD   = IRQ_PARITY,
         INT_RESCHEDULER = IRQ_SOFTWARE0
@@ -188,7 +200,7 @@ public:
         IRQ_GPT1A       = 21,
         IRQ_GPT1B       = 22,
         IRQ_GPT2A       = 23,
-        IRQ_GPT2b       = 24,
+        IRQ_GPT2B       = 24,
         IRQ_AC          = 25,
         IRQ_RFTXRX      = 26,
         IRQ_RFERR       = 27,
@@ -200,7 +212,8 @@ public:
         IRQ_MACTIMER    = 33,
         IRQ_SSI1        = 34,
         IRQ_GPT3A       = 35,
-        IRQ_FPT3B       = 36,
+        IRQ_GPT3B       = 36,
+        IRQ_USB         = 44, // Using alternate interrupt mapping
         IRQ_UDMASW      = 46,
         IRQ_UDMAERR     = 47,
         IRQ_LAST        = IRQ_UDMAERR
@@ -212,13 +225,22 @@ public:
     static const unsigned int HARD_INT = 16;
     static const unsigned int SOFT_INT = HARD_INT + IRQS;
     enum {
+        INT_TIMER       = 15,
         INT_FIRST_HARD  = HARD_INT,
-        INT_TIMER       = ARMv7_M::EXC_SYSTICK,
-        INT_GPIOA       = HARD_INT + IRQ_GPIOA,
-        INT_RADIO_RX    = HARD_INT + IRQ_RFTXRX,
-        INT_RADIO_TX    = HARD_INT + IRQ_RFTXRX,
+        INT_USER_TIMER0 = HARD_INT + IRQ_GPT0A,
+        INT_USER_TIMER1 = HARD_INT + IRQ_GPT1A,
+        INT_USER_TIMER2 = HARD_INT + IRQ_GPT2A,
+        INT_USER_TIMER3 = HARD_INT + IRQ_GPT3A,
         INT_MACTIMER    = HARD_INT + IRQ_MACTIMER,
-        INT_LAST_HARD   = SOFT_INT - 1,
+        INT_GPIOA       = HARD_INT + IRQ_GPIOA,
+        INT_GPIOB       = HARD_INT + IRQ_GPIOB,
+        INT_GPIOC       = HARD_INT + IRQ_GPIOC,
+        INT_GPIOD       = HARD_INT + IRQ_GPIOD,
+        INT_NIC0_RX     = HARD_INT + IRQ_RFTXRX,
+        INT_NIC0_TX     = HARD_INT + IRQ_RFTXRX,
+        INT_NIC0_ERR    = HARD_INT + IRQ_RFERR,
+        INT_USB0        = HARD_INT + IRQ_USB,
+        INT_LAST_HARD   = HARD_INT + IRQS,
         INT_RESCHEDULER = SOFT_INT
     };
 
@@ -297,9 +319,17 @@ public:
     using IC_Common::Interrupt_Id;
     using IC_Common::Interrupt_Handler;
     using Engine::INT_TIMER;
+    using Engine::INT_USER_TIMER0;
+    using Engine::INT_USER_TIMER1;
+    using Engine::INT_USER_TIMER2;
+    using Engine::INT_USER_TIMER3;
     using Engine::INT_GPIOA;
-    using Engine::INT_RADIO_RX;
-    using Engine::INT_RADIO_TX;
+    using Engine::INT_GPIOB;
+    using Engine::INT_GPIOC;
+    using Engine::INT_GPIOD;
+    using Engine::INT_USB0;
+    using Engine::INT_NIC0_RX;
+    using Engine::INT_NIC0_TX;
     using Engine::INT_RESCHEDULER;
 
 public:
@@ -341,7 +371,6 @@ public:
     }
 
     using Engine::irq2int;
-//    using Engine::int2irq;
 
     static void ipi_send(unsigned int cpu, Interrupt_Id int_id) {}
 
@@ -354,6 +383,7 @@ public:
 
 private:
     static void dispatch(unsigned int i);
+    static void eoi(unsigned int i);
 
     // Logical handlers
     static void int_not(const Interrupt_Id & i);
@@ -366,6 +396,7 @@ private:
 
 private:
     static Interrupt_Handler _int_vector[INTS];
+    static Interrupt_Handler _eoi_vector[INTS];
 };
 
 __END_SYS

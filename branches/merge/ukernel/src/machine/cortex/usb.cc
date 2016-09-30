@@ -10,6 +10,9 @@ __USING_SYS
 // Class attributes
 const char * USB::_send_buffer = reinterpret_cast<const char *>(0);
 unsigned int USB::_send_buffer_size = 0;
+CPU::Reg32 USB::_cif;
+CPU::Reg32 USB::_iif;
+CPU::Reg32 USB::_oif;
 
 // Class methods
 void USB::disable()
@@ -177,38 +180,29 @@ void USB::int_handler(const IC::Interrupt_Id & interrupt)
 {
     Reg32 index = endpoint(); // Save old index
 
-    //db<USB>(TRC) << "USB::int_handler" << endl;
-    //db<USB>(TRC) << "CS0_CSIL = " << reg(CS0_CSIL) << endl;
-    //db<USB>(TRC) << "CIF = " << cif << endl;
-    //db<USB>(TRC) << "OIF = " << reg(OIF) << endl;
-    //db<USB>(TRC) << "IIF = " << reg(IIF) << endl;
-
     Reg32 flags;
-    if((flags = reg(CIF))) // USB interrupt flags are cleared when read
-    {
+    if((flags = _cif)) {
+        _cif = 0;
         if(flags & INT_RESET)
             reset();
-        db<USB>(TRC) << "CIF = " << flags << endl;
+        db<USB>(TRC) << "USB::CIF = " << flags << endl;
     }
 
-    if((flags = reg(IIF))) // USB interrupt flags are cleared when read
-    {
-        if(flags & (1 << 0)) // Endpoint 0 interrupt
-        {
+    if((flags = _iif)) {
+        _iif = 0;
+        if(flags & (1 << 0)) { // Endpoint 0 interrupt
             if((not _ready_to_put) and _ready_to_put_next) {
                 _ready_to_put = true;
                 put(' '); // For some reason the first put() is not shown in minicom
             }
 
             control();
-            if(reg(CS0_CSIL) & CS0_OUTPKTRDY) // Data present
-            {
+            if(reg(CS0_CSIL) & CS0_OUTPKTRDY) { // Data present
                 db<USB>(TRC) << "Endpoint 0 command received:";
                 // Read command from endpoint 0 FIFO
                 USB_2_0::Request::Device_Request data;
                 Reg8 fifocnt = reg(CNT0_CNTL);
-                for(unsigned int i=0; (i < 8) && (i < fifocnt); i++)
-                {
+                for(unsigned int i=0; (i < 8) && (i < fifocnt); i++) {
                     data[i] = reg(F0);
                     db<USB>(TRC) << " " << (int) data[i];
                 }
@@ -216,16 +210,13 @@ void USB::int_handler(const IC::Interrupt_Id & interrupt)
 
                 db<USB>(TRC) << data << endl;
 
-                if(handle_ep0(data))
-                {
+                if(handle_ep0(data)) {
                     if(_send_buffer)
                         reg(CS0_CSIL) |= CS0_CLROUTPKTRDY;
                     else
                         reg(CS0_CSIL) |= CS0_CLROUTPKTRDY | CS0_DATAEND;
                     db<USB>(TRC) << "command processed" << endl;
-                }
-                else
-                {
+                } else {
                     // Signal that the command could not be executed
                     reg(CS0_CSIL) |= CS0_CLROUTPKTRDY | CS0_SENDSTALL;
                     db<USB>(WRN) << "USB::int_handler: command NOT processed" << endl;
@@ -233,30 +224,28 @@ void USB::int_handler(const IC::Interrupt_Id & interrupt)
             }
 
             // Send part of the requested buffer that fits in the FIFO
-            if(_send_buffer)
-            {
+            if(_send_buffer) {
                 for(unsigned int i=0; (_send_buffer_size > 0) && (i<_max_packet_ep0); i++, _send_buffer++, _send_buffer_size--)
                     reg(F0) = *_send_buffer;
 
-                if(_send_buffer_size == 0)
-                {
+                if(_send_buffer_size == 0) {
                     // Signal that packet is ready and no further data is expected for this request
                     reg(CS0_CSIL) |= CS0_INPKTRDY | CS0_DATAEND;
                     _send_buffer = reinterpret_cast<const char *>(0);
-                }
-                else
+                } else
                     // Signal that packet is ready
                     reg(CS0_CSIL) |= CS0_INPKTRDY;
             }
         }
 
-
         db<USB>(TRC) << "IIF = " << flags << endl;
     }
-    if((flags = reg(OIF))) // USB interrupt flags are cleared when read
-    {
+
+    if((flags = _oif)) {
+        _oif = 0;
         db<USB>(TRC) << "OIF = " << flags << endl;
     }
+
     endpoint(index); // Restore old index
 }
 

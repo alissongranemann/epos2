@@ -30,13 +30,13 @@ public:
     static void enable() { priv_timer(PTCLR) |= TIMER_ENABLE; }
     static void disable() { priv_timer(PTCLR) &= ~TIMER_ENABLE; }
 
-    static void isr_clr() { priv_timer(PTISR) = INT_CLR; }
+    static void eoi(const IC::Interrupt_Id & int_id) { priv_timer(PTISR) = INT_CLR; }
 
     void power(const Power_Mode & mode);
 
     static void init(unsigned int f) {
         priv_timer(PTCLR) = 0;
-        isr_clr();
+        priv_timer(PTISR) = INT_CLR;
         priv_timer(PTLR) = CLOCK / f;
         priv_timer(PTCLR) = IRQ_EN | AUTO_RELOAD;
     }
@@ -45,7 +45,7 @@ public:
 // Cortex-A Global Timer
 class User_Timer_Engine: public Machine_Model
 {
-private:
+protected:
     typedef CPU::Reg64 Count;
     typedef TSC::Hertz Hertz;
 
@@ -81,6 +81,9 @@ public:
         // Re-enable counting
         global_timer(GTCLR) = 1;
     }
+
+protected:
+    static void eoi(const IC::Interrupt_Id & int_id) {}
 };
 
 #else
@@ -101,7 +104,7 @@ public:
     static void enable() { scs(STCTRL) |= ENABLE; }
     static void disable() { scs(STCTRL) &= ~ENABLE; }
 
-    static void isr_clr() {}
+    static void eoi(const IC::Interrupt_Id & int_id) {}
 
     static void init(unsigned int f) {
         scs(STCTRL) = 0;
@@ -121,12 +124,14 @@ protected:
 
 protected:
     User_Timer_Engine(unsigned int channel, const Count & count, bool interrupt = true, bool periodic = true)
-    : _channel(channel), _base(reinterpret_cast<Reg32 *>(TIMER0_BASE + 0x1000 * channel)) {
+    : _channel(channel), _base(reinterpret_cast<Reg32 *>(TIMER0_BASE + (TIMER1_BASE - TIMER0_BASE) * channel)) {
         disable();
         power_user_timer(channel, FULL);
         reg(GPTMCFG) = 0; // 32-bit timer
         reg(GPTMTAMR) = periodic ? 2 : 1; // 2 -> Periodic, 1 -> One-shot
         reg(GPTMTAILR) = count;
+        if(interrupt)
+            reg(GPTMIMR) |= TATO_INT;
         enable();
     }
 
@@ -135,7 +140,7 @@ public:
 
     unsigned int clock() const { return CLOCK; }
 
-    Count read() { return reg(GPTMTAR); }
+    Count read() { return reg(GPTMTAR); } // LM3S811 on QEMU (v2.7.50) does not support reading the value of general purpose timers
 
     void enable() { reg(GPTMCTL) |= TAEN; }
     void disable() { reg(GPTMCTL) &= ~TAEN; }
@@ -152,8 +157,22 @@ public:
         enable();
     }
 
+protected:
+    static void eoi(const IC::Interrupt_Id & int_id) {
+        static const unsigned int NTIMERS = TIMERS + Traits<TSC>::enabled;        
+        if(NTIMERS >= 1 && int_id == IC::INT_USER_TIMER0)
+            reg(reinterpret_cast<Reg32 *>(TIMER0_BASE), GPTMICR) = -1;
+        else if(NTIMERS >= 2 && int_id == IC::INT_USER_TIMER1)
+            reg(reinterpret_cast<Reg32 *>(TIMER1_BASE), GPTMICR) = -1;
+        else if(NTIMERS >= 3 && int_id == IC::INT_USER_TIMER2)
+            reg(reinterpret_cast<Reg32 *>(TIMER2_BASE), GPTMICR) = -1;
+        else if(NTIMERS >= 4 && int_id == IC::INT_USER_TIMER3)
+            reg(reinterpret_cast<Reg32 *>(TIMER3_BASE), GPTMICR) = -1;
+    }
+
 private:
     volatile Reg32 & reg(unsigned int o) { return _base[o / sizeof(Reg32)]; }
+    static volatile Reg32 & reg(Reg32 * base, unsigned int o) { return base[o / sizeof(Reg32)]; }
 
     static Count percent2count(const Percent & duty_cycle, const Count & period) {
         return period - ((period * duty_cycle) / 100);
@@ -231,8 +250,7 @@ public:
 
     void handler(const Handler & handler) { _handler = handler; }
 
-    // TODO: rename as eoi
-    static void isr_clr() { Engine::isr_clr(); }
+    static void eoi(const IC::Interrupt_Id & int_id) { Engine::eoi(int_id); }
 
 private:
     static Hertz count2freq(const Count & c) { return c ? Engine::clock() / c : 0; }
@@ -296,11 +314,13 @@ public:
     void disable() { Engine::disable(); }
     void power(const Power_Mode & mode) { power_user_timer(_channel, mode); }
 
+    static void eoi(const IC::Interrupt_Id & int_id) { Engine::eoi(int_id); }
+
 private:
     static void int_handler(const IC::Interrupt_Id & i);
 
-    static Reg32 us2count(const Microsecond & us) { return us * (CLOCK / 1000000); }
-    static Microsecond count2us(Reg32 count) { return count / (CLOCK / 1000000); }
+    static Count us2count(const Microsecond & us) { return static_cast<unsigned long long>(us) * CLOCK / 1000000; }
+    static Microsecond count2us(const Count & count) { return count * 1000000 / CLOCK; }
 
 private:
     unsigned int _channel;

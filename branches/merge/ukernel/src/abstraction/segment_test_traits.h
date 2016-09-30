@@ -20,13 +20,13 @@ template<> struct Traits<Build>
     enum {LIBRARY, BUILTIN, KERNEL};
     static const unsigned int MODE = BUILTIN;
 
-    enum {IA32};
+    enum {IA32, ARMv7};
     static const unsigned int ARCHITECTURE = IA32;
 
-    enum {PC};
+    enum {PC, Cortex};
     static const unsigned int MACHINE = PC;
 
-    enum {Legacy_PC};
+    enum {Legacy_PC, eMote1, eMote2, eMote3, Arduino, LM3S811, Zynq};
     static const unsigned int MODEL = Legacy_PC;
 
     static const unsigned int CPUS = 1;

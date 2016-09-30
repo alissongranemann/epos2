@@ -7,7 +7,7 @@ __USING_SYS
 
 #ifndef __mmod_zynq__
 
-volatile USB_2_0::STATE USB::_state = USB_2_0::STATE::ATTACHED;
+volatile USB_2_0::STATE USB::_state;
 volatile bool USB::_ready_to_put = false;
 bool USB::_ready_to_put_next = false;
 bool USB::_was_locked = false;
@@ -162,9 +162,6 @@ void USB::reset()
 
 void USB::init()
 {
-    // Make sure that eMote3::init_clock() has been called and
-    // the crystal oscillator is selected as source and stable.
-    // Also, set D+ USB pull-up resistor, which is controlled by GPIO pin C2 in eMote3
     Machine_Model::power_usb(0, FULL);
 
     // Reset USB
@@ -184,10 +181,8 @@ void USB::init()
 
     _state = USB_2_0::STATE::POWERED;
 
-    IC::int_vector(IC::irq2int(USB_IRQ), &int_handler);
-    IC::enable(USB_IRQ);
-    CPU::int_enable();
+    IC::int_vector(IC::INT_USB0, &int_handler);
+    IC::enable(IC::INT_USB0);
 }
 
 #endif
-

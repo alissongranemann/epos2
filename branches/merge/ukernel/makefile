@@ -47,10 +47,10 @@ flash1: all1
 		(cd img && $(MAKE) flash)
 
 TESTS := $(subst .cc,,$(shell find $(SRC)/abstraction -name \*_test.cc -printf "%f\n"))
-TEST_SORUCES := $(shell find $(SRC)/abstraction -name \*_test.cc -printf "%p\n")
-test: $(subst .cc,_traits.h,$(TEST_SORUCES))
-		$(INSTALL) $(TEST_SORUCES) $(APP)
-		$(INSTALL) $(subst .cc,_traits.h,$(TEST_SORUCES)) $(APP)
+TEST_SOURCES := $(shell find $(SRC)/abstraction -name \*_test.cc -printf "%p\n")
+test: $(subst .cc,_traits.h,$(TEST_SOURCES))
+		$(INSTALL) $(TEST_SOURCES) $(APP)
+		$(INSTALL) $(subst .cc,_traits.h,$(TEST_SOURCES)) $(APP)
 		$(foreach tst,$(TESTS),$(MAKETEST) APPLICATION=$(tst) prebuild_$(tst) clean1 all1 posbuild_$(tst) prerun_$(tst) run1 posbuild_$(tst);)
 		$(foreach tst,$(TESTS),$(CLEAN) $(APP)/$(tst)*;)
 
