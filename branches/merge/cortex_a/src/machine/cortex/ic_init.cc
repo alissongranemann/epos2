@@ -202,7 +202,7 @@ void IC::init()
     _eoi_vector[INT_USER_TIMER1] = User_Timer::eoi;
     _eoi_vector[INT_USER_TIMER2] = User_Timer::eoi;
     _eoi_vector[INT_USER_TIMER3] = User_Timer::eoi;
-    _eoi_vector[INT_USB] = USB::eoi;
+    _eoi_vector[INT_USB0] = USB::eoi;
 #endif
 }
 

@@ -369,7 +369,7 @@ public:
     };
 
 public:
-    CC2538RF() : _fifop_lock(false) {
+    CC2538RF() {
         // Enable clock to RF module
         power_ieee802_15_4(FULL);
 
@@ -432,7 +432,6 @@ public:
     bool transmit() { sfr(RFST) = ISTXONCCA; return (xreg(FSMSTAT1) & SAMPLED_CCA); }
 
     bool wait_for_ack(const Microsecond & timeout) {
-        while(!CPU::tsl(_fifop_lock));
         // Disable and clear FIFOP int. We'll poll the interrupt flag
         xreg(RFIRQM0) &= ~INT_FIFOP;
         sfr(RFIRQF0) &= ~INT_FIFOP;
@@ -453,7 +452,7 @@ public:
 
         // Restore radio configuration
         if(acked) {
-            sfr(RFST) = ISFLUSHRX;
+            drop();
             sfr(RFIRQF0) &= ~INT_FIFOP;
         }
         xreg(FRMFILT1) = saved_filter_settings;
@@ -461,7 +460,6 @@ public:
             xreg(FRMFILT0) &= ~FRAME_FILTER_EN;
         xreg(RFIRQM0) |= INT_FIFOP;
 
-        _fifop_lock = false;
         return acked;
     }
 
@@ -503,8 +501,10 @@ public:
         f[0] = sfr(RFDATA);  // First byte is the length of MAC frame
         for(unsigned int i = 1; i <= f[0]; ++i)
             f[i] = sfr(RFDATA);
-        sfr(RFST) = ISFLUSHRX;
+        drop();
     }
+
+    void drop() { sfr(RFST) = ISFLUSHRX; }
 
     bool filter() {
         bool valid_frame = false;
@@ -517,7 +517,7 @@ public:
             valid_frame = (mac_frame_size <= 127) && (rxfifo[mac_frame_size] & AUTO_CRC_OK);
         }
         if(!valid_frame)
-            sfr(RFST) = ISFLUSHRX;
+            drop();
 
         return valid_frame;
     }
@@ -549,8 +549,6 @@ protected:
     static volatile Reg32 & ffsm    (unsigned int offset) { return *(reinterpret_cast<volatile Reg32 *>(FFSM_BASE + offset)); }
     static volatile Reg32 & sfr     (unsigned int offset) { return *(reinterpret_cast<volatile Reg32 *>(SFR_BASE  + offset)); }
     static volatile Reg32 & mactimer(unsigned int offset) { return *(reinterpret_cast<volatile Reg32 *>(MACTIMER_BASE + offset)); }
-
-    volatile bool _fifop_lock; // FIXME: try to use the locks in the buffers, like for PCNet32
 };
 
 // CC2538 IEEE 802.15.4 EPOSMote III NIC Mediator
@@ -631,7 +629,9 @@ private:
     unsigned int _channel;
     Statistics _statistics;
 
-    Buffer::List _received_buffers;
+    Buffer * _rx_bufs[RX_BUFS];
+    unsigned int _rx_cur_consume;
+    unsigned int _rx_cur_produce;
     static Device _devices[UNITS];
 };
 

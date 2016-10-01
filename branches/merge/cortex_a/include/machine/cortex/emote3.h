@@ -1036,7 +1036,6 @@ protected:
 // UART
     unsigned int enable_uart(unsigned int unit) {
         assert(unit < UARTS);
-        init_clock(); // Setup the clock first!
 
         power_uart(unit, FULL);
 
@@ -1088,7 +1087,6 @@ protected:
         assert(unit < USBS);
         switch(mode) {
         case FULL: {
-            init_clock();
             // Set D+ USB pull-up resistor, which is controlled by GPIO pin C2 in eMote3
             const unsigned int pin_bit = 1 << 2;
             gpioc(AFSEL) &= ~pin_bit; // Set pin C2 as software-controlled
