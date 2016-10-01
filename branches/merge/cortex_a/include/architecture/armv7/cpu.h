@@ -267,7 +267,7 @@ public:
         ASM("1: ldrexb  %0, [%1]        \n"
             "   strexb  r3, %2, [%1]    \n"
             "   cmp     r3, #0          \n"
-            "   bne     1b              \n" : "=&r" (old) : "r"(&lock), "r"(one) : "r3");
+            "   bne     1b              \n" : "=&r" (old) : "r"(&lock), "r"(one) : "r3", "cc");
         return old;
     }
 
@@ -279,19 +279,19 @@ public:
                 "   add     %0, #1          \n"
                 "   strexb  r3, %0, [%1]    \n"
                 "   cmp     r3, #0          \n"
-                "   bne     1b              \n" : "=&r" (old) : "r"(&value) : "r3");
+                "   bne     1b              \n" : "=&r" (old) : "r"(&value) : "r3", "cc");
         else if(sizeof(T) == sizeof(Reg16))
             ASM("1: ldrexh  %0, [%1]        \n"
                 "   add     %0, #1          \n"
                 "   strexh  r3, %0, [%1]    \n"
                 "   cmp     r3, #0          \n"
-                "   bne     1b              \n" : "=&r" (old) : "r"(&value) : "r3");
+                "   bne     1b              \n" : "=&r" (old) : "r"(&value) : "r3", "cc");
         else
             ASM("1: ldrex   %0, [%1]        \n"
                 "   add     %0, #1          \n"
                 "   strex   r3, %0, [%1]    \n"
                 "   cmp     r3, #0          \n"
-                "   bne     1b              \n" : "=&r" (old) : "r"(&value) : "r3");
+                "   bne     1b              \n" : "=&r" (old) : "r"(&value) : "r3", "cc");
         return old - 1;
     }
 
@@ -303,30 +303,50 @@ public:
                 "   sub     %0, #1          \n"
                 "   strexb  r3, %0, [%1]    \n"
                 "   cmp     r3, #0          \n"
-                "   bne     1b              \n" : "=&r" (old) : "r"(&value) : "r3");
+                "   bne     1b              \n" : "=&r" (old) : "r"(&value) : "r3", "cc");
         else if(sizeof(T) == sizeof(Reg16))
             ASM("1: ldrexh  %0, [%1]        \n"
                 "   sub     %0, #1          \n"
                 "   strexh  r3, %0, [%1]    \n"
                 "   cmp     r3, #0          \n"
-                "   bne     1b              \n" : "=&r" (old) : "r"(&value) : "r3");
+                "   bne     1b              \n" : "=&r" (old) : "r"(&value) : "r3", "cc");
         else
             ASM("1: ldrex   %0, [%1]        \n"
                 "   sub     %0, #1          \n"
                 "   strex   r3, %0, [%1]    \n"
                 "   cmp     r3, #0          \n"
-                "   bne     1b              \n" : "=&r" (old) : "r"(&value) : "r3");
+                "   bne     1b              \n" : "=&r" (old) : "r"(&value) : "r3", "cc");
         return old + 1;
     }
 
     template <typename T>
     static T cas(volatile T & value, T compare, T replacement) {
-        static bool lock = false;
-        while(tsl(lock));
-        if(value == compare)
-            value = replacement;
-        lock = false;
-        return compare;
+        register T old;
+        if(sizeof(T) == sizeof(Reg8))
+            ASM("1: ldrexb  %0, [%1]        \n"
+                "   cmp     %0, %2          \n"
+                "   bne     2f              \n"
+                "   strexb  r3, %3, [%1]    \n"
+                "   cmp     r3, #0          \n"
+                "   bne     1b              \n"
+                "2:                         \n" : "=&r" (old) : "r"(&value), "r"(compare), "r"(replacement) : "r3", "cc");
+        else if(sizeof(T) == sizeof(Reg16))
+            ASM("1: ldrexh  %0, [%1]        \n"
+                "   cmp     %0, %2          \n"
+                "   bne     2f              \n"
+                "   strexh  r3, %3, [%1]    \n"
+                "   cmp     r3, #0          \n"
+                "   bne     1b              \n"
+                "2:                         \n" : "=&r" (old) : "r"(&value), "r"(compare), "r"(replacement) : "r3", "cc");
+        else
+            ASM("1: ldrex   %0, [%1]        \n"
+                "   cmp     %0, %2          \n"
+                "   bne     2f              \n"
+                "   strex   r3, %3, [%1]    \n"
+                "   cmp     r3, #0          \n"
+                "   bne     1b              \n"
+                "2:                         \n" : "=&r" (old) : "r"(&value), "r"(compare), "r"(replacement) : "r3", "cc");
+        return old;
    }
 
     static Reg32 htonl(Reg32 v) { return swap32(v); }
