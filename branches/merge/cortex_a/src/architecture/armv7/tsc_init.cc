@@ -1,27 +1,29 @@
 // EPOS ARMv7 Time-Stamp Counter Mediator Initialization
 
 #include <tsc.h>
-
-#ifdef __mmod_zynq__
+#include <machine.h>
+#include <ic.h>
 
 __BEGIN_SYS
+
+#ifdef __mmod_zynq__
 
 void TSC::init()
 {
     db<Init, TSC>(TRC) << "TSC::init()" << endl;
 
-    // The Global Timer must be set to start counting
-    set(0);
+    // Disable counting before programming
+    reg(GTCLR) = 0;
+
+    // Set timer to 0
+    reg(GTCTRL) = 0;
+    reg(GTCTRH) = 0;
+
+    // Re-enable counting
+    reg(GTCLR) = 1;
 }
 
-__END_SYS
-
 #else
-
-#include <machine.h>
-#include <ic.h>
-
-__BEGIN_SYS
 
 volatile TSC::Time_Stamp TSC::_overflow = 0;
 
@@ -30,7 +32,7 @@ void TSC::init()
     db<Init, TSC>(TRC) << "TSC::init()" << endl;
 
     reg(Machine_Model::GPTMCTL) &= ~Machine_Model::TAEN; // Disable timer
-    Machine_Model::power_user_timer((Traits<Build>::MODEL == Traits<Build>::eMote3) ? 3 : 1, FULL);
+    Machine_Model::power_user_timer(Machine_Model::TIMERS - 1, FULL);
     reg(Machine_Model::GPTMCFG) = 0; // 32-bit timer
     if(Traits<Build>::MODEL == Traits<Build>::LM3S811)
         reg(Machine_Model::GPTMTAMR) = 1; // One-shot
@@ -46,6 +48,6 @@ void TSC::init()
     }
 }
 
-__END_SYS
-
 #endif
+
+__END_SYS

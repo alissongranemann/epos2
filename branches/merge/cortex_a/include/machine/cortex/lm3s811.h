@@ -19,8 +19,7 @@ protected:
 
 public:
     static const unsigned int IRQS = 30;
-    static const unsigned int TIMERS = Traits<TSC>::enabled ? 1 : 2; // This model has 3 timers, but QEMU (v2.7.50) only implements 2
-                                                                     // TSC takes the last user timer channel
+    static const unsigned int TIMERS = 2; // This model has 3 timers, but QEMU (v2.7.50) only implements 2
     static const unsigned int UARTS = 2;
     static const unsigned int GPIO_PORTS = 5;
     static const bool supports_gpio_power_up = false;
@@ -480,7 +479,7 @@ public:
     static volatile Reg32 & tsc(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(TIMER1_BASE)[o / sizeof(Reg32)]; }
 
 protected:
-    static void pre_init(); // TODO
+    static void pre_init();
     static void init();
 };
 

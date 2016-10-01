@@ -43,8 +43,6 @@ public:
 };
 
 // Cortex-A Global Timer
-// WARNING: This timer is also being used as the TSC for Zynq. Resetting it or
-// disabling it might corrupt the TSC's time stamps.
 class User_Timer_Engine: public Machine_Model
 {
 protected:
@@ -307,7 +305,9 @@ public:
 
 public:
     User_Timer(unsigned int channel, const Microsecond & time, const Handler & handler, bool periodic = false)
-    : Engine(channel, us2count(time), handler ? true : false, periodic), _channel(channel), _handler(handler) {}
+    : Engine(channel, us2count(time), handler ? true : false, periodic), _channel(channel), _handler(handler) {
+        assert(channel < Machine_Model::TIMERS - Traits<TSC>::enabled); // TSC uses the last timer channel. To use the last channel, you must disable the TSC
+    }
     ~User_Timer() {}
 
     Microsecond read() { return count2us(Engine::read()); }

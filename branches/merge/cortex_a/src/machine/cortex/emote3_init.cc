@@ -8,27 +8,9 @@
 
 __BEGIN_SYS
 
-void Machine_Model::init()
+void Machine_Model::pre_init()
 {
-    db<Init, Machine>(TRC) << "Machine_Model::init()" << endl;
-
-    init_clock();
-
-    scs(CCR) |= BASETHR; // The processor can enter thread mode from any level
-
-    scr(I_MAP) |= I_MAP_ALTMAP; // Enable alternate interrupt mapping
-
-    scs(VTOR) = (Traits<Machine>::SYS_CODE) & ~(1 << 29); // Set the vector table offset (must be 512-byte aligned)
-}
-
-void Machine_Model::init_clock()
-{
-    // Since the clock is configured in traits and never changes,
-    // this needs to be done only once, but this method will be
-    // called at least twice during EPOS' initialization
-    // (in eMote3::enable_uart() and Machine::init())
-    if(_init_clock_done)
-        return;
+    db<Init, Machine>(TRC) << "Machine_Model::pre_init()" << endl;
 
     // Clock setup
     Reg32 sys_div;
@@ -67,9 +49,19 @@ void Machine_Model::init_clock()
     scr(CLOCK_CTRL) = clock_ctrl | (sys_div * IO_DIV); // Set IO clock rate
 
     while(!(scr(CLOCK_STA) & (STA_SYNC_32K)));
+}
 
-    _init_clock_done = true;
+void Machine_Model::init()
+{
+    db<Init, Machine>(TRC) << "Machine_Model::init()" << endl;
+
+    scs(CCR) |= BASETHR; // The processor can enter thread mode from any level
+
+    scr(I_MAP) |= I_MAP_ALTMAP; // Enable alternate interrupt mapping
+
+    scs(VTOR) = (Traits<Machine>::SYS_CODE) & ~(1 << 29); // Set the vector table offset (must be 512-byte aligned)
 }
 
 __END_SYS
+
 #endif

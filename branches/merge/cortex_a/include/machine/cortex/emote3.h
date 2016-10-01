@@ -19,7 +19,7 @@ protected:
 
 public:
     static const unsigned int IRQS = 64;
-    static const unsigned int TIMERS = Traits<TSC>::enabled ? 3 : 4; // TSC takes the last user timer channel
+    static const unsigned int TIMERS = 4;
     static const unsigned int UARTS = 2;
     static const unsigned int USBS = 1;
     static const unsigned int GPIO_PORTS = 4;
@@ -1277,7 +1277,7 @@ public:
     static volatile Reg32 & gpiod(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(GPIOD_BASE)[o / sizeof(Reg32)]; }
 
 protected:
-    static void pre_init(); // TODO
+    static void pre_init();
     static void init();
 };
 
