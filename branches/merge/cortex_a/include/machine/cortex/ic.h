@@ -123,6 +123,7 @@ public:
         INT_NIC0_RX     = IRQ_ETHERNET0,
         INT_NIC0_TX     = IRQ_ETHERNET0,
         INT_NIC0_ERR    = IRQ_ETHERNET0,
+        INT_NIC0_TIMER  = 0,
         INT_FIRST_HARD  = HARD_INT,
         INT_LAST_HARD   = IRQ_PARITY,
         INT_RESCHEDULER = IRQ_SOFTWARE0
@@ -240,6 +241,7 @@ public:
         INT_NIC0_RX     = HARD_INT + IRQ_RFTXRX,
         INT_NIC0_TX     = HARD_INT + IRQ_RFTXRX,
         INT_NIC0_ERR    = HARD_INT + IRQ_RFERR,
+        INT_NIC0_TIMER  = HARD_INT + IRQ_MACTIMER,
         INT_USB0        = HARD_INT + IRQ_USB,
         INT_LAST_HARD   = HARD_INT + IRQS,
         INT_RESCHEDULER = SOFT_INT
@@ -335,6 +337,7 @@ public:
     using Engine::INT_USB0;
     using Engine::INT_NIC0_RX;
     using Engine::INT_NIC0_TX;
+    using Engine::INT_NIC0_TIMER;
     using Engine::INT_RESCHEDULER;
 
 public:

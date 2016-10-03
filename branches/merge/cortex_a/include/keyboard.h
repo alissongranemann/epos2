@@ -45,7 +45,7 @@ __END_SYS
 #include __KEYBOARD_H
 #else
 __BEGIN_SYS
-class keyboard: public IF<Traits<Serial_Keyboard>::enabled, Serial_Keyboard, Dummy>::Result {};
+class Keyboard: public IF<Traits<Serial_Keyboard>::enabled, Serial_Keyboard, Dummy>::Result {};
 __END_SYS
 #endif
 

@@ -73,8 +73,8 @@ void CC2538::Timer::init()
     mactimer(MTIRQF) = 0; // Clear interrupts
     mactimer(MTCTRL) &= ~MTCTRL_SYNC; // We can't use the sync feature because we want to change the count and overflow values when the timer is stopped
     mactimer(MTCTRL) |= MTCTRL_LATCH_MODE; // count and overflow will be latched at once
-    IC::int_vector(IC::irq2int(NVIC::IRQ_MACTIMER), &int_handler);
-    IC::enable(33);
+    IC::int_vector(IC::INT_NIC0_TIMER, &int_handler);
+    IC::enable(IC::INT_NIC0_TIMER);
     int_enable(INT_OVERFLOW_PER);
 }
 
