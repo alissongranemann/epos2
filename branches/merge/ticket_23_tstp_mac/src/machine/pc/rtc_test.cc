@@ -1,4 +1,4 @@
-// EPOS PC_RTC Test Program
+// EPOS RTC Test Program
 
 #include <utility/ostream.h>
 #include <display.h>
@@ -12,7 +12,7 @@ int main()
 {
     OStream cout;
 
-    cout << "PC_RTC test" << endl;
+    cout << "RTC test" << endl;
 
     RTC rtc;
     RTC::Second t0 = rtc.seconds_since_epoch();

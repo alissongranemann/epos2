@@ -44,7 +44,7 @@ struct Configuration
 };
 
 // System_Info
-typedef _SYS::System_Info<_SYS::Machine> System_Info;
+typedef _SYS::System_Info System_Info;
 
 // PROTOTYPES
 bool parse_config(FILE * cfg_file, Configuration * cfg);
@@ -250,7 +250,10 @@ bool parse_config(FILE * cfg_file, Configuration * cfg)
     char * token;
 
     // EPOS Mode
-    fgets(line, 256, cfg_file);
+    if(fgets(line, 256, cfg_file) != line) {
+        fprintf(stderr, "Error: failed to read MODE from configuration file!\n");
+        return false;
+    }
     token = strtok(line, "=");
     if(strcmp(token, "MODE") || !(token = strtok(NULL, "\n"))) {
         fprintf(stderr, "Error: no valid MODE in configuration!\n");
@@ -259,7 +262,10 @@ bool parse_config(FILE * cfg_file, Configuration * cfg)
     strtolower(cfg->mode, token);
 
     // Arch
-    fgets(line, 256, cfg_file);
+    if(fgets(line, 256, cfg_file) != line) {
+        fprintf(stderr, "Error: failed to read ARCH from configuration file!\n");
+        return false;
+    }
     token = strtok(line, "=");
     if(strcmp(token, "ARCH") || !(token = strtok(NULL, "\n"))) {
         fprintf(stderr, "Error: no valid ARCH in configuration!\n");
@@ -268,7 +274,10 @@ bool parse_config(FILE * cfg_file, Configuration * cfg)
     strtolower(cfg->arch, token);
 
     // Machine
-    fgets(line, 256, cfg_file);
+    if(fgets(line, 256, cfg_file) != line) {
+        fprintf(stderr, "Error: failed to read MACH from configuration file!\n");
+        return false;
+    }
     token = strtok(line, "=");
     if(strcmp(token, "MACH") || !(token = strtok(NULL, "\n"))) {
         fprintf(stderr, "Error: no valid MACH in configuration!\n");
@@ -277,7 +286,10 @@ bool parse_config(FILE * cfg_file, Configuration * cfg)
     strtolower(cfg->mach, token);
 
     // Model
-    fgets(line, 256, cfg_file);
+    if(fgets(line, 256, cfg_file) != line) {
+        fprintf(stderr, "Error: failed to read MMOD from configuration file!\n");
+        return false;
+    }
     token = strtok(line, "=");
     if(strcmp(token, "MMOD") || !(token = strtok(NULL, "\n"))) {
         fprintf(stderr, "Error: no valid MMOD in configuration!\n");
@@ -286,7 +298,10 @@ bool parse_config(FILE * cfg_file, Configuration * cfg)
     strtolower(cfg->mmod, token);
 
     // Clock
-    fgets(line, 256, cfg_file);
+    if(fgets(line, 256, cfg_file) != line) {
+        fprintf(stderr, "Error: failed to read CLOCK from configuration file!\n");
+        return false;
+    }
     token = strtok(line, "=");
     if(strcmp(token, "CLOCK") || !(token = strtok(NULL, "\n"))) {
         fprintf(stderr, "Error: no valid CLOCK in configuration!\n");
@@ -295,7 +310,10 @@ bool parse_config(FILE * cfg_file, Configuration * cfg)
     cfg->clock = atoi(token);
 
     // Word Size
-    fgets(line, 256, cfg_file);
+    if(fgets(line, 256, cfg_file) != line) {
+        fprintf(stderr, "Error: failed to read WORD_SIZE from configuration file!\n");
+        return false;
+    }
     token = strtok(line, "=");
     if(strcmp(token, "WORD_SIZE") || !(token = strtok(NULL, "\n"))) {
         fprintf(stderr, "Error: no valid WORD_SIZE in configuration!\n");
@@ -304,7 +322,10 @@ bool parse_config(FILE * cfg_file, Configuration * cfg)
     cfg->word_size = atoi(token);
 
     // Endianess
-    fgets(line, 256, cfg_file);
+    if(fgets(line, 256, cfg_file) != line) {
+        fprintf(stderr, "Error: failed to read ENDIANESS from configuration file!\n");
+        return false;
+    }
     token = strtok(line, "=");
     if(strcmp(token, "ENDIANESS") || !(token = strtok(NULL, "\n"))) {
         fprintf(stderr, "Error: no valid ENDIANESS in configuration!\n");
@@ -313,7 +334,10 @@ bool parse_config(FILE * cfg_file, Configuration * cfg)
     cfg->endianess = !strcmp(token, "little");
 
     // Memory Base
-    fgets(line, 256, cfg_file);
+    if(fgets(line, 256, cfg_file) != line) {
+        fprintf(stderr, "Error: failed to read MEM_BASE from configuration file!\n");
+        return false;
+    }
     token = strtok(line, "=");
     if(strcmp(token, "MEM_BASE") || !(token = strtok(NULL, "\n"))) {
         fprintf(stderr, "Error: no valid MEM_BASE in configuration!\n");
@@ -322,7 +346,10 @@ bool parse_config(FILE * cfg_file, Configuration * cfg)
     cfg->mem_base = strtol(token, 0, 16);
 
     // Memory Top
-    fgets(line, 256, cfg_file);
+    if(fgets(line, 256, cfg_file) != line) {
+        fprintf(stderr, "Error: failed to read MEM_TOP from configuration file!\n");
+        return false;
+    }
     token = strtok(line, "=");
     if(strcmp(token, "MEM_TOP") || !(token = strtok(NULL, "\n"))) {
         fprintf(stderr, "Error: no valid MEM_TOP in configuration!\n");
@@ -331,36 +358,48 @@ bool parse_config(FILE * cfg_file, Configuration * cfg)
     cfg->mem_top=strtol(token, 0, 16);
 
     // Boot Lenght Min
-    fgets(line, 256, cfg_file);
-    token = strtok(line, "=");
-    if(!strcmp(token, "BOOT_LENGTH_MIN") && (token = strtok(NULL, "\n")))
-        cfg->boot_length_min=atoi(token);
-    else
+    if(fgets(line, 256, cfg_file) != line)
         cfg->boot_length_min=0;
+    else {
+        token = strtok(line, "=");
+        if(!strcmp(token, "BOOT_LENGTH_MIN") && (token = strtok(NULL, "\n")))
+            cfg->boot_length_min=atoi(token);
+        else
+            cfg->boot_length_min=0;
+    }
 
     // Boot Lenght Max
-    fgets(line, 256, cfg_file);
-    token = strtok(line, "=");
-    if(!strcmp(token, "BOOT_LENGTH_MAX") && (token = strtok(NULL, "\n")))
-        cfg->boot_length_max=atoi(token);
-    else
+    if(fgets(line, 256, cfg_file) != line)
         cfg->boot_length_max=0;
+    else {
+        token = strtok(line, "=");
+        if(!strcmp(token, "BOOT_LENGTH_MAX") && (token = strtok(NULL, "\n")))
+            cfg->boot_length_max=atoi(token);
+        else
+            cfg->boot_length_max=0;
+    }
 
     // Node Id
-    fgets(line, 256, cfg_file);
-    token = strtok(line, "=");
-    if(!strcmp(token, "NODE_ID") && (token = strtok(NULL, "\n")))
-        cfg->node_id = atoi(token);
-    else
+    if(fgets(line, 256, cfg_file) != line)
         cfg->node_id = -1; // get from net
+    else {
+        token = strtok(line, "=");
+        if(!strcmp(token, "NODE_ID") && (token = strtok(NULL, "\n")))
+            cfg->node_id = atoi(token);
+        else
+            cfg->node_id = -1; // get from net
+    }
 
     // Number of Nodes in SAN
-    fgets(line, 256, cfg_file);
-    token = strtok(line, "=");
-    if(!strcmp(token, "N_NODES") && (token = strtok(NULL, "\n")))
-        cfg->n_nodes = atoi(token);
-    else
+    if(fgets(line, 256, cfg_file) != line)
         cfg->n_nodes = -1; // dynamic
+    else {
+        token = strtok(line, "=");
+        if(!strcmp(token, "N_NODES") && (token = strtok(NULL, "\n")))
+            cfg->n_nodes = atoi(token);
+        else
+            cfg->n_nodes = -1; // dynamic
+    }
 
     return true;
 }

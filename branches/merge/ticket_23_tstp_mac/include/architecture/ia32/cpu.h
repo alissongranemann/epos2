@@ -7,7 +7,7 @@
 
 __BEGIN_SYS
 
-class IA32: public CPU_Common
+class CPU: public CPU_Common
 {
     friend class Init_System;
 
@@ -308,7 +308,7 @@ public:
     typedef void (FSR)(Reg32 error, Reg32 eip, Reg32 cs, Reg32 eflags);
 
 public:
-    IA32() {}
+    CPU() {}
 
     static Hertz clock() { return _cpu_clock; }
     static Hertz bus_clock() { return _bus_clock; }

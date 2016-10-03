@@ -23,10 +23,10 @@ template<> struct Traits<Build>
     enum {IA32, ARMv7};
     static const unsigned int ARCHITECTURE = ARMv7;
 
-    enum {PC, Cortex_M, Cortex_A};
-    static const unsigned int MACHINE = Cortex_M;
+    enum {PC, Cortex};
+    static const unsigned int MACHINE = Cortex;
 
-    enum {Legacy_PC, eMote3, LM3S811};
+    enum {Legacy_PC, eMote3, LM3S811, Zynq};
     static const unsigned int MODEL = eMote3;
 
     static const unsigned int CPUS = 1;
@@ -99,7 +99,6 @@ __END_SYS
 
 #include __ARCH_TRAITS_H
 #include __MACH_TRAITS_H
-#include __MACH_CONFIG_H
 
 __BEGIN_SYS
 
@@ -190,7 +189,6 @@ template<> struct Traits<ELP>: public Traits<Network>
     static const bool enabled = NETWORKS::Count<ELP>::Result;
 
     static const bool acknowledged = false;
-    static const bool promiscuous = true;
 };
 
 template<> struct Traits<TSTP>: public Traits<Network>

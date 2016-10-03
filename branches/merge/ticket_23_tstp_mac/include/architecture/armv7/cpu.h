@@ -24,6 +24,21 @@ public:
         FLAG_DEFAULTS   = FLAG_THUMB
     };
 
+    // Exceptions
+    typedef Reg32 Exception_Id;
+    enum {                      // Priority
+        EXC_RESET       = 1,    // -3 (highest)
+        EXC_NMI         = 2,    // -2
+        EXC_HARD        = 3,    // -1
+        EXC_MPU         = 4,    // programmable
+        EXC_BUS         = 5,    // programmable
+        EXC_USAGE       = 6,    // programmable
+        EXC_SVCALL      = 11,   // programmable
+        EXC_DEBUG       = 12,   // programmable
+        EXC_PENDSV      = 14,   // programmable
+        EXC_SYSTICK     = 15    // programmable
+    };
+
 protected:
     ARMv7_M() {};
 
@@ -34,7 +49,7 @@ public:
         return value;
     }
     static void flags(const Flags & flags) {
-        ASM("msr xpsr, %0" : : "r"(flags));
+        ASM("msr xpsr, %0" : : "r"(flags) : "cc");
     }
 
     static void int_enable() { ASM("cpsie i"); }
@@ -46,10 +61,8 @@ public:
         return disabled;
     }
 
-    static void mrs12() { ASM("mrs r12, xpsr" : : : "r12" ); }
-    static void msr12() { ASM("msr xpsr, r12"); }
-
-//    static unsigned int int_id() { return flags() & 0x3f; }
+    static void mrs12() { ASM("mrs r12, xpsr" : : : "r12"); }
+    static void msr12() { ASM("msr xpsr, r12" : : : "cc"); }
 };
 
 class ARMv7_A: public CPU_Common
@@ -86,6 +99,19 @@ public:
         FLAG_DEFAULTS   = FLAG_SVC
     };
 
+    // Exceptions
+    typedef Reg32 Exception_Id;
+    enum {
+        EXC_START                   = 1,
+        EXC_UNDEFINED_INSTRUCTION   = 2,
+        EXC_SWI                     = 3,
+        EXC_PREFETCH_ABORT          = 4,
+        EXC_DATA_ABORT              = 5,
+        EXC_RESERVED                = 6,
+        EXC_IRQ                     = 7,
+        EXC_FIQ                     = 8
+    };
+
 protected:
     ARMv7_A() {};
 
@@ -96,60 +122,34 @@ public:
         return value;
     }
     static void flags(const Flags & flags) {
-        ASM("msr cpsr_c, %0" : : "r"(flags));
+        ASM("msr cpsr, %0" : : "r"(flags) : "cc");
     }
 
-    static void int_enable() {
-        ASM("   mrs r0, cpsr               \n"
-            "   bic r0, r0, #0xC0          \n"
-            "   msr cpsr_c, r0             \n" : : : "r0", "cc");
-    }
-    static void int_disable() {
-        ASM("   mrs r0, cpsr               \n"
-            "   orr r0, r0, #0xC0          \n"
-            "   msr cpsr_c, r0             \n" : : : "r0", "cc");
-    }
-
-    static bool int_disabled() {
-        bool disabled;
-        ASM("   mrs %0, cpsr               \n"
-            "   and %0, %0, #0xC0          \n" : "=r"(disabled));
-        return disabled;
-    }
+    static void int_enable() { flags(flags() & ~0xC0); }
+    static void int_disable() { flags(flags() | 0xC0); }
+    static bool int_disabled() { return flags() & 0xC0; }
 
     static void mrs12() { ASM("mrs r12, cpsr" : : : "r12"); }
-    static void msr12() { ASM("msr cpsr, r12"); }
+    static void msr12() { ASM("msr cpsr, r12" : : : "cc"); }
+
+    static unsigned int int_id() { return 0; }
 };
 
-class ARMv7: private IF<Traits<Build>::MACHINE == Traits<Build>::Cortex_A, ARMv7_A, ARMv7_M>::Result
+class CPU: private IF<Traits<Build>::MODEL == Traits<Build>::Zynq, ARMv7_A, ARMv7_M>::Result
 {
     friend class Init_System;
 
 private:
-    typedef IF<Traits<Build>::MACHINE == Traits<Build>::Cortex_A, ARMv7_A, ARMv7_M>::Result Base;
+    typedef IF<Traits<Build>::MODEL == Traits<Build>::Zynq, ARMv7_A, ARMv7_M>::Result Base;
 
 public:
     // CPU Native Data Types
     using CPU_Common::Reg8;
     using CPU_Common::Reg16;
     using CPU_Common::Reg32;
+    using CPU_Common::Reg64;
     using CPU_Common::Log_Addr;
     using CPU_Common::Phy_Addr;
-
-    // Exceptions
-    typedef Reg32 Exception_Id;
-    enum {                      // Priority
-        EXC_RESET       = 1,    // -3 (highest)
-        EXC_NMI         = 2,    // -2
-        EXC_HARD        = 3,    // -1
-        EXC_MPU         = 4,    // programmable
-        EXC_BUS         = 5,    // programmable
-        EXC_USAGE       = 6,    // programmable
-        EXC_SVCALL      = 11,   // programmable
-        EXC_DEBUG       = 12,   // programmable
-        EXC_PENDSV      = 14,   // programmable
-        EXC_SYSTICK     = 15    // programmable
-    };
 
     // CPU Context
     class Context
@@ -213,7 +213,7 @@ public:
     typedef void (FSR)();
 
 public:
-    ARMv7() {}
+    CPU() {}
 
     static Hertz clock() { return _cpu_clock; }
     static Hertz bus_clock() { return _bus_clock; }
@@ -251,7 +251,7 @@ public:
         ASM("mov r0, %0" : : "r"(fr) : "r0");
     }
 
-    static Log_Addr ip() {// due to RISC pipelining PC is read with a +8 (4 for thumb) offset
+    static Log_Addr ip() { // due to RISC pipelining PC is read with a +8 (4 for thumb) offset
         Reg32 value;
         ASM("mov %0, pc" : "=r"(value) :);
         return value;
@@ -265,42 +265,88 @@ public:
         register T old;
         register T one = 1;
         ASM("1: ldrexb  %0, [%1]        \n"
-            "   strexb  r12, %2, [%1]    \n"
-            "   cmp     r12, #0          \n"
-            "   bne     1b              \n" : "=&r" (old) : "r"(&lock), "r"(one) : "r12" );
+            "   strexb  r3, %2, [%1]    \n"
+            "   cmp     r3, #0          \n"
+            "   bne     1b              \n" : "=&r" (old) : "r"(&lock), "r"(one) : "r3", "cc");
         return old;
     }
 
     template <typename T>
     static T finc(volatile T & value) {
-        T old;
-        static bool lock = false;
-        while(tsl(lock));
-        old = value;
-        value++;
-        lock = false;
-        return old;
+        register T old;
+        if(sizeof(T) == sizeof(Reg8))
+            ASM("1: ldrexb  %0, [%1]        \n"
+                "   add     %0, #1          \n"
+                "   strexb  r3, %0, [%1]    \n"
+                "   cmp     r3, #0          \n"
+                "   bne     1b              \n" : "=&r" (old) : "r"(&value) : "r3", "cc");
+        else if(sizeof(T) == sizeof(Reg16))
+            ASM("1: ldrexh  %0, [%1]        \n"
+                "   add     %0, #1          \n"
+                "   strexh  r3, %0, [%1]    \n"
+                "   cmp     r3, #0          \n"
+                "   bne     1b              \n" : "=&r" (old) : "r"(&value) : "r3", "cc");
+        else
+            ASM("1: ldrex   %0, [%1]        \n"
+                "   add     %0, #1          \n"
+                "   strex   r3, %0, [%1]    \n"
+                "   cmp     r3, #0          \n"
+                "   bne     1b              \n" : "=&r" (old) : "r"(&value) : "r3", "cc");
+        return old - 1;
     }
 
     template <typename T>
     static T fdec(volatile T & value) {
-        T old;
-        static bool lock = false;
-        while(tsl(lock));
-        old = value;
-        value--;
-        lock = false;
-        return old;
+        register T old;
+        if(sizeof(T) == sizeof(Reg8))
+            ASM("1: ldrexb  %0, [%1]        \n"
+                "   sub     %0, #1          \n"
+                "   strexb  r3, %0, [%1]    \n"
+                "   cmp     r3, #0          \n"
+                "   bne     1b              \n" : "=&r" (old) : "r"(&value) : "r3", "cc");
+        else if(sizeof(T) == sizeof(Reg16))
+            ASM("1: ldrexh  %0, [%1]        \n"
+                "   sub     %0, #1          \n"
+                "   strexh  r3, %0, [%1]    \n"
+                "   cmp     r3, #0          \n"
+                "   bne     1b              \n" : "=&r" (old) : "r"(&value) : "r3", "cc");
+        else
+            ASM("1: ldrex   %0, [%1]        \n"
+                "   sub     %0, #1          \n"
+                "   strex   r3, %0, [%1]    \n"
+                "   cmp     r3, #0          \n"
+                "   bne     1b              \n" : "=&r" (old) : "r"(&value) : "r3", "cc");
+        return old + 1;
     }
 
     template <typename T>
     static T cas(volatile T & value, T compare, T replacement) {
-        static bool lock = false;
-        while(tsl(lock));
-        if(value == compare)
-            value = replacement;
-        lock = false;
-        return compare;
+        register T old;
+        if(sizeof(T) == sizeof(Reg8))
+            ASM("1: ldrexb  %0, [%1]        \n"
+                "   cmp     %0, %2          \n"
+                "   bne     2f              \n"
+                "   strexb  r3, %3, [%1]    \n"
+                "   cmp     r3, #0          \n"
+                "   bne     1b              \n"
+                "2:                         \n" : "=&r" (old) : "r"(&value), "r"(compare), "r"(replacement) : "r3", "cc");
+        else if(sizeof(T) == sizeof(Reg16))
+            ASM("1: ldrexh  %0, [%1]        \n"
+                "   cmp     %0, %2          \n"
+                "   bne     2f              \n"
+                "   strexh  r3, %3, [%1]    \n"
+                "   cmp     r3, #0          \n"
+                "   bne     1b              \n"
+                "2:                         \n" : "=&r" (old) : "r"(&value), "r"(compare), "r"(replacement) : "r3", "cc");
+        else
+            ASM("1: ldrex   %0, [%1]        \n"
+                "   cmp     %0, %2          \n"
+                "   bne     2f              \n"
+                "   strex   r3, %3, [%1]    \n"
+                "   cmp     r3, #0          \n"
+                "   bne     1b              \n"
+                "2:                         \n" : "=&r" (old) : "r"(&value), "r"(compare), "r"(replacement) : "r3", "cc");
+        return old;
    }
 
     static Reg32 htonl(Reg32 v) { return swap32(v); }
@@ -323,10 +369,6 @@ public:
         init_stack_helper(&ctx->_r0, an ...);
         return sp;
     }
-
-public:
-    // ARMv7 specific methods
-    static unsigned int int_id() { return flags() & 0x3f; }
 
 private:
     template<typename Head, typename ... Tail>

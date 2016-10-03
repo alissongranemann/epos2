@@ -23,7 +23,7 @@ template<> struct Traits<Build>
     enum {IA32, ARMv7};
     static const unsigned int ARCHITECTURE = IA32;
 
-    enum {PC, Cortex_M, Cortex_A};
+    enum {PC, Cortex};
     static const unsigned int MACHINE = PC;
 
     enum {Legacy_PC, eMote3, LM3S811};
@@ -63,6 +63,7 @@ template<> struct Traits<Observers>: public Traits<void>
     // Some observed objects are created before initializing the Display
     // Enabling debug may cause trouble in some Machines
     static const bool debugged = false;
+
 };
 
 // System Parts (mostly to fine control debugging)
@@ -99,7 +100,6 @@ __END_SYS
 
 #include __ARCH_TRAITS_H
 #include __MACH_TRAITS_H
-#include __MACH_CONFIG_H
 
 __BEGIN_SYS
 
@@ -190,7 +190,6 @@ template<> struct Traits<ELP>: public Traits<Network>
     static const bool enabled = NETWORKS::Count<ELP>::Result;
 
     static const bool acknowledged = true;
-    static const bool promiscuous = false;
 };
 
 template<> struct Traits<TSTP>: public Traits<Network>

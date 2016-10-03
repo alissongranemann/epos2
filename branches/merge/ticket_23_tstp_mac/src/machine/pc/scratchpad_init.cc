@@ -8,7 +8,7 @@
 
 __BEGIN_SYS
 
-void PC_Scratchpad::init()
+void Scratchpad::init()
 {
     db<Init, Scratchpad>(TRC) << "Scratchpad::init(a=" << ADDRESS << ",s=" << SIZE << ")" << endl;
 

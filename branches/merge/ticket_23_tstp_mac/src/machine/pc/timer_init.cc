@@ -5,7 +5,7 @@
 
 __BEGIN_SYS
 
-void PC_Timer::init()
+void Timer::init()
 {
     db<Init, Timer>(TRC) << "Timer::init()" << endl;
 

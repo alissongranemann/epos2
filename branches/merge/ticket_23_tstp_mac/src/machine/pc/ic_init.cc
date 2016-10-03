@@ -5,14 +5,14 @@
 
 __BEGIN_SYS
 
-void PC_IC::init()
+void IC::init()
 {
     db<Init, IC>(TRC) << "IC::init()" << endl;
 
     CPU::int_disable();
 
     // Set all IDT entries to proper int_dispatch() offsets
-    CPU::IDT_Entry * idt = reinterpret_cast<CPU::IDT_Entry *>(Memory_Map<PC>::IDT);
+    CPU::IDT_Entry * idt = reinterpret_cast<CPU::IDT_Entry *>(Memory_Map::IDT);
     for(unsigned int i = 0; i < CPU::IDT_ENTRIES; i++)
         if(i < INTS)
             idt[i] = CPU::IDT_Entry(CPU::SEL_SYS_CODE, Log_Addr(entry) + i * 16, CPU::SEG_IDT_ENTRY);

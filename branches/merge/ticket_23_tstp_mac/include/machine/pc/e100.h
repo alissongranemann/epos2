@@ -323,7 +323,7 @@ public:
 
 };
 
-class E100: public Ethernet::NIC_Base<Ethernet, Traits<PC_Ethernet>::NICS::Polymorphic>, private i82559
+class E100: public Ethernet::NIC_Base<Ethernet, Traits<NIC>::NICS::Polymorphic>, private i82559
 {
     template<int unit> friend void call_init();
 
@@ -368,7 +368,7 @@ public:
 
     const Address & address() { return _address; }
     void address(const Address & address) { _address = address; }
-
+    
     const Statistics & statistics() { return _statistics; }
 
     void reset();

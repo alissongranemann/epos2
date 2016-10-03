@@ -127,14 +127,14 @@ private:
     static int bin2bcd(int bin) { return ((bin / 10) << 4) | (bin % 10); }
 };
 
-class PC_RTC: public RTC_Common, private MC146818
+class RTC: public RTC_Common, private MC146818
 {
 private:
-    static const unsigned int EPOCH_YEAR = Traits<PC_RTC>::EPOCH_YEAR;
-    static const unsigned int EPOCH_DAYS = Traits<PC_RTC>::EPOCH_DAYS;
+    static const unsigned int EPOCH_YEAR = Traits<RTC>::EPOCH_YEAR;
+    static const unsigned int EPOCH_DAYS = Traits<RTC>::EPOCH_DAYS;
 
 public:
-    PC_RTC() {}
+    RTC() {}
 
     static Date date();
     static void date(const Date & d);

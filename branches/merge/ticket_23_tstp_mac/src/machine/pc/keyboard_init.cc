@@ -5,7 +5,7 @@
 
 __BEGIN_SYS
 
-void PC_Keyboard::init()
+void PS2_Keyboard::init()
 {
     db<Init, Keyboard>(TRC) << "Keyboard::init()" << endl;
 

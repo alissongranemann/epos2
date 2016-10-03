@@ -18,16 +18,16 @@ struct Traits
 template<> struct Traits<Build>
 {
     enum {LIBRARY, BUILTIN, KERNEL};
-    static const unsigned int MODE = BUILTIN;
+    static const unsigned int MODE = LIBRARY;
 
     enum {IA32, ARMv7};
-    static const unsigned int ARCHITECTURE = IA32;
+    static const unsigned int ARCHITECTURE = ARMv7;
 
-    enum {PC, Cortex_M, Cortex_A};
-    static const unsigned int MACHINE = PC;
+    enum {PC, Cortex};
+    static const unsigned int MACHINE = Cortex;
 
-    enum {Legacy_PC, eMote3, LM3S811};
-    static const unsigned int MODEL = Legacy_PC;
+    enum {Legacy_PC, eMote1, eMote2, eMote3, Arduino, LM3S811, Zynq};
+    static const unsigned int MODEL = Zynq;
 
     static const unsigned int CPUS = 1;
     static const unsigned int NODES = 1; // > 1 => NETWORKING
@@ -58,12 +58,6 @@ template<> struct Traits<Heaps>: public Traits<void>
     static const bool debugged = hysterically_debugged;
 };
 
-template<> struct Traits<Observers>: public Traits<void>
-{
-    // Some observed objects are created before initializing the Display
-    // Enabling debug may cause trouble in some Machines
-    static const bool debugged = false;
-};
 
 // System Parts (mostly to fine control debugging)
 template<> struct Traits<Boot>: public Traits<void>
@@ -90,16 +84,10 @@ template<> struct Traits<Serial_Display>: public Traits<void>
     static const int TAB_SIZE = 8;
 };
 
-template<> struct Traits<Serial_Keyboard>: public Traits<void>
-{
-    static const bool enabled = false;
-};
-
 __END_SYS
 
 #include __ARCH_TRAITS_H
 #include __MACH_TRAITS_H
-#include __MACH_CONFIG_H
 
 __BEGIN_SYS
 
@@ -181,7 +169,7 @@ template<> struct Traits<Network>: public Traits<void>
     static const unsigned int RETRIES = 3;
     static const unsigned int TIMEOUT = 10; // s
 
-    // This list is positional, with one network for each NIC in Traits<NIC>::NICS
+    // This list is positional, with one network for each NIC in traits<NIC>::NICS
     typedef LIST<IP> NETWORKS;
 };
 
@@ -190,7 +178,6 @@ template<> struct Traits<ELP>: public Traits<Network>
     static const bool enabled = NETWORKS::Count<ELP>::Result;
 
     static const bool acknowledged = true;
-    static const bool promiscuous = false;
 };
 
 template<> struct Traits<TSTP>: public Traits<Network>

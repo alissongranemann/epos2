@@ -5,7 +5,7 @@
 
 __BEGIN_SYS
 
-void IA32::syscall(void * msg)
+void CPU::syscall(void * msg)
 {
     ASM("int %0" : : "i"(IC::INT_SYSCALL), "c"(msg));
 }

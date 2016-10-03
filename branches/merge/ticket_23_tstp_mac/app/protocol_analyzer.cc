@@ -55,7 +55,7 @@ int main()
     cout << "[Timestamp] {src => dst} (size)" << endl;
     cout << "message contents, space-separated" << endl;
 
-    led = new GPIO('C',3, GPIO::OUTPUT);
+    led = new GPIO('C',3, GPIO::OUT);
     led_value = true;
     led->set(led_value);
 

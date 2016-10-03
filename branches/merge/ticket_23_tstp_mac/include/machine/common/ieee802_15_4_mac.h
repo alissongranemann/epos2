@@ -30,18 +30,26 @@ protected:
 
     // Called after the Radio's constructor
     void constructor_epilogue() {
-        Radio::promiscuous(Traits<_API::ELP>::promiscuous);
         Radio::power(Power_Mode::FULL);
         Radio::listen();
     }
 
 public:
+    unsigned int marshal(Buffer * buf) {
+        IEEE802_15_4::Phy_Frame * frame = buf->frame();
+        int size = frame->length() - sizeof(Header) + sizeof(Phy_Header) - sizeof(CRC); // Phy_Header is included in Header, but is already discounted in frame_length
+        if(size > 0) {
+            buf->size(size);
+            return buf->size();
+        } else
+            return 0;
+    }
+
     unsigned int marshal(Buffer * buf, const Address & src, const Address & dst, const Type & type, const void * data, unsigned int size) {
         if(size > Frame::MTU)
             size = Frame::MTU;
-        Frame * frame = new (buf->frame()) Frame(type, src, dst, size);
+        Frame * frame = new (buf->frame()) Frame(type, src, dst, data, size);
         frame->ack_request(acknowledged && dst != broadcast());
-        memcpy(frame->data<void>(), data, size);
         buf->size(size);
         return size;
     }
@@ -95,17 +103,6 @@ public:
         return ack_ok ? buf->size() : 0;
     }
 
-    bool copy_from_nic(Buffer * buf) {
-        IEEE802_15_4::Phy_Frame * frame = buf->frame();
-        Radio::copy_from_nic(frame);
-        int size = frame->length() - sizeof(Header) + sizeof(Phy_Header) - sizeof(CRC); // Phy_Header is included in Header, but is already discounted in frame_length
-        if(size > 0) {
-            buf->size(size);
-            return true;
-        } else
-            return false;
-    }
-
 private:
     bool backoff_and_send() {
         unsigned int exp = CSMA_CA_MIN_BACKOFF_EXPONENT;
@@ -114,6 +111,8 @@ private:
         unsigned int retry = 0;
         for(; (retry < CSMA_CA_RETRIES) ; retry++) {
             unsigned int time = (Random::random() % backoff) * CSMA_CA_UNIT_BACKOFF_PERIOD;
+            if(time < CSMA_CA_UNIT_BACKOFF_PERIOD)
+                time = CSMA_CA_UNIT_BACKOFF_PERIOD;
 
             if(Radio::cca(time) && Radio::transmit())
                 break; // Success
@@ -123,6 +122,7 @@ private:
                 backoff *= 2;
             }
         }
+        // Radio::normal();
         return (retry < CSMA_CA_RETRIES);
     }
 };

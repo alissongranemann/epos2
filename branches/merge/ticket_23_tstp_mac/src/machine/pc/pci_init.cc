@@ -5,7 +5,7 @@
 
 __BEGIN_SYS
 
-void PC_PCI::init()
+void PCI::init()
 {
     _phy_io_mem = System::info()->pmm.io_base;
 
@@ -17,7 +17,7 @@ void PC_PCI::init()
     Reg32 tmp = CPU::in32(CONFADDR);
     CPU::out32(CONFADDR, 0x80000000);
     if(CPU::in32(CONFADDR) != 0x80000000) {
-        db<Init, PC_PCI>(WRN) << "PC_PCI::init: failed!" << endl;
+        db<Init, PCI>(WRN) << "PCI::init: failed!" << endl;
     }
     CPU::out32(CONFADDR, tmp);
 
