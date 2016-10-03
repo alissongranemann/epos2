@@ -41,7 +41,8 @@ int CC2538::receive(Address * src, Type * type, void * data, unsigned int size)
     db<CC2538>(TRC) << "CC2538::receive(s=" << *src << ",p=" << hex << *type << dec << ",d=" << data << ",s=" << size << ") => " << endl;
 
     Buffer * buf;
-    for(buf = 0; !buf; ++_rx_cur_consume %= RX_BUFS) {
+    for(buf = 0; !buf; ++_rx_cur_consume %= RX_BUFS) { // _xx_cur_xxx are simple accelerators to avoid scanning the ring buffer from the beginning.
+                                                       // Losing a write in a race condition is assumed to be harmless. The FINC + CAS alternative seems too expensive.
         unsigned int idx = _rx_cur_consume;
         if(_rx_bufs[idx]->lock()) {
             if(_rx_bufs[idx]->size() > 0)
