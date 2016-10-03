@@ -8,9 +8,13 @@
 
 __BEGIN_SYS
 
-CC2538::CC2538(unsigned int unit): _unit(unit)
+CC2538::CC2538(unsigned int unit): _unit(unit), _rx_cur_consume(0), _rx_cur_produce(0)
 {
     db<CC2538>(TRC) << "CC2538(unit=" << unit << ")" << endl;
+
+    // Initialize RX buffer pool
+    for(unsigned int i = 0; i < RX_BUFS; i++)
+        _rx_bufs[i] = new (SYSTEM) Buffer(0, 0);
 
     // Set Address
     ffsm(SHORT_ADDR0) = _address[0];

@@ -192,8 +192,6 @@ void IC::init()
     for(Interrupt_Id i = 0; i < INTS; i++)
         _int_vector[i] = int_not;
 
-    //_int_vector[INT_HARD_FAULT] = hard_fault; //TODO: not treating hard faults
-
 #ifdef __mmod_emote3__
     // Initialize eoi vector (must be done at runtime because of .hex image format)
     for(unsigned int i = 0; i < INTS; i++)
@@ -202,7 +200,25 @@ void IC::init()
     _eoi_vector[INT_USER_TIMER1] = User_Timer::eoi;
     _eoi_vector[INT_USER_TIMER2] = User_Timer::eoi;
     _eoi_vector[INT_USER_TIMER3] = User_Timer::eoi;
-    _eoi_vector[INT_USB] = USB::eoi;
+    _eoi_vector[INT_USB0] = USB::eoi;
+#endif
+#if defined(__mmod_emote3__) || defined(__mmod_lm3s811__)
+
+    _int_vector[NVIC::INT_HARD_FAULT] = hard_fault;
+
+    // TSC is initialized before IC, so we register its interrupt now
+    if(Traits<TSC>::enabled) {
+
+        static const Interrupt_Id int_id = 
+              Machine_Model::TIMERS == 1 ? INT_USER_TIMER0 
+            : Machine_Model::TIMERS == 2 ? INT_USER_TIMER1 
+            : Machine_Model::TIMERS == 3 ? INT_USER_TIMER2 
+            : INT_USER_TIMER3;
+
+        int_vector(int_id, TSC::int_handler);
+        enable(int_id);
+    }
+
 #endif
 }
 

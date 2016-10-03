@@ -150,7 +150,7 @@ This can be detected and revert if necessary. One would need to make the hard fa
 fault was generated in _int_exit, and in this case simply call svc_handler.
 
 More information can be found at:
-[1] ARMv7-M Architecture Reference Manual:
+[1] ARMv7-M Architecture Reference Manual (ARM DDI 0403C_errata_v3 (ID021910), February 2010):
         Section B1.5.6 (Exception entry behavior)
         Section B1.5.7 (Stack alignment on exception entry)
         Section B1.5.8 (Exception return behavior)
@@ -205,6 +205,9 @@ void IC::dispatch(unsigned int id)
 
 void IC::eoi(unsigned int id)
 {
+    if((id != INT_TIMER) || Traits<IC>::hysterically_debugged)
+        db<IC>(TRC) << "IC::eoi(i=" << id << ")" << endl;
+
     assert(id < INTS);
     if(_eoi_vector[id])
         _eoi_vector[id](id);

@@ -452,7 +452,7 @@ public:
 
         // Restore radio configuration
         if(acked) {
-            sfr(RFST) = ISFLUSHRX;
+            drop();
             sfr(RFIRQF0) &= ~INT_FIFOP;
         }
         xreg(FRMFILT1) = saved_filter_settings;
@@ -501,8 +501,10 @@ public:
         f[0] = sfr(RFDATA);  // First byte is the length of MAC frame
         for(unsigned int i = 1; i <= f[0]; ++i)
             f[i] = sfr(RFDATA);
-        sfr(RFST) = ISFLUSHRX;
+        drop();
     }
+
+    void drop() { sfr(RFST) = ISFLUSHRX; }
 
     bool filter() {
         bool valid_frame = false;
@@ -515,7 +517,7 @@ public:
             valid_frame = (mac_frame_size <= 127) && (rxfifo[mac_frame_size] & AUTO_CRC_OK);
         }
         if(!valid_frame)
-            sfr(RFST) = ISFLUSHRX;
+            drop();
 
         return valid_frame;
     }
@@ -627,7 +629,9 @@ private:
     unsigned int _channel;
     Statistics _statistics;
 
-    Buffer::List _received_buffers;
+    Buffer * _rx_bufs[RX_BUFS];
+    unsigned int _rx_cur_consume;
+    unsigned int _rx_cur_produce;
     static Device _devices[UNITS];
 };
 

@@ -134,6 +134,8 @@ template<> struct Traits<PCNet32>: public Traits<NIC>
     static const unsigned int UNITS = NICS::Count<PCNet32>::Result;
     static const unsigned int SEND_BUFFERS = 64; // per unit
     static const unsigned int RECEIVE_BUFFERS = 256; // per unit
+
+    static const bool promiscuous = false;
 };
 
 template<> struct Traits<E100>: public Traits<NIC>
@@ -141,6 +143,8 @@ template<> struct Traits<E100>: public Traits<NIC>
     static const unsigned int UNITS = NICS::Count<E100>::Result;
     static const unsigned int SEND_BUFFERS = 64; // per unit
     static const unsigned int RECEIVE_BUFFERS = 64; // per unit
+
+    static const bool promiscuous = false;
 };
 
 template<> struct Traits<C905>: public Traits<NIC>
@@ -148,6 +152,8 @@ template<> struct Traits<C905>: public Traits<NIC>
     static const unsigned int UNITS = NICS::Count<C905>::Result;
     static const unsigned int SEND_BUFFERS = 64; // per unit
     static const unsigned int RECEIVE_BUFFERS = 64; // per unit
+
+    static const bool promiscuous = false;
 };
 
 template<> struct Traits<FPGA>: public Traits<Machine_Common>

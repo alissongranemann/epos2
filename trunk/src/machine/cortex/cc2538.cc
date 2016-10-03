@@ -40,18 +40,21 @@ int CC2538::receive(Address * src, Type * type, void * data, unsigned int size)
 {
     db<CC2538>(TRC) << "CC2538::receive(s=" << *src << ",p=" << hex << *type << dec << ",d=" << data << ",s=" << size << ") => " << endl;
 
-    unsigned int ret = 0;
-
-    xreg(RFIRQM0) &= ~INT_FIFOP;
-    Buffer::Element * el = _received_buffers.remove_head();
-    xreg(RFIRQM0) |= INT_FIFOP;
-
-    if(el) {
-        Buffer * buf = el->object();
-        Address dst;
-        ret = MAC::unmarshal(buf, src, &dst, type, data, size);
-        free(buf);
+    Buffer * buf;
+    for(buf = 0; !buf; ++_rx_cur_consume %= RX_BUFS) { // _xx_cur_xxx are simple accelerators to avoid scanning the ring buffer from the beginning.
+                                                       // Losing a write in a race condition is assumed to be harmless. The FINC + CAS alternative seems too expensive.
+        unsigned int idx = _rx_cur_consume;
+        if(_rx_bufs[idx]->lock()) {
+            if(_rx_bufs[idx]->size() > 0)
+                buf = _rx_bufs[idx];
+            else
+                _rx_bufs[idx]->unlock();
+        }
     }
+
+    Address dst;
+    unsigned int ret = MAC::unmarshal(buf, src, &dst, type, data, size);
+    free(buf);
 
     db<CC2538>(INF) << "CC2538::received " << ret << " bytes" << endl;
 
@@ -91,7 +94,8 @@ void CC2538::free(Buffer * buf)
     _statistics.rx_packets++;
     _statistics.rx_bytes += buf->size();
 
-    delete buf;
+    buf->size(0);
+    buf->unlock();
 }
 
 void CC2538::reset()
@@ -119,23 +123,29 @@ void CC2538::handle_int()
     if(irqrf0 & INT_FIFOP) { // Frame received
         db<CC2538>(TRC) << "CC2538::handle_int:receive()" << endl;
         if(CC2538RF::filter()) {
-            Buffer * buf = new (SYSTEM) Buffer(0);
-            CC2538RF::copy_from_nic(buf->frame());
-            if(MAC::marshal(buf)) {
-                db<CC2538>(TRC) << "CC2538::handle_int:receive(b=" << buf << ") => " << *buf << endl;
-                if(!notify(reinterpret_cast<Frame*>(buf->frame())->type(), buf)) {
-                    // No one was waiting for this frame, so store it for receive()
-                    if(_received_buffers.size() < RX_BUFS) {
-                        _received_buffers.insert(buf->link());
-                    } else {
-                        db<CC2538>(WRN) << "CC2538::handle_int: frame dropped, too many buffers in queue!"  << endl;
-                        delete buf;
-                    }
+            Buffer * buf = 0;
+            unsigned int idx = _rx_cur_produce;
+            for(unsigned int count = RX_BUFS; count; count--, ++idx %= RX_BUFS) {
+                if(_rx_bufs[idx]->lock()) {
+                    buf = _rx_bufs[idx];
+                    break;
                 }
-            } else {
-                db<CC2538>(TRC) << "CC2538::handle_int: frame dropped by MAC"  << endl;
-                delete buf;
             }
+            _rx_cur_produce = (idx + 1) % RX_BUFS;
+
+            if(buf) {
+                CC2538RF::copy_from_nic(buf->frame());
+                if(MAC::marshal(buf)) {
+                    db<CC2538>(TRC) << "CC2538::handle_int:receive(b=" << buf << ") => " << *buf << endl;
+                    if(!notify(reinterpret_cast<Frame*>(buf->frame())->type(), buf))
+                        buf->unlock(); // No one was waiting for this frame, so make it available for receive()
+                } else {
+                    db<CC2538>(TRC) << "CC2538::handle_int: frame dropped by MAC"  << endl;
+                    buf->size(0);
+                    buf->unlock();
+                }
+            } else
+                CC2538RF::drop();
         }
     }
 }
