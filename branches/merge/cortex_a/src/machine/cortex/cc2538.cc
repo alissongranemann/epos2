@@ -40,28 +40,20 @@ int CC2538::receive(Address * src, Type * type, void * data, unsigned int size)
 {
     db<CC2538>(TRC) << "CC2538::receive(s=" << *src << ",p=" << hex << *type << dec << ",d=" << data << ",s=" << size << ") => " << endl;
 
-    Buffer * buf = 0;
-    unsigned int idx = _rx_cur_consume;
-    for(unsigned int count = RX_BUFS; count; count--, ++idx %= RX_BUFS) {
+    Buffer * buf;
+    for(buf = 0; !buf; ++_rx_cur_consume %= RX_BUFS) {
+        unsigned int idx = _rx_cur_consume;
         if(_rx_bufs[idx]->lock()) {
-            if(_rx_bufs[idx]->size() > 0) {
+            if(_rx_bufs[idx]->size() > 0)
                 buf = _rx_bufs[idx];
-                break;
-            }
             else
                 _rx_bufs[idx]->unlock();
         }
     }
 
-    _rx_cur_consume = (idx + 1) % RX_BUFS;
-
-    unsigned int ret = 0;
-
-    if(buf) {
-        Address dst;
-        ret = MAC::unmarshal(buf, src, &dst, type, data, size);
-        free(buf);
-    }
+    Address dst;
+    unsigned int ret = MAC::unmarshal(buf, src, &dst, type, data, size);
+    free(buf);
 
     db<CC2538>(INF) << "CC2538::received " << ret << " bytes" << endl;
 

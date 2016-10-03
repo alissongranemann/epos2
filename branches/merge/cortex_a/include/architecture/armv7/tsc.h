@@ -11,6 +11,7 @@ __BEGIN_SYS
 class TSC: private TSC_Common
 {
     friend class CPU;
+    friend class IC;
 
 private:
     static const unsigned int CLOCK = Traits<CPU>::CLOCK / (Traits<Build>::MODEL == Traits<Build>::Zynq ? 2 : 1);
@@ -19,12 +20,13 @@ private:
         TSC_BASE =
             Traits<Build>::MODEL == Traits<Build>::eMote3  ? 0x40033000 /*TIMER3_BASE*/ :
             Traits<Build>::MODEL == Traits<Build>::LM3S811 ? 0x40031000 /*TIMER1_BASE*/ :
-            Traits<Build>::MODEL == Traits<Build>::Zynq ? 0xF8F00200 /*GLOBAL_TIMER_BASE*/ : 0
+            Traits<Build>::MODEL == Traits<Build>::Zynq ? 0xF8F00200 /*GLOBAL_TIMER_BASE*/ : 
+            0
     };
 
     // Cortex-M3 GPTM registers offsets
-    enum {
-        GPTMTAR = 0x48,
+    enum {              // Description
+        GPTMTAR = 0x48, // Counter
     };
 
     // Zynq Global Timer Registers offsets

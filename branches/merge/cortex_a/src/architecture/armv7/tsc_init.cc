@@ -2,7 +2,6 @@
 
 #include <tsc.h>
 #include <machine.h>
-#include <ic.h>
 
 __BEGIN_SYS
 
@@ -39,12 +38,14 @@ void TSC::init()
     else {
         reg(Machine_Model::GPTMTAMR) = Machine_Model::TCDIR | 2; // Up-counting, periodic
 
-        static const IC::Interrupt_Id int_id = Machine_Model::TIMERS == 1 ? IC::INT_USER_TIMER0 : Machine_Model::TIMERS == 2 ? IC::INT_USER_TIMER1 : Machine_Model::TIMERS == 3 ? IC::INT_USER_TIMER2 : IC::INT_USER_TIMER3;
-        IC::int_vector(int_id, int_handler);
-        IC::enable(int_id);
+        // Set time-out value (0xffffffff)
+        reg(Machine_Model::GPTMTAILR) = -1;
+        reg(Machine_Model::GPTMTAPR) = 0;
 
         reg(Machine_Model::GPTMIMR) |= Machine_Model::TATO_INT; // Enable timeout interrupt
         reg(Machine_Model::GPTMCTL) |= Machine_Model::TAEN; // Enable timer
+
+        // time-out interrupt will be registered later at IC::init(), because IC hasn't been initialized yet
     }
 }
 

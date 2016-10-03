@@ -159,14 +159,13 @@ public:
 
 protected:
     static void eoi(const IC::Interrupt_Id & int_id) {
-        static const unsigned int NTIMERS = TIMERS + Traits<TSC>::enabled;
-        if(NTIMERS >= 1 && int_id == IC::INT_USER_TIMER0)
+        if(TIMERS >= 1 && int_id == IC::INT_USER_TIMER0)
             reg(reinterpret_cast<Reg32 *>(TIMER0_BASE), GPTMICR) = -1;
-        else if(NTIMERS >= 2 && int_id == IC::INT_USER_TIMER1)
+        else if(TIMERS >= 2 && int_id == IC::INT_USER_TIMER1)
             reg(reinterpret_cast<Reg32 *>(TIMER1_BASE), GPTMICR) = -1;
-        else if(NTIMERS >= 3 && int_id == IC::INT_USER_TIMER2)
+        else if(TIMERS >= 3 && int_id == IC::INT_USER_TIMER2)
             reg(reinterpret_cast<Reg32 *>(TIMER2_BASE), GPTMICR) = -1;
-        else if(NTIMERS >= 4 && int_id == IC::INT_USER_TIMER3)
+        else if(TIMERS >= 4 && int_id == IC::INT_USER_TIMER3)
             reg(reinterpret_cast<Reg32 *>(TIMER3_BASE), GPTMICR) = -1;
     }
 

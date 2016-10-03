@@ -225,6 +225,7 @@ public:
     static const unsigned int HARD_INT = 16;
     static const unsigned int SOFT_INT = HARD_INT + IRQS;
     enum {
+        INT_HARD_FAULT  = 3,
         INT_TIMER       = 15,
         INT_FIRST_HARD  = HARD_INT,
         INT_USER_TIMER0 = HARD_INT + IRQ_GPT0A,
