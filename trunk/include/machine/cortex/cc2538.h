@@ -272,7 +272,7 @@ public:
         INT_PER               = 1 << 0
     };
 
-    class Timer // TODO: update this class
+    class Timer
     {
     private:
         const static unsigned int CLOCK = 32 * 1000 * 1000; // 32MHz
@@ -316,13 +316,13 @@ public:
 
             mactimer(MTIRQF) = 0;
             Time_Stamp now = read();
-            if(when <= now) {
-                int_enable(INT_OVERFLOW_PER);
-                _handler(49); // FIXME: this cannot be right!
-            } else if((when >> 16ll) > (now >> 16ll))
+            if((when >> 16ll) > (now >> 16ll)) {
                 int_enable(INT_OVERFLOW_COMPARE1 | INT_OVERFLOW_PER);
-            else if(when > now)
+            } else {
+                // If when <= now, this will be the case too, 
+                // and interrupt will occur in a little while
                 int_enable(INT_COMPARE1 | INT_OVERFLOW_PER);
+            }
         }
 
         static void int_enable(const Reg32 & interrupt) { mactimer(MTIRQM) |= interrupt; }
