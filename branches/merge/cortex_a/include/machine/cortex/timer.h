@@ -50,12 +50,12 @@ protected:
     typedef TSC::Hertz Hertz;
 
 public:
-    static const Hertz CLOCK = Traits<CPU>::CLOCK/2;
+    static const Hertz CLOCK = Traits<CPU>::CLOCK / 2;
 
 public:
     User_Timer_Engine(unsigned int channel, const Count & count, bool interrupt = true, bool periodic = true);
 
-    static Hertz clock() { return CLOCK/2; }
+    static Hertz clock() { return CLOCK; }
 
     Count read() {
         Reg32 high, low;
