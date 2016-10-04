@@ -272,7 +272,7 @@ public:
         INT_PER               = 1 << 0
     };
 
-    class Timer // TODO: update this class
+    class Timer
     {
     private:
         const static unsigned int CLOCK = 32 * 1000 * 1000; // 32MHz
@@ -316,13 +316,13 @@ public:
 
             mactimer(MTIRQF) = 0;
             Time_Stamp now = read();
-            if(when <= now) {
-                int_enable(INT_OVERFLOW_PER);
-                _handler(49); // FIXME: this cannot be right!
-            } else if((when >> 16ll) > (now >> 16ll))
+            if((when >> 16ll) > (now >> 16ll)) {
                 int_enable(INT_OVERFLOW_COMPARE1 | INT_OVERFLOW_PER);
-            else if(when > now)
+            } else {
+                // If when <= now, this will be the case too, 
+                // and interrupt will occur in a little while
                 int_enable(INT_COMPARE1 | INT_OVERFLOW_PER);
+            }
         }
 
         static void int_enable(const Reg32 & interrupt) { mactimer(MTIRQM) |= interrupt; }
@@ -484,31 +484,32 @@ public:
         xreg(FREQCTRL) = 11 + 5 * (c - 11);
     }
 
-    void copy_to_nic(IEEE802_15_4::Phy_Frame * frame) {
+    void copy_to_nic(const void * frame, unsigned int size) {
         // Clear TXFIFO
         sfr(RFST) = ISFLUSHTX;
         while(xreg(TXFIFOCNT) != 0);
 
         // Copy Frame to TXFIFO
         const char * f = reinterpret_cast<const char *>(frame);
-        sfr(RFDATA) = f[0]; // len
-        for(unsigned int i = 1; i <= f[0] - sizeof(IEEE802_15_4::CRC); i++)
+        sfr(RFDATA) = size; // len
+        for(unsigned int i = 0; i <= size - sizeof(IEEE802_15_4::CRC); i++)
             sfr(RFDATA) = f[i];
     }
 
-    void copy_from_nic(IEEE802_15_4::Phy_Frame * frame) {
+    unsigned int copy_from_nic(void * frame) {
         char * f = reinterpret_cast<char *>(frame);
-        f[0] = sfr(RFDATA);  // First byte is the length of MAC frame
-        for(unsigned int i = 1; i <= f[0]; ++i)
+        unsigned int sz = sfr(RFDATA);  // First byte is the length of MAC frame
+        for(unsigned int i = 0; i < sz; ++i)
             f[i] = sfr(RFDATA);
         drop();
+        return sz;
     }
 
     void drop() { sfr(RFST) = ISFLUSHRX; }
 
     bool filter() {
         bool valid_frame = false;
-        if(xreg(RXFIFOCNT) > sizeof(IEEE802_15_4::Phy_Header) + sizeof(IEEE802_15_4::CRC)) {
+        if(xreg(RXFIFOCNT) > 1 + sizeof(IEEE802_15_4::CRC)) {
             volatile unsigned int * rxfifo = reinterpret_cast<volatile unsigned int*>(RXFIFO);
             unsigned char mac_frame_size = rxfifo[0];
             // On RX, last two bytes in the frame are replaced by info like CRC result

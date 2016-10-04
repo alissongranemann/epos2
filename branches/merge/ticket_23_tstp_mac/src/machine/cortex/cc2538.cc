@@ -29,8 +29,7 @@ int CC2538::send(const Address & dst, const Type & type, const void * data, unsi
 
     Buffer * b;
     if((b = alloc(reinterpret_cast<NIC*>(this), dst, type, 0, 0, size))) {
-        // Assemble the Frame Header and buffer Metainformation
-        MAC::marshal(b, address(), dst, type, data, size);
+        memcpy(b->frame()->data<void>(), data, size);
         return send(b);
     }
     return 0;
@@ -64,8 +63,16 @@ CC2538::Buffer * CC2538::alloc(NIC * nic, const Address & dst, const Type & type
 {
     db<CC2538>(TRC) << "CC2538::alloc(s=" << address() << ",d=" << dst << ",p=" << hex << type << dec << ",on=" << once << ",al=" << always << ",ld=" << payload << ")" << endl;
 
+    unsigned int size = once + always + payload;
+    if(size > MAC::MTU)
+        return 0;
+
     // Initialize the buffer
-    return new (SYSTEM) Buffer(nic, once + always + payload, once + always + payload); // the last parameter is passed to Phy_Frame as the length
+    Buffer * b = new (SYSTEM) Buffer(nic, size + sizeof(MAC::Header));
+    if(b)
+        MAC::marshal(b, address(), dst, type);
+
+    return b;
 }
 
 int CC2538::send(Buffer * buf)
@@ -80,8 +87,6 @@ int CC2538::send(Buffer * buf)
         _statistics.tx_bytes += size;
     } else
         db<CC2538>(WRN) << "CC2538::send(buf=" << buf << ")" << " => failed!" << endl;
-
-    delete buf;
 
     return size;
 }
@@ -133,10 +138,10 @@ void CC2538::handle_int()
             _rx_cur_produce = (idx + 1) % RX_BUFS;
 
             if(buf) {
-                CC2538RF::copy_from_nic(buf->frame());
+                buf->size(CC2538RF::copy_from_nic(buf->frame()));
                 if(MAC::marshal(buf)) {
                     db<CC2538>(TRC) << "CC2538::handle_int:receive(b=" << buf << ") => " << *buf << endl;
-                    if(!notify(reinterpret_cast<Frame*>(buf->frame())->type(), buf))
+                    if(!notify(reinterpret_cast<MAC::Header *>(buf->frame())->type(), buf))
                         buf->unlock(); // No one was waiting for this frame, so make it available for receive()
                 } else {
                     db<CC2538>(TRC) << "CC2538::handle_int: frame dropped by MAC"  << endl;

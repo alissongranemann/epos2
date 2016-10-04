@@ -25,6 +25,12 @@ public:
         V0 = 4
     };
 
+    // MAC definitions
+    typedef CPU::Reg16 Frame_ID;
+    typedef CPU::Reg32 Hint;
+    typedef NIC_Common::CRC16 CRC;
+    typedef unsigned char MF_Count;
+
     // Packet Types
     typedef unsigned char Type;
     enum {
@@ -78,6 +84,54 @@ public:
         Time t1;
     } __attribute__((packed));
     typedef _Region<SCALE> Region;
+
+    // MAC Preamble Microframe
+    class Microframe {
+    public:
+        Microframe() {}
+
+        Microframe(bool all_listen, const Frame_ID & id, const MF_Count & count, const Hint & hint = 0) : 
+            _al_count_idh((id & 0xf) | ((count & 0x7ff) << 11) | (static_cast<unsigned int>(all_listen) << 15)), _idl(id & 0xff), _hint(hint) {}
+
+        MF_Count count() const { return (_al_count_idh & (0x7ff << 11)) >> 11; }
+        MF_Count dec_count() {
+            MF_Count c = count();
+            _al_count_idh &= ~(0x7ff << 11);
+            _al_count_idh |= (c-1) << 11;
+            return c;
+        }
+
+        Frame_ID id() const { return ((_al_count_idh | 0xf) << 8) + _idl; }
+        void id(Frame_ID id) {
+            _al_count_idh &= 0xfff0;
+            _al_count_idh |= (id & 0xf00) >> 8;
+            _idl = id & 0xff;
+        }
+
+        void all_listen(bool all_listen) {
+            if(all_listen) 
+                _al_count_idh |= (1 << 15);
+            else
+                _al_count_idh &= ~(1 << 15);
+        }
+        bool all_listen() const { return _al_count_idh & (1 << 15); }
+
+        Hint hint() const { return _hint; }
+        void hint(const Hint & h) { _hint = h; }
+
+        friend Debug & operator<<(Debug & db, const Microframe & m) {
+            db << "{al=" << m.all_listen() << ",c=" << m.count() << ",id=" << m.id() << ",h=" << m._hint << ",crc=" << m._crc << "}";
+            return db;
+        }
+
+    private:
+        CPU::Reg16 _al_count_idh; // all_listen : 1
+                                  // count : 11
+                                  // id MSBs: 4
+        unsigned char _idl;       // id LSBs: 8
+        Hint _hint;
+        CRC _crc;
+    } __attribute__((packed));
 
     // Packet Header
     template<Scale S>
