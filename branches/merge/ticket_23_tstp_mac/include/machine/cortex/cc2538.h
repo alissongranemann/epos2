@@ -274,6 +274,7 @@ public:
 
     class Timer
     {
+        friend class CC2538;
     private:
         const static unsigned int CLOCK = 32 * 1000 * 1000; // 32MHz
 
@@ -325,13 +326,14 @@ public:
             }
         }
 
-        static void int_enable(const Reg32 & interrupt) { mactimer(MTIRQM) |= interrupt; }
         static void int_disable() { mactimer(MTIRQM) = INT_OVERFLOW_PER; }
 
-        static Time_Stamp us_to_ts(const Microsecond & us) { return static_cast<Time_Stamp>(us) * CLOCK / 1000000; }
-        static Microsecond ts_to_us(const Time_Stamp & ts) { return ts * 1000000 / CLOCK; }
+        static Time_Stamp us2count(const Microsecond & us) { return static_cast<Time_Stamp>(us) * CLOCK / 1000000; }
+        static Microsecond count2us(const Time_Stamp & ts) { return ts * 1000000 / CLOCK; }
 
     private:
+        static void int_enable(const Reg32 & interrupt) { mactimer(MTIRQM) |= interrupt; }
+
         static Time_Stamp read(unsigned int sel) {
             mactimer(MTMSEL) = sel;
             Time_Stamp ts = mactimer(MTM0); // M0 must be read first
@@ -367,6 +369,8 @@ public:
         static Reg32 _overflow_count;
         static Reg32 _interrupt_overflow_count;
     };
+
+    typedef Timer::Time_Stamp Time_Stamp;
 
 public:
     CC2538RF() {
@@ -421,15 +425,17 @@ public:
         ffsm(SHORT_ADDR1) = address[1];
     }
 
-    bool cca(const Microsecond & time) {
-        Timer::Time_Stamp end = Timer::read() + Timer::us_to_ts(time);
+    // FIXME: methods changed to static because of TSTP_MAC
+    static bool cca(const Microsecond & time) {
+        Timer::Time_Stamp end = Timer::read() + Timer::us2count(time);
         while(!(xreg(RSSISTAT) & RSSI_VALID));
         bool channel_free;
         while((channel_free = xreg(FSMSTAT1) & CCA) && (Timer::read() < end));
         return channel_free;
     }
 
-    bool transmit() { sfr(RFST) = ISTXONCCA; return (xreg(FSMSTAT1) & SAMPLED_CCA); }
+    // FIXME: methods changed to static because of TSTP_MAC
+    static bool transmit() { sfr(RFST) = ISTXONCCA; return (xreg(FSMSTAT1) & SAMPLED_CCA); }
 
     bool wait_for_ack(const Microsecond & timeout) {
         // Disable and clear FIFOP int. We'll poll the interrupt flag
@@ -448,7 +454,7 @@ public:
 
         // Wait for either ACK or timeout
         bool acked = false;
-        for(Timer::Time_Stamp end = Timer::read() + Timer::us_to_ts(timeout); (Timer::read() < end) && !(acked = sfr(RFIRQF0) & INT_FIFOP););
+        for(Timer::Time_Stamp end = Timer::read() + Timer::us2count(timeout); (Timer::read() < end) && !(acked = sfr(RFIRQF0) & INT_FIFOP););
 
         // Restore radio configuration
         if(acked) {
@@ -463,28 +469,33 @@ public:
         return acked;
     }
 
-    void listen() { sfr(RFST) = ISRXON; }
+    // FIXME: methods changed to static because of TSTP_MAC
+    static void listen() { sfr(RFST) = ISRXON; }
 
-    bool tx_done() {
+    // FIXME: methods changed to static because of TSTP_MAC
+    static bool tx_done() {
         bool ret = (sfr(RFIRQF1) & INT_TXDONE);
         if(ret)
             sfr(RFIRQF1) &= ~INT_TXDONE;
         return ret;
     }
 
-    bool rx_done() {
+    // FIXME: methods changed to static because of TSTP_MAC
+    static bool rx_done() {
         bool ret = (sfr(RFIRQF0) & INT_RXPKTDONE);
         if(ret)
             sfr(RFIRQF0) &= ~INT_RXPKTDONE;
         return ret;
     }
 
-    void channel(unsigned int c) {
+    // FIXME: methods changed to static because of TSTP_MAC
+    static void channel(unsigned int c) {
         assert((c > 10) && (c < 27));
         xreg(FREQCTRL) = 11 + 5 * (c - 11);
     }
 
-    void copy_to_nic(const void * frame, unsigned int size) {
+    // FIXME: methods changed to static because of TSTP_MAC
+    static void copy_to_nic(const void * frame, unsigned int size) {
         // Clear TXFIFO
         sfr(RFST) = ISFLUSHTX;
         while(xreg(TXFIFOCNT) != 0);
@@ -496,7 +507,8 @@ public:
             sfr(RFDATA) = f[i];
     }
 
-    unsigned int copy_from_nic(void * frame) {
+    // FIXME: methods changed to static because of TSTP_MAC
+    static unsigned int copy_from_nic(void * frame) {
         char * f = reinterpret_cast<char *>(frame);
         unsigned int sz = sfr(RFDATA);  // First byte is the length of MAC frame
         for(unsigned int i = 0; i < sz; ++i)
@@ -505,7 +517,8 @@ public:
         return sz;
     }
 
-    void drop() { sfr(RFST) = ISFLUSHRX; }
+    // FIXME: methods changed to static because of TSTP_MAC
+    static void drop() { sfr(RFST) = ISFLUSHRX; }
 
     bool filter() {
         bool valid_frame = false;

@@ -29,6 +29,8 @@ public:
 
     static const unsigned int MTU = IEEE802_15_4::MTU - sizeof(Header);
 
+    typedef _UTIL::Buffer<NIC, Frame, void, IEEE802_15_4_Metadata> Buffer;
+
 protected:
     IEEE802_15_4_MAC() {}
 
@@ -38,10 +40,12 @@ protected:
         Radio::listen();
     }
 
-public:
     // Filter and assemble RX Buffer Metainformation
-    bool marshal(Buffer * buf) { return true; }
+    bool pre_notify(Buffer * buf) { return true; }
 
+    bool post_notify(Buffer * buf) { return false; }
+
+public:
     // Assemble TX Buffer Metainformation and MAC Header
     void marshal(Buffer * buf, const Address & src, const Address & dst, const Type & type) {
         Frame * frame = new (buf->frame()) Frame(type, src, dst);

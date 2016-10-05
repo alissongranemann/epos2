@@ -152,19 +152,27 @@ public:
     };
 
     // Buffer Metadata added to frames by higher-level protocols
-    struct TSTP_Metadata
+    struct IEEE802_15_4_Metadata
     {
-        TSTP_Metadata() {}
-
+        IEEE802_15_4_Metadata() {}
         int rssi;
+    };
+
+    struct TSTP_Metadata : public IEEE802_15_4_Metadata
+    {
+        TSTP_Metadata() : is_new(true) {}
+
         long long sfd_time_stamp;
         unsigned int id;
         long long offset;
         bool destined_to_me;
+        bool downlink;            // Message direction
         long long deadline;
+        long long tx_time;
         long long origin_time;
         long my_distance;
         bool is_tx;
+        bool is_new;
         bool is_microframe;
         bool relevant;
         bool trusted;

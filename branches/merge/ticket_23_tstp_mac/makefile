@@ -53,6 +53,11 @@ test: $(subst .cc,_traits.h,$(TEST_SOURCES))
 		$(INSTALL) $(subst .cc,_traits.h,$(TEST_SOURCES)) $(APP)
 		$(foreach tst,$(TESTS),$(MAKETEST) APPLICATION=$(tst) prebuild_$(tst) clean1 all1 posbuild_$(tst) prerun_$(tst) run1 posbuild_$(tst);)
 		$(foreach tst,$(TESTS),$(CLEAN) $(APP)/$(tst)*;)
+build: $(subst .cc,_traits.h,$(TEST_SOURCES))
+		$(INSTALL) $(TEST_SOURCES) $(APP)
+		$(INSTALL) $(subst .cc,_traits.h,$(TEST_SOURCES)) $(APP)
+		$(foreach tst,$(TESTS),$(MAKETEST) APPLICATION=$(tst) prebuild_$(tst) clean1 all1 posbuild_$(tst);)
+		$(foreach tst,$(TESTS),$(CLEAN) $(APP)/$(tst)*;)
 
 .PHONY: prebuild_$(APPLICATION) posbuild_$(APPLICATION) prerun_$(APPLICATION)
 prebuild_$(APPLICATION):

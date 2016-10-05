@@ -202,7 +202,7 @@ public:
     typedef Frame PDU;
 
     // Buffers used to hold frames across a zero-copy network stack
-    typedef _UTIL::Buffer<NIC, IF<Traits<_SYS::TSTP>::enabled, Phy_Frame, Frame>::Result, void, IF<Traits<_SYS::TSTP>::enabled, TSTP_Metadata, Dummy>::Result> Buffer;
+    typedef _UTIL::Buffer<NIC, IF<Traits<_SYS::TSTP>::enabled, Phy_Frame, Frame>::Result, void, IF<Traits<_SYS::TSTP>::enabled, TSTP_Metadata, IEEE802_15_4_Metadata>::Result> Buffer;
 
     // Observers of a protocol get a also a pointer to the received buffer
     typedef Data_Observer<Buffer, Type> Observer;

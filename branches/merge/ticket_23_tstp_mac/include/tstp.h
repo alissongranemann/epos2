@@ -51,8 +51,8 @@ public:
 
     // Time
     typedef RTC::Microsecond Microsecond;
-    typedef unsigned long long Time;
-    typedef unsigned long Time_Offset;
+    typedef long long Time;
+    typedef long Time_Offset;
 
     // Geographic Coordinates
     template<Scale S>
@@ -90,7 +90,7 @@ public:
     public:
         Microframe() {}
 
-        Microframe(bool all_listen, const Frame_ID & id, const MF_Count & count, const Hint & hint = 0) : 
+        Microframe(bool all_listen, const Frame_ID & id, const MF_Count & count, const Hint & hint = 0) :
             _al_count_idh((id & 0xf) | ((count & 0x7ff) << 11) | (static_cast<unsigned int>(all_listen) << 15)), _idl(id & 0xff), _hint(hint) {}
 
         MF_Count count() const { return (_al_count_idh & (0x7ff << 11)) >> 11; }
@@ -109,7 +109,7 @@ public:
         }
 
         void all_listen(bool all_listen) {
-            if(all_listen) 
+            if(all_listen)
                 _al_count_idh |= (1 << 15);
             else
                 _al_count_idh &= ~(1 << 15);

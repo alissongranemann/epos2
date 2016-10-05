@@ -14,6 +14,8 @@ __BEGIN_SYS
 // Class attributes
 CC2538RF::Reg32 CC2538RF::Timer::_overflow_count;
 CC2538RF::Reg32 CC2538RF::Timer::_interrupt_overflow_count;
+CC2538RF::Timer::Time_Stamp CC2538RF::Timer::_offset;
+IC::Interrupt_Handler CC2538RF::Timer::_handler;
 
 CC2538::Device CC2538::_devices[UNITS];
 
@@ -112,6 +114,8 @@ void CC2538::reset()
 
 void CC2538::handle_int()
 {
+    char rssi = xreg(RSSI); // TODO: get the RSSI appended by hardware at the end of the frame when filtering is enabled
+
     db<CC2538>(TRC) << "CC2538::handle_int()" << endl;
 
     Reg32 irqrf0 = sfr(RFIRQF0);
@@ -138,10 +142,12 @@ void CC2538::handle_int()
             _rx_cur_produce = (idx + 1) % RX_BUFS;
 
             if(buf) {
+                buf->rssi = rssi;
                 buf->size(CC2538RF::copy_from_nic(buf->frame()));
-                if(MAC::marshal(buf)) {
+                if(MAC::pre_notify(buf)) {
                     db<CC2538>(TRC) << "CC2538::handle_int:receive(b=" << buf << ") => " << *buf << endl;
-                    if(!notify(reinterpret_cast<MAC::Header *>(buf->frame())->type(), buf))
+                    bool notified = notify(reinterpret_cast<MAC::Header *>(buf->frame())->type(), buf);
+                    if(!MAC::post_notify(buf) && !notified)
                         buf->unlock(); // No one was waiting for this frame, so make it available for receive()
                 } else {
                     db<CC2538>(TRC) << "CC2538::handle_int: frame dropped by MAC"  << endl;
