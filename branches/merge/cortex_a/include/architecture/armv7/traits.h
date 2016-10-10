@@ -27,11 +27,17 @@ template <> struct Traits<TSC>: public Traits<void>
     // On eMote3, TSC uses User_Timer on channel 3. To use channel 3, you must disable the TSC
     // On LM3S811:
     // * TSC uses User_Timer on channel 1. To use channel 1, you must disable the TSC
-    // * LM3S811 does not support up-count mode on general purpose timers, 
+    // * LM3S811 does not support up-count mode on general purpose timers,
     //   and QEMU (v2.7.50) does not support reading the value of general purpose timers,
     //   thus TSC::time_stamp() does not work, but Machine::delay does.
     static const bool enabled = true;
 //TODO: http://stackoverflow.com/questions/16236460/arm-cortex-a9-event-counters-return-0
+};
+
+template<> struct Traits<PMU>: public Traits<void>
+{
+    static const bool CHANNELS = Traits<Build>::MODEL == Traits<Build>::Zynq ? 6 : 0;
+    static const bool EVENTS = Traits<Build>::MODEL == Traits<Build>::Zynq ? 96 : 0;
 };
 
 __END_SYS
