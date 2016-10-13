@@ -8,7 +8,7 @@
 __USING_SYS
 
 // Class attributes
-const char * USB::_send_buffer = reinterpret_cast<const char *>(0);
+const char * USB::_send_buffer = 0;
 unsigned int USB::_send_buffer_size = 0;
 CPU::Reg32 USB::_cif;
 CPU::Reg32 USB::_iif;
@@ -23,23 +23,33 @@ void USB::disable()
 
 char USB::get()
 {
+    while(!configured());
     lock();
     input();
-    while(!(reg(CSOL) & CSOL_OUTPKTRDY));
+    while(!reg(CSOL) & CSOL_OUTPKTRDY) {
+        unlock();
+        lock();
+        input();
+    }
     unsigned int sz = (reg(CNTH) << 8) | reg(CNT0_CNTL);
     char ret = reg(F4);
-    if(sz == 1) {
+    if(sz == 1)
         reg(CSOL) &= ~CSOL_OUTPKTRDY;
-    }
     unlock();
     return ret;
 }
 
 unsigned int USB::get(char * out, unsigned int max_size)
 {
+    while(!configured());
     lock();
     input();
-    while(!(reg(CSOL) & CSOL_OUTPKTRDY));
+    while(!reg(CSOL) & CSOL_OUTPKTRDY) {
+        unlock();
+        lock();
+        input();
+    }
+
     unsigned int i;
     unsigned int sz = (reg(CNTH) << 8) | reg(CNT0_CNTL);
     for(i = 0; (i<sz) && (i<max_size); i++)
@@ -65,7 +75,7 @@ void USB::put(char c)
     flush();
     // It looks like the update of the CSIL_INPKTRDY bit takes a while to
     // take effect, so we're better off just delaying and not even checking it.
-    for(volatile int i = 0; i < 0xff; i++);
+    for(volatile int i = 0; i < 0xf; i++);
     unlock();
 }
 
@@ -85,17 +95,15 @@ void USB::put(const char * c, unsigned int size)
     flush();
     // It looks like the update of the CSIL_INPKTRDY bit takes a while to
     // take effect, so we're better off just delaying and not even checking it.
-    for(volatile int i = 0; i < 0xff; i++);
+    for(volatile int i = 0; i < 0xf; i++);
     unlock();
 }
 
 bool USB::handle_ep0(const USB_2_0::Request::Device_Request & data)
 {
-    switch(data.bRequest)
-    {
+    switch(data.bRequest) {
         case SET_ADDRESS:
-            if(auto d = data.morph<Request::Set_Address>())
-            {
+            if(auto d = data.morph<Request::Set_Address>()) {
                 db<USB>(TRC) << *d << endl;
                 reg(ADDR) = d->device_address;
                 _state = USB_2_0::STATE::ADDRESS;
@@ -104,11 +112,9 @@ bool USB::handle_ep0(const USB_2_0::Request::Device_Request & data)
             break;
 
         case GET_DESCRIPTOR:
-            if(auto d = data.morph<Request::Get_Descriptor>())
-            {
+            if(auto d = data.morph<Request::Get_Descriptor>()) {
                 db<USB>(TRC) << *d << endl;
-                if(d->descriptor_type == DESC_DEVICE)
-                {
+                if(d->descriptor_type == DESC_DEVICE) {
                     _send_buffer = reinterpret_cast<const char *>(&_device_descriptor);
                     _send_buffer_size = (sizeof _device_descriptor) > (d->descriptor_length) ? (d->descriptor_length) : (sizeof _device_descriptor);
                     return true;
@@ -116,8 +122,7 @@ bool USB::handle_ep0(const USB_2_0::Request::Device_Request & data)
 
                 // DESC_DEVICE_QUALIFIER not supported
 
-                if(d->descriptor_type == DESC_CONFIGURATION)
-                {
+                if(d->descriptor_type == DESC_CONFIGURATION) {
                     _send_buffer = reinterpret_cast<const char *>(&_config);
                     _send_buffer_size = (sizeof _config) > (d->descriptor_length) ? (d->descriptor_length) : (sizeof _config);
                     return true;
@@ -126,24 +131,20 @@ bool USB::handle_ep0(const USB_2_0::Request::Device_Request & data)
             break;
 
         case SET_CONFIGURATION:
-            if(auto d = data.morph<Request::Set_Configuration>())
-            {
+            if(auto d = data.morph<Request::Set_Configuration>()) {
                 db<USB>(TRC) << *d << endl;
                 bool ret = (d->configuration_number == 1);
-                if(ret) {
+                if(ret)
                     _state = USB_2_0::STATE::CONFIGURED;
-                }
                 return ret;
             }
             break;
 
         case CDC::GET_LINE_CODING:
-            if(auto d = data.morph<CDC::Request::Get_Line_Coding>())
-            {
-                static CDC::Request::Get_Line_Coding::Data_Format data;// = new CDC::Request::Get_Line_Coding::Data_Format();
+            if(auto d = data.morph<CDC::Request::Get_Line_Coding>()) {
+                static CDC::Request::Get_Line_Coding::Data_Format data;
                 data.dwDTERate = 1/Traits<UART>::DEF_BAUD_RATE;
-                switch(Traits<UART>::DEF_STOP_BITS)
-                {
+                switch(Traits<UART>::DEF_STOP_BITS) {
                     case 1: data.bCharFormat = 0; break;
                     case 2: data.bCharFormat = 2; break;
                     default: return false;
@@ -161,8 +162,7 @@ bool USB::handle_ep0(const USB_2_0::Request::Device_Request & data)
             return true;
 
         case CDC::SET_CONTROL_LINE_STATE:
-            if(auto d = data.morph<CDC::Request::Set_Control_Line_State>())
-            {
+            if(auto d = data.morph<CDC::Request::Set_Control_Line_State>()) {
                 db<USB>(TRC) << *d << endl;
                 _ready_to_put_next = d->DTE_present;
                 return true;
@@ -178,24 +178,26 @@ bool USB::handle_ep0(const USB_2_0::Request::Device_Request & data)
 
 void USB::int_handler(const IC::Interrupt_Id & interrupt)
 {
-    Reg32 index = endpoint(); // Save old index
-
-    Reg32 flags;
-    if((flags = _cif)) {
-        _cif = 0;
-        if(flags & INT_RESET)
+    Reg32 cif = _cif;
+    Reg32 iif = _iif;
+    Reg32 oif = _oif;
+    _cif = 0;
+    _iif = 0;
+    _oif = 0;
+    if(cif) {
+        if(cif & INT_RESET)
             reset();
-        db<USB>(TRC) << "USB::CIF = " << flags << endl;
+        db<USB>(TRC) << "USB::CIF = " << cif << endl;
     }
 
-    if((flags = _iif)) {
-        _iif = 0;
-        if(flags & (1 << 0)) { // Endpoint 0 interrupt
-            if((not _ready_to_put) and _ready_to_put_next) {
-                _ready_to_put = true;
-                put(' '); // For some reason the first put() is not shown in minicom
+    if(iif) {
+        if(iif & (1 << 0)) { // Endpoint 0 interrupt
+            if((not _configured) and _ready_to_put_next) {
+                _configured = true;
+                put(' '); // FIXME For some reason the first put() is not shown in minicom
             }
 
+            Reg32 index = endpoint(); // Save old index
             control();
             if(reg(CS0_CSIL) & CS0_OUTPKTRDY) { // Data present
                 db<USB>(TRC) << "Endpoint 0 command received:";
@@ -233,20 +235,17 @@ void USB::int_handler(const IC::Interrupt_Id & interrupt)
                     reg(CS0_CSIL) |= CS0_INPKTRDY | CS0_DATAEND;
                     _send_buffer = reinterpret_cast<const char *>(0);
                 } else
-                    // Signal that packet is ready
-                    reg(CS0_CSIL) |= CS0_INPKTRDY;
+                    reg(CS0_CSIL) |= CS0_INPKTRDY; // Signal that packet is ready
             }
+
+            endpoint(index); // Restore old index
         }
 
-        db<USB>(TRC) << "IIF = " << flags << endl;
+        db<USB>(TRC) << "IIF = " << iif << endl;
     }
 
-    if((flags = _oif)) {
-        _oif = 0;
-        db<USB>(TRC) << "OIF = " << flags << endl;
-    }
-
-    endpoint(index); // Restore old index
+    if(oif)
+        db<USB>(TRC) << "OIF = " << oif << endl;
 }
 
 #endif
