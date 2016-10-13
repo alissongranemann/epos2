@@ -8,7 +8,7 @@ __USING_SYS
 #ifndef __mmod_zynq__
 
 volatile USB_2_0::STATE USB::_state;
-volatile bool USB::_ready_to_put = false;
+volatile bool USB::_configured = false;
 bool USB::_ready_to_put_next = false;
 bool USB::_was_locked = false;
 
@@ -129,7 +129,7 @@ const USB::Full_Config USB::_config =
 // Configurations that need to be done at every USB reset
 void USB::reset()
 {
-    _ready_to_put = false;
+    _configured = false;
     _ready_to_put_next = false;
     _state = USB_2_0::STATE::DEFAULT;
     _send_buffer = reinterpret_cast<const char *>(0);
@@ -152,12 +152,9 @@ void USB::reset()
     // if there are any data packets in the FIFO, they should be flushed
     reg(CSOL) |= CSOL_FLUSHPACKET;
 
-    // Only enable IN interrupts for endpoints 0 and 2
-    reg(IIE) = (1 << 0);// | (1 << 2);
-    // Only enable OUT interrupts for endpoint 0
-    reg(OIE) = (1 << 0);
-    // Only enable RESET common interrupt (disable start-of-frame, resume and suspend)
-    reg(CIE) = INT_RESET;
+    reg(IIE) = (1 << 0); // Only enable IN interrupts for endpoint 0
+    reg(OIE) = (1 << 0); // Only enable OUT interrupts for endpoint 0
+    reg(CIE) = INT_RESET; // Only enable RESET common interrupt (disable start-of-frame, resume and suspend)
 }
 
 void USB::init()
