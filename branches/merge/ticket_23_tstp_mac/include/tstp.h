@@ -471,9 +471,21 @@ __END_SYS
 
 __BEGIN_SYS
 
+class TSTP_Router : public TSTP_Common, private NIC::Observer {
+    typedef NIC::Buffer Buffer;
+public:
+    TSTP_Router();
+    ~TSTP_Router();
+
+    static bool bootstrap() { return true; }
+
+    void update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf);
+};
+
 class TSTP: public TSTP_Common, private NIC::Observer
 {
     template<typename> friend class Smart_Data;
+    friend class TSTP_Router;
 public:
     // Buffers received from the NIC
     typedef NIC::Buffer Buffer;
@@ -732,8 +744,9 @@ protected:
 public:
     ~TSTP();
 
-    static Coordinates here() { return Coordinates(0, 0, 0); }
-    static Time now() { return RTC::seconds_since_epoch(); }
+    static Coordinates here() { return Coordinates(0, 0, 0); } // TODO
+    static Coordinates sink_address() { return Coordinates(10, 10, 10); } // TODO
+    static Time now() { return RTC::seconds_since_epoch(); } // TODO
 
     static void attach(Observer * obs, void * subject) { _observed.attach(obs, int(subject)); }
     static void detach(Observer * obs, void * subject) { _observed.detach(obs, int(subject)); }

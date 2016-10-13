@@ -170,8 +170,8 @@ public:
         long long deadline;
         long long tx_time;
         long long origin_time;
-        long my_distance;
-        bool is_tx;
+        long long my_distance;
+        long long sender_distance;
         bool is_new;
         bool is_microframe;
         bool relevant;

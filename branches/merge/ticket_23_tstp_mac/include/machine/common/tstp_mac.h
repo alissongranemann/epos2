@@ -14,6 +14,7 @@
 
 #include <ic.h>
 #include <utility/random.h>
+#include <utility/math.h>
 
 __BEGIN_SYS
 
@@ -43,8 +44,8 @@ public:
     //static const unsigned int Ts = 580 - Tu; // Time to send a single microframe (including PHY headers)
     static const unsigned int MICROFRAME_TIME = Ts;
     static const unsigned int MIN_Ti = G;//Tu;// Minimum time between consecutive microframes
-    static const unsigned int RADIO_RADIUS = 17 * 100; //TODO
     static const unsigned int TX_UNTIL_PROCESS_DATA_DELAY = 0;//5100; //TODO
+    static const unsigned long long RADIO_RADIUS = 1700;
 
     //static const unsigned int NMF = (1 + ((CI - Ts) / (MIN_Ti + Ts))) > 0xfff ? 0xfff :
     //                                (1 + ((CI - Ts) / (MIN_Ti + Ts)));
@@ -88,7 +89,6 @@ protected:
                 buf->sfd_time_stamp = Timer::sfd();
                 buf->id = id;
                 buf->downlink = mf->all_listen();
-                buf->is_tx = false;
                 buf->is_new = true;
                 buf->is_microframe = true;
                 buf->relevant = mf->all_listen();
@@ -114,12 +114,12 @@ protected:
             // Initialize Buffer Metainformation
             buf->sfd_time_stamp = Timer::sfd();
             buf->id = _receiving_data_id;
-            buf->offset = (Random::random() % Timer::us2count(SLEEP_PERIOD / G + 1)) * Timer::us2count(G); // TODO: dynamic offset
-            buf->is_tx = false;
+            buf->sender_distance = _receiving_data_hint;
             buf->is_new = true;
             buf->is_microframe = false;
             buf->relevant = true;
             buf->trusted = false;
+            buf->offset = 1000000;
 
             return true;
         }
@@ -134,6 +134,7 @@ protected:
 
             if(buf->relevant) { // Transition: [Relevant MF]
                 _receiving_data_id = buf->id;
+                _receiving_data_hint = mf->hint();
                 free(buf);
                 // State: Sleep until Data
                 Timer::interrupt(data_time, rx_data);
@@ -143,6 +144,14 @@ protected:
                 return false;
             }
         } else { // State: RX Data (part 3/3)
+            // Normalize offset calculated by the router
+            long long dist = abs(buf->my_distance - (buf->sender_distance - RADIO_RADIUS));
+            long long betha = (G * RADIO_RADIUS * 1000000) / (dist * G);
+            buf->offset = buf->offset * betha / 1000000;
+
+            // Introduce Euclidean Distance component to offset
+            buf->offset = (((buf->offset * dist * 1000000) / (G * RADIO_RADIUS / SLEEP_PERIOD)) * G) / 1000000;
+
             update_tx_schedule(0);
             return false;
         }
@@ -154,8 +163,7 @@ public:
         buf->id = Random::random() & 0xfff;// TODO
         unsigned long long r = Random::random();
         unsigned long long mod = SLEEP_PERIOD / G + 1;
-        buf->offset = Timer::us2count((r % mod) * G);
-        buf->is_tx = true;
+        buf->offset = (r % mod) * G * 1000000;
         buf->is_microframe = false;
         buf->trusted = false;
         buf->destined_to_me = false; // TODO
@@ -207,7 +215,7 @@ private:
             Radio::copy_to_nic(&_mf, sizeof(Microframe));
             Radio::listen();
 
-            Timer::interrupt(Timer::read() + _tx_pending->offset, cca);
+            Timer::interrupt(Timer::read() + Timer::us2count(_tx_pending->offset) / 1000000, cca);
         } else { // Transition: [No TX pending]
             // State: Sleep S
             Timer::interrupt(now_ts + Timer::us2count(SLEEP_PERIOD), rx_mf);
@@ -305,6 +313,7 @@ private:
     static Microframe _mf;
     static Time_Stamp _mf_time;
     static Frame_ID _receiving_data_id;
+    static long _receiving_data_hint;
     static Buffer::List _tx_schedule;
     static Buffer * _tx_pending;
     static bool _in_rx_mf;
@@ -319,6 +328,9 @@ typename TSTP_MAC<Radio>::Time_Stamp TSTP_MAC<Radio>::_mf_time;
 
 template<typename Radio>
 TSTP_Common::Frame_ID TSTP_MAC<Radio>::_receiving_data_id;
+
+template<typename Radio>
+long TSTP_MAC<Radio>::_receiving_data_hint;
 
 template<typename Radio>
 TSTP_MAC<Radio>::Buffer::List TSTP_MAC<Radio>::_tx_schedule;
