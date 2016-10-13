@@ -6,7 +6,7 @@
 
 __BEGIN_SYS
 
-template <> struct Traits<CPU>: public Traits<void>
+template<> struct Traits<CPU>: public Traits<void>
 {
     enum {LITTLE, BIG};
     static const unsigned int ENDIANESS         = LITTLE;
@@ -15,13 +15,13 @@ template <> struct Traits<CPU>: public Traits<void>
     static const bool unaligned_memory_access   = false;
 };
 
-template <> struct Traits<MMU>: public Traits<void>
+template<> struct Traits<MMU>: public Traits<void>
 {
     static const bool colorful = false;
     static const unsigned int COLORS = 1;
 };
 
-template <> struct Traits<TSC>: public Traits<void>
+template<> struct Traits<TSC>: public Traits<void>
 {
     // In order to use Machine::delay, TSC must be enabled
     // On eMote3, TSC uses User_Timer on channel 3. To use channel 3, you must disable the TSC
@@ -36,8 +36,6 @@ template <> struct Traits<TSC>: public Traits<void>
 
 template<> struct Traits<PMU>: public Traits<void>
 {
-    static const bool CHANNELS = Traits<Build>::MODEL == Traits<Build>::Zynq ? 6 : 0;
-    static const bool EVENTS = Traits<Build>::MODEL == Traits<Build>::Zynq ? 96 : 0;
 };
 
 __END_SYS

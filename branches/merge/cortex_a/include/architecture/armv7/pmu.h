@@ -10,10 +10,11 @@ __BEGIN_SYS
 
 class ARMv7_A_PMU: public PMU_Common
 {
-protected:
+private:
     typedef CPU::Reg32 Reg32;
 
-    static const unsigned int CHANNELS = Traits<PMU>::CHANNELS;
+    static const unsigned int CHANNELS = 6;
+    static const unsigned int EVENTS = 96;
 
 public:
     // Useful bits in the PMCR register
@@ -144,7 +145,9 @@ public:
         write(channel, 0);
     }
 
-protected:
+    static void init();
+
+private:
     static void pmcr(Reg32 reg) { ASM("mcr p15, 0, %0, c9, c12, 0\n\t" : : "r"(reg)); }
     static Reg32 pmcr() { Reg32 reg; ASM("mrc p15, 0, %0, c9, c12, 0\n\t" : "=r"(reg) : ); return reg; }
 
@@ -169,19 +172,30 @@ protected:
     static void pmuserenr(Reg32 reg) { ASM("mcr p15, 0, %0, c9, c14, 0\n\t" : : "r"(reg)); }
     static Reg32 pmuserenr() { Reg32 reg; ASM("mrc p15, 0, %0, c9, c14, 0\n\t" : "=r"(reg) : ); return reg; }
 
-protected:
+private:
     static const Reg32 _events[EVENTS];
 };
 
-class PMU: public ARMv7_A_PMU
+
+class PMU: private IF<Traits<Build>::MODEL == Traits<Build>::Zynq, ARMv7_A_PMU, ARMv7_A_PMU>::Result
 {
     friend class CPU;
+
+private:
+    typedef IF<Traits<Build>::MODEL == Traits<Build>::Zynq, ARMv7_A_PMU, ARMv7_A_PMU>::Result Engine;
 
 public:
     PMU() {}
 
+    using Engine::config;
+    using Engine::read;
+    using Engine::write;
+    using Engine::start;
+    using Engine::stop;
+    using Engine::reset;
+
 private:
-    static void init();
+    static void init() { Engine::init(); }
 };
 
 __END_SYS

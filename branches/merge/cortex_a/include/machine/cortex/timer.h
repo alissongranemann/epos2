@@ -130,7 +130,11 @@ protected:
         reg(GPTMCFG) = 0; // 32-bit timer
         reg(GPTMTAMR) = periodic ? 2 : 1; // 2 -> Periodic, 1 -> One-shot
         reg(GPTMTAILR) = count;
-        reg(GPTMIMR) = interrupt * TATO_INT; // Enable or disable time-out interrupt
+        if(interrupt)
+            reg(GPTMIMR) |= TATO_INT;
+        else
+            reg(GPTMIMR) &= ~TATO_INT;
+        
         enable();
     }
 
@@ -323,14 +327,7 @@ public:
     Microsecond read() { return count2us(Engine::read()); }
 
     void enable() { Engine::enable(); }
-    void disable() {
-        Engine::disable();
-        if(_handler) {
-            IC::Interrupt_Id id = _channel == 0 ? IC::INT_USER_TIMER0 : _channel == 1 ? IC::INT_USER_TIMER1 :
-                                  _channel == 2 ? IC::INT_USER_TIMER2 : IC::INT_USER_TIMER3;
-            IC::disable(id);
-        }
-    }
+    void disable() { Engine::disable(); }
     void power(const Power_Mode & mode) { power_user_timer(_channel, mode); }
 
     static void eoi(const IC::Interrupt_Id & int_id) { Engine::eoi(int_id); }

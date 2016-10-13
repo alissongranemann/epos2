@@ -6,7 +6,7 @@
 
 __BEGIN_SYS
 
-void PMU::init()
+void ARMv7_A_PMU::init()
 {
     db<Init, PMU>(TRC) << "PMU::init()" << endl;
 

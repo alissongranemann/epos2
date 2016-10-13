@@ -28,7 +28,7 @@ public:
         MSR_BASE = 0x40000000,
     };
 
-    //Performance Monitoring Counters - used as input to the rdpmc instruction
+    // Performance Monitoring Counters - used as input to the rdpmc instruction
     enum {
         PMC0 = 0x0000, // PERFCTR0
         PMC1 = 0x0001, // PERFCTR1
@@ -40,7 +40,7 @@ public:
         PMC7 = 0x0007,
     };
 
-    //Memory-mapped PMU registers - Appendix B - MSRs
+    // Memory-mapped PMU registers - Appendix B - MSRs
     enum {
         PMC_BASE_ADDR = 0x00c1,
         MPERF         = 0x00e7,
