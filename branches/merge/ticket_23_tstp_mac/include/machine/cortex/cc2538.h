@@ -71,7 +71,7 @@ public:
         TXPOWER     = 0x040,
         RSSI        = 0x060,
         RSSISTAT    = 0x064,   // RSSI valid status register                                   ro      0x00000000
-        RFC_OBS_CTRL0 = 0x1AC, // Select which signal is represented by OBSSEL_SIG0 
+        RFC_OBS_CTRL0 = 0x1AC, // Select which signal is represented by OBSSEL_SIG0
         RFC_OBS_CTRL1 = 0x1B0, // Select which signal is represented by OBSSEL_SIG1
         RFC_OBS_CTRL2 = 0x1B4, // Select which signal is represented by OBSSEL_SIG2
     };
@@ -123,7 +123,7 @@ public:
                                         // on the current state register of the FFCTRL FSM.
         SIGNAL_FFCTRL_FIFO      = 0x12, // Pin is high when one or more bytes are in the RXFIFO.
                                         // Low during RXFIFO overflow.
-        SIGNAL_FFCTRL_FIFOP     = 0x13, // Pin is high when the number of bytes in the RXFIFO exceeds the 
+        SIGNAL_FFCTRL_FIFOP     = 0x13, // Pin is high when the number of bytes in the RXFIFO exceeds the
                                         // programmable threshold or at least one complete frame is in the RXFIFO.
                                         // Also high during RXFIFO overflow.
                                         // Not to be confused with the FIFOP exception.

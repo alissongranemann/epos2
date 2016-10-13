@@ -22,10 +22,12 @@ CC2538::CC2538(unsigned int unit): _unit(unit), _rx_cur_consume(0), _rx_cur_prod
     _address[0] = ffsm(SHORT_ADDR0);
     _address[1] = ffsm(SHORT_ADDR1);
 
-    xreg(FRMFILT0) |= FRAME_FILTER_EN; // Enable frame filtering
+    //xreg(FRMFILT0) |= FRAME_FILTER_EN; // Enable frame filtering
+    xreg(FRMFILT0) &= ~FRAME_FILTER_EN; // Disable frame filtering
     xreg(FRMFILT1) &= ~ACCEPT_FT2_ACK; // ACK frames are handled only when expected
 
-    xreg(SRCMATCH) |= SRC_MATCH_EN; // Enable automatic source address matching
+    //xreg(SRCMATCH) |= SRC_MATCH_EN; // Enable automatic source address matching
+    xreg(SRCMATCH) &= ~SRC_MATCH_EN; // Disable automatic source address matching
 
     xreg(FRMCTRL0) |= AUTO_CRC; // Enable auto-CRC
 
