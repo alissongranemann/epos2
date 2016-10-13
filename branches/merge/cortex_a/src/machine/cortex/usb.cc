@@ -75,7 +75,7 @@ void USB::put(char c)
     flush();
     // It looks like the update of the CSIL_INPKTRDY bit takes a while to
     // take effect, so we're better off just delaying and not even checking it.
-    for(volatile int i = 0; i < 0xf; i++);
+    for(volatile int i = 0; i < 0xff; i++);
     unlock();
 }
 
@@ -95,7 +95,7 @@ void USB::put(const char * c, unsigned int size)
     flush();
     // It looks like the update of the CSIL_INPKTRDY bit takes a while to
     // take effect, so we're better off just delaying and not even checking it.
-    for(volatile int i = 0; i < 0xf; i++);
+    for(volatile int i = 0; i < 0xff; i++);
     unlock();
 }
 
