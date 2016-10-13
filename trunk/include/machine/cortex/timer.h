@@ -132,6 +132,9 @@ protected:
         reg(GPTMTAILR) = count;
         if(interrupt)
             reg(GPTMIMR) |= TATO_INT;
+        else
+            reg(GPTMIMR) &= ~TATO_INT;
+        
         enable();
     }
 
@@ -306,8 +309,20 @@ public:
     User_Timer(unsigned int channel, const Microsecond & time, const Handler & handler, bool periodic = false)
     : Engine(channel, us2count(time), handler ? true : false, periodic), _channel(channel), _handler(handler) {
         assert(channel < Machine_Model::TIMERS - Traits<TSC>::enabled); // TSC uses the last timer channel. To use the last channel, you must disable the TSC
+        if(_handler) {
+            IC::Interrupt_Id id = _channel == 0 ? IC::INT_USER_TIMER0 : _channel == 1 ? IC::INT_USER_TIMER1 :
+                                  _channel == 2 ? IC::INT_USER_TIMER2 : IC::INT_USER_TIMER3;
+            IC::int_vector(id, _handler);
+            IC::enable(id);
+        }
     }
-    ~User_Timer() {}
+    ~User_Timer() {
+        if(_handler) {
+            IC::Interrupt_Id id = _channel == 0 ? IC::INT_USER_TIMER0 : _channel == 1 ? IC::INT_USER_TIMER1 :
+                                  _channel == 2 ? IC::INT_USER_TIMER2 : IC::INT_USER_TIMER3;
+            IC::disable(id);
+        }
+    }
 
     Microsecond read() { return count2us(Engine::read()); }
 
@@ -318,8 +333,6 @@ public:
     static void eoi(const IC::Interrupt_Id & int_id) { Engine::eoi(int_id); }
 
 private:
-    static void int_handler(const IC::Interrupt_Id & i);
-
     static Count us2count(const Microsecond & us) { return static_cast<unsigned long long>(us) * CLOCK / 1000000; }
     static Microsecond count2us(const Count & count) { return count * 1000000 / CLOCK; }
 

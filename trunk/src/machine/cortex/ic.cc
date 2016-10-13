@@ -162,7 +162,7 @@ void IC::entry()
     ASM("   mrs     r0, xpsr           \n"
         "   and     r0, #0x3f          \n" // Store int_id in r0 (to be passed as argument to eoi() and dispatch())
         "   push    {r0, lr}           \n"
-        "   bl      _eoi               \n" // Acknowledge the interrupt 
+        "   bl      _eoi               \n" // Acknowledge the interrupt
         "   pop     {r0, lr}           \n"
         "   mov     r3, #1             \n"
         "   lsl     r3, #24            \n" // xPSR with Thumb bit only. Other bits are Don't Care
