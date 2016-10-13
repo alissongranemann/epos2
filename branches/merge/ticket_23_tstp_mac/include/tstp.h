@@ -29,7 +29,7 @@ public:
     typedef CPU::Reg16 Frame_ID;
     typedef CPU::Reg32 Hint;
     typedef NIC_Common::CRC16 CRC;
-    typedef unsigned char MF_Count;
+    typedef unsigned short MF_Count;
 
     // Packet Types
     typedef unsigned char Type;
@@ -91,13 +91,13 @@ public:
         Microframe() {}
 
         Microframe(bool all_listen, const Frame_ID & id, const MF_Count & count, const Hint & hint = 0) :
-            _al_count_idh((id & 0xf) | ((count & 0x7ff) << 11) | (static_cast<unsigned int>(all_listen) << 15)), _idl(id & 0xff), _hint(hint) {}
+            _al_count_idh((id & 0xf) | ((count & 0x7ff) << 4) | (static_cast<unsigned int>(all_listen) << 15)), _idl(id & 0xff), _hint(hint) {}
 
-        MF_Count count() const { return (_al_count_idh & (0x7ff << 11)) >> 11; }
+        MF_Count count() const { return (_al_count_idh & (0x7ff << 4)) >> 4; }
         MF_Count dec_count() {
             MF_Count c = count();
-            _al_count_idh &= ~(0x7ff << 11);
-            _al_count_idh |= (c-1) << 11;
+            _al_count_idh &= ~(0x7ff << 4);
+            _al_count_idh |= (c-1) << 4;
             return c;
         }
 
@@ -125,10 +125,10 @@ public:
         }
 
     private:
-        CPU::Reg16 _al_count_idh; // all_listen : 1
-                                  // count : 11
-                                  // id MSBs: 4
-        unsigned char _idl;       // id LSBs: 8
+        unsigned short _al_count_idh; // all_listen : 1
+                                      // count : 11
+                                      // id MSBs: 4
+        unsigned char _idl;           // id LSBs: 8
         Hint _hint;
         CRC _crc;
     } __attribute__((packed));
@@ -679,9 +679,10 @@ public:
     private:
         void send() {
             db<TSTP>(TRC) << "TSTP::Interested::send() => " << reinterpret_cast<const Interest &>(*this) << endl;
-            Buffer * buf = _nic->alloc(NIC::Address::BROADCAST, NIC::TSTP, 0, 0, sizeof(Interest));
-            memcpy(buf->frame()->data<Interest>(), this, sizeof(Interest));
-            _nic->send(buf);
+            if(Buffer * buf = _nic->alloc(NIC::Address::BROADCAST, NIC::TSTP, 0, 0, sizeof(Interest))) {
+                memcpy(buf->frame()->data<Interest>(), this, sizeof(Interest));
+                _nic->send(buf);
+            }
         }
 
     private:
@@ -713,10 +714,11 @@ public:
     private:
         void send(const Time & expiry) {
             db<TSTP>(TRC) << "TSTP::Responsive::send(x=" << expiry << ")" << endl;
-            Buffer * buf = _nic->alloc(NIC::Address::BROADCAST, NIC::TSTP, 0, 0, _size);
-            memcpy(buf->frame()->data<Response>(), this, _size);
-            db<TSTP>(INF) << "TSTP::Responsive::send:response=" << this << " => " << reinterpret_cast<const Response &>(*this) << endl;
-            _nic->send(buf);
+            if(Buffer * buf = _nic->alloc(NIC::Address::BROADCAST, NIC::TSTP, 0, 0, _size)) {
+                memcpy(buf->frame()->data<Response>(), this, _size);
+                db<TSTP>(INF) << "TSTP::Responsive::send:response=" << this << " => " << reinterpret_cast<const Response &>(*this) << endl;
+                _nic->send(buf);
+            }
         }
 
     private:

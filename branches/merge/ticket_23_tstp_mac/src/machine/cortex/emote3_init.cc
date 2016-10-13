@@ -32,7 +32,7 @@ void Machine_Model::pre_init()
     gpiod(DIR) &= ~pin_bit; // Set pins D6 and D7 as output
     ioc(PD6_OVER) = ANA;
     ioc(PD7_OVER) = ANA;
-    
+
     Reg32 clock_ctrl = scr(CLOCK_CTRL) & ~(SYS_DIV * 7);
     clock_ctrl |= sys_div * SYS_DIV; // Set system clock rate
     clock_ctrl |= AMP_DET; // Enable AMP detect to make sure XOSC starts correctly

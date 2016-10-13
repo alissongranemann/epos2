@@ -12,10 +12,16 @@
 __BEGIN_SYS
 
 // Class attributes
-CC2538RF::Reg32 CC2538RF::Timer::_overflow_count;
-CC2538RF::Reg32 CC2538RF::Timer::_interrupt_overflow_count;
+volatile CC2538RF::Reg32 CC2538RF::Timer::_overflow_count;
+volatile CC2538RF::Reg32 CC2538RF::Timer::_ints;
+CC2538RF::Timer::Time_Stamp CC2538RF::Timer::_int_request_time;
 CC2538RF::Timer::Time_Stamp CC2538RF::Timer::_offset;
 IC::Interrupt_Handler CC2538RF::Timer::_handler;
+bool CC2538RF::Timer::_overflow_match;
+bool CC2538RF::Timer::_msb_match;
+
+// TODO: Static because of TSTP_MAC
+bool CC2538RF::_cca_done;
 
 CC2538::Device CC2538::_devices[UNITS];
 
@@ -29,8 +35,7 @@ int CC2538::send(const Address & dst, const Type & type, const void * data, unsi
 {
     db<CC2538>(TRC) << "CC2538::send(s=" << address() << ",d=" << dst << ",p=" << hex << type << dec << ",d=" << data << ",s=" << size << ")" << endl;
 
-    Buffer * b;
-    if((b = alloc(reinterpret_cast<NIC*>(this), dst, type, 0, 0, size))) {
+    if(Buffer * b = alloc(reinterpret_cast<NIC*>(this), dst, type, 0, 0, size)) {
         memcpy(b->frame()->data<void>(), data, size);
         return send(b);
     }
