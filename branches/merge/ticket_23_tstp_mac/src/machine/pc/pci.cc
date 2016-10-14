@@ -45,6 +45,12 @@ void PCI::header(const PCI::Locator & l, PCI::Header * h)
         	h->region[i].phy_addr &= BASE_ADDRESS_MEM_MASK;
         	h->region[i].log_addr = phy2log(h->region[i].phy_addr);
         	h->region[i].size = ~(h->region[i].size & BASE_ADDRESS_MEM_MASK) + 1;
+
+                if(!h->region[i].phy_addr) { // Broken devices report false regions often starting at zero
+                    h->region[i].memory = false;
+                    db<PCI>(TRC) << "PCI: device " << l << " reports implausible region (starting at zero). Ignoring!" << endl;
+                }
+
         	if(h->region[i].size > MAX_REGION_SIZE) { // Broken devices report false regions often starting at zero and extending up to the PIC area
                     h->region[i].memory = false;
                     db<PCI>(WRN) << "PCI: device " << l << " reports implausible large region. Ignoring!" << endl;

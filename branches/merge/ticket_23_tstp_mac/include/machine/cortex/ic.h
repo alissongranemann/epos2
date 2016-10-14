@@ -226,8 +226,8 @@ public:
     static const unsigned int HARD_INT = 16;
     static const unsigned int SOFT_INT = HARD_INT + IRQS;
     enum {
-        INT_HARD_FAULT  = 3,
-        INT_TIMER       = 15,
+        INT_HARD_FAULT  = ARMv7_M::EXC_HARD,
+        INT_TIMER       = ARMv7_M::EXC_SYSTICK,
         INT_FIRST_HARD  = HARD_INT,
         INT_USER_TIMER0 = HARD_INT + IRQ_GPT0A,
         INT_USER_TIMER1 = HARD_INT + IRQ_GPT1A,

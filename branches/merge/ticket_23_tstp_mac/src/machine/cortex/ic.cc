@@ -207,7 +207,6 @@ void IC::eoi(unsigned int id)
         db<IC>(TRC) << "IC::eoi(i=" << id << ")" << endl;
 
     assert(id < INTS);
-
     if(_eoi_vector[id])
         _eoi_vector[id](id);
 }

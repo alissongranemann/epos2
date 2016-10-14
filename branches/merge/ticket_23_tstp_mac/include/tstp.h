@@ -51,7 +51,7 @@ public:
 
     // Time
     typedef RTC::Microsecond Microsecond;
-    typedef long long Time;
+    typedef unsigned long long Time;
     typedef long Time_Offset;
 
     // Geographic Coordinates
@@ -86,12 +86,13 @@ public:
     typedef _Region<SCALE> Region;
 
     // MAC Preamble Microframe
-    class Microframe {
+    class Microframe
+    {
     public:
         Microframe() {}
 
-        Microframe(bool all_listen, const Frame_ID & id, const MF_Count & count, const Hint & hint = 0) :
-            _al_count_idh((id & 0xf) | ((count & 0x7ff) << 4) | (static_cast<unsigned int>(all_listen) << 15)), _idl(id & 0xff), _hint(hint) {}
+        Microframe(bool all_listen, const Frame_ID & id, const MF_Count & count, const Hint & hint = 0)
+        : _al_count_idh((id & 0xf) | ((count & 0x7ff) << 4) | (static_cast<unsigned int>(all_listen) << 15)), _idl(id & 0xff), _hint(hint) {}
 
         MF_Count count() const { return (_al_count_idh & (0x7ff << 4)) >> 4; }
         MF_Count dec_count() {
@@ -471,8 +472,11 @@ __END_SYS
 
 __BEGIN_SYS
 
-class TSTP_Router : public TSTP_Common, private NIC::Observer {
+class TSTP_Router: public TSTP_Common, private NIC::Observer
+{
+private:
     typedef NIC::Buffer Buffer;
+
 public:
     TSTP_Router();
     ~TSTP_Router();
@@ -486,6 +490,7 @@ class TSTP: public TSTP_Common, private NIC::Observer
 {
     template<typename> friend class Smart_Data;
     friend class TSTP_Router;
+    
 public:
     // Buffers received from the NIC
     typedef NIC::Buffer Buffer;
@@ -691,10 +696,9 @@ public:
     private:
         void send() {
             db<TSTP>(TRC) << "TSTP::Interested::send() => " << reinterpret_cast<const Interest &>(*this) << endl;
-            if(Buffer * buf = _nic->alloc(NIC::Address::BROADCAST, NIC::TSTP, 0, 0, sizeof(Interest))) {
-                memcpy(buf->frame()->data<Interest>(), this, sizeof(Interest));
-                _nic->send(buf);
-            }
+            Buffer * buf = _nic->alloc(NIC::Address::BROADCAST, NIC::TSTP, 0, 0, sizeof(Interest));
+            memcpy(buf->frame()->data<Interest>(), this, sizeof(Interest));
+            _nic->send(buf);
         }
 
     private:
@@ -726,11 +730,10 @@ public:
     private:
         void send(const Time & expiry) {
             db<TSTP>(TRC) << "TSTP::Responsive::send(x=" << expiry << ")" << endl;
-            if(Buffer * buf = _nic->alloc(NIC::Address::BROADCAST, NIC::TSTP, 0, 0, _size)) {
-                memcpy(buf->frame()->data<Response>(), this, _size);
-                db<TSTP>(INF) << "TSTP::Responsive::send:response=" << this << " => " << reinterpret_cast<const Response &>(*this) << endl;
-                _nic->send(buf);
-            }
+            Buffer * buf = _nic->alloc(NIC::Address::BROADCAST, NIC::TSTP, 0, 0, _size);
+            memcpy(buf->frame()->data<Response>(), this, _size);
+            db<TSTP>(INF) << "TSTP::Responsive::send:response=" << this << " => " << reinterpret_cast<const Response &>(*this) << endl;
+            _nic->send(buf);
         }
 
     private:

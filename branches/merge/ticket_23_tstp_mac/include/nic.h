@@ -154,14 +154,11 @@ public:
     // Buffer Metadata added to frames by higher-level protocols
     struct IEEE802_15_4_Metadata
     {
-        IEEE802_15_4_Metadata() {}
         int rssi;
     };
 
     struct TSTP_Metadata : public IEEE802_15_4_Metadata
     {
-        TSTP_Metadata() : is_new(true) {}
-
         long long sfd_time_stamp;
         unsigned int id;
         long long offset;

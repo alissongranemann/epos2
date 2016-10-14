@@ -158,8 +158,6 @@ class ELP;
 
 class TSTPOE;
 class TSTP;
-template<typename S>
-class TSTP_MAC;
 
 template<typename NIC, typename Network, unsigned int HTYPE>
 class ARP;
