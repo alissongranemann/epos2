@@ -4,6 +4,7 @@
 #include <ic.h>
 #include <timer.h>
 #include <usb.h>
+#include <nic.h>
 
 __BEGIN_SYS
 
@@ -200,6 +201,7 @@ void IC::init()
     _eoi_vector[INT_USER_TIMER1] = User_Timer::eoi;
     _eoi_vector[INT_USER_TIMER2] = User_Timer::eoi;
     _eoi_vector[INT_USER_TIMER3] = User_Timer::eoi;
+    _eoi_vector[INT_NIC0_TIMER] = CC2538RF::Timer::eoi;
     _eoi_vector[INT_USB0] = USB::eoi;
 #endif
 #if defined(__mmod_emote3__) || defined(__mmod_lm3s811__)
@@ -209,10 +211,10 @@ void IC::init()
     // TSC is initialized before IC, so we register its interrupt now
     if(Traits<TSC>::enabled) {
 
-        static const Interrupt_Id int_id = 
-              Machine_Model::TIMERS == 1 ? INT_USER_TIMER0 
-            : Machine_Model::TIMERS == 2 ? INT_USER_TIMER1 
-            : Machine_Model::TIMERS == 3 ? INT_USER_TIMER2 
+        static const Interrupt_Id int_id =
+              Machine_Model::TIMERS == 1 ? INT_USER_TIMER0
+            : Machine_Model::TIMERS == 2 ? INT_USER_TIMER1
+            : Machine_Model::TIMERS == 3 ? INT_USER_TIMER2
             : INT_USER_TIMER3;
 
         int_vector(int_id, TSC::int_handler);
