@@ -167,9 +167,9 @@ public:
         buf->is_microframe = false;
         buf->trusted = false;
         buf->destined_to_me = false; // TODO
-        buf->tx_time = Timer::count2us(Timer::read());// TODO
-        buf->deadline = buf->tx_time + SLEEP_PERIOD * 10;// TODO
+        buf->deadline = Timer::count2us(Timer::read()) + SLEEP_PERIOD * 10;// TODO
         buf->downlink = true;// TODO
+        buf->is_new = true;
     }
 
     unsigned int unmarshal(Buffer * buf, Address * src, Address * dst, Type * type, void * data, unsigned int size) { /*TODO*/ return 0; }
@@ -203,7 +203,7 @@ private:
             if(drop_expired && (b->deadline <= now_us)) {
                 _tx_schedule.remove(el);
                 delete b;
-            } else if((b->tx_time <= now_us) && ((!_tx_pending) || (_tx_pending->deadline >= b->deadline)))
+            } else if((!_tx_pending) || (_tx_pending->deadline >= b->deadline))
                 _tx_pending = b;
             el = next;
         }

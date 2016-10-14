@@ -131,8 +131,8 @@ public:
                 return db;
             }
 
-            private:
-                unsigned short _fc;
+        private:
+            unsigned short _fc;
         } __attribute__((packed));
 
     public:

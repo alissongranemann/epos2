@@ -20,7 +20,7 @@ public:
 
     // Version
     // This field is packed first and matches the Frame Type field in the Frame Control in IEEE 802.15.4 MAC.
-    // A version number above 4 renders TSTP into the reserved frame type zone and should avoid interfernce.
+    // A version number above 4 renders TSTP into the reserved frame type zone and should avoid interference.
     enum Version {
         V0 = 4
     };
@@ -139,7 +139,7 @@ public:
     class _Header
     {
         // Format
-        // Bit   7    5    3  2    0                0         0         0         0         0         0         0         0
+        // Bit 0      3    5  6    0                0         0         0         0         0         0         0
         //     +------+----+--+----+----------------+--- ~ ---+--- ~ ---+--- ~ ---+--- ~ ---+--- ~ ---+--- ~ ---+--- ~ ---+
         //     | ver  |type|tr|scal|   confidence   | elapsed |   o.x   |   o.y   |   o.z   |   l.x   |   l.y   |   l.z   |
         //     +------+----+--+----+----------------+--- ~ ---+--- ~ ---+--- ~ ---+--- ~ ---+--- ~ ---+--- ~ ---+--- ~ ---+
@@ -147,19 +147,19 @@ public:
 
     public:
         _Header(const Type & t, bool tr = false, unsigned char c = 0, const Coordinates & o = 0, const Coordinates & l = 0, const Time_Offset & e = 0, const Version & v = V0)
-        : _config(v << 5 | t << 3 | tr << 2 | S), _confidence(c), _origin(o), _last_hop(l), _elapsed(e) {}
+        : _config((S & 0x03) << 6 | tr << 5 | (t & 0x03) << 3 | (v & 0x07)), _confidence(c), _origin(o), _last_hop(l), _elapsed(e) {}
 
-        Version version() const { return static_cast<Version>((_config >> 5) & 0x07); }
-        void version(const Version & v) { _config = (_config & 0x1f) | (v << 5); }
+        Version version() const { return static_cast<Version>(_config & 0x07); }
+        void version(const Version & v) { _config = (_config & 0xf8) | (v & 0x07); }
 
         Type type() const { return static_cast<Type>((_config >> 3) & 0x03); }
-        void type(const Type & t) { _config = (_config & 0xe4) | (t << 3); }
+        void type(const Type & t) { _config = (_config & 0xe7) | ((t & 0x03) << 3); }
 
-        bool time_request() const { return (_config >> 2) & 0x01; }
-        void time_request(bool tr) { _config = (_config & 0xfb) | (tr << 2); }
+        bool time_request() const { return (_config >> 5) & 0x01; }
+        void time_request(bool tr) { _config = (_config & 0xdf) | (tr << 5); }
 
-        Scale scale() const { return static_cast<Scale>(_config & 0x03); }
-        void scale(const Scale & s) { _config = (_config & 0xfc) | s; }
+        Scale scale() const { return static_cast<Scale>((_config >> 6) & 0x03); }
+        void scale(const Scale & s) { _config = (_config & 0x3f) | (s & 0x03) << 6; }
 
         Time_Offset elapsed() const { return _elapsed; }
         void elapsed(const Time_Offset & e) { _elapsed = e; }
@@ -472,6 +472,38 @@ __END_SYS
 
 __BEGIN_SYS
 
+class TSTP_Locator: public TSTP_Common, private NIC::Observer
+{
+private:
+    typedef NIC::Buffer Buffer;
+
+public:
+    TSTP_Locator();
+    ~TSTP_Locator();
+
+    static Coordinates here() { return Coordinates(0,0,0); } // TODO
+
+    static void bootstrap();
+
+    void update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf);
+};
+
+class TSTP_Time_Manager: public TSTP_Common, private NIC::Observer
+{
+private:
+    typedef NIC::Buffer Buffer;
+
+public:
+    TSTP_Time_Manager();
+    ~TSTP_Time_Manager();
+
+    static Time now() { return TSC::time_stamp(); } // TODO
+
+    static void bootstrap();
+
+    void update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf);
+};
+
 class TSTP_Router: public TSTP_Common, private NIC::Observer
 {
 private:
@@ -481,7 +513,21 @@ public:
     TSTP_Router();
     ~TSTP_Router();
 
-    static bool bootstrap() { return true; }
+    static void bootstrap();
+
+    void update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf);
+};
+
+class TSTP_Security_Manager: public TSTP_Common, private NIC::Observer
+{
+private:
+    typedef NIC::Buffer Buffer;
+
+public:
+    TSTP_Security_Manager();
+    ~TSTP_Security_Manager();
+
+    static void bootstrap();
 
     void update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf);
 };
@@ -489,8 +535,11 @@ public:
 class TSTP: public TSTP_Common, private NIC::Observer
 {
     template<typename> friend class Smart_Data;
+    friend class TSTP_Locator;
+    friend class TSTP_Time_Manager;
     friend class TSTP_Router;
-    
+    friend class TSTP_Security_Manager;
+
 public:
     // Buffers received from the NIC
     typedef NIC::Buffer Buffer;
@@ -741,15 +790,29 @@ public:
         Responsives::Element _link;
     };
 
+    static Region destination(Buffer * buf) {
+        switch(buf->frame()->data<Frame>()->type()) {
+            case INTEREST:
+                return buf->frame()->data<Interest>()->region();
+            default:
+            case RESPONSE:
+                return Region(sink(), 0, 0, 0);
+            case COMMAND:
+                return buf->frame()->data<Command>()->region();
+            case CONTROL:
+                return buf->frame()->data<Control>()->region();
+        }
+    }
+
 protected:
     TSTP();
 
 public:
     ~TSTP();
 
-    static Coordinates here() { return Coordinates(0, 0, 0); } // TODO
-    static Coordinates sink_address() { return Coordinates(10, 10, 10); } // TODO
-    static Time now() { return RTC::seconds_since_epoch(); } // TODO
+    static Coordinates here() { return TSTP_Locator::here(); }
+    static Coordinates sink() { return Coordinates(10, 10, 10); } // TODO
+    static Time now() { return TSTP_Time_Manager::now(); }
 
     static void attach(Observer * obs, void * subject) { _observed.attach(obs, int(subject)); }
     static void detach(Observer * obs, void * subject) { _observed.detach(obs, int(subject)); }
