@@ -7,8 +7,8 @@ using namespace EPOS;
 
 int main()
 {
-    Cortex_M_UART u(9600, 8, 0, 1, 0);
-    Cortex_M_CM1101 cm1101(&u);
+    UART u(9600, 8, 0, 1, 0);
+    CM1101 cm1101(&u);
     NIC * nic = new NIC();
     char data[6];
     int co2, temp, humid;

@@ -2,8 +2,8 @@
 
 #include __MODEL_H
 
-#ifndef __cortex_m_spi_h__
-#define __cortex_m_spi_h__
+#ifndef __spi_h__
+#define __spi_h__
 
 #include <cpu.h>
 #include <spi.h>
@@ -13,25 +13,25 @@
 
 __BEGIN_SYS
 
-class Cortex_M_SPI: public SPI_Common, public Cortex_M_Model_SPI
+class SPI: public SPI_Common, public Model_SPI
 {
 private:
-    typedef Cortex_M_Model_SPI Engine;
+    typedef Model_SPI Engine;
 
 public:
 
     static const unsigned int CLOCK = Traits<CPU>::CLOCK;
 
-    using Cortex_M_Model_SPI::SSI_Frame_Format;
-    using Cortex_M_Model::SSI_Mode;
+    using Model_SPI::SSI_Frame_Format;
+    using Model::SSI_Mode;
 
-    typedef Cortex_M_Model_SPI::SSI_Frame_Format SPI_Frame_Format;
-    typedef Cortex_M_Model::SSI_Mode SPI_Mode;
+    typedef Model_SPI::SSI_Frame_Format SPI_Frame_Format;
+    typedef Model::SSI_Mode SPI_Mode;
 
-    Cortex_M_SPI() : Engine(0) {
+    SPI() : Engine(0) {
     }
 
-    Cortex_M_SPI(Reg32 unit, Reg32 clock, SPI_Frame_Format protocol, SPI_Mode mode, Reg32 bit_rate, Reg32 data_width) :
+    SPI(Reg32 unit, Reg32 clock, SPI_Frame_Format protocol, SPI_Mode mode, Reg32 bit_rate, Reg32 data_width) :
         Engine(unit, clock, protocol, mode, bit_rate, data_width)
     {
     }

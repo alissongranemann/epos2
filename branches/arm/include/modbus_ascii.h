@@ -16,7 +16,7 @@ private:
     static const char char_map[16];
 
 public:
-    static const unsigned int MSG_LEN = Traits<Modbus_ASCII>::MSG_LEN;
+    static const unsigned int MSG_LEN = 96;
 
     enum Commands {
         READ_COILS              = 0x01,

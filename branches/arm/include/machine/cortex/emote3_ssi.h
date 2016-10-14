@@ -7,17 +7,17 @@
 
 __BEGIN_SYS
 
-class CC2538_SSI : public Cortex_M_Model {
+class CC2538_SSI : public Model {
     friend class eMote3;
 private:
     static const unsigned int UNITS = Traits<SPI>::UNITS;
 
 public:
     enum Interrupt_Flag {
-        TXIM    = Cortex_M_Model::TXIM,
-        RXIM    = Cortex_M_Model::RXIM,
-        RTIM    = Cortex_M_Model::RTIM,
-        RORIM   = Cortex_M_Model::RORIM,
+        TXIM    = Model::TXIM,
+        RXIM    = Model::RXIM,
+        RTIM    = Model::RTIM,
+        RORIM   = Model::RORIM,
     };
 
     enum Clock_Source {
@@ -25,8 +25,8 @@ public:
         SYS     = 0x01,
     };
 
-    using Cortex_M_Model::SSI_Frame_Format;
-    using Cortex_M_Model::SSI_Mode;
+    using Model::SSI_Frame_Format;
+    using Model::SSI_Mode;
 
     volatile Reg32 & ssi(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(_base)[o / sizeof(Reg32)]; }
 
@@ -48,7 +48,7 @@ public:
     // data_width must be a value between 4 and 16, inclusive
     void config(Reg32 clock, SSI_Frame_Format protocol, SSI_Mode mode, Reg32 bit_rate, Reg32 data_width) {
         disable();
-        Cortex_M_Model::config_SSI(_base, clock, protocol, mode, bit_rate, data_width);
+        Model::config_SSI(_base, clock, protocol, mode, bit_rate, data_width);
         enable();
     }
 

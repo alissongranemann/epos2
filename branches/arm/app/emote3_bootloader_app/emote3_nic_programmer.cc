@@ -5,7 +5,7 @@
 
 using namespace EPOS;
 
-const unsigned int MESSAGE_SIZE = sizeof(Cortex_M_Bootloader::Message);
+const unsigned int MESSAGE_SIZE = sizeof(Bootloader::Message);
 
 class NIC_Handler : public IEEE802_15_4::Observer
 {
@@ -15,7 +15,7 @@ public:
     typedef IEEE802_15_4::Frame Frame;
     typedef IEEE802_15_4::Observed Observed;
 
-    NIC_Handler(const Protocol & p = Traits<Cortex_M_Bootloader>::NIC_PROTOCOL, unsigned int channel = Traits<Cortex_M_Bootloader>::NIC_CHANNEL) : _prot(p), _channel(channel), _peer(_nic.broadcast()) {
+    NIC_Handler(const Protocol & p = Traits<Bootloader>::NIC_PROTOCOL, unsigned int channel = Traits<Bootloader>::NIC_CHANNEL) : _prot(p), _channel(channel), _peer(_nic.broadcast()) {
         _nic.stop_listening();
         _nic.channel(_channel);
         _nic.attach(this, _prot);

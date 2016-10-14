@@ -1,12 +1,12 @@
 // EPOS SHT11 Sensor Implementation
 
-#include <machine/cortex_m/sht11.h>
+#include <machine/cortex/sht11.h>
 
 __BEGIN_SYS
 
-bool Cortex_M_SHT11::enable()
+bool SHT11::enable()
 {
-    if (_in_use)
+    if(_in_use)
         return false;
 
     _in_use = true;
@@ -19,20 +19,20 @@ bool Cortex_M_SHT11::enable()
     return true;
 }
 
-void Cortex_M_SHT11::disable()
+void SHT11::disable()
 {
     _in_use = false;
 }
 
-unsigned char Cortex_M_SHT11::write_byte(unsigned char value)
+unsigned char SHT11::write_byte(unsigned char value)
 {
     unsigned char i = 0x80;
     unsigned char error = 0;
 
     transmission_start();
 
-    while (i) {
-        if (i & value)
+    while(i) {
+        if(i & value)
             _data->set();
         else
             _data->clear();
@@ -46,8 +46,8 @@ unsigned char Cortex_M_SHT11::write_byte(unsigned char value)
     }
 
     // TODO: Maybe we can put this part inside an if in the loop
-    _data->input();
-    _data->pull_up();
+    _data->direction(GPIO::IN);
+    _data->pull(GPIO::UP);
 
     // Check for the ACK
     Alarm::delay(T_SCK_US);
@@ -66,27 +66,27 @@ unsigned char Cortex_M_SHT11::write_byte(unsigned char value)
     return error;
 }
 
-unsigned char Cortex_M_SHT11::read_byte(unsigned char ack)
+unsigned char SHT11::read_byte(unsigned char ack)
 {
     unsigned char i   = 0x80;
     unsigned char val = 0;
 
-    _data->input();
-    _data->pull_up();
+    _data->direction(GPIO::IN);
+    _data->pull(GPIO::UP);
 
-    while (i) {
-        if (_data->get())
+    while(i) {
+        if(_data->get())
             val = (val | i);
 
         _sck->set();
-        Alarm::delay(T_SCK_US);
+        Alarm::delay(T_SCK_US); // TODO:: replace by Machine::delay() ???
         _sck->clear();
         Alarm::delay(T_SCK_US);
 
         i= (i >> 1);
     }
 
-    _data->output();
+    _data->direction(GPIO::OUT);
 
     if (ack)
         _data->clear();
@@ -96,20 +96,20 @@ unsigned char Cortex_M_SHT11::read_byte(unsigned char ack)
     Alarm::delay(T_SCK_US);
     _sck->set();
     Alarm::delay(T_SCK_US);
-    _data->input();
-    _data->pull_up();
+    _data->direction(GPIO::IN);
+    _data->pull(GPIO::UP);
     _sck->clear();
     Alarm::delay(T_SCK_US);
 
     return val;
 }
 
-void Cortex_M_SHT11::transmission_start()
+void SHT11::transmission_start()
 {
-    _sck->output();
+    _sck->direction(GPIO::OUT);
     _sck->clear();
 
-    _data->output();
+    _data->direction(GPIO::OUT);
     _data->set();
 
     Alarm::delay(T_SCK_US);
@@ -127,14 +127,14 @@ void Cortex_M_SHT11::transmission_start()
     Alarm::delay(T_SCK_US);
 }
 
-void Cortex_M_SHT11::connection_reset()
+void SHT11::connection_reset()
 {
     unsigned char i;
 
-    _sck->output();
+    _sck->direction(GPIO::OUT);
     _sck->clear();
 
-    _data->output();
+    _data->direction(GPIO::OUT);
     _data->set();
 
     for (i = 0; i < 9; i++) {
@@ -147,14 +147,14 @@ void Cortex_M_SHT11::connection_reset()
     transmission_start();
 }
 
-unsigned char Cortex_M_SHT11::soft_reset()
+unsigned char SHT11::soft_reset()
 {
     connection_reset();
 
     return write_byte(RESET);
 }
 
-int Cortex_M_SHT11::measure(unsigned char mode)
+int SHT11::measure(unsigned char mode)
 {
     unsigned char msb = 0;
     int p_value = 0;
@@ -173,7 +173,7 @@ int Cortex_M_SHT11::measure(unsigned char mode)
     return p_value;
 }
 
-int Cortex_M_SHT11_Humidity::sample()
+int SHT11_Humidity::sample()
 {
     int raw_humidity;
 
@@ -191,7 +191,7 @@ int Cortex_M_SHT11_Humidity::sample()
 // FIXME: For temperatures significantly different from 25°C, the humidity
 // signal requires temperature compensation, the procedure is explained in the
 // datasheet
-int Cortex_M_SHT11_Humidity::compensate(int value)
+int SHT11_Humidity::compensate(int value)
 {
     long humidity;
 

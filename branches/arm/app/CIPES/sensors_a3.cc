@@ -17,8 +17,8 @@ using namespace EPOS;
 
 OStream cout;
 
-Cortex_M_CM1101 * co2_temperature_sensor;
-Cortex_M_SHT11_Humidity * humidity_sensor;
+CM1101 * co2_temperature_sensor;
+SHT11_Humidity * humidity_sensor;
 
 typedef short sensor_data_type;
 
@@ -130,9 +130,9 @@ int main()
     Thing<Modbus> sensor(modbus_id, s);
 
     // The UART is used by the sensor, so don't print anything from here on
-    auto u = new Cortex_M_UART(9600, 8, 0, 1, 0);
-    co2_temperature_sensor = new Cortex_M_CM1101(u);
-    humidity_sensor = new Cortex_M_SHT11_Humidity('d', 4, 'd', 5);
+    auto u = new UART(9600, 8, 0, 1, 0);
+    co2_temperature_sensor = new CM1101(u);
+    humidity_sensor = new SHT11_Humidity('d', 4, 'd', 5);
 
     while(true);
 

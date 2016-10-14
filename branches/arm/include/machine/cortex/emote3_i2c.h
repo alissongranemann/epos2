@@ -7,7 +7,7 @@
 
 __BEGIN_SYS
 
-class CC2538_I2C : public Cortex_M_Model {
+class CC2538_I2C : public Model {
     friend class eMote3;
 public:
 
@@ -36,7 +36,7 @@ public:
 
     void config(char port_sda = 'b', unsigned int pin_sda = 1, char port_scl = 'b', unsigned int pin_scl = 0) {
         //disable();
-        Cortex_M_Model::config_I2C(_base, port_sda, pin_sda, port_scl, pin_scl);
+        Model::config_I2C(_base, port_sda, pin_sda, port_scl, pin_scl);
         if(_base == reinterpret_cast<Log_Addr *>(I2C_MASTER_BASE))
             config_master();
         else

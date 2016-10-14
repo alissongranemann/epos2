@@ -1,7 +1,7 @@
 // EPOS SHT11 Sensor Mediator Declarations
 
-#ifndef __cortex_m_sht11_h
-#define __cortex_m_sht11_h
+#ifndef __sht11_h
+#define __sht11_h
 
 #include <alarm.h>
 #include <gpio.h>
@@ -10,7 +10,7 @@
 
 __BEGIN_SYS
 
-class Cortex_M_SHT11
+class SHT11
 {
 protected:
     // The SCK pin frequency is set to 1 kHz
@@ -31,14 +31,14 @@ protected:
     };
 
 protected:
-    Cortex_M_SHT11(char data_port, int data_pin, char sck_port, int sck_pin) {
-        _data = new GPIO(data_port, data_pin, GPIO::OUTPUT);
-        _sck = new GPIO(sck_port, sck_pin, GPIO::OUTPUT);
+    SHT11(char data_port, int data_pin, char sck_port, int sck_pin) {
+        _data = new GPIO(data_port, data_pin, GPIO::OUT);
+        _sck = new GPIO(sck_port, sck_pin, GPIO::OUT);
 
         enable();
     }
 
-    ~Cortex_M_SHT11() {
+    ~SHT11() {
         delete _sck;
         delete _data;
 
@@ -70,13 +70,13 @@ protected:
     GPIO * _data;
 };
 
-class Cortex_M_SHT11_Humidity: public Cortex_M_SHT11
+class SHT11_Humidity: public SHT11
 {
 public:
-    Cortex_M_SHT11_Humidity(char data_port, int data_pin, char sck_port, int sck_pin):
-        Cortex_M_SHT11(data_port, data_pin, sck_port, sck_pin) {};
+    SHT11_Humidity(char data_port, int data_pin, char sck_port, int sck_pin):
+        SHT11(data_port, data_pin, sck_port, sck_pin) {};
 
-    ~Cortex_M_SHT11_Humidity() {}
+    ~SHT11_Humidity() {}
 
     int sample();
     int get() { return _humidity; }

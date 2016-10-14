@@ -1,12 +1,12 @@
 // EPOS PrimeCell UART (PL011) Mediator Declarations
 
-#ifndef __cortex_m_pl011_h__
-#define __cortex_m_pl011_h__
+#ifndef __pl011_h__
+#define __pl011_h__
 
 __BEGIN_SYS
 
 // PrimeCell UART (PL011)
-class PL011: protected Cortex_M_Model
+class PL011: protected Model
 {
 private:
     typedef CPU::Log_Addr Log_Addr;
@@ -103,7 +103,7 @@ public:
 
     void config(unsigned int baud_rate, unsigned int data_bits, unsigned int parity, unsigned int stop_bits) {
 
-        Cortex_M_Model::config_UART(_base);
+        Model::config_UART(_base);
 
         unsigned int lcrh_config = 0;
 

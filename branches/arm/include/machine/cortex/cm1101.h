@@ -1,13 +1,13 @@
 // EPOS CM1101 Sensor Mediator Declarations
 
-#ifndef __cortex_m_cm1101_h
-#define __cortex_m_cm1101_h
+#ifndef __cm1101_h
+#define __cm1101_h
 
 #include <uart.h>
 
 __BEGIN_SYS
 
-class Cortex_M_CM1101
+class CM1101
 {
 public:
     enum Status {
@@ -19,10 +19,10 @@ public:
     };
 
 public:
-    Cortex_M_CM1101(UART * u): _uart(u), _firmware_version(0), _co2(0),
+    CM1101(UART * u): _uart(u), _firmware_version(0), _co2(0),
           _temp(0), _humid(0), _status(OK) { check_firmware_version(); }
 
-    ~Cortex_M_CM1101() {
+    ~CM1101() {
         if(!_firmware_version)
             delete[] _firmware_version;
     }

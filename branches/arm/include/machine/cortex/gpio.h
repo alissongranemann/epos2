@@ -33,7 +33,7 @@ public:
         return *_data;
     }
 
-    void set(bool value) {
+    void set(bool value = true) {
         assert(_direction == INOUT || _direction == OUT);
         if(_direction == INOUT) {
             gpio(_port, DIR) |= _pin_bit;
@@ -42,6 +42,7 @@ public:
         } else
             *_data = 0xff * value;
     }
+    void clear() { set(false); }
 
     void direction(const Direction & dir) {
         _direction = dir;

@@ -1,7 +1,7 @@
 // EPOS LM3S811 (Cortex-M3) MCU Mediators Configuration
 
-#ifndef __cortex_m_config_h
-#define __cortex_m_config_h
+#ifndef __config_h
+#define __config_h
 
 #include <system/meta.h>
 #include __APPL_TRAITS_H
@@ -28,20 +28,20 @@ typedef ARMv7_MMU          MMU;
 typedef ARMv7_TSC          TSC;
 
 typedef Cortex_M             Machine;
-typedef Cortex_M_IC          IC;
-typedef Cortex_M_Timer       Timer;
-typedef Cortex_M_RTC         RTC;
-typedef Cortex_M_UART        UART;
+typedef IC          IC;
+typedef Timer       Timer;
+typedef RTC         RTC;
+typedef UART        UART;
 
-typedef SWITCH<Traits<Cortex_M_Display>::ENGINE, 
-        CASE<Traits<Cortex_M_Display>::Engine::null, Null_Display,
-        CASE<Traits<Cortex_M_Display>::Engine::uart, Serial_Display
+typedef SWITCH<Traits<Display>::ENGINE, 
+        CASE<Traits<Display>::Engine::null, Null_Display,
+        CASE<Traits<Display>::Engine::uart, Serial_Display
         >>>::Result          Display;
 
-typedef Cortex_M_Radio       NIC;
-typedef Cortex_M_Scratchpad  Scratchpad;
-typedef Cortex_M_USB         USB;
-typedef Cortex_M_GPIO        GPIO;
+typedef Radio       NIC;
+typedef Scratchpad  Scratchpad;
+typedef USB         USB;
+typedef GPIO        GPIO;
 
 __END_SYS
 

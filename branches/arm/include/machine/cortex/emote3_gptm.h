@@ -160,7 +160,7 @@ protected:
     };
 };
 
-class eMote3_GPTM : private CC2538_GPTIMER, private Cortex_M_Model
+class eMote3_GPTM : private CC2538_GPTIMER, private Model
 {
 public:
     const static unsigned int CLOCK = Traits<CPU>::CLOCK;
@@ -179,7 +179,7 @@ public:
     eMote3_GPTM(unsigned int which_timer, unsigned int time_microseconds = 1):
         _base(reinterpret_cast<volatile Reg32*>(GPTIMER0_BASE + 0x1000 * (which_timer < 4 ? which_timer : 0))) {
         disable();
-        Cortex_M_Model::config_GPTM(which_timer);
+        Model::config_GPTM(which_timer);
         reg(CFG) = 0; // 32-bit timer
         reg(TAMR) = 1; // One-shot
         set(time_microseconds);

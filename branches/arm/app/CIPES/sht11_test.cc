@@ -6,7 +6,7 @@ using namespace EPOS;
 
 int main()
 {
-    Cortex_M_SHT11_Humidity sht11('d', 4, 'd', 5);
+    SHT11_Humidity sht11('d', 4, 'd', 5);
     NIC * nic = new NIC();
     char data[2];
     int humid;

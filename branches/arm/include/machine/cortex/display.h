@@ -1,21 +1,21 @@
 // EPOS Cortex-M3 Display Mediator Declarations
 
-#ifndef __cortex_m_display_h
-#define __cortex_m_display_h
+#ifndef __display_h
+#define __display_h
 
 #include <display.h>
 #include <usb.h>
 
 __BEGIN_SYS
 
-class Cortex_M_USB_Serial_Display: public Display_Common
+class USB_Serial_Display: public Display_Common
 {
     friend class First_Object;
 private:
     typedef USB Engine;
-    static const int LINES = Traits<Cortex_M_USB_Serial_Display>::LINES;
-    static const int COLUMNS = Traits<Cortex_M_USB_Serial_Display>::COLUMNS;
-    static const int TAB_SIZE = Traits<Cortex_M_USB_Serial_Display>::TAB_SIZE;
+    static const int LINES = Traits<USB_Serial_Display>::LINES;
+    static const int COLUMNS = Traits<USB_Serial_Display>::COLUMNS;
+    static const int TAB_SIZE = Traits<USB_Serial_Display>::TAB_SIZE;
 
     // Special characters
     enum {
@@ -26,7 +26,7 @@ private:
     };
 
 public:
-    Cortex_M_USB_Serial_Display() {}
+    USB_Serial_Display() {}
 
     static void clear() {
         _line = 0;

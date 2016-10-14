@@ -5,7 +5,7 @@
 
 __BEGIN_SYS
 
-class eMote3_PWM : private CC2538_GPTIMER, private Cortex_M_Model
+class eMote3_PWM : private CC2538_GPTIMER, private Model
 {
 public:
     const static unsigned int CLOCK = Traits<CPU>::CLOCK;
@@ -21,7 +21,7 @@ public:
         Reg32 time_low = period - ((period * _duty_cycle_percent) / 100);
 
         disable();
-        Cortex_M_Model::config_PWM(which_timer, gpio_port, gpio_pin);
+        Model::config_PWM(which_timer, gpio_port, gpio_pin);
         reg(CFG) = 4; // 16-bit timer (only possible for PWM)
         reg(TAMR) |= TACMR;
         reg(TAMR) |= (2 * TAMR_TAMR) | TAAMS;
