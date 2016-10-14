@@ -19,17 +19,6 @@ pc_install:	pc_boot
 		$(INSTALL) $(MACH)_boot.tmp $(IMG)/$(MACH)_boot
 		$(CLEAN) $(MACH)_boot.tmp
 
-ml310_boot:	ml310_boot.o
-		$(LD) $(LDFLAGS) -L$(CCLIB) --omagic \
-		--section-start $(MACH_CODE_NAME)=$(BOOT_ADDR) \
-		--entry=_start \
-		-o $@ $< -l$(LUTIL) -l$(LSYS) -l$(LINIT) -lgcc 
-
-ml310_install:	ml310_boot
-		$(OBJCPY) -O binary $< $<.tmp
-		$(INSTALL) $(MACH)_boot.tmp $(IMG)/$(MACH)_boot
-		$(CLEAN) $(MACH)_boot.tmp
-
 clean:
 		$(CLEAN) *.s *.o *_boot *.tmp
 

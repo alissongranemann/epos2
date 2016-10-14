@@ -12,12 +12,14 @@
 #include "info.h"
 #include "memory_map.h"
 #include "ic.h"
+#include <display.h>
 
 __BEGIN_SYS
 
-class PC: public Machine_Common
+class Machine: public Machine_Common
 {
     friend class Init_System;
+    friend class First_Object;
 
 private:
     static const bool smp = Traits<System>::multicore;
@@ -26,7 +28,7 @@ private:
     typedef CPU::Log_Addr Log_Addr;
 
 public:
-    PC() {}
+    Machine() {}
 
     static void delay(const RTC::Microsecond & time) {
         TSC::Time_Stamp end = TSC::time_stamp() + time * (TSC::frequency() / 1000000);
@@ -66,6 +68,13 @@ public:
     }
 
 private:
+    static void pre_init(System_Info * si) {
+        Display::init();
+
+        if(Traits<System>::multicore)
+            smp_init(si->bm.n_cpus);
+    }
+
     static void init();
 
 private:
@@ -76,11 +85,30 @@ __END_SYS
 
 #include "pci.h"
 #include "timer.h"
-#include "rtc.h"
-#include "eeprom.h"
-#include "uart.h"
-#include "display.h"
-#include "nic.h"
-#include "scratchpad.h"
+
+#ifdef __RTC_H
+#include __RTC_H
+#endif
+#ifdef __EEPROM_H
+#include __EEPROM_H
+#endif
+#ifdef __UART_H
+#include __UART_H
+#endif
+#ifdef __DISPLAY_H
+#include __DISPLAY_H
+#endif
+#ifdef __KEYBOARD_H
+#include __KEYBOARD_H
+#endif
+#ifdef __SCRATCHPAD_H
+#include __SCRATCHPAD_H
+#endif
+#ifdef __NIC_H
+#include __NIC_H
+#endif
+#ifdef __FPGA_H
+#include __FPGA_H
+#endif
 
 #endif

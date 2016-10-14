@@ -1,27 +1,34 @@
-// EPOS TSTP Component Initialization
+// EPOS Trustful SpaceTime Protocol Initialization
+
+#include <system/config.h>
+#ifndef __no_networking__
 
 #include <tstp.h>
-#include <tstp_nic.h>
-#include <utility/malloc.h>
 
 __BEGIN_SYS
 
-TSTP * TSTP::_network[Traits<NIC>::UNITS];
-
-template<>
-void TSTP::init(unsigned int unit)
+TSTP_Router::TSTP_Router()
 {
-    db<Init, TSTP>(TRC) << "TSTP::init()" << endl;
-    auto mac = TSTP::MAC::get_by_unit(unit);
-    auto time = new (SYSTEM) TSTP::Time_Manager(unit);
-    auto router = new (SYSTEM) TSTP::Router(unit);
-    auto security = new (SYSTEM) TSTP::Security(unit);
-
-    _network[unit] = new (SYSTEM) TSTP(mac, time, router, security, unit);
+    db<TSTP_Router>(TRC) << "TSTP_Router::TSTP_Router()" << endl;
+    TSTP::_nic->attach(this, NIC::TSTP);
 }
 
-void TSTP_NIC::init(unsigned int unit) {
-    Traits<TSTP>::MAC::init(unit); 
+TSTP::TSTP()
+{
+    db<TSTP>(TRC) << "TSTP::TSTP()" << endl;
+    _nic->attach(this, NIC::TSTP);
+}
+
+void TSTP::init(unsigned int unit)
+{
+    db<Init, TSTP>(TRC) << "TSTP::init(u=" << unit << ")" << endl;
+    _nic = new (SYSTEM) NIC(unit);
+    new (SYSTEM) TSTP_Router;
+    new (SYSTEM) TSTP;
+
+    TSTP_Router::bootstrap();
 }
 
 __END_SYS
+
+#endif

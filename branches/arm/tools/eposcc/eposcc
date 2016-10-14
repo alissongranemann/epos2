@@ -47,45 +47,39 @@ C_LINK_LIBS=
 CPP_COMPILER="$TOOLS_PREFIX""g++"
 CPP_COMP_FLGS="--no-exceptions --no-rtti --no-use-cxa-atexit -std=c++0x"
 CPP_COMP_HDRS=
-CPP_LINK_FLGS=
+CPP_LINK_FLGS="$MACH_LD_FLAGS"
 CPP_LINK_OBJS=
 CPP_LINK_LIBS=
 
 F77_COMPILER="$TOOLS_PREFIX""g77"
 F77_COMP_FLGS=
 F77_COMP_HDRS=
-F77_LINK_FLGS=
+F77_LINK_FLGS="$MACH_LD_FLAGS"
 F77_LINK_OBJS=
 F77_LINK_LIBS="f2c"
 
 LINKER="$TOOLS_PREFIX""ld"
 
 LINKER_LIBRARY=$LINKER
-if [ "$MMOD" = "emote3" ]; then
-LINK_FLGS_LIBRARY="-L$LIB -L`$C_COMPILER $C_COMP_FLGS -print-file-name=` -z max-page-size=4 -static --nmagic --section-start $MACH_CODE_NAME=$APP_CODE --section-start $MACH_DATA_NAME=$APP_DATA"
-else
-LINK_FLGS_LIBRARY="-L$LIB -L`$C_COMPILER $C_COMP_FLGS -print-file-name=` -static --nmagic --section-start $MACH_CODE_NAME=$APP_CODE --section-start $MACH_DATA_NAME=$APP_DATA"
-fi
+LINK_FLGS_LIBRARY="-L$LIB -L`$C_COMPILER $C_COMP_FLGS -print-file-name=` -static --section-start $MACH_CODE_NAME=$APP_CODE --section-start $MACH_DATA_NAME=$APP_DATA"
 LINK_OBJI_LIBRARY="$LIB/$ARCH""_crt0.o $LIB/$ARCH""_crtbegin.o $LIB/$MACH""_init_first.o $LIB/$MACH""_init_application.o $LIB/$MACH""_application.o"
 LINK_OBJN_LIBRARY="$LIB/$MACH""_init_system.o $LIB/$MACH""_system.o $LIB/$ARCH""_crtend.o"
 LINK_LIBS_LIBRARY="util_$ARCH init_$ARCH sys_$ARCH mach_$ARCH arch_$ARCH util_$ARCH gcc"
+if [ "$SETUP" = "" ] ; then
+LINK_OBJI_LIBRARY="$LIB/$MACH""_setup.o $LINK_OBJI_LIBRARY"
+fi
 
 LINKER_BUILTIN=$LINKER
-if [ "$MMOD" = "emote3" ]; then
-LINK_FLGS_BUILTIN="-L$LIB -L`$C_COMPILER $C_COMP_FLGS -print-file-name=` -z max-page-size=4 -static --nmagic --section-start $MACH_CODE_NAME=$APP_CODE --section-start $MACH_DATA_NAME=$APP_DATA"
-else
-LINK_FLGS_BUILTIN="-L$LIB -L`$C_COMPILER $C_COMP_FLGS -print-file-name=` -static --nmagic --section-start $MACH_CODE_NAME=$APP_CODE --section-start $MACH_DATA_NAME=$APP_DATA"
-fi
+LINK_FLGS_BUILTIN="-L$LIB -L`$C_COMPILER $C_COMP_FLGS -print-file-name=` -static --section-start $MACH_CODE_NAME=$APP_CODE --section-start $MACH_DATA_NAME=$APP_DATA"
 LINK_OBJI_BUILTIN="$LIB/$ARCH""_crt0.o $LIB/$ARCH""_crtbegin.o $LIB/$MACH""_init_application.o  $LIB/$MACH""_application.o"
 LINK_OBJN_BUILTIN="$LIB/$ARCH""_crtend.o -R$SRC/system/$MACH""_system"
 LINK_LIBS_BUILTIN="util_$ARCH gcc"
+if [ "$SETUP" = "" ] ; then
+LINK_OBJN_BUILTIN="$LIB/$MACH""_setup.o $LINK_OBJN_BUILTIN"
+fi
 
 LINKER_KERNEL=$LINKER
-if [ "$MMOD" = "emote3" ]; then
-LINK_FLGS_KERNEL="-L$LIB -L`$C_COMPILER $C_COMP_FLGS -print-file-name=` -z max-page-size=4 -static --nmagic --section-start $MACH_CODE_NAME=$APP_CODE --section-start $MACH_DATA_NAME=$APP_DATA"
-else
-LINK_FLGS_KERNEL="-L$LIB -L`$C_COMPILER $C_COMP_FLGS -print-file-name=` -static --nmagic --section-start $MACH_CODE_NAME=$APP_CODE --section-start $MACH_DATA_NAME=$APP_DATA"
-fi
+LINK_FLGS_KERNEL="-L$LIB -L`$C_COMPILER $C_COMP_FLGS -print-file-name=` -static --section-start $MACH_CODE_NAME=$APP_CODE --section-start $MACH_DATA_NAME=$APP_DATA"
 LINK_OBJI_KERNEL="$LIB/$ARCH""_crt0.o $LIB/$ARCH""_crtbegin.o $LIB/$MACH""_init_application.o  $LIB/$MACH""_application.o"
 LINK_OBJN_KERNEL="$LIB/$ARCH""_crtend.o"
 LINK_LIBS_KERNEL="util_$ARCH arch_$ARCH gcc"
@@ -119,7 +113,7 @@ for arg in "$@" ; do
 	output_file="$arg"
 	continue
     fi
-    case "$arg" in 
+    case "$arg" in
     -c)
 	all_args="$all_args $arg"
 	compile_flgs="$compile_flgs $arg"
@@ -172,7 +166,7 @@ for arg in "$@" ; do
    	    os_is_builtin=1
 	fi
 	;;
-    --library)	
+    --library)
 	if [ $os_is_kernel = 1 -o $os_is_builtin = 1 -o $os_is_linux = 1 ] ; then
 	    echo "--builtin, --kernel, --library and --linux cannot be used together!"
 	    exit -1
@@ -219,7 +213,7 @@ for arg in "$@" ; do
 	echo "   $my_name -c -O -Llibrary_path -Iheader_path -o foo foo.c"
 	exit 1
 	;;
-    *\"*) 
+    *\"*)
 	all_args="$all_args `echo $arg | sed 's/\"/\\\"/g'`"
 	compile_flgs="$compile_flgs `echo $arg | sed 's/\"/\\\"/g'`"
 	link_flgs="$link_flgs `echo $arg | sed 's/\"/\\\"/g'`"
@@ -327,7 +321,7 @@ if [ $os_is_kernel = 1 ] ; then
 	LINK_OBJN=$LINK_OBJN_BUILTIN
 	LINK_LIBS=$LINK_LIBS_BUILTIN
 fi
-	
+
 linker=$LINKER
 link_flgs="$link_flgs $LINK_FLGS"
 link_objs="$LINK_OBJI $link_objs $LINK_OBJN"
@@ -395,7 +389,7 @@ if [ $need_compile = 1 ] ; then
     $do_echo $compiler $compile_flgs $compile_args $input_file
     $do_exec $compiler $compile_flgs $compile_args $input_file
     status=$?
-    if [ $status != 0 ] ; then 
+    if [ $status != 0 ] ; then
 	exit $status
     fi
 fi

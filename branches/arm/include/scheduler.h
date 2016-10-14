@@ -204,7 +204,7 @@ namespace Scheduling_Criteria
 
           void update(); // Defined at Alarm
       };
-      
+
       // Global Earliest Deadline First (multicore)
       class GEDF: public EDF
       {
@@ -310,9 +310,7 @@ public:
 public:
     Scheduler() {}
 
-    // Force function call, otherwise compiler might optimize and
-    // not see when a thread is woken up inside an interrupt (in Thread::idle())
-    unsigned int schedulables()__attribute__((noinline)) { return Base::size(); }
+    unsigned int schedulables() { return Base::size(); }
 
     T * volatile chosen() {
     	// If called before insert(), chosen will dereference a null pointer!

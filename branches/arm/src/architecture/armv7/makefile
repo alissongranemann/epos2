@@ -10,16 +10,12 @@ INITS := $(subst .cc,.o,$(shell find *.cc | grep _init))
 
 all:		crts $(LIBARCH) $(LIBINIT)
 
-armv7_crt0.o: armv7_crt0.s
-		sed -i 's/MEM_TOP/$(call GETTK,MEM_TOP,$(MACH_TRAITS))/g' $<
-		$(AS) $(ASFLAGS) $< -o $@
-		
 crts:		$(CRTS)
 		$(INSTALL) $^ $(LIB)
 
 .INTERMEDIATE:	$(CRTSI)
 
-$(LIBARCH):	$(LIBARCH)($(OBJS))	
+$(LIBARCH):	$(LIBARCH)($(OBJS))
 
 $(LIBINIT):	$(LIBINIT)($(INITS))
 

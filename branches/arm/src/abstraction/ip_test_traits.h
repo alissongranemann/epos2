@@ -20,14 +20,14 @@ template<> struct Traits<Build>
     enum {LIBRARY, BUILTIN, KERNEL};
     static const unsigned int MODE = LIBRARY;
 
-    enum {IA32};
+    enum {IA32, ARMv7};
     static const unsigned int ARCHITECTURE = IA32;
 
-    enum {PC};
+    enum {PC, Cortex};
     static const unsigned int MACHINE = PC;
 
-    enum {Legacy};
-    static const unsigned int MODEL = Legacy;
+    enum {Legacy_PC, eMote3, LM3S811, Zynq};
+    static const unsigned int MODEL = Legacy_PC;
 
     static const unsigned int CPUS = 1;
     static const unsigned int NODES = 2; // > 1 => NETWORKING
@@ -77,6 +77,8 @@ template<> struct Traits<Init>: public Traits<void>
 template<> struct Traits<Serial_Display>: public Traits<void>
 {
     static const bool enabled = true;
+    enum {UART, USB};
+    static const int ENGINE = UART;
     static const int COLUMNS = 80;
     static const int LINES = 24;
     static const int TAB_SIZE = 8;
@@ -85,7 +87,6 @@ template<> struct Traits<Serial_Display>: public Traits<void>
 __END_SYS
 
 #include __ARCH_TRAITS_H
-#include __MACH_CONFIG_H
 #include __MACH_TRAITS_H
 
 __BEGIN_SYS
@@ -172,8 +173,27 @@ template<> struct Traits<Network>: public Traits<void>
     typedef LIST<IP> NETWORKS;
 };
 
+template<> struct Traits<ELP>: public Traits<Network>
+{
+    static const bool enabled = NETWORKS::Count<ELP>::Result;
+
+    static const bool acknowledged = true;
+};
+
+template<> struct Traits<TSTP>: public Traits<Network>
+{
+    static const bool enabled = NETWORKS::Count<TSTP>::Result;
+};
+
+template<> template <typename S> struct Traits<Smart_Data<S>>: public Traits<Network>
+{
+    static const bool enabled = NETWORKS::Count<TSTP>::Result;
+};
+
 template<> struct Traits<IP>: public Traits<Network>
 {
+    static const bool enabled = NETWORKS::Count<IP>::Result;
+
     enum {STATIC, MAC, INFO, RARP, DHCP};
 
     struct Default_Config {

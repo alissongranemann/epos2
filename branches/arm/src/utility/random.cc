@@ -2,6 +2,6 @@
 
 __BEGIN_UTIL
 
-unsigned long int Random::_seed;
+int Random::_seed;
 
 __END_UTIL

@@ -235,11 +235,19 @@ public:
 };
 
 
-// PC_Timer
-class PC_Timer: public Timer_Common
+// Tick timer used by the system
+class Timer: private Timer_Common
 {
-    friend class PC;
+    friend class Machine;
     friend class Init_System;
+
+protected:
+    typedef IF<Traits<System>::multicore, APIC_Timer, i8253>::Result Engine;
+    typedef Engine::Count Count;
+    typedef IC::Interrupt_Id Interrupt_Id;
+
+    static const unsigned int CHANNELS = 3;
+    static const unsigned int FREQUENCY = Traits<Timer>::FREQUENCY;
 
 public:
     enum {
@@ -248,19 +256,15 @@ public:
         USER
     };
 
+    using Timer_Common::Hertz;
+    using Timer_Common::Tick;
+    using Timer_Common::Microsecond;
+    using Timer_Common::Handler;
+
 protected:
-    typedef IF<Traits<System>::multicore, APIC_Timer, i8253>::Result Engine;
-    typedef Engine::Count Count;
-    typedef IC::Interrupt_Id Interrupt_Id;
-
-    static const unsigned int CHANNELS = 3;
-    static const unsigned int FREQUENCY = Traits<PC_Timer>::FREQUENCY;
-
-public:
-    PC_Timer(const Hertz & frequency, const Handler & handler, const Channel & channel, bool retrigger = true):
-        _channel(channel), _initial(FREQUENCY / frequency), _retrigger(retrigger), _handler(handler) {
-        db<Timer>(TRC) << "Timer(f=" << frequency << ",h=" << reinterpret_cast<void*>(handler)
-                       << ",ch=" << channel << ") => {count=" << _initial << "}" << endl;
+    Timer(unsigned int channel, const Hertz & frequency, const Handler & handler, bool retrigger = true)
+    : _channel(channel), _initial(FREQUENCY / frequency), _retrigger(retrigger), _handler(handler) {
+        db<Timer>(TRC) << "Timer(f=" << frequency << ",h=" << reinterpret_cast<void*>(handler) << ",ch=" << channel << ") => {count=" << _initial << "}" << endl;
 
         if(_initial && (unsigned(channel) < CHANNELS) && !_channels[channel])
             _channels[channel] = this;
@@ -271,9 +275,9 @@ public:
             _current[i] = _initial;
     }
 
-    ~PC_Timer() {
-        db<Timer>(TRC) << "~Timer(f=" << frequency() << ",h=" << reinterpret_cast<void*>(_handler)
-        	       << ",ch=" << _channel << ") => {count=" << _initial << "}" << endl;
+public:
+    ~Timer() {
+        db<Timer>(TRC) << "~Timer(f=" << frequency() << ",h=" << reinterpret_cast<void*>(_handler) << ",ch=" << _channel << ") => {count=" << _initial << "}" << endl;
 
         _channels[_channel] = 0;
     }
@@ -294,8 +298,6 @@ public:
         return percentage;
     }
 
-    void handler(const Handler & handler) { _handler = handler; }
-
     static void enable() { IC::enable(IC::INT_TIMER); }
     static void disable() { IC::disable(IC::INT_TIMER); }
 
@@ -314,40 +316,30 @@ protected:
     volatile Count _current[Traits<Machine>::CPUS];
     Handler _handler;
 
-    static PC_Timer * _channels[CHANNELS];
+    static Timer * _channels[CHANNELS];
 };
 
 
 // Timer used by Thread::Scheduler
-class Scheduler_Timer: public PC_Timer
+class Scheduler_Timer: public Timer
 {
-private:
-    typedef RTC::Microsecond Microsecond;
-
 public:
-    Scheduler_Timer(const Microsecond & quantum, const Handler & handler): PC_Timer(1000000 / quantum, handler, SCHEDULER) {}
+    Scheduler_Timer(const Microsecond & quantum, const Handler & handler): Timer(SCHEDULER, 1000000 / quantum, handler) {}
 };
-
 
 // Timer used by Alarm
-class Alarm_Timer: public PC_Timer
+class Alarm_Timer: public Timer
 {
 public:
-    static const unsigned int FREQUENCY = Timer::FREQUENCY;
-
-public:
-    Alarm_Timer(const Handler & handler): PC_Timer(FREQUENCY, handler, ALARM) {}
+    Alarm_Timer(const Handler & handler): Timer(ALARM, FREQUENCY, handler) {}
 };
 
-
 // Timer available for users
-class User_Timer: public PC_Timer
+class User_Timer: public Timer
 {
-private:
-    typedef RTC::Microsecond Microsecond;
-
 public:
-    User_Timer(const Microsecond & quantum, const Handler & handler): PC_Timer(1000000 / quantum, handler, USER, true) {}
+    User_Timer(unsigned int channel, const Microsecond & time, const Handler & handler, bool retrigger = false)
+    : Timer(USER, 1000000 / time, handler, retrigger) {}
 };
 
 __END_SYS

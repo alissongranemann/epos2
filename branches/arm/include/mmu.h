@@ -7,9 +7,7 @@
 
 __BEGIN_SYS
 
-template<unsigned int DIRECTORY_BITS, 
-          unsigned int PAGE_BITS, 
-          unsigned int OFFSET_BITS>
+template<unsigned int DIRECTORY_BITS, unsigned int PAGE_BITS, unsigned int OFFSET_BITS>
 class MMU_Common
 {
 protected:

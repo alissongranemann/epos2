@@ -3,7 +3,15 @@
 #ifndef __display_h
 #define __display_h
 
-#include <uart.h>
+#include <system/config.h>
+
+#ifdef __UART_H
+#include __UART_H
+#endif
+
+#ifdef __USB_H
+#include __USB_H
+#endif
 
 __BEGIN_SYS
 
@@ -13,32 +21,18 @@ protected:
     Display_Common() {}
 };
 
-class Null_Display : public Display_Common 
-{
-    friend class PC_Setup;
-    friend class First_Object;
-public:
-    Null_Display() {}
-    static void clear() { }
-    static void putc(char c) { }
-    static void puts(const char * s) { }
-    static void geometry(int * lines, int * columns) { }
-    static void position(int * line, int * column) { }
-    static void position(int line, int column) { }
-private:
-    static void init() { }
-};
-
 class Serial_Display: public Display_Common
 {
     friend class PC_Setup;
-    friend class First_Object;
+    friend class Serial_Keyboard;
+    friend class Machine;
 
 private:
-    typedef UART Engine;
     static const int LINES = Traits<Serial_Display>::LINES;
     static const int COLUMNS = Traits<Serial_Display>::COLUMNS;
     static const int TAB_SIZE = Traits<Serial_Display>::TAB_SIZE;
+
+    typedef IF<Traits<Serial_Display>::ENGINE == Traits<Serial_Display>::UART, UART, USB>::Result Engine;
 
     // Special characters
     enum {
@@ -113,14 +107,14 @@ private:
     static void puti(unsigned char value) {
         unsigned char digit = '0';
         while(value >= 100) {
-            digit++;     
+            digit++;
             value -= 100;
         }
         put(digit);
-    
+
         digit = '0';
         while(value >= 10) {
-            digit++; 
+            digit++;
             value -= 10;
         }
         put(digit);
@@ -153,6 +147,10 @@ __END_SYS
 
 #ifdef __DISPLAY_H
 #include __DISPLAY_H
+#else
+__BEGIN_SYS
+class Display: public IF<Traits<Serial_Display>::enabled, Serial_Display, Dummy>::Result {};
+__END_SYS
 #endif
 
 #endif

@@ -52,11 +52,6 @@ IP::Buffer * IP::alloc(const Address & to, const Protocol & prot, unsigned int o
     db<IP>(TRC) << "IP::alloc(to=" << to << ",prot=" << prot << ",on=" << once<< ",pl=" << payload << ")" << endl;
 
     Route * through = _router.search(to);
-    if(!through) {
-         db<IP>(WRN) << "IP::alloc: destination host (" << to << ") unreachable!" << endl;
-         return 0;
-    }
-
     IP * ip = through->ip();
     NIC * nic = through->nic();
 
@@ -66,12 +61,9 @@ IP::Buffer * IP::alloc(const Address & to, const Protocol & prot, unsigned int o
          return 0;
     }
 
-    Buffer * pool = nic->alloc(nic, mac, NIC::IP, once, sizeof(IP::Header), payload);
-    if(!pool) {
-        return 0;
-    }
+    Buffer * pool = nic->alloc(mac, NIC::IP, once, sizeof(IP::Header), payload);
 
-    Header header(ip->address(), to, prot, 0); // length will be defined later for each fragment
+    Header header(ip->address(), to, prot, 0); // length will be defined latter for each fragment
 
     unsigned int offset = 0;
     for(Buffer::Element * el = pool->link(); el; el = el->next()) {
@@ -107,9 +99,8 @@ void IP::update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf)
 
     if((packet->to() != _address) && (packet->to() != _broadcast)) {
         db<IP>(INF) << "IP::update: datagram was not for me!" << endl;
-        if(packet->to() != Address(Address::BROADCAST)) {
+        if(packet->to() != Address(Address::BROADCAST))
             db<IP>(WRN) << "IP::update: routing not implemented!" << endl;
-        }
         _nic.free(buf);
         return;
     }

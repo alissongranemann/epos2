@@ -7,7 +7,7 @@
 using namespace EPOS;
 
 const int ITERATIONS = 3;
-const int PDU = 200;
+const int PDU = 2000;
 
 OStream cout;
 
@@ -252,38 +252,11 @@ int tcp_test()
 
 int main()
 {
-    // To use this test in EPOSMoteIII, uncomment the following block
-    /*
-    const bool sender = 0; // To run as receiver
-    //const bool sender = 1; // To run as sender
-
-    NIC nic;
-    auto sender_addr = nic.address();
-    const auto last = sizeof(NIC::Address) - 1;
-    for(auto i = 0u; i < last; i++) {
-        sender_addr[i] = 'a';
-    }
-    auto receiver_addr = nic.address();
-    for(auto i = 0u; i < last; i++) {
-        receiver_addr[i] = 'a';
-    }
-    receiver_addr[last] = 0;
-    sender_addr[last] = 1;
-
-    nic.address(sender ? sender_addr : receiver_addr);
-
-    Alarm::delay(2000000);
-    */
-
-    Network::init();
-
     cout << "IP Test Program" << endl;
     cout << "Sizes:" << endl;
     cout << "  NIC::Header => " << sizeof(NIC::Header) << endl;
     cout << "  IP::Header => " << sizeof(IP::Header) << endl;
-    cout << "  ICMP::Header => " << sizeof(TCP::Header) << endl;
     cout << "  UDP::Header => " << sizeof(UDP::Header) << endl;
-    cout << "  TCP::Header => " << sizeof(TCP::Header) << endl;
 
     icmp_test();
     Alarm::delay(2000000);

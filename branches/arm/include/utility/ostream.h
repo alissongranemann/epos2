@@ -28,7 +28,7 @@ public:
             preamble();
         return *this;
     }
-    
+
     OStream & operator<<(const Endl & endl) {
         if(Traits<System>::multicore)
             trailler();
@@ -67,7 +67,7 @@ public:
         print(buf);
         return *this;
     }
-    OStream & operator<<(unsigned char c) { 
+    OStream & operator<<(unsigned char c) {
         return operator<<(static_cast<unsigned int>(c));
     }
 
@@ -90,7 +90,7 @@ public:
         print(buf);
         return *this;
     }
-    OStream & operator<<(unsigned short s) { 
+    OStream & operator<<(unsigned short s) {
         return operator<<(static_cast<unsigned int>(s));
     }
     OStream & operator<<(unsigned long l) {
@@ -118,9 +118,9 @@ public:
         return *this;
     }
 
-    OStream & operator<<(const char * s) { 
+    OStream & operator<<(const char * s) {
         print(s);
-        return *this; 
+        return *this;
     }
 
     OStream & operator<<(float f) {
@@ -183,7 +183,7 @@ private:
     volatile bool _error;
 
     static const char _digits[];
-}; 
+};
 
 extern OStream::Begl begl;
 extern OStream::Endl endl;

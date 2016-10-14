@@ -1,86 +1,92 @@
+// EPOS Geometry Utility Declarations
+
 #include <utility/math.h>
 
 __BEGIN_UTIL
 
-template<unsigned int dimensions = 3, typename T = int>
-struct Point {
-    T x, y, z;
+template<typename T, unsigned int dimensions>
+struct Point;
 
+template<typename T>
+struct Point<T, 2>
+{
+private:
+    typedef typename IF<EQUAL<char, T>::Result, int, T>::Result Print_Type;
+
+public:
     typedef T Distance;
 
-    Point(const T& xi = 0, const T& yi = 0, const T& zi = 0) :x(xi), y(yi), z(zi) { }
+    Point(const T & xi = 0, const T & yi = 0): x(xi), y(yi) {}
 
-    friend Debug & operator<<(Debug & db, const Point & c) {
-        db << "{" << c.x << "," << c.y << "," << c.z << "}";
-        return db;
+    Distance operator-(const Point<T, 2> & p) const {
+        T xx = p.x - x;
+        T yy = p.y - y;
+        return sqrt(xx*xx + yy*yy);
     }
-    friend OStream & operator<<(OStream & os, const Point & c) {
-        os << "{" << c.x << "," << c.y << "," << c.z << "}";
+
+    bool operator==(const Point & p) const { return x == p.x and y == p.y; }
+    bool operator!=(const Point & p) const { return !(*this == p); }
+
+    friend OStream & operator<<(OStream & os, const Point<T, 2> & c) {
+        os << "{" << Print_Type(c.x) << "," << Print_Type(c.y) << "}";
         return os;
     }
-
-    Distance operator-(const Point & rhs) const {
-        T xx = rhs.x - x;
-        T yy = rhs.y - y;
-        T zz = rhs.z - z;
-        //return Math::sqrt(xx*xx + yy*yy + zz*zz); //TODO: fix when multiplication works on eMote3
-        return Math::abs(xx) + Math::abs(yy) + Math::abs(zz);
-    }
-
-    bool operator==(const Point& rhs) const { return x == rhs.x and y == rhs.y and z == rhs.z; }
-    bool operator!=(const Point& rhs) const { return !operator==(*this,rhs); }
-};
-
-template<>
-struct Point<2, int> {
-    typedef int T;
 
     T x, y;
-
-    typedef T Distance;
-
-    Point(const T& xi = 0, const T& yi = 0) :x(xi), y(yi) { }
-
-    friend Debug & operator<<(Debug & db, const Point<2, T> & c) {
-        db << "{" << c.x << "," << c.y << "}";
-        return db;
-    }
-    friend OStream & operator<<(OStream & os, const Point<2, T> & c) {
-        os << "{" << c.x << "," << c.y << "}";
-        return os;
-    }
-
-    Distance operator-(const Point<2, T> & rhs) const {
-        T xx = rhs.x - x;
-        T yy = rhs.y - y;
-        //return Math::sqrt(xx*xx + yy*yy); //TODO: fix when multiplication works on eMote3
-        return Math::abs(xx) + Math::abs(yy);
-    }
-
-    bool operator==(const Point<2, T>& rhs) const { return x == rhs.x and y == rhs.y; }
-    bool operator!=(const Point<2, T>& rhs) const { return !(*this == rhs); }
 };
 
-template<typename C = Point<>, typename R = typename C::Distance>
-struct Sphere {
-    Sphere() { }
-    Sphere(const C & c, const R & r = 0) : center(c), radius(r) { }
+template<typename T>
+struct Point<T, 3>
+{
+private:
+    typedef typename IF<EQUAL<char, T>::Result, int, T>::Result Print_Type;
 
-    bool contains(const C & coord) const {
-        return center - coord <= radius;
+public:
+    typedef T Distance;
+
+    Point(const T & xi = 0, const T & yi = 0, const T & zi = 0): x(xi), y(yi), z(zi) {}
+
+    Distance operator-(const Point & p) const {
+        T xx = p.x - x;
+        T yy = p.y - y;
+        T zz = p.z - z;
+        return sqrt(xx*xx + yy*yy + zz*zz);
     }
-    friend Debug & operator<<(Debug & db, const Sphere & s) {
-        db << "c=" << s.center << ",r=" << s.radius;
-        return db;
-    }
-    friend OStream & operator<<(OStream & os, const Sphere & s) {
-        os << "c=" << s.center << ",r=" << s.radius;
+
+    bool operator==(const Point & p) const { return x == p.x and y == p.y and z == p.z; }
+    bool operator!=(const Point & p) const { return !(*this == p); }
+
+    friend OStream & operator<<(OStream & os, const Point & c) {
+        os << "(" << Print_Type(c.x) << "," << Print_Type(c.y) << "," << Print_Type(c.z) << ")";
         return os;
     }
 
-    C center;
-    R radius;
+    T x, y, z;
+};
+
+template<typename T>
+struct Sphere
+{
+private:
+    typedef typename IF<EQUAL<char, typename Point<T, 3>::Distance>::Result, int, T>::Result Print_Type;
+
+public:
+    typedef Point<T, 3> Center;
+    typedef typename Point<T, 3>::Distance Distance;
+    typedef typename Point<T, 3>::Distance Radius;
+
+    Sphere() {}
+    Sphere(const Center & c, const Radius & r = 0): center(c), radius(r) { }
+
+    bool contains(const Center & c) const { return (center - c) <= radius; }
+
+    friend OStream & operator<<(OStream & os, const Sphere & s) {
+        os << "{" << "c=" << s.center << ",r=" << Print_Type(s.radius) << "}";
+        return os;
+    }
+
+    Center center;
+    Radius radius;
 };
 
 __END_UTIL
-

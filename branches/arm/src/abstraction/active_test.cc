@@ -19,7 +19,7 @@ public:
             cout << endl;
         }
 
-        return 'A';   
+        return 'A';
     }
 };
 
@@ -33,7 +33,7 @@ public:
             cout << endl;
         }
 
-        return 'B';   
+        return 'B';
     }
 };
 
@@ -52,12 +52,12 @@ int main()
     int status_a = a->join();
     int status_b = b->join();
 
-    cout << "Thread A exited with status " << status_a 
+    cout << "Thread A exited with status " << status_a
  	 << " and thread B exited with status " << status_b << endl;
 
     delete a;
     delete b;
-    
+
     cout << "I'm also done, bye!" << endl;
 
     return 0;

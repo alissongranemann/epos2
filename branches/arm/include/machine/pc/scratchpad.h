@@ -7,16 +7,16 @@
 
 __BEGIN_SYS
 
-class PC_Scratchpad: public Scratchpad_Common
+class Scratchpad: public Scratchpad_Common
 {
-    friend class PC;
+    friend class Machine;
 
 private:
-    static const unsigned int ADDRESS = Traits<PC_Scratchpad>::ADDRESS;
-    static const unsigned int SIZE = Traits<PC_Scratchpad>::SIZE;
+    static const unsigned int ADDRESS = Traits<Scratchpad>::ADDRESS;
+    static const unsigned int SIZE = Traits<Scratchpad>::SIZE;
 
 public:
-    PC_Scratchpad() {}
+    Scratchpad() {}
 
 private:
     static void init();

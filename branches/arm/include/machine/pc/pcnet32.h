@@ -23,7 +23,7 @@ protected:
 public:
     // Offsets from base I/O address
     enum {
-        PROM       = 0x00, // 16 bytes EEPROM 
+        PROM       = 0x00, // 16 bytes EEPROM
         PROM_MAC   = 0x00, // MAC Address (6 bytes)
         PROM_CHK   = 0x0c, // PROM Check Sum (bytes 0-11 and 14-15)
         PROM_SIG   = 0x0e, // PROM Signature (ASCII W)
@@ -93,7 +93,7 @@ public:
         MACEC    = 125, // MAC Enhanced Configuration Control
         CSR_RESF = 126  // Reserved -> 127
     };
-    
+
     // CSR0 bits
     enum {
         CSR0_INIT = 0x0001,
@@ -178,7 +178,7 @@ public:
         CSR15_INTL    = 0x0040,
         CSR15_PROM    = 0x8000
     };
-    
+
     // Bus Configuration Registers (BCR)
     enum {
         BCR_RES0 =   0, // Reserved -> 1
@@ -247,14 +247,14 @@ public:
         BCR18_BREADE = 0x0040,
         BCR18_DWIO   = 0x0080
     };
-   
+
     // BCR20 bits
     enum {
         BCR20_SWSTYLE2 = 0x0002,
         BCR20_SSIZE32  = 0x0100,
         BCR20_CSRPCNET = 0x0200
     };
-   
+
     // Initialization block (pg 156)
     struct Init_Block {
         Reg16 mode;		// (pg 120)
@@ -336,7 +336,7 @@ public:
         CPU::out16(_io_port + WIO_RAP, a);
         return CPU::in16(_io_port + WIO_RDP);
     }
-    void csr(int a, Reg16 v) { 
+    void csr(int a, Reg16 v) {
         CPU::out16(_io_port + WIO_RAP, a);
         CPU::out16(_io_port + WIO_RDP, v);
     }
@@ -344,15 +344,15 @@ public:
         CPU::out16(_io_port + WIO_RAP, a);
         return CPU::in16(_io_port + WIO_BDP);
     }
-    void  bcr(int a, Reg16 v) { 
+    void  bcr(int a, Reg16 v) {
         CPU::out16(_io_port + WIO_RAP, a);
         CPU::out16(_io_port + WIO_BDP, v);
     }
 
-    Reg16 dwio_rap() volatile { 
+    Reg16 dwio_rap() volatile {
         return (CPU::in32(_io_port + DWIO_RAP) & 0xffff);
     }
-    void dwio_rap(Reg16 v) { 
+    void dwio_rap(Reg16 v) {
         CPU::out32(_io_port + DWIO_RAP, v);
     }
     void dwio_s_reset() {
@@ -362,7 +362,7 @@ public:
         CPU::out32(_io_port + DWIO_RAP, a);
         return (CPU::in32(_io_port + DWIO_RDP) & 0xffff);
     }
-    void dwio_csr(int a, Reg16 v) { 
+    void dwio_csr(int a, Reg16 v) {
         CPU::out32(_io_port + DWIO_RAP, a);
         CPU::out32(_io_port + DWIO_RDP, v);
     }
@@ -370,7 +370,7 @@ public:
         CPU::out32(_io_port + DWIO_RAP, a);
         return (CPU::in32(_io_port + DWIO_BDP) & 0xffff);
     }
-    void dwio_bcr(int a, Reg16 v) volatile { 
+    void dwio_bcr(int a, Reg16 v) volatile {
         CPU::out32(_io_port + DWIO_RAP, a);
         CPU::out32(_io_port + DWIO_BDP, v);
     }
@@ -387,7 +387,7 @@ protected:
 
 
 // PCNet32 PC Ethernet NIC
-class PCNet32: public Ethernet, public Ethernet::Observed, private Am79C970A
+class PCNet32: public Ethernet::NIC_Base<Ethernet, Traits<NIC>::NICS::Polymorphic>, private Am79C970A
 {
     template<int unit> friend void call_init();
 
@@ -397,25 +397,23 @@ private:
     static const unsigned int PCI_DEVICE_ID = 0x2000;
     static const unsigned int PCI_REG_IO = 0;
 
-
     // Transmit and Receive Ring sizes
     static const unsigned int UNITS = Traits<PCNet32>::UNITS;
     static const unsigned int TX_BUFS = Traits<PCNet32>::SEND_BUFFERS;
     static const unsigned int RX_BUFS =	Traits<PCNet32>::RECEIVE_BUFFERS;
-
+    static const bool promiscuous = Traits<PCNet32>::promiscuous;
 
     // Size of the DMA Buffer that will host the ring buffers and the init block
     static const unsigned int DMA_BUFFER_SIZE = ((sizeof(Init_Block) + 15) & ~15U) +
         RX_BUFS * ((sizeof(Rx_Desc) + 15) & ~15U) + TX_BUFS * ((sizeof(Tx_Desc) + 15) & ~15U) +
         RX_BUFS * ((sizeof(Buffer) + 15) & ~15U) + TX_BUFS * ((sizeof(Buffer) + 15) & ~15U); // align128() cannot be used here
 
-
     // Interrupt dispatching binding
     struct Device {
         PCNet32 * device;
         unsigned int interrupt;
     };
-        
+
 protected:
     PCNet32(unsigned int unit, IO_Port io_port, IO_Irq irq, DMA_Buffer * dma);
 
@@ -444,18 +442,15 @@ private:
     static void int_handler(const IC::Interrupt_Id & interrupt);
 
     static PCNet32 * get_by_unit(unsigned int unit) {
-        if(unit >= UNITS) {
-            db<PCNet32>(WRN) << "PCNet32::get: requested unit (" << unit << ") does not exist!" << endl;
-            return 0;
-        } else
-            return _devices[unit].device;
+        assert(unit < UNITS);
+        return _devices[unit].device;
     }
 
     static PCNet32 * get_by_interrupt(unsigned int interrupt) {
         for(unsigned int i = 0; i < UNITS; i++)
             if(_devices[i].interrupt == interrupt)
         	return _devices[i].device;
-
+        db<PCNet32>(WRN) << "PCNet32::get_by_interrupt(" << interrupt << ") => no device bound!" << endl;
         return 0;
     };
 

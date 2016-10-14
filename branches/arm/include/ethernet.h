@@ -12,47 +12,45 @@
 
 __BEGIN_SYS
 
-class Ethernet: private NIC_Common
+class Ethernet: public NIC_Common
 {
 protected:
-    static const unsigned int MTU = 1500;
     static const unsigned int HEADER_SIZE = 14;
-
 
 public:
     typedef NIC_Common::Address<6> Address;
 
     typedef unsigned short Protocol;
-    enum
-    {
+    enum {
         IP     = 0x0800,
         ARP    = 0x0806,
         RARP   = 0x8035,
-        ELP    = 0x8888,
+        TSTP   = 0x8401,
+        ELP    = 0x8402,
         PTP    = 0x88F7
     };
 
+    static const unsigned int MTU = 1500;
     typedef unsigned char Data[MTU];
-    typedef NIC_Common::CRC32 CRC;
 
+    typedef NIC_Common::CRC32 CRC;
 
     // The Ethernet Header (RFC 894)
     class Header
     {
     public:
         Header() {}
-        Header(const Address & src, const Address & dst, const Protocol & prot):
-            _dst(dst), _src(src), _prot(htons(prot)) {}
-
-        friend Debug & operator<<(Debug & db, const Header & h) {
-            db << "{" << h._dst << "," << h._src << "," << h.prot() << "}";
-            return db;
-        }
+        Header(const Address & src, const Address & dst, const Protocol & prot): _dst(dst), _src(src), _prot(htons(prot)) {}
 
         const Address & src() const { return _src; }
         const Address & dst() const { return _dst; }
 
         Protocol prot() const { return ntohs(_prot); }
+
+        friend Debug & operator<<(Debug & db, const Header & h) {
+            db << "{d=" << h._dst << ",s=" << h._src << ",p=" << hex << h.prot() << dec << "}";
+            return db;
+        }
 
     protected:
         Address _dst;
@@ -66,21 +64,19 @@ public:
     {
     public:
         Frame() {}
-        Frame(const Address & src, const Address & dst, const Protocol & prot) : Header(src, dst, prot) {}
-        Frame(const Address & src, const Address & dst, const Protocol & prot, const void * data, unsigned int size): Header(src, dst, prot) {
-            memcpy(_data, data, size);
-        }
-        
+        Frame(const Address & src, const Address & dst, const Protocol & prot): Header(src, dst, prot) {}
+        Frame(const Address & src, const Address & dst, const Protocol & prot, const void * data, unsigned int size): Header(src, dst, prot) { memcpy(_data, data, size); }
+
         Header * header() { return this; }
 
         template<typename T>
         T * data() { return reinterpret_cast<T *>(&_data); }
 
         friend Debug & operator<<(Debug & db, const Frame & f) {
-            db << "{" << f.dst() << "," << f.src() << "," << f.prot() << "," << f._data << "}";
+            db << "{h=" << reinterpret_cast<const Header &>(f) << ",d=" << f._data << "}";
             return db;
         }
-        
+
     protected:
         Data _data;
         CRC _crc;
@@ -90,7 +86,7 @@ public:
 
 
     // Buffers used to hold frames across a zero-copy network stack
-    typedef _UTIL::Buffer<NIC, Frame, void> Buffer;
+    typedef _UTIL::Buffer<NIC, Frame, void, IF<Traits<_SYS::TSTP>::enabled, TSTP_Metadata, Dummy>::Result> Buffer;
 
 
     // Observers of a protocol get a also a pointer to the received buffer
@@ -116,7 +112,7 @@ public:
                << "}";
             return db;
         }
-        
+
         unsigned int rx_overruns;
         unsigned int tx_overruns;
         unsigned int frame_errors;

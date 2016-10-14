@@ -7,7 +7,7 @@ __BEGIN_SYS
 
 // Conditional Type
 template<bool condition, typename Then, typename Else>
-struct IF 
+struct IF
 { typedef Then Result; };
 
 template<typename Then, typename Else>
@@ -32,8 +32,8 @@ struct Nil_Case {};
 
 template<int tag_, typename Type_, typename Next_ = Nil_Case>
 struct CASE
-{ 
-    enum { tag = tag_ }; 
+{
+    enum { tag = tag_ };
     typedef Type_ Type;
     typedef Next_ Next;
 };
@@ -42,13 +42,12 @@ template<int tag, typename Case>
 class SWITCH
 {
     typedef typename Case::Next Next_Case;
-    enum { 
-        case_tag = Case::tag, 
+    enum {
+        case_tag = Case::tag,
         found = ( case_tag == tag || case_tag == DEFAULT  )
     };
 public:
-    typedef typename IF<found, typename Case::Type,
-        typename SWITCH<tag, Next_Case>::Result>::Result Result;
+    typedef typename IF<found, typename Case::Type, typename SWITCH<tag, Next_Case>::Result>::Result Result;
 };
 
 template<int tag>
@@ -61,7 +60,7 @@ public:
 
 // EQUALty of Types
 template<typename T1, typename T2>
-struct EQUAL 
+struct EQUAL
 { enum { Result = false }; };
 
 template<typename T>
@@ -97,6 +96,14 @@ public:
     struct Get<Index, Current, true>
     { typedef Head Result; };
 
+    template<typename Type, int Start = 0, int Current = 0, bool Stop = ((Current >= Start) && EQUAL<Head, Type>::Result)>
+    struct Find
+    { enum { Result = Tail::template Find<Type, Start, Current + 1>::Result }; };
+
+    template<typename Type, int Start, int Current>
+    struct Find<Type, Start, Current, true>
+    { enum { Result = Current }; };
+
     template<typename Type>
     struct Count
     { enum { Result = EQUAL<Head, Type>::Result + Tail::template Count<Type>::Result }; };
@@ -109,13 +116,17 @@ public:
 
 template<>
 class LIST<>
-{ 
+{
 public:
-    enum { Length = 0 }; 
+    enum { Length = 0 };
 
     template<int Index, int Current = 0>
     struct Get
     { typedef void Result; };
+
+    template<typename Type, int Start = 0, int Current = 0>
+    struct Find
+    { enum { Result = -1 }; };
 
     template<typename Type>
     struct Count

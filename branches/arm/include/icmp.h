@@ -14,7 +14,11 @@ class ICMP: private IP::Observer
 public:
     static const bool connectionless = true;
 
-    typedef IP::Buffer Buffer;
+    // Network to be used by Communicator
+    typedef IP Network;
+
+    // Buffers received from IP
+    typedef NIC::Buffer Buffer;
 
     // ICMP Packet Types
     typedef unsigned char Type;

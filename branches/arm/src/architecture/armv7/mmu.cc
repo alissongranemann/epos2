@@ -5,6 +5,6 @@
 __BEGIN_SYS
 
 // Class attributes
-ARMv7_MMU::List ARMv7_MMU::_free;
+MMU::List MMU::_free;
 
 __END_SYS

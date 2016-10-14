@@ -8,9 +8,6 @@
 
 __BEGIN_SYS
 
-//Default ID
-const char __attribute__((weak)) Traits<Build>::ID[Traits<Build>::ID_SIZE] = {'0','0'};
-
 class Init_System
 {
 private:
@@ -39,8 +36,8 @@ public:
         // Initialize System's heap
         db<Init>(INF) << "Initializing system's heap: " << endl;
         if(Traits<System>::multiheap) {
-            System::_heap_segment = new (&System::_preheap[0]) Segment(HEAP_SIZE, Segment::Flags::SYS);
-            System::_heap = new (&System::_preheap[sizeof(Segment)]) Heap(Address_Space(MMU::current()).attach(System::_heap_segment, Memory_Map<Machine>::SYS_HEAP), System::_heap_segment->size());
+            System::_heap_segment = new (&System::_preheap[0]) Segment(HEAP_SIZE, WHITE, Segment::Flags::SYS);
+            System::_heap = new (&System::_preheap[sizeof(Segment)]) Heap(Address_Space(MMU::current()).attach(System::_heap_segment, Memory_Map::SYS_HEAP), System::_heap_segment->size());
         } else
             System::_heap = new (&System::_preheap[0]) Heap(MMU::alloc(MMU::pages(HEAP_SIZE)), HEAP_SIZE);
         db<Init>(INF) << "done!" << endl;
@@ -74,9 +71,6 @@ public:
                 Random::seed(Random::random() ^ adc.read());
             }
 #endif
-            for(unsigned int i=0; i<Traits<Build>::ID_SIZE; i++)
-                Random::seed(Random::random() ^ Traits<Build>::ID[i]);
-
             if(!Traits<TSC>::enabled && !Traits<NIC>::enabled)
                 db<Init>(WRN) << "Due to lack of entropy, Random is a pseudo random numbers generator!" << endl;
             db<Init>(INF) << "done!" << endl;

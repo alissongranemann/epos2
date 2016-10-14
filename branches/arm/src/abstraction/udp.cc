@@ -19,10 +19,8 @@ int UDP::send(const Port & from, const Address & to, const void * d, unsigned in
     db<UDP>(TRC) << "UDP::send(f=" << from << ",t=" << to << ",d=" << data << ",s=" << size << ")" << endl;
 
     Buffer * pool = IP::alloc(to.ip(), IP::UDP, sizeof(Header), size);
-    if(!pool) {
-        db<UDP>(WRN) << "UDP::send: failed to alloc!" << endl;
+    if(!pool)
         return 0;
-    }
 
     Message * message = 0;
     unsigned int headers = sizeof(Header);

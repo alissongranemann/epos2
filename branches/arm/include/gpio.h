@@ -11,6 +11,30 @@ class GPIO_Common
 {
 protected:
     GPIO_Common() {}
+
+public:
+    enum Level {
+        HIGH,
+        LOW
+    };
+
+    enum Edge {
+        RISING,
+        FALLING,
+        BOTH
+    };
+
+    enum Direction {
+        IN,
+        OUT,
+        INOUT
+    };
+
+    enum Pull {
+        UP,
+        DOWN,
+        FLOATING
+    };
 };
 
 __END_SYS

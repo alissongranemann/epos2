@@ -6,15 +6,4 @@
 #include <udp.h>
 #include <tcp.h>
 
-__BEGIN_SYS
-
-class Memory_Channel
-{
-
-protected:
-    Memory_Channel() {}
-};
-
-__END_SYS
-
 #endif

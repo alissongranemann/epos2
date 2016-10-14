@@ -9,153 +9,179 @@
 #include <utility/list.h>
 #include <utility/observer.h>
 #include <utility/buffer.h>
-#include <ieee802_15_4_phy.h>
 
 __BEGIN_SYS
 
-class IEEE802_15_4: private NIC_Common, public IEEE802_15_4_PHY
+class IEEE802_15_4: public NIC_Common
 {
+private:
+    typedef CPU::Reg8 Reg8;
+    typedef CPU::Reg16 Reg16;
+
 public:
     typedef NIC_Common::Address<2> Short_Address;
     typedef NIC_Common::Address<8> Extended_Address;
     typedef Short_Address Address;
-    typedef CPU::Reg8 Reg8;
-    typedef CPU::Reg16 Reg16;
-    typedef IEEE802_15_4_PHY::CRC CRC;
+    typedef NIC_Common::CRC16 CRC;
 
+    // IEEE 802.15.4 Physical Layer
+    static const unsigned int MTU = 127;
+
+    typedef unsigned char Data[MTU];
+
+    // Frame
+    class Phy_Frame
+    {
+    public:
+        Phy_Frame() {}
+
+        template<typename T>
+        T * data() { return reinterpret_cast<T *>(&_data); }
+
+        friend Debug & operator<<(Debug & db, const Phy_Frame & f) {
+            db << "{d=" << f._data << "}";
+            return db;
+        }
+
+    protected:
+        Data _data;
+    } __attribute__((packed));
+
+
+    // IEEE 802.15.4 MAC Layer
     // Frame types
-    enum Frame_Type
+    typedef unsigned char Type;
+    enum
     {
         BEACON  = 0,
         DATA    = 1,
         ACK     = 2,
         MAC_CMD = 3,
     };
+
+    typedef Type Protocol;
+    enum
+    {
+        IP     = 1,
+        ARP    = 1,
+        RARP   = 1,
+        TSTP   = 4,
+        ELP    = 1,
+        PTP    = 1
+    };
+
+    enum Frame_Version
+    {
+        IEEE802_15_4_2003 = 0,
+        IEEE802_15_4_2006 = 1,
+    };
+
+    // Addresses
     enum Addressing_Mode
     {
-        ADDR_MODE_NOT_PRESENT = 0,
-        ADDR_MODE_SHORT_ADDR  = 2,
-        ADDR_MODE_EXT_ADDR    = 4,
+        NO_ADDRRESS      = 0,
+        SHORT_ADDRESS    = 2,
+        EXTENTED_ADDRESS = 4,
     };
+
     enum
     {
         PAN_ID_BROADCAST = 0xffff
     };
 
-    typedef unsigned short Protocol;
-    enum
-    {
-        IP     = 0x0800,
-        ARP    = 0x0806,
-        RARP   = 0x8035,
-        ELP    = 0x8888,
-        PTP    = 0x88F7
-    };
-
-    typedef IEEE802_15_4_PHY::Header Phy_Header;
-
-    // The IEEE 802.15.4 MHR
+    // Header
     // 802.15.4 headers can have variable format, for now this only
     // supports a simple, fixed format
-    // Adding the Protocol field for compatibility with ethernet/nic headers
-    class Header : public Phy_Header
+    class Header
     {
     public:
-        // Frame Control field that goes inside MHR
-        // TODO: This class assumes that the machine is little-endian
+        // Frame Control
         class Frame_Control
         {
-            public:
-                // TODO: For now, we'll only support data frames
-                // TODO: This order assumes that the machine is little-endian
-                Frame_Control() :
-                    _frame_type(DATA),
-                    _security_enabled(0),
-                    _frame_pending(0),
-                    _ar(0),
-                    _pan_id_compression(1),
-                    _reserved(0),
-                    _dst_addressing_mode(ADDR_MODE_SHORT_ADDR),
-                    _frame_version(0),
-                    _src_addressing_mode(ADDR_MODE_SHORT_ADDR)
-            { }
+        public:
+            Frame_Control(unsigned short type = DATA, bool se = 0, bool fp = 0, bool ar = 0, bool pic = 1, unsigned short dam = SHORT_ADDRESS, unsigned short fv = Frame_Version::IEEE802_15_4_2006, unsigned short sam = SHORT_ADDRESS)
+            : _fc(type | se << 3 | fp << 4 | ar << 5 | pic << 6 | dam << 10 | fv << 12 | sam << 14) {}
 
-                bool frame_pending() const { return _frame_pending; }
-                unsigned char frame_type() const { return _frame_type; }
-                void ack_request(bool val) { _ar = val; }
-                bool ack_request() { return _ar; }
+            unsigned short type() const { return _fc & 0x0007; }
+            void type(unsigned short t) { _fc = (_fc & (~0x0007)) | (t & 0x0007); }
 
-            protected:
-                // TODO: This order assumes that the machine is little-endian
-                unsigned _frame_type : 3;
-                unsigned _security_enabled : 1;
-                unsigned _frame_pending : 1;
-                unsigned _ar : 1;
-                unsigned _pan_id_compression: 1;
-                unsigned _reserved : 3;
-                unsigned _dst_addressing_mode : 2;
-                unsigned _frame_version : 2;
-                unsigned _src_addressing_mode : 2;
-        } __attribute__((packed, may_alias));
+            bool se() const { return (_fc >> 3) & 0x0001; }
+            void se(bool b) { _fc = (_fc & (~(1 << 3))) | (b << 3); }
 
+            bool fp() const { return (_fc >> 4) & 0x0001; }
+            void fp(bool b) { _fc = (_fc & (~(1 << 4))) | (b << 4); }
+
+            bool ar() const { return (_fc >> 5) & 0x0001; }
+            void ar(bool b) { _fc = (_fc & (~(1 << 5))) | (b << 5); }
+
+            bool pic() const { return (_fc >> 6) & 0x0001; }
+            void pic(bool b) { _fc = (_fc & (~(1 << 6))) | (b << 6); }
+
+            unsigned short dam() const { return (_fc >> 10) & 0x0003; }
+            void dam(unsigned short m) { _fc = (_fc & (~(3 << 10))) | ((m & 0x0003) << 10); }
+
+            unsigned short fv() const { return (_fc >> 12) & 0x0003; }
+            void fv(unsigned short v) { _fc = (_fc & (~(3 << 12))) | ((v & 0x0003) << 12); }
+
+            unsigned short sam() const { return (_fc & 0x0003); }
+            void sam(unsigned short m) { _fc = (_fc & (~(3 << 14))) | ((m & 0x0003) << 14); }
+
+            friend Debug & operator<<(Debug & db, const Frame_Control & fc) {
+                db << "{type=" << fc.type() << ",se=" << fc.se() << ",fp=" << fc.fp() << ",ar=" << fc.ar() << ",pic=" << fc.pic() << ",dam=" << fc.dam() << ",fv=" << fc.fv() << ",sam=" << fc.sam() << "}";
+                return db;
+            }
+
+            private:
+                unsigned short _fc;
+        } __attribute__((packed));
+
+    public:
         Header() {}
-        Header(Reg8 payload_size): Phy_Header(payload_size + sizeof(Header) - sizeof(Phy_Header)) {};
-        Header(const Short_Address & src, const Short_Address & dst, const Protocol & prot): Phy_Header(), _frame_control(), _dst(dst), _src(src), _prot(htons(prot)) {}
-        Header(Reg8 payload_size, const Short_Address & src, const Short_Address & dst, const Protocol & prot):
-            Phy_Header(payload_size+sizeof(Header)-sizeof(Phy_Header)), _frame_control(), _sequence_number(0), _dst_pan_id(PAN_ID_BROADCAST), _dst(dst), _src(src), _prot(htons(prot)) {}
 
-        friend Debug & operator<<(Debug & db, const Header & h) {
-            db << "{" << h._dst << "," << h._src << "," << h.prot() << "}";
-            return db;
-        }
+        Header(const Type & type)
+        : _frame_control(type), _sequence_number(0), _dst_pan_id(PAN_ID_BROADCAST) {};
+
+        Header(const Type & type, const Address & src, const Address & dst)
+        : _frame_control(type), _sequence_number(0), _dst_pan_id(PAN_ID_BROADCAST), _dst(dst), _src(src) { ack_request(dst != broadcast()); }
 
         const Address & src() const { return _src; }
         const Address & dst() const { return _dst; }
 
-        Protocol prot() const { return ntohs(_prot); }
-
         void sequence_number(Reg8 seq) { _sequence_number = seq; }
-        Reg8 sequence_number() { return _sequence_number; }
+        const Reg8 & sequence_number() { return _sequence_number; }
 
-        bool frame_pending() const { return _frame_control.frame_pending(); }
-        unsigned char frame_type() const { return _frame_control.frame_type(); }
-        void ack_request(bool val) { _frame_control.ack_request(val); }
-        bool ack_request() { return _frame_control.ack_request(); }
+        bool pending() const { return _frame_control.fp(); }
+        unsigned int type() const { return _frame_control.type(); }
 
-    public:
-    //protected:
+        void ack_request(bool val) { _frame_control.ar(val); }
+        bool ack_request() { return _frame_control.ar(); }
+
+        friend Debug & operator<<(Debug & db, const Header & h) {
+            db << "{" << "fc=" << h._frame_control << ",sn=" << h._sequence_number << ",pid=" << h._dst_pan_id << ",dst=" << h._dst << ",src=" << h._src << "," << "}";
+            return db;
+        }
+
+    protected:
         Frame_Control _frame_control;
         Reg8 _sequence_number;
         Reg16 _dst_pan_id;
-        Short_Address _dst;
-        Short_Address _src;
-        Protocol _prot; // TODO: this is not part of 802.15.4
-    } __attribute__((packed, may_alias));
+        Address _dst;
+        Address _src;
+    } __attribute__((packed));
 
-private:
-    static const unsigned int HEADER_SIZE = sizeof(Header) - sizeof(Phy_Header);
-    static const unsigned int FOOTER_SIZE = sizeof(CRC);
-
-public:
-    static const unsigned int MTU = IEEE802_15_4_PHY::MTU - HEADER_SIZE - FOOTER_SIZE;
-    typedef unsigned char Data[MTU];
-
-
-    // The IEEE 802.15.4 Frame
     class Frame: public Header
     {
     public:
-        Frame() {}
-        Frame(const Address & src, const Address & dst, const Protocol & prot, Reg8 payload_size) 
-            : Header(payload_size + FOOTER_SIZE, src, dst, prot) {}
-        Frame(const Address & src, const Address & dst, const Protocol & prot, const void * dat, Reg8 payload_size)
-            : Header(payload_size + FOOTER_SIZE, src, dst, prot)
-        {
-            data(dat);
-        }
+        static const unsigned int MTU = IEEE802_15_4::MTU - sizeof(Header) - sizeof(CRC);
+        typedef unsigned char Data[MTU];
 
-        void data(const void * d) {
-            memcpy(_data, d, frame_length() - HEADER_SIZE - FOOTER_SIZE);
+    public:
+        Frame() {}
+        Frame(const Type & type, const Address & src, const Address & dst): Header(type, src, dst) {}
+        Frame(const Type & type, const Address & src, const Address & dst, const void * data, unsigned int size)
+        : Header(type, src, dst) {
+            assert(size <= MTU);
+            memcpy(_data, data, size);
         }
 
         Header * header() { return this; }
@@ -164,26 +190,25 @@ public:
         T * data() { return reinterpret_cast<T *>(&_data); }
 
         friend Debug & operator<<(Debug & db, const Frame & f) {
-            db << "{" << f.dst() << "," << f.src() << "," << f.prot() << "," << f._data << "}";
+            db << "{h=" << reinterpret_cast<const Header &>(f) << ",d=" << f._data << "}";
             return db;
         }
 
     protected:
         Data _data;
         CRC _crc;
-    } __attribute__((packed, may_alias));
+    } __attribute__((packed));
 
     typedef Frame PDU;
 
     // Buffers used to hold frames across a zero-copy network stack
-    typedef _UTIL::Buffer<NIC, Frame, void> Buffer;
+    typedef _UTIL::Buffer<NIC, IF<Traits<_SYS::TSTP>::enabled, Phy_Frame, Frame>::Result, void, IF<Traits<_SYS::TSTP>::enabled, TSTP_Metadata, IEEE802_15_4_Metadata>::Result> Buffer;
 
-public:
     // Observers of a protocol get a also a pointer to the received buffer
-    typedef Data_Observer<Buffer, Protocol> Observer;
-    typedef Data_Observed<Buffer, Protocol> Observed;
+    typedef Data_Observer<Buffer, Type> Observer;
+    typedef Data_Observed<Buffer, Type> Observed;
 
-    // Meaningful statistics for Ethernet
+    // Meaningful statistics for IEEE 802.15.4
     struct Statistics: public NIC_Common::Statistics
     {
         Statistics(): rx_overruns(0), tx_overruns(0), frame_errors(0), carrier_errors(0), collisions(0) {}
@@ -213,7 +238,7 @@ protected:
     IEEE802_15_4() {}
 
 public:
-    static const unsigned int mtu() { return MTU; }
+    static const unsigned int mtu() { return Frame::MTU; }
     static const Address broadcast() { return Address::BROADCAST; }
 };
 

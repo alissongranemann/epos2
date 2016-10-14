@@ -12,14 +12,16 @@
 
 __BEGIN_SYS
 
-class IA32_MMU: public MMU_Common<10, 10, 12>
+class MMU: public MMU_Common<10, 10, 12>
 {
-    friend class IA32;
+    friend class CPU;
 
 private:
     typedef Grouping_List<Frame> List;
 
-    static const unsigned int PHY_MEM = Memory_Map<Machine>::PHY_MEM;
+    static const bool colorful = Traits<MMU>::colorful;
+    static const unsigned int COLORS = Traits<MMU>::COLORS;
+    static const unsigned int PHY_MEM = Memory_Map::PHY_MEM;
 
 public:
     // Page Flags
@@ -52,12 +54,12 @@ public:
         IA32_Flags(const IA32_Flags & f) : _flags(f._flags) {}
         IA32_Flags(unsigned int f) : _flags(f) {}
         IA32_Flags(const Flags & f) : _flags(PRE | ACC |
-        			             ((f & Flags::RW)  ? RW  : 0) |
-        			             ((f & Flags::USR) ? USR : 0) |
-        			             ((f & Flags::CWT) ? PWT : 0) |
-        			             ((f & Flags::CD)  ? PCD : 0) |
-        			             ((f & Flags::CT)  ? CT  : 0) |
-        			             ((f & Flags::IO)  ? PCI : 0) ) {}
+                                             ((f & Flags::RW)  ? RW  : 0) |
+                                             ((f & Flags::USR) ? USR : 0) |
+                                             ((f & Flags::CWT) ? PWT : 0) |
+                                             ((f & Flags::CD)  ? PCD : 0) |
+                                             ((f & Flags::CT)  ? CT  : 0) |
+                                             ((f & Flags::IO)  ? PCI : 0) ) {}
 
         operator unsigned int() const { return _flags; }
 
@@ -68,27 +70,26 @@ public:
     };
 
     // Page_Table
-    class Page_Table 
+    class Page_Table
     {
     public:
         Page_Table() {}
-        
+
         PT_Entry & operator[](unsigned int i) { return _entry[i]; }
 
-        void map(int from, int to, const IA32_Flags & flags) {
-            Phy_Addr * addr = alloc(to - from);
+        void map(int from, int to, const IA32_Flags & flags, const Color & color) {
+            Phy_Addr * addr = alloc(to - from, color);
             if(addr)
-        	remap(addr, from, to, flags);
+                remap(addr, from, to, flags);
             else
-        	for( ; from < to; from++) {
+                for( ; from < to; from++) {
                     Log_Addr * tmp = phy2log(&_entry[from]);
-                    *tmp = alloc() | flags;
-                    //_entry[from] = alloc() | flags;
-        	}
+                    *tmp = alloc(1, color) | flags;
+                }
         }
 
-        void map_contiguous(int from, int to, const IA32_Flags & flags) {
-            remap(alloc(to - from), from, to, flags);
+        void map_contiguous(int from, int to, const IA32_Flags & flags, const Color & color) {
+            remap(alloc(to - from, color), from, to, flags);
         }
 
         void remap(Phy_Addr addr, int from, int to, const IA32_Flags & flags) {
@@ -96,17 +97,15 @@ public:
             for( ; from < to; from++) {
                 Log_Addr * tmp = phy2log(&_entry[from]);
                 *tmp = addr | flags;
-                //_entry[from] = addr | flags;
-        	addr += sizeof(Page);
+                addr += sizeof(Page);
             }
         }
 
         void unmap(int from, int to) {
             for( ; from < to; from++) {
-        	free(_entry[from]);
+                free(_entry[from]);
                 Log_Addr * tmp = phy2log(&_entry[from]);
                 *tmp = 0;
-//                _entry[from] = 0;
             }
         }
 
@@ -114,15 +113,15 @@ public:
             db << "{\n";
             int brk = 0;
             for(unsigned int i = 0; i < PT_ENTRIES; i++)
-        	if(pt[i]) {
-        	    db << "[" << i << "]=" << pt[i] << "  ";
-        	    if(!(++brk % 4))
-        		db << "\n";
-        	}
+                if(pt[i]) {
+                    db << "[" << i << "]=" << pt[i] << "  ";
+                    if(!(++brk % 4))
+                        db << "\n";
+                }
             db << "\n}";
             return db;
         }
-        
+
     private:
         PT_Entry _entry[PT_ENTRIES];
     };
@@ -133,25 +132,25 @@ public:
     public:
         Chunk() {}
 
-        Chunk(unsigned int bytes, const Flags & flags): _from(0), _to(pages(bytes)), _pts(page_tables(_to - _from)), _flags(IA32_Flags(flags)), _pt(calloc(_pts)) {
+        Chunk(unsigned int bytes, const Flags & flags, const Color & color = WHITE)
+        : _from(0), _to(pages(bytes)), _pts(page_tables(_to - _from)), _flags(IA32_Flags(flags)), _pt(calloc(_pts, WHITE)) {
             if(flags & IA32_Flags::CT)
-        	_pt->map_contiguous(_from, _to, _flags);
-            else 
-        	_pt->map(_from, _to, _flags);
+                _pt->map_contiguous(_from, _to, _flags, color);
+            else
+                _pt->map(_from, _to, _flags, color);
         }
 
-        Chunk(const Phy_Addr & phy_addr, unsigned int bytes, const Flags & flags): _from(0), _to(pages(bytes)), _pts(page_tables(_to - _from)), _flags(IA32_Flags(flags)), _pt(calloc(_pts)) {
+        Chunk(const Phy_Addr & phy_addr, unsigned int bytes, const Flags & flags)
+        : _from(0), _to(pages(bytes)), _pts(page_tables(_to - _from)), _flags(IA32_Flags(flags)), _pt(calloc(_pts, WHITE)) {
             _pt->remap(phy_addr, _from, _to, flags);
         }
 
         ~Chunk() {
             if(!(_flags & IA32_Flags::IO)) {
-        	if(_flags & IA32_Flags::CT)
-//                    free((*_pt)[_from], _to - _from);
-        	    free((*static_cast<Page_Table *>(phy2log(_pt)))[_from], _to - _from);
-        	else
+                if(_flags & IA32_Flags::CT)
+                    free((*static_cast<Page_Table *>(phy2log(_pt)))[_from], _to - _from);
+                else
                     for( ; _from < _to; _from++)
-//                        free((*_pt)[_from]);
                         free((*static_cast<Page_Table *>(phy2log(_pt)))[_from]);
             }
             free(_pt, _pts);
@@ -168,21 +167,23 @@ public:
 
         int resize(unsigned int amount) {
             if(_flags & IA32_Flags::CT)
-        	return 0;
+                return 0;
 
             unsigned int pgs = pages(amount);
+
+            Color color = colorful ? phy2color(_pt) : WHITE;
 
             unsigned int free_pgs = _pts * PT_ENTRIES - _to;
             if(free_pgs < pgs) { // resize _pt
                 unsigned int pts = _pts + page_tables(pgs - free_pgs);
-                Page_Table * pt = calloc(pts);
+                Page_Table * pt = calloc(pts, color);
                 memcpy(pt, _pt, _pts * sizeof(Page));
                 free(_pt, _pts);
                 _pt = pt;
                 _pts = pts;
             }
 
-            _pt->map(_to, _to + pgs, _flags);
+            _pt->map(_to, _to + pgs, _flags, color);
             _to += pgs;
 
             return pgs * sizeof(Page);
@@ -200,55 +201,53 @@ public:
     typedef Page_Table Page_Directory;
 
     // Directory (for Address_Space)
-    class Directory 
+    class Directory
     {
     public:
-        Directory() : _pd(calloc(1)), _free(true) {
+        Directory() : _pd(calloc(1, WHITE)), _free(true) {
             for(unsigned int i = directory(PHY_MEM); i < PD_ENTRIES; i++)
-        	(*_pd)[i] = (*_master)[i];
+                (*_pd)[i] = (*_master)[i];
         }
 
         Directory(Page_Directory * pd) : _pd(pd), _free(false) {}
 
         ~Directory() { if(_free) free(_pd); }
-        
+
         Phy_Addr pd() const { return _pd; }
 
-        void activate() const { IA32::pdp(reinterpret_cast<IA32::Reg32>(_pd)); }
+        void activate() const { CPU::pdp(reinterpret_cast<CPU::Reg32>(_pd)); }
 
-        Log_Addr attach(const Chunk & chunk) {
-            for(unsigned int i = 0; i < PD_ENTRIES; i++)
-        	if(attach(i, chunk.pt(), chunk.pts(), chunk.flags()))
-        	    return i << DIRECTORY_SHIFT;
+        Log_Addr attach(const Chunk & chunk, unsigned int from = 0) {
+            for(unsigned int i = from; i < PD_ENTRIES; i++)
+                if(attach(i, chunk.pt(), chunk.pts(), chunk.flags()))
+                    return i << DIRECTORY_SHIFT;
             return false;
         }
 
         Log_Addr attach(const Chunk & chunk, const Log_Addr & addr) {
             unsigned int from = directory(addr);
             if(!attach(from, chunk.pt(), chunk.pts(), chunk.flags()))
-        	return Log_Addr(false);
-
+                return Log_Addr(false);
             return from << DIRECTORY_SHIFT;
         }
 
- 	void detach(const Chunk & chunk) {
- 	    for(unsigned int i = 0; i < PD_ENTRIES; i++)
-        	if(indexes((*_pd)[i]) == indexes(chunk.pt())) {
-        	    detach(i, chunk.pt(), chunk.pts());
-        	    return;
-        	}
-            db<IA32_MMU>(WRN) << "IA32_MMU::Directory::detach(pt=" << chunk.pt() << ") failed!" << endl;
- 	}
+        void detach(const Chunk & chunk) {
+            for(unsigned int i = 0; i < PD_ENTRIES; i++)
+                if(indexes((*_pd)[i]) == indexes(chunk.pt())) {
+                    detach(i, chunk.pt(), chunk.pts());
+                return;
+            }
+            db<MMU>(WRN) << "MMU::Directory::detach(pt=" << chunk.pt() << ") failed!" << endl;
+        }
 
- 	void detach(const Chunk & chunk, const Log_Addr & addr) {
+        void detach(const Chunk & chunk, const Log_Addr & addr) {
             unsigned int from = directory(addr);
-//            if(indexes((*_pd)[from]) != indexes(chunk.pt())) {
             if(indexes((*static_cast<Log_Addr *>(phy2log(_pd)))[from]) != indexes(chunk.pt())) {
-        	db<IA32_MMU>(WRN) << "IA32_MMU::Directory::detach(pt=" << chunk.pt() << ",addr=" << addr << ") failed!" << endl;
-        	return;
+                db<MMU>(WRN) << "MMU::Directory::detach(pt=" << chunk.pt() << ",addr=" << addr << ") failed!" << endl;
+                return;
             }
             detach(from, chunk.pt(), chunk.pts());
- 	}
+        }
 
         Phy_Addr physical(const Log_Addr & addr) {
             Page_Table * pt = reinterpret_cast<Page_Table *>((void *)(*_pd)[directory(addr)]);
@@ -258,18 +257,15 @@ public:
     private:
         bool attach(unsigned int from, const Page_Table * pt, unsigned int n, IA32_Flags flags) {
             for(unsigned int i = from; i < from + n; i++)
-//                if((*_pd)[i])
                 if((*static_cast<Page_Directory *>(phy2log(_pd)))[i])
-        	    return false;
+                    return false;
             for(unsigned int i = from; i < from + n; i++, pt++)
-//                (*_pd)[i] = Phy_Addr(pt) | flags;
                 (*static_cast<Page_Directory *>(phy2log(_pd)))[i] = Phy_Addr(pt) | flags;
             return true;
         }
 
         void detach(unsigned int from, const Page_Table * pt, unsigned int n) {
             for(unsigned int i = from; i < from + n; i++)
-//                (*_pd)[i] = 0;
                 (*static_cast<Page_Directory *>(phy2log(_pd)))[i] = 0;
         }
 
@@ -284,23 +280,23 @@ public:
     public:
         DMA_Buffer(unsigned int s) : Chunk(s, IA32_Flags::DMA) {
             Directory dir(current());
-            _log_addr = dir.attach(*this);
-            db<IA32_MMU>(TRC) << "IA32_MMU::DMA_Buffer() => " << *this << endl;
+            _log_addr = dir.attach(*this, MMU::directory(PHY_MEM));
+            db<MMU>(TRC) << "MMU::DMA_Buffer() => " << *this << endl;
         }
 
         DMA_Buffer(unsigned int s, const Log_Addr & d): Chunk(s, IA32_Flags::DMA) {
             Directory dir(current());
             _log_addr = dir.attach(*this);
             memcpy(_log_addr, d, s);
-            db<IA32_MMU>(TRC) << "IA32_MMU::DMA_Buffer(phy=" << *this << " <= " << d << endl;
+            db<MMU>(TRC) << "MMU::DMA_Buffer(phy=" << *this << " <= " << d << endl;
         }
-        
+
         Log_Addr log_address() const { return _log_addr; }
 
         friend Debug & operator<<(Debug & db, const DMA_Buffer & b) {
             db << "{phy=" << b.phy_address()
                << ",log=" << b.log_address()
-               << ",size=" << b.size() 
+               << ",size=" << b.size()
                << ",flags=" << b.flags() << "}";
             return db;
         }
@@ -310,46 +306,59 @@ public:
     };
 
 public:
-    IA32_MMU() {}
+    MMU() {}
 
-    static Phy_Addr alloc(unsigned int frames = 1) {
+    static Phy_Addr alloc(unsigned int frames = 1, const Color & color = WHITE) {
         Phy_Addr phy(false);
 
         if(frames) {
-            List::Element * e = _free.search_decrementing(frames);
-            if(e)
-        	phy = e->object() + e->size();
-            else
-        	db<IA32_MMU>(WRN) << "IA32_MMU::alloc() failed!" << endl;
+            List::Element * e = _free[color].search_decrementing(frames);
+            if(e) {
+                phy = e->object() + e->size();
+                db<MMU>(TRC) << "MMU::alloc(frames=" << frames << ",color=" << color << ") => " << phy << endl;
+            } else
+                db<MMU>(WRN) << "MMU::alloc(frames=" << frames << ",color=" << color << ") => failed!" << endl;
         }
-
-        db<IA32_MMU>(TRC) << "IA32_MMU::alloc(frames=" << frames << ") => " << phy << endl;
 
         return phy;
     }
 
-    static Phy_Addr calloc(unsigned int frames = 1) {
-        Phy_Addr phy = alloc(frames);
+    static Phy_Addr calloc(unsigned int frames = 1, const Color & color = WHITE) {
+        Phy_Addr phy = alloc(frames, color);
 
         memset(phy2log(phy), 0, sizeof(Frame) * frames);
 
-        return phy;	
+        return phy;
     }
 
     static void free(Phy_Addr frame, int n = 1) {
         // Clean up MMU flags in frame address
-        frame = indexes(frame); 
+        frame = indexes(frame);
+        Color color = colorful ? phy2color(frame) : WHITE;
 
-        db<IA32_MMU>(TRC) << "IA32_MMU::free(frame=" << frame << ",n=" << n << ")" << endl;
+        db<MMU>(TRC) << "MMU::free(frame=" << frame << ",color=" << color << ",n=" << n << ")" << endl;
 
         if(frame && n) {
             List::Element * e = new (phy2log(frame)) List::Element(frame, n);
             List::Element * m1, * m2;
-            _free.insert_merging(e, &m1, &m2);
+            _free[color].insert_merging(e, &m1, &m2);
         }
     }
 
-    static unsigned int allocable() { return _free.head() ? _free.head()->size() : 0; }
+    static void white_free(Phy_Addr frame, int n) {
+        // Clean up MMU flags in frame address
+        frame = indexes(frame);
+
+        db<MMU>(TRC) << "MMU::free(frame=" << frame << ",color=" << WHITE << ",n=" << n << ")" << endl;
+
+        if(frame && n) {
+            List::Element * e = new (phy2log(frame)) List::Element(frame, n);
+            List::Element * m1, * m2;
+            _free[WHITE].insert_merging(e, &m1, &m2);
+        }
+    }
+
+    static unsigned int allocable(const Color & color = WHITE) { return _free[color].head() ? _free[color].head()->size() : 0; }
 
     static Page_Directory * volatile current() {
         return reinterpret_cast<Page_Directory * volatile>(CPU::pdp());
@@ -374,8 +383,20 @@ private:
 
     static Log_Addr phy2log(const Phy_Addr & phy) { return phy | PHY_MEM; }
 
+    static Color phy2color(const Phy_Addr & phy) { return static_cast<Color>(colorful ? ((phy >> PAGE_SHIFT) & 0x7f) % COLORS : WHITE); } // TODO: what is 0x7f
+
+    static Color log2color(const Log_Addr & log) {
+        if(colorful) {
+            Page_Directory * pd = current();
+            Page_Table * pt = (*pd)[directory(log)];
+            Phy_Addr phy = (*pt)[page(log)] | offset(log);
+            return static_cast<Color>(((phy >> PAGE_SHIFT) & 0x7f) % COLORS);
+        } else
+            return WHITE;
+    }
+
 private:
-    static List _free;
+    static List _free[colorful * COLORS + 1]; // +1 for WHITE
     static Page_Directory * _master;
 };
 

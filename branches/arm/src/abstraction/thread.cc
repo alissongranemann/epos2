@@ -19,18 +19,21 @@ Scheduler<Thread> Thread::_scheduler;
 Spin Thread::_lock;
 
 // Methods
-void Thread::constructor_prolog(unsigned int stack_size)
+void Thread::constructor_prologue(const Color & color, unsigned int stack_size)
 {
     lock();
 
     _thread_count++;
     _scheduler.insert(this);
 
-    _stack = new (SYSTEM) char[stack_size];
+    if(Traits<MMU>::colorful && color != WHITE)
+        _stack = new (color) char[stack_size];
+    else
+        _stack = new (SYSTEM) char[stack_size];
 }
 
 
-void Thread::constructor_epilog(const Log_Addr & entry, unsigned int stack_size)
+void Thread::constructor_epilogue(const Log_Addr & entry, unsigned int stack_size)
 {
     db<Thread>(TRC) << "Thread(task=" << _task
                     << ",entry=" << entry
@@ -384,7 +387,7 @@ int Thread::idle()
     while(_thread_count > Machine::n_cpus()) { // someone else besides idles
         if(Traits<Thread>::trace_idle)
             db<Thread>(TRC) << "Thread::idle(CPU=" << Machine::cpu_id() << ",this=" << running() << ")" << endl;
-        
+
         CPU::int_enable();
         CPU::halt();
         if(_scheduler.schedulables() > 0) // A thread might have been woken up by another CPU

@@ -2,11 +2,7 @@
 
 include makedefs
 
-ifeq ($(findstring flash,$(MAKECMDGOALS)),flash)
-SUBDIRS	:= etc tools src app
-else
 SUBDIRS	:= etc tools src app img
-endif
 
 all: FORCE
 ifndef APPLICATION
@@ -14,21 +10,11 @@ ifndef APPLICATION
 else
 		$(MAKE) all1
 endif
-		
+
 all1: $(SUBDIRS)
 
 $(SUBDIRS): FORCE
 		(cd $@ && $(MAKE))
-
-deploy: FORCE
-ifndef APPLICATION
-		$(foreach app,$(APPLICATIONS),$(MAKE) APPLICATION=$(app) flash $(PRECLEAN) deploy1;)
-else
-		$(MAKE) flash deploy1
-endif
-
-deploy1:
-		(cd img && $(MAKE) deploy)
 
 run: FORCE
 ifndef APPLICATION
@@ -61,10 +47,10 @@ flash1: all1
 		(cd img && $(MAKE) flash)
 
 TESTS := $(subst .cc,,$(shell find $(SRC)/abstraction -name \*_test.cc -printf "%f\n"))
-TEST_SORUCES := $(shell find $(SRC)/abstraction -name \*_test.cc -printf "%p\n")
-test: $(subst .cc,_traits.h,$(TEST_SORUCES))
-		$(INSTALL) $(TEST_SORUCES) $(APP)
-		$(INSTALL) $(subst .cc,_traits.h,$(TEST_SORUCES)) $(APP)
+TEST_SOURCES := $(shell find $(SRC)/abstraction -name \*_test.cc -printf "%p\n")
+test: $(subst .cc,_traits.h,$(TEST_SOURCES))
+		$(INSTALL) $(TEST_SOURCES) $(APP)
+		$(INSTALL) $(subst .cc,_traits.h,$(TEST_SOURCES)) $(APP)
 		$(foreach tst,$(TESTS),$(MAKETEST) APPLICATION=$(tst) prebuild_$(tst) clean1 all1 posbuild_$(tst) prerun_$(tst) run1 posbuild_$(tst);)
 		$(foreach tst,$(TESTS),$(CLEAN) $(APP)/$(tst)*;)
 
@@ -74,8 +60,8 @@ prebuild_$(APPLICATION):
 posbuild_$(APPLICATION):
 		@echo "done!"
 prerun_$(APPLICATION):
-		@echo "Cooling down for 2s ..."
-		sleep 2
+		@echo "Cooling down for 10s ..."
+		sleep 10
 		@echo "Running $(APPLICATION) ..."
 
 clean: FORCE
@@ -91,7 +77,7 @@ clean1: FORCE
 		(cd img && $(MAKECLEAN))
 		(cd src && $(MAKECLEAN))
 		find $(LIB) -maxdepth 1 -type f -exec $(CLEAN) {} \;
-		
+
 veryclean: clean
 		(cd tools && $(MAKECLEAN))
 		find $(LIB) -maxdepth 1 -type f -exec $(CLEAN) {} \;
@@ -109,14 +95,14 @@ dist: veryclean
 		find $(TOP) -name ".*project" -exec $(CLEAN) {} \;
 		find $(TOP) -name CVS -type d -print | xargs $(CLEANDIR)
 		find $(TOP) -name .svn -type d -print | xargs $(CLEANDIR)
-		find $(TOP) -name "*.h" -print | xargs sed -i "1r $(TOP)/LICENSE" 
-		find $(TOP) -name "*.cc" -print | xargs sed -i "1r $(TOP)/LICENSE" 
+		find $(TOP) -name "*.h" -print | xargs sed -i "1r $(TOP)/LICENSE"
+		find $(TOP) -name "*.cc" -print | xargs sed -i "1r $(TOP)/LICENSE"
 		sed -e 's/^\/\//#/' LICENSE > LICENSE.mk
-		find $(TOP) -name "makedefs" -print | xargs sed -i "1r $(TOP)/LICENSE.mk" 
+		find $(TOP) -name "makedefs" -print | xargs sed -i "1r $(TOP)/LICENSE.mk"
 		find $(TOP) -name "makefile" -print | xargs sed -i "1r $(TOP)/LICENSE.mk"
-		$(CLEAN) LICENSE.mk 
+		$(CLEAN) LICENSE.mk
 		sed -e 's/^\/\//#/' LICENSE > LICENSE.as
-		find $(TOP) -name "*.S" -print | xargs sed -i "1r $(TOP)/LICENSE.as" 
-		$(CLEAN) LICENSE.as 
+		find $(TOP) -name "*.S" -print | xargs sed -i "1r $(TOP)/LICENSE.as"
+		$(CLEAN) LICENSE.as
 
 FORCE:

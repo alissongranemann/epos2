@@ -5,18 +5,16 @@
 __BEGIN_SYS
 
 // Class attributes
-PC_PCI::Phy_Addr PC_PCI::_phy_io_mem;
-PC_PCI::Reg32 PC_PCI::_base_address[Region::N] = {
+PCI::Phy_Addr PCI::_phy_io_mem;
+PCI::Reg32 PCI::_base_address[Region::N] = {
     BASE_ADDRESS_0, BASE_ADDRESS_1,
     BASE_ADDRESS_2, BASE_ADDRESS_3,
     BASE_ADDRESS_4, BASE_ADDRESS_5
 };
 
 // Methods
-void PC_PCI::header(const PC_PCI::Locator & l, PC_PCI::Header * h)
+void PCI::header(const PCI::Locator & l, PCI::Header * h)
 {
-    IA32 cpu;
-
     h->vendor_id = cfg16(l.bus, l.dev_fn, VENDOR_ID);
     if((h->vendor_id != 0) && (h->vendor_id != 0xffff)) {
         h->locator = l;
@@ -31,12 +29,12 @@ void PC_PCI::header(const PC_PCI::Locator & l, PC_PCI::Header * h)
         h->type = cfg8(l.bus, l.dev_fn, HEADER_TYPE);
         h->bist = cfg8(l.bus, l.dev_fn, BIST);
         for(unsigned int i = 0; i < Region::N; i++) {
-            cpu.int_disable();
+            CPU::int_disable();
             h->region[i].phy_addr = cfg32(l.bus, l.dev_fn, _base_address[i]);
-            cfg32(l.bus, l.dev_fn, _base_address[i], ~0); 
+            cfg32(l.bus, l.dev_fn, _base_address[i], ~0);
             h->region[i].size = cfg32(l.bus, l.dev_fn, _base_address[i]);
-            cfg32(l.bus, l.dev_fn, _base_address[i], h->region[i].phy_addr); 
-            cpu.int_enable();
+            cfg32(l.bus, l.dev_fn, _base_address[i], h->region[i].phy_addr);
+            CPU::int_enable();
             if((h->region[i].phy_addr & BASE_ADDRESS_SPACE_MASK) || ((h->type & 0x7f) == HEADER_TYPE_BRIDGE || (h->type & 0x7f) == HEADER_TYPE_CARDBUS) || h->class_id == 257 || h->class_id == 1027 || h->class_id == 1536 || h->class_id == 1537 || h->class_id == 1920 || h->class_id == 3075 || h->class_id == 3077) { // I/O
         	h->region[i].memory = false;
         	h->region[i].phy_addr &= BASE_ADDRESS_IO_MASK;
@@ -47,6 +45,12 @@ void PC_PCI::header(const PC_PCI::Locator & l, PC_PCI::Header * h)
         	h->region[i].phy_addr &= BASE_ADDRESS_MEM_MASK;
         	h->region[i].log_addr = phy2log(h->region[i].phy_addr);
         	h->region[i].size = ~(h->region[i].size & BASE_ADDRESS_MEM_MASK) + 1;
+
+                if(!h->region[i].phy_addr) { // Broken devices report false regions often starting at zero
+                    h->region[i].memory = false;
+                    db<PCI>(TRC) << "PCI: device " << l << " reports implausible region (starting at zero). Ignoring!" << endl;
+                }
+
         	if(h->region[i].size > MAX_REGION_SIZE) { // Broken devices report false regions often starting at zero and extending up to the PIC area
                     h->region[i].memory = false;
                     db<PCI>(WRN) << "PCI: device " << l << " reports implausible large region. Ignoring!" << endl;
@@ -65,7 +69,7 @@ void PC_PCI::header(const PC_PCI::Locator & l, PC_PCI::Header * h)
         h->locator = Locator(Locator::INVALID, Locator::INVALID);
 }
 
-PC_PCI::Locator PC_PCI::scan(const PC_PCI::Class_Id & c, int order)
+PCI::Locator PCI::scan(const PCI::Class_Id & c, int order)
 {
     db<PCI>(TRC) << "PCI::scan(class=" << c << ",order=" << order << ")" << endl;
 
@@ -78,7 +82,7 @@ PC_PCI::Locator PC_PCI::scan(const PC_PCI::Class_Id & c, int order)
     return Locator(Locator::INVALID, Locator::INVALID);
 }
 
-PC_PCI::Locator PC_PCI::scan(const PC_PCI::Vendor_Id & v, const PC_PCI::Device_Id & d, int order)
+PCI::Locator PCI::scan(const PCI::Vendor_Id & v, const PCI::Device_Id & d, int order)
 {
     db<PCI>(TRC) << "PCI::scan(vend=" << v << ",dev=" << d << ",order=" << order << ")" << endl;
 

@@ -39,9 +39,8 @@ public:
     class Packet
     {
     public:
-        Packet(Oper op, const HA & sha, const PA & spa, const HA & tha, const PA & tpa):
-            _htype(htons(HTYPE)), _ptype(htons(Network::PROTOCOL)), _hlen(sizeof(HA)), _plen(sizeof(PA)),
-            _oper(htons(op)), _sha(sha), _spa(spa), _tha(tha), _tpa(tpa) {}
+        Packet(Oper op, const HA & sha, const PA & spa, const HA & tha, const PA & tpa)
+        : _htype(htons(HTYPE)), _ptype(htons(Network::PROTOCOL)), _hlen(sizeof(HA)), _plen(sizeof(PA)), _oper(htons(op)), _sha(sha), _spa(spa), _tha(tha), _tpa(tpa) {}
         ~Packet() {}
 
         void op(const Oper & o) { _oper = htons(o); }
@@ -160,7 +159,7 @@ public:
     HA resolve(const PA & pa) {
         db<ARP>(TRC) << "ARP::resolve(pa=" << pa << ") => ";
 
-        volatile HA ha(HA::NULL);
+        volatile HA ha = HA(HA::NULL);
 
         lock();
         Element * el = _table.search_key(pa);
@@ -205,7 +204,6 @@ public:
 
         db<ARP>(TRC) << ha2 << endl;
 
-        db<ARP>(TRC) << "ARP::resolve ha2= " << ha2 << endl;
         return ha2;
     }
 

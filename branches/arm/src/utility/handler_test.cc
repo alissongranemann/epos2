@@ -42,7 +42,7 @@ int main()
     Function_Handler handler_a(&func_a);
     Thread_Handler handler_b(thread_b);
     Semaphore_Handler handler_c(&sem_c);
-    
+
     cout << "Now the alarms will be created, along with a chronometer to keep track of the total execution time. I'll then wait for the threads to finish...\n" << endl;
 
     Chronometer chrono;
@@ -57,14 +57,14 @@ int main()
 
     chrono.stop();
 
-    cout << "\n\nThread B exited with status " << status_b 
+    cout << "\n\nThread B exited with status " << status_b
   	 << " and thread C exited with status " << status_c << endl;
 
     cout << "\nThe estimated time to run the test was " << max(period_a, period_b, period_c) * iterations << " ms. The measured time was " << chrono.read() / 1000 <<" ms!" << endl;
 
     delete thread_b;
     delete thread_c;
-    
+
     cout << "I'm also done, bye!" << endl;
 
     return 0;
@@ -73,7 +73,7 @@ int main()
 void func_a()
 {
     cout << "a";
-    return;   
+    return;
 }
 
 int func_b(void)
@@ -84,7 +84,7 @@ int func_b(void)
         cout << "b";
     }
     cout << "B";
-    return 'B';   
+    return 'B';
 }
 
 int func_c(void)
@@ -95,5 +95,5 @@ int func_c(void)
         cout << "c";
     }
     cout << "C";
-    return 'C';   
+    return 'C';
 }

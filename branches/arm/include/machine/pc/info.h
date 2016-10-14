@@ -7,8 +7,7 @@
 
 __BEGIN_SYS
 
-template<>
-struct System_Info<PC>
+struct System_Info
 {
 private:
     typedef unsigned int LAddr;
@@ -33,7 +32,7 @@ public:
         int system_offset;
         int application_offset;
         int extras_offset;
-        volatile int cpu_status[Traits<PC>::CPUS]; // CPUs initialization status
+        volatile int cpu_status[Traits<Machine>::CPUS]; // CPUs initialization status
     };
 
     // Physical Memory Map (built by SETUP)
@@ -43,8 +42,8 @@ public:
         PAddr mem_top;          // Memory top address
         PAddr io_base;          // I/O Memory base address
         PAddr io_top;           // I/O Memory top address
- 	PAddr ext_base;         // Boot Image EXTRA segment base address
- 	PAddr ext_top;          // Boot Image EXTRA segment top address
+        PAddr ext_base;         // Boot Image EXTRA segment base address
+        PAddr ext_top;          // Boot Image EXTRA segment top address
         PAddr idt;              // IDT
         PAddr gdt;              // GDT
         PAddr tss0;             // TSS0 (only for system call)
@@ -110,9 +109,9 @@ public:
         unsigned int cpu_clock;
         unsigned int bus_clock;
     };
-        
+
 public:
-    friend Debug & operator<<(Debug & db, const System_Info<PC> & si);
+    friend Debug & operator<<(Debug & db, const System_Info & si);
 
 public:
     Boot_Map bm;

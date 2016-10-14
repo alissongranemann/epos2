@@ -11,6 +11,12 @@ class I2C_Common
 {
 protected:
     I2C_Common() {}
+
+public:
+    enum Role {
+        MASTER,
+        SLAVE,
+    };
 };
 
 __END_SYS
