@@ -21,7 +21,7 @@ void TSC::init()
     // Re-enable counting
     reg(GTCLR) = 1;
 
-#elif defined(__mmod_emote3__) || defined(__mod_lm3S811__)
+#elif defined(__mmod_emote3__) || defined(__mmod_lm3s811__)
 
     reg(Machine_Model::GPTMCTL) &= ~Machine_Model::TAEN; // Disable timer
     Machine_Model::power_user_timer(Machine_Model::TIMERS - 1, FULL);
