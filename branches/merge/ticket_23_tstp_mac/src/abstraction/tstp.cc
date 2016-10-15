@@ -43,11 +43,13 @@ TSTP_Locator::Coordinates TSTP_Locator::here() { return Coordinates(5,5,5); } //
 void TSTP_Time_Manager::update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf)
 {
     db<TSTP_Time_Manager>(TRC) << "TSTP_Time_Manager::update(obs=" << obs << ",buf=" << buf << ")" << endl;
+    buf->expiry = TSTP::destination(buf).t1;
 }
 
 void TSTP_Time_Manager::marshal(Buffer * buf)
 {
     db<TSTP_Time_Manager>(TRC) << "TSTP_Time_Manager::marshal(buf=" << buf << ")" << endl;
+    buf->expiry = TSTP::destination(buf).t1;
 }
 
 TSTP_Time_Manager::~TSTP_Time_Manager()
@@ -56,6 +58,15 @@ TSTP_Time_Manager::~TSTP_Time_Manager()
     TSTP::_nic->detach(this, 0);
 }
 
+TSTP_Time_Manager::Time TSTP_Time_Manager::now()
+{
+    // FIXME: this is not a pretty way to access the MAC timer...
+#ifdef __mmod_emote3__
+    return TSTP_MAC<CC2538RF>::Timer::count2us(TSTP_MAC<CC2538RF>::Timer::now());
+#else
+    return RTC::seconds_since_epoch();
+#endif
+}
 
 // TSTP_Router
 // Class attributes
@@ -80,7 +91,7 @@ void TSTP_Router::update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf)
             send_buf->id = buf->id;
             send_buf->destined_to_me = buf->destined_to_me;
             send_buf->downlink = buf->downlink;
-            send_buf->deadline = buf->deadline;
+            send_buf->expiry = buf->expiry;
             send_buf->origin_time = buf->origin_time;
             send_buf->my_distance = buf->my_distance;
             send_buf->sender_distance = buf->sender_distance;

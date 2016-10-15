@@ -139,15 +139,15 @@ public:
     class _Header
     {
         // Format
-        // Bit 0      3    5  6    0                0         0         0         0         0         0         0
-        //     +------+----+--+----+----------------+--- ~ ---+--- ~ ---+--- ~ ---+--- ~ ---+--- ~ ---+--- ~ ---+--- ~ ---+
-        //     | ver  |type|tr|scal|   confidence   | elapsed |   o.x   |   o.y   |   o.z   |   l.x   |   l.y   |   l.z   |
-        //     +------+----+--+----+----------------+--- ~ ---+--- ~ ---+--- ~ ---+--- ~ ---+--- ~ ---+--- ~ ---+--- ~ ---+
-        // Bits          8                  8            32     8/16/32   8/16/32   8/16/32   8/16/32   8/16/32   8/16/32
+        // Bit 0      3    5  6    0                0         0         0         0         0         0         0         0
+        //     +------+----+--+----+----------------+--- ~ ---+--- ~ ---+--- ~ ---+--- ~ ---+--- ~ ---+--- ~ ---+--- ~ ---+--- ~ ---+
+        //     | ver  |type|tr|scal|   confidence   |   o.t   |   o.x   |   o.y   |   o.z   |   l.t   |   l.x   |   l.y   |   l.z   |
+        //     +------+----+--+----+----------------+--- ~ ---+--- ~ ---+--- ~ ---+--- ~ ---+--- ~ ---+--- ~ ---+--- ~ ---+--- ~ ---+
+        // Bits          8                  8            64     8/16/32   8/16/32   8/16/32      64     8/16/32   8/16/32   8/16/32
 
     public:
-        _Header(const Type & t, bool tr = false, unsigned char c = 0, const Coordinates & o = 0, const Coordinates & l = 0, const Time_Offset & e = 0, const Version & v = V0)
-        : _config((S & 0x03) << 6 | tr << 5 | (t & 0x03) << 3 | (v & 0x07)), _confidence(c), _origin(o), _last_hop(l), _elapsed(e) {}
+        _Header(const Type & t, bool tr = false, unsigned char c = 0, const Time & ot = 0, const Coordinates & o = 0, const Coordinates & l = 0, const Version & v = V0)
+        : _config((S & 0x03) << 6 | tr << 5 | (t & 0x03) << 3 | (v & 0x07)), _confidence(c), _origin_time(ot), _origin(o), _last_hop(l) {}
 
         Version version() const { return static_cast<Version>(_config & 0x07); }
         void version(const Version & v) { _config = (_config & 0xf8) | (v & 0x07); }
@@ -161,29 +161,30 @@ public:
         Scale scale() const { return static_cast<Scale>((_config >> 6) & 0x03); }
         void scale(const Scale & s) { _config = (_config & 0x3f) | (s & 0x03) << 6; }
 
-        Time_Offset elapsed() const { return _elapsed; }
-        void elapsed(const Time_Offset & e) { _elapsed = e; }
-
         const Coordinates & origin() const { return _origin; }
         void origin(const Coordinates & c) { _origin = c; }
 
         const Coordinates & last_hop() const { return _last_hop; }
         void last_hop(const Coordinates & c) { _last_hop = c; }
 
-        Time time() const;
-        void time(const Time & t);
+        Time time() const { return _origin_time; }
+        void time(const Time & t) { _origin_time = t; }
+
+        Time last_hop_time() const { return _last_hop_time; }
+        void last_hop_time(const Time & t) { _last_hop_time = t; }
 
         friend Debug & operator<<(Debug & db, const _Header & h) {
-            db << "{v=" << h.version() - V0 << ",t=" << ((h.type() == INTEREST) ? 'I' :  (h.type() == RESPONSE) ? 'R' : (h.type() == COMMAND) ? 'C' : 'P') << ",tr=" << h.time_request() << ",s=" << h.scale() << ",e=" << h._elapsed << ",o=" << h._origin << ",l=" << h._last_hop << "}";
+            db << "{v=" << h.version() - V0 << ",t=" << ((h.type() == INTEREST) ? 'I' :  (h.type() == RESPONSE) ? 'R' : (h.type() == COMMAND) ? 'C' : 'P') << ",tr=" << h.time_request() << ",s=" << h.scale() << ",ot=" << h._origin_time << ",o=" << h._origin << ",lt=" << h._last_hop_time << ",l=" << h._last_hop << "}";
             return db;
         }
 
     protected:
         unsigned char _config;
         unsigned char _confidence;
+        Time _origin_time;
         Coordinates _origin;
+        Time _last_hop_time; // TODO: change to Time_Offset
         Coordinates _last_hop;
-        Time_Offset _elapsed;
     } __attribute__((packed));
     typedef _Header<SCALE> Header;
 
@@ -499,7 +500,7 @@ public:
     TSTP_Time_Manager();
     ~TSTP_Time_Manager();
 
-    static Time now() { return TSC::time_stamp(); } // TODO
+    static Time now();
 
     static void bootstrap();
 
@@ -621,12 +622,12 @@ public:
     {
     public:
         Interest(const Region & region, const Unit & unit, const Mode & mode, const Error & precision, const Microsecond & expiry, const Microsecond & period = 0)
-        : Header(INTEREST, 0, 0, here(), here(), 0), _region(region), _unit(unit), _mode(mode), _precision(0), _expiry(expiry), _period(period) {}
+        : Header(INTEREST, 0, 0, now(), here(), here()), _region(region), _unit(unit), _mode(mode), _precision(0), _expiry(expiry), _period(period) {}
 
         const Unit & unit() const { return _unit; }
         const Region & region() const { return _region; }
         Microsecond period() const { return _period; }
-        Time expiry() const { return _expiry; } // TODO: must return absolute time
+        Time expiry() const { return _origin_time + _expiry; }
         Mode mode() const { return static_cast<Mode>(_mode); }
         Error precision() const { return static_cast<Error>(_precision); }
 
@@ -655,10 +656,10 @@ public:
 
     public:
         Response(const Unit & unit, const Error & error = 0, const Time & expiry = 0)
-        : Header(RESPONSE, 0, 0, here(), here(), 0), _unit(unit), _error(error), _expiry(expiry) {}
+        : Header(RESPONSE, 0, 0, now(), here(), here()), _unit(unit), _error(error), _expiry(expiry) {}
 
         const Unit & unit() const { return _unit; }
-        Time expiry() const { return _expiry; }
+        Time expiry() const { return _origin_time + _expiry; }
         Error error() const { return _error; }
 
         template<typename T>
@@ -690,7 +691,7 @@ public:
 
     public:
         Command(const Unit & unit, const Region & region)
-        : Header(COMMAND, 0, 0, here(), here(), 0), _region(region), _unit(unit) {}
+        : Header(COMMAND, 0, 0, now(), here(), here()), _region(region), _unit(unit) {}
 
         const Region & region() const { return _region; }
         const Unit & unit() const { return _unit; }
@@ -720,7 +721,7 @@ public:
 
     public:
         Control(const Unit & unit, const Region & region)
-        : Header(CONTROL, 0, 0, here(), here(), 0), _region(region), _unit(unit) {}
+        : Header(CONTROL, 0, 0, now(), here(), here()), _region(region), _unit(unit) {}
 
         const Region & region() const { return _region; }
         const Unit & unit() const { return _unit; }
@@ -799,7 +800,9 @@ public:
 
     private:
         void send(const Time & expiry) {
+            assert(expiry > now());
             db<TSTP>(TRC) << "TSTP::Responsive::send(x=" << expiry << ")" << endl;
+            _expiry = expiry - now();
             Buffer * buf = _nic->alloc(NIC::Address::BROADCAST, NIC::TSTP, 0, 0, _size);
             memcpy(buf->frame()->data<Response>(), this, _size);
             TSTP::marshal(buf);
@@ -818,7 +821,7 @@ public:
                 return buf->frame()->data<Interest>()->region();
             default:
             case RESPONSE:
-                return Region(sink(), 0, 0, 0);
+                return Region(sink(), 0, buf->frame()->data<Response>()->time(), buf->frame()->data<Response>()->expiry());
             case COMMAND:
                 return buf->frame()->data<Command>()->region();
             case CONTROL:
@@ -861,16 +864,6 @@ private:
     static Observed _observed; // Channel protocols are singletons
  };
 
-
-template<TSTP_Common::Scale S>
-inline TSTP_Common::Time TSTP_Common::_Header<S>::time() const {
-    return TSTP::now() + _elapsed;
-}
-
-template<TSTP_Common::Scale S>
-inline void TSTP_Common::_Header<S>::time(const TSTP_Common::Time & t) {
-    _elapsed = t - TSTP::now();
-}
 
 __END_SYS
 

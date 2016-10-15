@@ -164,7 +164,7 @@ public:
         unsigned long long offset;          // - MAC contention offset
         bool destined_to_me;                //   Whether this node is the final destination for this message
         bool downlink;                      // + Message direction
-        unsigned long long deadline;        //   Time until when this message must arrive at the final destination        
+        unsigned long long expiry;          //   Time until when this message must arrive at the final destination        
         unsigned long long origin_time;     //   Time when this message was created at the source node
         unsigned long long my_distance;     // + This node's distance to the message's final destination
         unsigned long long sender_distance; //   Last hop's distance to the message's final destination

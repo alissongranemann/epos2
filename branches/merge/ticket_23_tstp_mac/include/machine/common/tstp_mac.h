@@ -44,7 +44,7 @@ public:
     static const unsigned int Ts = 680 - Tu; // Time to send a single microframe (including PHY headers)
     static const unsigned int MICROFRAME_TIME = Ts;
     static const unsigned int MIN_Ti = G;//Tu; // Minimum time between consecutive microframes
-    static const unsigned int TX_UNTIL_PROCESS_DATA_DELAY = 0;//5100; //TODO
+    static const unsigned int TX_DELAY = 0;//5100; //TODO
 
     static const unsigned int NMF = (1 + ((CI - Ts) / (MIN_Ti + Ts))) > 0xfff ? 0xfff :
                                     (1 + ((CI - Ts) / (MIN_Ti + Ts)));
@@ -123,7 +123,6 @@ protected:
             buf->is_microframe = false;
             buf->relevant = true;
             buf->trusted = false;
-            buf->deadline = Timer::count2us(Timer::read()) + SLEEP_PERIOD * 10;// TODO
 
             return true;
         }
@@ -161,7 +160,6 @@ public:
         buf->id = Random::random() & 0xfff;// TODO
         buf->is_microframe = false;
         buf->trusted = false;
-        buf->deadline = Timer::count2us(Timer::read()) + SLEEP_PERIOD * 10;// TODO
         buf->is_new = true;
     }
 
@@ -195,10 +193,10 @@ private:
         for(Buffer::Element * el = _tx_schedule.head(); el; ) {
             Buffer::Element * next = el->next();
             Buffer * b = el->object();
-            if(drop_expired && (b->deadline <= now_us)) {
+            if(drop_expired && (b->expiry <= now_us)) {
                 _tx_schedule.remove(el);
                 delete b;
-            } else if((!_tx_pending) || (_tx_pending->deadline >= b->deadline))
+            } else if((!_tx_pending) || (_tx_pending->expiry >= b->expiry))
                 _tx_pending = b;
             el = next;
         }
@@ -287,6 +285,7 @@ private:
             Radio::copy_to_nic(&_mf, sizeof(Microframe));
             Timer::interrupt(_mf_time, tx_mf);
         } else {
+            _tx_pending->frame()->data<Header>()->last_hop_time(_mf_time + Timer::us2count(TX_DELAY));
             Radio::copy_to_nic(_tx_pending->frame(), _tx_pending->size());
             Timer::interrupt(_mf_time, tx_data);
         }
