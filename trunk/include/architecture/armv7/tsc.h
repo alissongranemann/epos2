@@ -63,7 +63,7 @@ public:
 
         return (high << 32) | low;
 
-#elif defined(__mmod_emote3__) || defined(__mod_lm3S811__)
+#elif defined(__mmod_emote3__) || defined(__mmod_lm3s811__)
 
         return (_overflow << 32) + reg(GPTMTAR); // Not supported by LM3S811 on QEMU (version 2.7.50)
 
@@ -78,7 +78,7 @@ private:
 
     static volatile CPU::Reg32 & reg(unsigned int o) { return reinterpret_cast<volatile CPU::Reg32 *>(TSC_BASE)[o / sizeof(CPU::Reg32)]; }
 
-#if defined(__mmod_emote3__) || defined(__mod_lm3S811__)
+#if defined(__mmod_emote3__) || defined(__mmod_lm3s811__)
 
     static void int_handler(const unsigned int & int_id) { _overflow++; }
 

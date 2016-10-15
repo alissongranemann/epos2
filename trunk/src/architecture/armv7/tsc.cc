@@ -4,7 +4,7 @@
 
 __BEGIN_SYS
 
-#if defined(__mmod_emote3__) || defined(__mod_lm3S811__)
+#if defined(__mmod_emote3__) || defined(__mmod_lm3s811__)
 
 volatile TSC::Time_Stamp TSC::_overflow = 0;
 
