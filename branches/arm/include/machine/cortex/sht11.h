@@ -1,6 +1,7 @@
 // EPOS SHT11 Sensor Mediator Declarations
 
-#ifndef __sht11_h
+#include <system/config.h>
+#if !defined(__sht11_h) && defined(__TEMP_H)
 #define __sht11_h
 
 #include <alarm.h>

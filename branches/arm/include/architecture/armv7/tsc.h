@@ -46,8 +46,10 @@ public:
 
     static Hertz frequency() { return CLOCK; }
 
-#ifdef __mmod_zynq__
     static Time_Stamp time_stamp() {
+
+#ifdef __mmod_zynq__
+
         if(sizeof(Time_Stamp) == sizeof(CPU::Reg32))
             return reg(GTCTRL);
 
@@ -60,22 +62,30 @@ public:
         } while(reg(GTCTRH) != high);
 
         return (high << 32) | low;
-    }
+
+#elif defined(__mmod_emote3__) || defined(__mod_lm3S811__)
+
+        return (_overflow << 32) + reg(GPTMTAR); // Not supported by LM3S811 on QEMU (version 2.7.50)
+
 #else
-    // Not supported by LM3S811 on QEMU (version 2.7.50)
-    static Time_Stamp time_stamp() { return (_overflow << 32) + reg(GPTMTAR); }
+#error "Method not implemented yet!"
 #endif
+
+    }
 
 private:
     static void init();
 
     static volatile CPU::Reg32 & reg(unsigned int o) { return reinterpret_cast<volatile CPU::Reg32 *>(TSC_BASE)[o / sizeof(CPU::Reg32)]; }
 
-#ifndef __mmod_zynq__
+#if defined(__mmod_emote3__) || defined(__mod_lm3S811__)
+
     static void int_handler(const unsigned int & int_id) { _overflow++; }
 
     static volatile Time_Stamp _overflow;
+
 #endif
+
 };
 
 __END_SYS

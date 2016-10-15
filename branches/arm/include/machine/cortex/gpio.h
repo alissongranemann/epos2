@@ -1,6 +1,7 @@
 // EPOS ARM Cortex GPIO Mediator Declarations
 
-#if !defined(__cortex_gpio_h_) && !defined(__mmod_zynq__)
+#include <system/config.h>
+#if !defined(__cortex_gpio_h_) && defined(__GPIO_H)
 #define __cortex_gpio_h_
 
 #include <machine.h>

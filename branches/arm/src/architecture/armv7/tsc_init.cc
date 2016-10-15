@@ -5,11 +5,11 @@
 
 __BEGIN_SYS
 
-#ifdef __mmod_zynq__
-
 void TSC::init()
 {
     db<Init, TSC>(TRC) << "TSC::init()" << endl;
+
+#ifdef __mmod_zynq__
 
     // Disable counting before programming
     reg(GTCLR) = 0;
@@ -20,15 +20,8 @@ void TSC::init()
 
     // Re-enable counting
     reg(GTCLR) = 1;
-}
 
-#else
-
-volatile TSC::Time_Stamp TSC::_overflow = 0;
-
-void TSC::init()
-{
-    db<Init, TSC>(TRC) << "TSC::init()" << endl;
+#elif defined(__mmod_emote3__) || defined(__mod_lm3S811__)
 
     reg(Machine_Model::GPTMCTL) &= ~Machine_Model::TAEN; // Disable timer
     Machine_Model::power_user_timer(Machine_Model::TIMERS - 1, FULL);
@@ -47,8 +40,9 @@ void TSC::init()
 
         // time-out interrupt will be registered later at IC::init(), because IC hasn't been initialized yet
     }
-}
 
 #endif
+
+}
 
 __END_SYS

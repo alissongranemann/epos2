@@ -14,9 +14,11 @@ void Machine::init()
         IC::init();
     if(Traits<Timer>::enabled)
         Timer::init();
-#ifndef __mmod_zynq__
+#ifdef __USB_H
     if(Traits<USB>::enabled)
         USB::init();
+#endif
+#ifdef __NIC_H
     if(Traits<NIC>::enabled)
         NIC::init();
 #endif

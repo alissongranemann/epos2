@@ -1,5 +1,8 @@
 // EPOS SHT11 Sensor Implementation
 
+#include <system/config.h>
+#ifdef __TEMP_H
+
 #include <machine/cortex/sht11.h>
 
 __BEGIN_SYS
@@ -207,3 +210,5 @@ int SHT11_Humidity::compensate(int value)
 }
 
 __END_SYS
+
+#endif

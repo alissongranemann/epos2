@@ -1,1 +1,1 @@
-../src/abstraction/synchronizer_test.cc
+../src/component/synchronizer_test.cc
