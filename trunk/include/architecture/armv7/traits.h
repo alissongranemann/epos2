@@ -34,10 +34,6 @@ template<> struct Traits<TSC>: public Traits<void>
 //TODO: http://stackoverflow.com/questions/16236460/arm-cortex-a9-event-counters-return-0
 };
 
-template<> struct Traits<PMU>: public Traits<void>
-{
-};
-
 __END_SYS
 
 #endif

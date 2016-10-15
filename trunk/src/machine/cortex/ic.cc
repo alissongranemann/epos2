@@ -160,7 +160,7 @@ More information can be found at:
 void IC::entry()
 {
     ASM("   mrs     r0, xpsr           \n"
-        "   and     r0, #0x3f          \n" // Store int_id in r0 (to be passed as argument to eoi() and dispatch())
+        "   and     r0, #0x3f          \n" // Store int_id in r0 (to be passed as argument to eoi() and dispatch())        
         "   push    {r0, lr}           \n"
         "   bl      _eoi               \n" // Acknowledge the interrupt
         "   pop     {r0, lr}           \n"
@@ -170,24 +170,22 @@ void IC::entry()
         "   orr     r1, #1             \n"
         "   ldr     r2, =_dispatch     \n" // Fake PC (will cause dispatch() to execute after entry())
         "   sub     r2, #1             \n"
-        "   push    {lr}               \n" // Push EXC_RETURN code, which will be popped by svc_handler
         "   push    {r1-r3}            \n" // Fake stack (2): xPSR, PC, LR
         "   push    {r0-r3, r12}       \n" // Push rest of fake stack (2)
+        "   isb                        \n"
         "   bx      lr                 \n" // Return from handler mode. Will proceed to dispatch()
         "_int_exit:                    \n"
-        "   svc     #7                 \n" // 7 is an arbitrary number. Will proceed to _svc_handler in handler mode
+        "2: svc     #7                 \n" // 7 is an arbitrary number. Will proceed to _svc_handler in handler mode
+        "   b 2b                       \n"
         ".global _svc_handler          \n"
         "_svc_handler:                 \n" // Set the stack back to state (1) and tell the processor to recover the pre-interrupt context
         "   ldr r0, [sp, #28]          \n" // Read stacked xPSR
-        "   ldr r0, [sp, #28]          \n" // Read stacked xPSR
-        "   ldr r0, [sp, #28]          \n" // Read stacked xPSR
         "   and r0, #0x200             \n" // Bit 9 indicating alignment existence
         "   lsr r0, #7                 \n" // if bit9==1 then r0=4 else r0=0
-        "   add r0, sp                 \n"
-        "   add r0, #32                \n" // r0 now points to were EXC_RETURN was pushed
-        "   mov sp, r0                 \n" // Set stack pointer to that address
+        "   add r0, #32                \n"
+        "   add sp, r0                 \n"
         "   isb                        \n" // Make sure sp is updated before continuing
-        "   pop {pc}                   \n");// Pops EXC_RETURN, so that stack is in state (1)
+        "   bx lr                      \n");// Pops EXC_RETURN, so that stack is in state (1)
                                             // Load EXC_RETURN code to pc
                                             // Processor unrolls stack (1)
                                             // And we're back to pre-interrupt code

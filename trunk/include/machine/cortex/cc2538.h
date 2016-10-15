@@ -1,6 +1,7 @@
 // EPOS TI CC2538 IEEE 802.15.4 NIC Mediator Declarations
 
-#if !defined(__cc2538_h) && !defined(__mmod_zynq__)
+#include <system/config.h>
+#if !defined(__cc2538_h) && defined(__NIC_H) && !defined(__mmod_zynq__)
 #define __cc2538_h
 
 #include <ieee802_15_4.h>
@@ -24,8 +25,7 @@ protected:
 
 public:
     // Bases
-    enum
-    {
+    enum {
         FFSM_BASE       = 0x40088500,
         XREG_BASE       = 0x40088600,
         SFR_BASE        = 0x40088800,
@@ -33,11 +33,11 @@ public:
         ANA_BASE        = SFR_BASE,
         RXFIFO          = 0x40088000,
         TXFIFO          = 0x40088200,
+        CCTEST_BASE     = 0x44010000,
     };
 
     // Useful FFSM register offsets
-    enum
-    {
+    enum {
         SRCRESINDEX = 0x8c,
         PAN_ID0     = 0xc8,
         PAN_ID1     = 0xcc,
@@ -45,21 +45,20 @@ public:
         SHORT_ADDR1 = 0xd4,
     };
 
-    // Useful XREG register offsets
-    enum
-    {
+    // XREG register offsets
+    enum {
         FRMFILT0    = 0x000,
         FRMFILT1    = 0x004,
         SRCMATCH    = 0x008,
         FRMCTRL0    = 0x024,
         FRMCTRL1    = 0x028,
         RXMASKSET   = 0x030,
-        FREQCTRL    = 0x03C,    // RF carrier frequency (f = 11 + 5 (k – 11), with k [11, 26])  ro      0x0000000b
-        FSMSTAT1    = 0x04C,    // Radio status register                                        ro      0x00000000
+        FREQCTRL    = 0x03C,   // RF carrier frequency (f = 11 + 5 (k – 11), with k [11, 26])  ro      0x0000000b
+        FSMSTAT1    = 0x04C,   // Radio status register                                        ro      0x00000000
         FIFOPCTRL   = 0x050,
         RXFIRST     = 0x068,
-        RXFIFOCNT   = 0x06C,    // Number of bytes in RX FIFO                                   ro      0x00000000
-        TXFIFOCNT   = 0x070,    // Number of bytes in TX FIFO                                   ro      0x00000000
+        RXFIFOCNT   = 0x06C,   // Number of bytes in RX FIFO                                   ro      0x00000000
+        TXFIFOCNT   = 0x070,   // Number of bytes in TX FIFO                                   ro      0x00000000
         RXFIRST_PTR = 0x074,
         RXLAST_PTR  = 0x078,
         RFIRQM0     = 0x08c,
@@ -72,12 +71,75 @@ public:
         CCACTRL0    = 0x058,
         TXPOWER     = 0x040,
         RSSI        = 0x060,
-        RSSISTAT    = 0x064,    // RSSI valid status register                                   ro      0x00000000
+        RSSISTAT    = 0x064,   // RSSI valid status register                                   ro      0x00000000
+        RFC_OBS_CTRL0 = 0x1AC, // Select which signal is represented by OBSSEL_SIG0
+        RFC_OBS_CTRL1 = 0x1B0, // Select which signal is represented by OBSSEL_SIG1
+        RFC_OBS_CTRL2 = 0x1B4, // Select which signal is represented by OBSSEL_SIG2
     };
 
-    // Useful SFR register offsets
-    enum
-    {
+    // CCTEST register offsets
+    enum {                     // Description                                           Type Size Reset
+        CCTEST_IO      = 0x00, // Output strength control                               RW   32   0x0000 0000
+        CCTEST_OBSSEL0 = 0x14, // Select output signal on GPIO C 0                      RW   32   0x0000 0000
+        CCTEST_OBSSEL1 = 0x18, // Select output signal on GPIO C 1                      RW   32   0x0000 0000
+        CCTEST_OBSSEL2 = 0x1C, // Select output signal on GPIO C 2                      RW   32   0x0000 0000
+        CCTEST_OBSSEL3 = 0x20, // Select output signal on GPIO C 3                      RW   32   0x0000 0000
+        CCTEST_OBSSEL4 = 0x24, // Select output signal on GPIO C 4                      RW   32   0x0000 0000
+        CCTEST_OBSSEL5 = 0x28, // Select output signal on GPIO C 5                      RW   32   0x0000 0000
+        CCTEST_OBSSEL6 = 0x2C, // Select output signal on GPIO C 6                      RW   32   0x0000 0000
+        CCTEST_OBSSEL7 = 0x30, // Select output signal on GPIO C 7                      RW   32   0x0000 0000
+        CCTEST_TR0     = 0x34, // Used to connect the temperature sensor to the SOC_ADC RW   32   0x0000 0000
+        CCTEST_USBCTRL = 0x50, // USB PHY stand-by control                              RW   32   0x0000 0000
+    };
+
+    enum OBSSEL {
+        OBSSEL_EN = 1 << 7,
+        OBSSEL_SIG0 = OBSSEL_EN | 0, // Enable Signal 0
+        OBSSEL_SIG1 = OBSSEL_EN | 1, // Enable Signal 1
+        OBSSEL_SIG2 = OBSSEL_EN | 2, // Enable Signal 2
+    };
+
+    // Controls which observable signal from RF Core is to be muxed out to OBSSEL_SIGx
+    enum SIGNAL {                       // Description
+        SIGNAL_LOW              = 0x00, // 0 Constant value
+        SIGNAL_HIGH             = 0x01, // 1 Constant value
+        SIGNAL_RFC_SNIFF_DATA   = 0x08, // Data from packet sniffer. Sample data on rising edges of sniff_clk.
+        SIGNAL_RFC_SNIFF_CLK    = 0x09, // 250kHz clock for packet sniffer data.
+        SIGNAL_RSSI_VALID       = 0x0C, // Pin is high when the RSSI value has been
+                                        // updated at least once since RX was started. Cleared when leaving RX.
+        SIGNAL_DEMOD_CCA        = 0x0D, // Clear channel assessment. See FSMSTAT1 register for details
+                                        // on how to configure the behavior of this signal.
+        SIGNAL_SAMPLED_CCA      = 0x0E, // A sampled version of the CCA bit from demodulator. The value is
+                                        // updated whenever a SSAMPLECCA or STXONCCA strobe is issued.
+        SIGNAL_SFD_SYNC         = 0x0F, // Pin is high when a SFD has been received or transmitted.
+                                        // Cleared when leaving RX/TX respectively.
+                                        // Not to be confused with the SFD exception.
+        SIGNAL_TX_ACTIVE        = 0x10, // Indicates that FFCTRL is in one of the TX states. Active-high.
+                                        // Note: This signal might have glitches, because it has no output flip-
+                                        // flop and is based
+                                        // on the current state register of the FFCTRL FSM.
+        SIGNAL_RX_ACTIVE        = 0x11, // Indicates that FFCTRL is in one of the RX states. Active-high.
+                                        // Note: This signal might have glitches, because it has no output flip-
+                                        // flop and is based
+                                        // on the current state register of the FFCTRL FSM.
+        SIGNAL_FFCTRL_FIFO      = 0x12, // Pin is high when one or more bytes are in the RXFIFO.
+                                        // Low during RXFIFO overflow.
+        SIGNAL_FFCTRL_FIFOP     = 0x13, // Pin is high when the number of bytes in the RXFIFO exceeds the
+                                        // programmable threshold or at least one complete frame is in the RXFIFO.
+                                        // Also high during RXFIFO overflow.
+                                        // Not to be confused with the FIFOP exception.
+        SIGNAL_PACKET_DONE      = 0x14, // A complete frame has been received. I.e.,
+                                        // the number of bytes set by the frame-length field has been received.
+        SIGNAL_RFC_XOR_RAND_I_Q = 0x16, // XOR between I and Q random outputs. Updated at 8 MHz.
+        SIGNAL_RFC_RAND_Q       = 0x17, // Random data output from the Q channel of the receiver. Updated at 8 MHz.
+        SIGNAL_RFC_RAND_I       = 0x18, // Random data output from the I channel of the receiver. Updated at 8 MHz.
+        SIGNAL_LOCK_STATUS      = 0x19, // 1 when PLL is in lock, otherwise 0
+        SIGNAL_PA_PD            = 0x28, // Power amplifier power-down signal
+        SIGNAL_LNA_PD           = 0x2A, // LNA power-down signal
+    };
+
+    // SFR register offsets
+    enum {
         RFDATA  = 0x28,
         RFERRF  = 0x2c,
         RFIRQF1 = 0x30,
@@ -85,7 +147,7 @@ public:
         RFST    = 0x38,         // RF CSMA-CA/strobe processor                                  rw       0x000000d0
     };
 
-    // Useful MACTIMER offsets
+    // MACTIMER register offsets
     enum {       //Offset   Description                               Type    Value after reset
         MTCSPCFG = 0x00, // MAC Timer event configuration              RW     0x0
         MTCTRL   = 0x04, // MAC Timer control register                 RW     0x2
@@ -99,15 +161,13 @@ public:
         MTMOVF0  = 0x24, // MAC Timer multiplexed overflow register 0  RW     0x0
     };
 
-    // ANA_REGS register
-    enum
-    {
+    // ANA_REGS register offsets
+    enum {
         IVCTRL    = 0x04,
     };
 
     // Radio commands
-    enum
-    {
+    enum {
         STXON       = 0xd9,
         SFLUSHTX    = 0xde,
         ISSTART     = 0xe1,
@@ -122,34 +182,29 @@ public:
     };
 
     // Useful bits in RSSISTAT
-    enum
-    {
+    enum {
         RSSI_VALID = 1 << 0,
     };
     // Useful bits in XREG_FRMFILT0
-    enum
-    {
+    enum {
         MAX_FRAME_VERSION = 1 << 2,
         PAN_COORDINATOR   = 1 << 1,
         FRAME_FILTER_EN   = 1 << 0,
     };
     // Useful bits in XREG_FRMFILT1
-    enum
-    {
+    enum {
         ACCEPT_FT3_MAC_CMD = 1 << 6,
         ACCEPT_FT2_ACK     = 1 << 5,
         ACCEPT_FT1_DATA    = 1 << 4,
         ACCEPT_FT0_BEACON  = 1 << 3,
     };
     // Useful bits in XREG_SRCMATCH
-    enum
-    {
+    enum {
         SRC_MATCH_EN   = 1 << 0,
     };
 
     // Useful bits in XREG_FRMCTRL0
-    enum
-    {
+    enum {
         APPEND_DATA_MODE = 1 << 7,
         AUTO_CRC         = 1 << 6,
         AUTO_ACK         = 1 << 5,
@@ -157,8 +212,7 @@ public:
         RX_MODE          = 1 << 2,
         TX_MODE          = 1 << 0,
     };
-    enum RX_MODES
-    {
+    enum RX_MODES {
         RX_MODE_NORMAL = 0,
         RX_MODE_OUTPUT_TO_IOC,
         RX_MODE_CYCLIC,
@@ -166,22 +220,19 @@ public:
     };
 
     // Bit set by hardware in FCS field when AUTO_CRC is set
-    enum
-    {
+    enum {
         AUTO_CRC_OK = 0x80,
     };
 
     // Useful bits in XREG_FRMCTRL1
-    enum
-    {
+    enum {
         PENDING_OR         = 1 << 2,
         IGNORE_TX_UNDERF   = 1 << 1,
         SET_RXENMASK_ON_TX = 1 << 0,
     };
 
     // Useful bits in XREG_FSMSTAT1
-    enum
-    {
+    enum {
         FIFO        = 1 << 7,
         FIFOP       = 1 << 6,
         SFD         = 1 << 5,
@@ -193,14 +244,12 @@ public:
     };
 
     // Useful bits in SFR_RFIRQF1
-    enum
-    {
+    enum {
         TXDONE = 1 << 1,
     };
 
     // RFIRQF0 Interrupts
-    enum
-    {
+    enum {
         INT_RXMASKZERO      = 1 << 7,
         INT_RXPKTDONE       = 1 << 6,
         INT_FRAME_ACCEPTED  = 1 << 5,
@@ -212,8 +261,7 @@ public:
     };
 
     // RFIRQF1 Interrupts
-    enum
-    {
+    enum {
         INT_CSP_WAIT   = 1 << 5,
         INT_CSP_STOP   = 1 << 4,
         INT_CSP_MANINT = 1 << 3,
@@ -223,25 +271,25 @@ public:
     };
 
     // Useful bits in MTCTRL
-    enum {           //Offset   Description                                                             Type    Value after reset
+    enum {                  //Offset   Description                                                             Type    Value after reset
         MTCTRL_LATCH_MODE = 1 << 3, // 0: Reading MTM0 with MTMSEL.MTMSEL = 000 latches the high               RW      0
-        // byte of the timer, making it ready to be read from MTM1. Reading
-        // MTMOVF0 with MTMSEL.MTMOVFSEL = 000 latches the two
-        // most-significant bytes of the overflow counter, making it possible to
-        // read these from MTMOVF1 and MTMOVF2.
-        // 1: Reading MTM0 with MTMSEL.MTMSEL = 000 latches the high
-        // byte of the timer and the entire overflow counter at once, making it
-        // possible to read the values from MTM1, MTMOVF0, MTMOVF1, and MTMOVF2.
+                                    // byte of the timer, making it ready to be read from MTM1. Reading
+                                    // MTMOVF0 with MTMSEL.MTMOVFSEL = 000 latches the two
+                                    // most-significant bytes of the overflow counter, making it possible to
+                                    // read these from MTMOVF1 and MTMOVF2.
+                                    // 1: Reading MTM0 with MTMSEL.MTMSEL = 000 latches the high
+                                    // byte of the timer and the entire overflow counter at once, making it
+                                    // possible to read the values from MTM1, MTMOVF0, MTMOVF1, and MTMOVF2.
         MTCTRL_STATE      = 1 << 2, // State of MAC Timer                                                      RO      0
-        // 0: Timer idle
-        // 1: Timer running
+                                    // 0: Timer idle
+                                    // 1: Timer running
         MTCTRL_SYNC       = 1 << 1, // 0: Starting and stopping of timer is immediate; that is, synchronous    RW      1
-        // with clk_rf_32m.
-        // 1: Starting and stopping of timer occurs at the first positive edge of
-        // the 32-kHz clock. For more details regarding timer start and stop,
-        // see Section 22.4.
+                                    // with clk_rf_32m.
+                                    // 1: Starting and stopping of timer occurs at the first positive edge of
+                                    // the 32-kHz clock. For more details regarding timer start and stop,
+                                    // see Section 22.4.
         MTCTRL_RUN        = 1 << 0, // Write 1 to start timer, write 0 to stop timer. When read, it returns    RW      0
-        // the last written value.
+                                    // the last written value.
     };
 
     // Useful bits in MSEL
@@ -274,8 +322,10 @@ public:
 
     class Timer
     {
+        friend class CC2538;
+        friend class IC;
     private:
-        const static unsigned int CLOCK = 32 * 1000 * 1000; // 32MHz
+        const static unsigned long long CLOCK = 32 * 1000 * 1000; // 32MHz
 
     public:
         typedef long long Time_Stamp;
@@ -288,8 +338,7 @@ public:
         static Time_Stamp now() { return read() + _offset; }
 
         static void set(const Time_Stamp & t) {
-            mactimer(MTCTRL) |= MTCTRL_RUN; // Stop counting
-
+            mactimer(MTCTRL) &= ~MTCTRL_RUN; // Stop counting
             mactimer(MTMSEL) = (OVERFLOW_COUNTER * MSEL_MTMOVFSEL) | (TIMER_COUNTER * MSEL_MTMSEL);
 
             mactimer(MTMOVF0) = t >> 16ll;
@@ -300,63 +349,111 @@ public:
             mactimer(MTM0) = t; // M0 must be written first
             mactimer(MTM1) = t >> 8ll;
 
-            mactimer(MTCTRL) &= ~MTCTRL_RUN; // Restart counting
+            mactimer(MTCTRL) |= MTCTRL_RUN; // Start counting
         }
 
         static void interrupt(const Time_Stamp & when, const IC::Interrupt_Handler & h) {
+            //mactimer(MTCTRL) &= ~MTCTRL_RUN; // Stop counting
             mactimer(MTIRQM) = 0; // Mask interrupts
-            _handler = h;
+            // Clear any pending compare interrupts
+            mactimer(MTIRQF) = mactimer(MTIRQF) & INT_OVERFLOW_PER;
+            _ints = _ints & INT_OVERFLOW_PER;
             mactimer(MTMSEL) = (OVERFLOW_COMPARE1 * MSEL_MTMOVFSEL) | (TIMER_COMPARE1 * MSEL_MTMSEL);
             mactimer(MTM0) = when;
             mactimer(MTM1) = when >> 8;
             mactimer(MTMOVF0) = when >> 16;
             mactimer(MTMOVF1) = when >> 24;
             mactimer(MTMOVF2) = when >> 32;
-            _interrupt_overflow_count = when >> 40ll;
 
-            mactimer(MTIRQF) = 0;
+
+            _handler = h;
+            _int_request_time = when;
+
+            int_enable(INT_COMPARE1 | INT_OVERFLOW_PER);
+            //mactimer(MTCTRL) |= MTCTRL_RUN; // Start counting
+            /*
+            _overflow_match = false;
+            _msb_match = false;
+
             Time_Stamp now = read();
-            if((when >> 16ll) > (now >> 16ll)) {
-                int_enable(INT_OVERFLOW_COMPARE1 | INT_OVERFLOW_PER);
-            } else {
-                // If when <= now, this will be the case too, 
-                // and interrupt will occur in a little while
-                int_enable(INT_COMPARE1 | INT_OVERFLOW_PER);
+            assert(when > now);
+            if((when >> 40ll) > (now >> 40ll))
+                int_enable(INT_OVERFLOW_PER);
+            else {
+                _overflow_match = true;
+                if((when >> 16ll) > (now >> 16ll))
+                    int_enable(INT_OVERFLOW_COMPARE1 | INT_OVERFLOW_PER);
+                else {
+                    _msb_match = true;
+                    // This will also be executed if when <= now,
+                    // and interrupt will occur on the next turn of the 16 LSBs
+                    int_enable(INT_COMPARE1 | INT_OVERFLOW_PER);
+                }
             }
+            */
         }
 
-        static void int_enable(const Reg32 & interrupt) { mactimer(MTIRQM) |= interrupt; }
         static void int_disable() { mactimer(MTIRQM) = INT_OVERFLOW_PER; }
 
-        static Time_Stamp us_to_ts(const Microsecond & us) { return static_cast<Time_Stamp>(us) * CLOCK / 1000000; }
-        static Microsecond ts_to_us(const Time_Stamp & ts) { return ts * 1000000 / CLOCK; }
+        static Time_Stamp us2count(const Microsecond & us) { return static_cast<Time_Stamp>(us) * CLOCK / 1000000ll; }
+        static Microsecond count2us(const Time_Stamp & ts) { return ts * 1000000ll / CLOCK; }
 
     private:
+        static void int_enable(const Reg32 & interrupt) { mactimer(MTIRQM) |= interrupt; }
+
         static Time_Stamp read(unsigned int sel) {
             mactimer(MTMSEL) = sel;
-            Time_Stamp ts = mactimer(MTM0); // M0 must be read first
-            ts += mactimer(MTM1) << 8;
-            ts += static_cast<long long>(mactimer(MTMOVF2)) << 32ll;
-            ts += static_cast<long long>(mactimer(MTMOVF1)) << 24ll;
-            ts += static_cast<long long>(mactimer(MTMOVF0)) << 16ll;
-            ts += static_cast<long long>(_overflow_count) << 40ll;
+            Time_Stamp oc, ts;
+            do {
+                ts = (oc = _overflow_count) << 40ll;
+                ts += mactimer(MTM0); // M0 must be read first
+                ts += mactimer(MTM1) << 8;
+                ts += static_cast<long long>(mactimer(MTMOVF0)) << 16ll;
+                ts += static_cast<long long>(mactimer(MTMOVF1)) << 24ll;
+                ts += static_cast<long long>(mactimer(MTMOVF2)) << 32ll;
+            } while(_overflow_count != oc);
             return ts;
         }
 
         static void int_handler(const IC::Interrupt_Id & interrupt) {
-            Reg32 ints = mactimer(MTIRQF);
-            mactimer(MTIRQF) = 0;
+            Reg32 ints = _ints;
+            _ints &= ~ints;
+
+            if(ints & INT_OVERFLOW_PER)
+                _overflow_count++;
+
+            if(_handler && (_int_request_time <= read())) {
+                int_disable();
+                IC::Interrupt_Handler h = _handler;
+                _handler = 0;
+                h(interrupt);
+            }
+
+            /*
             if(ints & INT_OVERFLOW_PER) {
                 _overflow_count++;
-                if(_interrupt_overflow_count == _overflow_count)
+                if(_handler && !_overflow_match && ((_int_request_time >> 40ll) <= _overflow_count)) {
+                    _overflow_match = true;
                     int_enable(INT_OVERFLOW_COMPARE1);
+                }
             }
-            if(ints & INT_OVERFLOW_COMPARE1)
-                mactimer(MTIRQM) = (INT_COMPARE1 | INT_OVERFLOW_PER);
-            else if(ints & INT_COMPARE1) {
-                int_disable();
-                _handler(interrupt);
+            if(_handler) {
+                if((ints & INT_OVERFLOW_COMPARE1) && _overflow_match && !_msb_match) {
+                    _msb_match = true;
+                    mactimer(MTIRQM) = (INT_COMPARE1 | INT_OVERFLOW_PER);
+                } else if((ints & INT_COMPARE1) && _msb_match) {
+                    int_disable();
+                    IC::Interrupt_Handler h = _handler;
+                    _handler = 0;
+                    h(interrupt);
+                }
             }
+            */
+        }
+
+        static void eoi(const IC::Interrupt_Id & interrupt) {
+            _ints |= mactimer(MTIRQF);
+            mactimer(MTIRQF) = 0;
         }
 
         static void init();
@@ -364,8 +461,11 @@ public:
     private:
         static Time_Stamp _offset;
         static IC::Interrupt_Handler _handler;
-        static Reg32 _overflow_count;
-        static Reg32 _interrupt_overflow_count;
+        static volatile Reg32 _overflow_count;
+        static volatile Reg32 _ints;
+        static Time_Stamp _int_request_time;
+        static bool _overflow_match;
+        static bool _msb_match;
     };
 
 public:
@@ -421,15 +521,22 @@ public:
         ffsm(SHORT_ADDR1) = address[1];
     }
 
-    bool cca(const Microsecond & time) {
-        Timer::Time_Stamp end = Timer::read() + Timer::us_to_ts(time);
-        while(!(xreg(RSSISTAT) & RSSI_VALID));
+    // FIXME: methods changed to static because of TSTP_MAC
+    static bool cca(const Microsecond & time) {
+        Timer::Time_Stamp end = Timer::read() + Timer::us2count(time);
+        while(!(xreg(RSSISTAT) & RSSI_VALID))
+            if(Timer::read() >= end)
+                return false;
         bool channel_free;
         while((channel_free = xreg(FSMSTAT1) & CCA) && (Timer::read() < end));
         return channel_free;
     }
 
-    bool transmit() { sfr(RFST) = ISTXONCCA; return (xreg(FSMSTAT1) & SAMPLED_CCA); }
+    // FIXME: methods changed to static because of TSTP_MAC
+    static void transmit_no_cca() { sfr(RFST) = ISTXON; }
+
+    // FIXME: methods changed to static because of TSTP_MAC
+    static bool transmit() { sfr(RFST) = ISTXONCCA; return (xreg(FSMSTAT1) & SAMPLED_CCA); }
 
     bool wait_for_ack(const Microsecond & timeout) {
         // Disable and clear FIFOP int. We'll poll the interrupt flag
@@ -448,7 +555,7 @@ public:
 
         // Wait for either ACK or timeout
         bool acked = false;
-        for(Timer::Time_Stamp end = Timer::read() + Timer::us_to_ts(timeout); (Timer::read() < end) && !(acked = sfr(RFIRQF0) & INT_FIFOP););
+        for(Timer::Time_Stamp end = Timer::read() + Timer::us2count(timeout); (Timer::read() < end) && !(acked = sfr(RFIRQF0) & INT_FIFOP););
 
         // Restore radio configuration
         if(acked) {
@@ -463,52 +570,61 @@ public:
         return acked;
     }
 
-    void listen() { sfr(RFST) = ISRXON; }
+    // FIXME: methods changed to static because of TSTP_MAC
+    static void listen() { sfr(RFST) = ISRXON; }
 
-    bool tx_done() {
+    // FIXME: methods changed to static because of TSTP_MAC
+    static bool tx_done() {
         bool ret = (sfr(RFIRQF1) & INT_TXDONE);
         if(ret)
             sfr(RFIRQF1) &= ~INT_TXDONE;
         return ret;
     }
 
-    bool rx_done() {
+    // FIXME: methods changed to static because of TSTP_MAC
+    static bool rx_done() {
         bool ret = (sfr(RFIRQF0) & INT_RXPKTDONE);
         if(ret)
             sfr(RFIRQF0) &= ~INT_RXPKTDONE;
         return ret;
     }
 
-    void channel(unsigned int c) {
+    // FIXME: methods changed to static because of TSTP_MAC
+    static void channel(unsigned int c) {
         assert((c > 10) && (c < 27));
         xreg(FREQCTRL) = 11 + 5 * (c - 11);
     }
 
-    void copy_to_nic(IEEE802_15_4::Phy_Frame * frame) {
+    // FIXME: methods changed to static because of TSTP_MAC
+    static void copy_to_nic(const void * frame, unsigned int size) {
+        assert(size <= 127);
         // Clear TXFIFO
         sfr(RFST) = ISFLUSHTX;
         while(xreg(TXFIFOCNT) != 0);
 
         // Copy Frame to TXFIFO
         const char * f = reinterpret_cast<const char *>(frame);
-        sfr(RFDATA) = f[0]; // len
-        for(unsigned int i = 1; i <= f[0] - sizeof(IEEE802_15_4::CRC); i++)
+        sfr(RFDATA) = size; // len
+        for(unsigned int i = 0; i <= size - sizeof(IEEE802_15_4::CRC); i++)
             sfr(RFDATA) = f[i];
     }
 
-    void copy_from_nic(IEEE802_15_4::Phy_Frame * frame) {
+    // FIXME: methods changed to static because of TSTP_MAC
+    static unsigned int copy_from_nic(void * frame) {
         char * f = reinterpret_cast<char *>(frame);
-        f[0] = sfr(RFDATA);  // First byte is the length of MAC frame
-        for(unsigned int i = 1; i <= f[0]; ++i)
+        unsigned int sz = sfr(RFDATA);  // First byte is the length of MAC frame
+        for(unsigned int i = 0; i < sz; ++i)
             f[i] = sfr(RFDATA);
         drop();
+        return sz;
     }
 
-    void drop() { sfr(RFST) = ISFLUSHRX; }
+    // FIXME: methods changed to static because of TSTP_MAC
+    static void drop() { sfr(RFST) = ISFLUSHRX; }
 
     bool filter() {
         bool valid_frame = false;
-        if(xreg(RXFIFOCNT) > sizeof(IEEE802_15_4::Phy_Header) + sizeof(IEEE802_15_4::CRC)) {
+        if(xreg(RXFIFOCNT) > 1 + sizeof(IEEE802_15_4::CRC)) {
             volatile unsigned int * rxfifo = reinterpret_cast<volatile unsigned int*>(RXFIFO);
             unsigned char mac_frame_size = rxfifo[0];
             // On RX, last two bytes in the frame are replaced by info like CRC result
@@ -529,8 +645,8 @@ public:
              xreg(FRMCTRL0) = (xreg(FRMCTRL0) & ~(3 * RX_MODE)) | (RX_MODE_NORMAL * RX_MODE);
              break;
          case LIGHT: // Able to sense channel and transmit
-             xreg(FRMCTRL0) = (xreg(FRMCTRL0) & ~(3 * RX_MODE)) | (RX_MODE_NO_SYMBOL_SEARCH * RX_MODE);
              power_ieee802_15_4(LIGHT);
+             xreg(FRMCTRL0) = (xreg(FRMCTRL0) & ~(3 * RX_MODE)) | (RX_MODE_NO_SYMBOL_SEARCH * RX_MODE);
              break;
          case SLEEP: // Receiver off
              sfr(RFST) = ISRFOFF;
@@ -548,7 +664,11 @@ protected:
     static volatile Reg32 & xreg    (unsigned int offset) { return *(reinterpret_cast<volatile Reg32 *>(XREG_BASE + offset)); }
     static volatile Reg32 & ffsm    (unsigned int offset) { return *(reinterpret_cast<volatile Reg32 *>(FFSM_BASE + offset)); }
     static volatile Reg32 & sfr     (unsigned int offset) { return *(reinterpret_cast<volatile Reg32 *>(SFR_BASE  + offset)); }
+    static volatile Reg32 & cctest  (unsigned int offset) { return *(reinterpret_cast<volatile Reg32 *>(CCTEST_BASE + offset)); }
     static volatile Reg32 & mactimer(unsigned int offset) { return *(reinterpret_cast<volatile Reg32 *>(MACTIMER_BASE + offset)); }
+
+    // FIXME: Static because of TSTP_MAC
+    static bool _cca_done;
 };
 
 // CC2538 IEEE 802.15.4 EPOSMote III NIC Mediator

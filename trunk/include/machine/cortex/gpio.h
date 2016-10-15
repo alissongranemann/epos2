@@ -1,6 +1,7 @@
 // EPOS ARM Cortex GPIO Mediator Declarations
 
-#if !defined(__cortex_gpio_h_) && !defined(__mmod_zynq__)
+#include <system/config.h>
+#if !defined(__cortex_gpio_h_) && defined(__GPIO_H)
 #define __cortex_gpio_h_
 
 #include <machine.h>
@@ -33,7 +34,7 @@ public:
         return *_data;
     }
 
-    void set(bool value) {
+    void set(bool value = true) {
         assert(_direction == INOUT || _direction == OUT);
         if(_direction == INOUT) {
             gpio(_port, DIR) |= _pin_bit;
@@ -42,6 +43,7 @@ public:
         } else
             *_data = 0xff * value;
     }
+    void clear() { set(false); }
 
     void direction(const Direction & dir) {
         _direction = dir;

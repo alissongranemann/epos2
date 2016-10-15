@@ -4,9 +4,32 @@
 #ifndef __no_networking__
 
 #include <tstp.h>
+#include <utility/math.h>
 
 __BEGIN_SYS
 
+// TSTP_Router
+// Class attributes
+
+// Methods
+void TSTP_Router::update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf)
+{
+//    db<TSTP_Router>(TRC) << "TSTP_Router::update(obs=" << obs << ",buf=" << buf << ")" << endl;
+//    if(buf->is_microframe && !buf->relevant)
+//        buf->relevant = TSTP::here() - TSTP::sink_address() < buf->frame()->data<Microframe>()->hint();
+//    if(!buf->is_microframe)
+//        if(buf->my_distance < buf->sender_distance)
+//            if(Buffer * send_buf = TSTP::_nic->alloc(TSTP::_nic->broadcast(), buf->frame()->data<Header>()->type(), 0, 0, buf->size()))
+//                TSTP::_nic->send(send_buf);
+}
+
+TSTP_Router::~TSTP_Router()
+{
+    db<TSTP_Router>(TRC) << "TSTP_Router::~TSTP_Router()" << endl;
+    TSTP::_nic->detach(this, 0);
+}
+
+// TSTP
 // Class attributes
 NIC * TSTP::_nic;
 TSTP::Interests TSTP::_interested;

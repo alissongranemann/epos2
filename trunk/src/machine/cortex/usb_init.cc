@@ -5,7 +5,7 @@
 
 __USING_SYS
 
-#ifndef __mmod_zynq__
+#ifdef __USB_H
 
 volatile USB_2_0::STATE USB::_state;
 volatile bool USB::_configured = false;

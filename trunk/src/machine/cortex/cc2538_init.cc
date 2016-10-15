@@ -1,7 +1,7 @@
 // EPOS TI CC2538 IEEE 802.15.4 NIC Mediator Initialization
 
-#include <system.h>
-#ifndef __mmod_zynq__
+#include <system/config.h>
+#if defined(__NIC_H) && defined(__mmod_emote3__)
 
 #include <machine/cortex/machine.h>
 #include <machine/cortex/cc2538.h>
@@ -68,14 +68,16 @@ void CC2538::init(unsigned int unit)
 
 void CC2538::Timer::init()
 {
-    mactimer(MTCTRL) |= MTCTRL_RUN; // Stop counting
+    db<Init, CC2538>(TRC) << "Radio::Timer::init()" << endl;
+    mactimer(MTCTRL) &= ~MTCTRL_RUN; // Stop counting
     mactimer(MTIRQM) = 0; // Mask interrupts
     mactimer(MTIRQF) = 0; // Clear interrupts
     mactimer(MTCTRL) &= ~MTCTRL_SYNC; // We can't use the sync feature because we want to change the count and overflow values when the timer is stopped
     mactimer(MTCTRL) |= MTCTRL_LATCH_MODE; // count and overflow will be latched at once
-    IC::int_vector(IC::INT_NIC0_TIMER, &int_handler);
+    IC::int_vector(IC::INT_NIC0_TIMER, &int_handler); // Register and enable interrupt at IC
     IC::enable(IC::INT_NIC0_TIMER);
-    int_enable(INT_OVERFLOW_PER);
+    int_enable(INT_OVERFLOW_PER); // Enable overflow interrupt
+    mactimer(MTCTRL) |= MTCTRL_RUN; // Start counting
 }
 
 __END_SYS

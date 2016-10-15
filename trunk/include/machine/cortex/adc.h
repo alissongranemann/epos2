@@ -1,14 +1,14 @@
 // EPOS ARM Cortex-M Analog to Digital Converter (ADC) Mediator Declarations
 
-#if !defined(__cortex_adc_h_) && !defined(__mmod_zynq__)
+#include <system/config.h>
+#if !defined(__cortex_adc_h_) && defined(__ADC_H)
 #define __cortex_adc_h_
 
-#include <machine.h>
 #include <adc.h>
 
 __BEGIN_SYS
 
-class ADC : private ADC_Common, private Machine_Model
+class ADC: private ADC_Common, private Machine_Model
 {
 public:
     enum Channel {
@@ -43,14 +43,12 @@ public:
         BITS_12 = 3  // 12 bits resolution, 512 decimation rate
     };
 
-    ADC(const Channel & channel = SINGLE_ENDED_ADC0, const Reference & reference = SYSTEM_REF, const Resolution & resolution = BITS_12) :
-        _channel(channel), _reference(reference), _resolution(resolution)
-    {
+    ADC(const Channel & channel = SINGLE_ENDED_ADC0, const Reference & reference = SYSTEM_REF, const Resolution & resolution = BITS_12)
+    : _channel(channel), _reference(reference), _resolution(resolution) {
         Machine_Model::adc_config(_channel);
     }
 
-    short read()
-    {
+    short read() {
         reg(ADCCON3) = (_reference * ADCCON3_EREF) | (_resolution * ADCCON3_EDIV) | (_channel * ADCCON3_ECH);
         while(!(reg(ADCCON1) & ADCCON1_EOC));
         short ret = (reg(ADCH) << 8) + reg(ADCL);
