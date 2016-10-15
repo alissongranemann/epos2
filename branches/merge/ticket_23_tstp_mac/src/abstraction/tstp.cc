@@ -25,6 +25,7 @@ void TSTP_Locator::marshal(Buffer * buf)
 {
     db<TSTP_Locator>(TRC) << "TSTP_Locator::marshal(buf=" << buf << ")" << endl;
     buf->my_distance = here() - TSTP::destination(buf).center;
+    buf->sender_distance = buf->my_distance;
 }
 
 TSTP_Locator::~TSTP_Locator()
@@ -33,6 +34,7 @@ TSTP_Locator::~TSTP_Locator()
     TSTP::_nic->detach(this, 0);
 }
 
+TSTP_Locator::Coordinates TSTP_Locator::here() { return Coordinates(5,5,5); } // TODO
 
 // TSTP_Time_Manager
 // Class attributes
@@ -66,7 +68,7 @@ void TSTP_Router::update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf)
         buf->relevant = TSTP::here() - TSTP::sink() < buf->sender_distance;
     if(!buf->is_microframe) {
         buf->destined_to_me = TSTP::destination(buf).contains(TSTP::here(), TSTP::now());
-        if(buf->my_distance < buf->sender_distance) { 
+        if(buf->my_distance < buf->sender_distance) {
             // Forward the message
 
             Buffer * send_buf = TSTP::_nic->alloc(TSTP::_nic->broadcast(), NIC::TSTP, 0, 0, buf->size());
@@ -86,7 +88,7 @@ void TSTP_Router::update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf)
             send_buf->is_microframe = false;
 
             // Calculate offset
-            offset(buf);
+            offset(send_buf);
 
             TSTP::_nic->send(send_buf);
         }
@@ -147,6 +149,9 @@ TSTP::~TSTP()
 void TSTP::update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf)
 {
     db<TSTP>(TRC) << "TSTP::update(obs=" << obs << ",buf=" << buf << ")" << endl;
+
+    if(buf->is_microframe)
+        return;
 
     Packet * packet = buf->frame()->data<Packet>();
     switch(packet->type()) {

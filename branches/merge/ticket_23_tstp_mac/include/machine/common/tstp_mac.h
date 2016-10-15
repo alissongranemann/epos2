@@ -38,18 +38,16 @@ public:
     static const bool drop_expired = Traits<EPOS::S::TSTP>::drop_expired;
     static const unsigned int PERIOD = Traits<EPOS::S::TSTP>::PERIOD;
     static const unsigned int CI = PERIOD;
-    static const unsigned int Tu = IEEE802_15_4::TURNAROUND_TIME;
+    static const unsigned int Tu = IEEE802_15_4::TURNAROUND_TIME + 2; // Radio takes an extra 2us to get ready
     static const unsigned int G = IEEE802_15_4::CCA_TX_GAP;
     static const unsigned int RADIO_RANGE = Traits<EPOS::S::TSTP>::RADIO_RANGE;
-    static const unsigned int Ts = 480; // Time to send a single microframe (including PHY headers)
-    //static const unsigned int Ts = 580 - Tu; // Time to send a single microframe (including PHY headers)
+    static const unsigned int Ts = 680 - Tu; // Time to send a single microframe (including PHY headers)
     static const unsigned int MICROFRAME_TIME = Ts;
-    static const unsigned int MIN_Ti = G;//Tu;// Minimum time between consecutive microframes
+    static const unsigned int MIN_Ti = G;//Tu; // Minimum time between consecutive microframes
     static const unsigned int TX_UNTIL_PROCESS_DATA_DELAY = 0;//5100; //TODO
 
-    //static const unsigned int NMF = (1 + ((CI - Ts) / (MIN_Ti + Ts))) > 0xfff ? 0xfff :
-    //                                (1 + ((CI - Ts) / (MIN_Ti + Ts)));
-    static const unsigned int NMF = 5;
+    static const unsigned int NMF = (1 + ((CI - Ts) / (MIN_Ti + Ts))) > 0xfff ? 0xfff :
+                                    (1 + ((CI - Ts) / (MIN_Ti + Ts)));
     static const unsigned int N_MICROFRAMES = NMF;
     static const unsigned int Ti = (CI - Ts) / (NMF - 1) - Ts;
     static const unsigned int TIME_BETWEEN_MICROFRAMES = Ti;
@@ -74,7 +72,9 @@ protected:
 
     // Filter and assemble RX Buffer Metainformation
     bool pre_notify(Buffer * buf) {
-        db<TSTP_MAC<Radio>>(TRC) << "pre_notify(buf=" << buf << ")" << endl;
+        if(Traits<EPOS::S::TSTP>::hysterically_debugged)
+            db<TSTP_MAC<Radio>>(TRC) << "pre_notify(buf=" << buf << ")" << endl;
+
         assert(_in_rx_mf || _in_rx_data);
 
         if(_in_rx_mf) { // State: RX MF (part 2/3)
@@ -85,14 +85,18 @@ protected:
                 Microframe * mf = buf->frame()->data<Microframe>();
                 Frame_ID id = mf->id();
 
+                // Forge a TSTP identifier to make the radio notify listeners
+                mf->id(TSTP << 8);
+
                 // Initialize Buffer Metainformation
                 buf->sfd_time_stamp = Timer::sfd();
                 buf->id = id;
                 buf->downlink = mf->all_listen();
-                buf->is_new = true;
+                buf->is_new = false;
                 buf->is_microframe = true;
                 buf->relevant = mf->all_listen();
                 buf->trusted = false;
+                buf->sender_distance = mf->hint();
 
                 // Clear scheduled messages with same ID
                 for(Buffer::Element * el = _tx_schedule.head(); el; ) {
@@ -115,16 +119,20 @@ protected:
             buf->sfd_time_stamp = Timer::sfd();
             buf->id = _receiving_data_id;
             buf->sender_distance = _receiving_data_hint;
-            buf->is_new = true;
+            buf->is_new = false;
             buf->is_microframe = false;
             buf->relevant = true;
             buf->trusted = false;
+            buf->deadline = Timer::count2us(Timer::read()) + SLEEP_PERIOD * 10;// TODO
 
             return true;
         }
     }
 
     bool post_notify(Buffer * buf) {
+        if(Traits<EPOS::S::TSTP>::hysterically_debugged)
+            db<TSTP_MAC<Radio>>(TRC) << "post_notify(buf=" << buf << ")" << endl;
+
         assert(_in_rx_mf || _in_rx_data);
 
         if(_in_rx_mf) { // State: RX MF (part 3/3)
@@ -134,14 +142,13 @@ protected:
             if(buf->relevant) { // Transition: [Relevant MF]
                 _receiving_data_id = buf->id;
                 _receiving_data_hint = mf->hint();
-                free(buf);
                 // State: Sleep until Data
                 Timer::interrupt(data_time, rx_data);
-                return true;
-            } else { // Transition: [Irrelevant MF]
+            } else // Transition: [Irrelevant MF]
                 Timer::interrupt(data_time + Timer::us2count(DATA_SKIP_TIME), update_tx_schedule);
-                return false;
-            }
+
+            free(buf);
+            return true;
         } else { // State: RX Data (part 3/3)
             update_tx_schedule(0);
             return false;
@@ -162,7 +169,7 @@ public:
 
     int send(Buffer * buf) {
         _tx_schedule.insert(buf->link());
-        return 0;
+        return buf->size();
     }
 
 private:
@@ -170,7 +177,9 @@ private:
     // State Machine
 
     static void update_tx_schedule(const IC::Interrupt_Id & id) {
-        db<TSTP_MAC<Radio>>(TRC) << "TSTP_MAC::update_tx_schedule(id=" << id << ")" << endl;
+        if(Traits<EPOS::S::TSTP>::hysterically_debugged)
+            db<TSTP_MAC<Radio>>(TRC) << "TSTP_MAC::update_tx_schedule(id=" << id << ")" << endl;
+
         // State: Update TX Schedule
         Radio::power(Power_Mode::SLEEP);
         _in_rx_data = false;
@@ -199,9 +208,8 @@ private:
             new (&_mf) Microframe(_tx_pending->downlink, _tx_pending->id, N_MICROFRAMES - 1, _tx_pending->my_distance);
             Radio::power(Power_Mode::LIGHT);
             Radio::copy_to_nic(&_mf, sizeof(Microframe));
-            Radio::listen();
 
-            Time_Stamp offset = Timer::us2count(((_tx_pending->offset * SLEEP_PERIOD) / (G*RADIO_RANGE)) * G); // TODO: find a way to do this at buffer initialization            
+            Time_Stamp offset = Timer::us2count(((_tx_pending->offset * SLEEP_PERIOD) / (G*RADIO_RANGE)) * G); // TODO: find a way to do this at buffer initialization
             Timer::interrupt(Timer::read() + offset, cca);
         } else { // Transition: [No TX pending]
             // State: Sleep S
@@ -211,8 +219,13 @@ private:
 
     // State: Backoff CCA (CCA part)
     static void cca(const IC::Interrupt_Id & id) {
-        db<TSTP_MAC<Radio>>(TRC) << "TSTP_MAC::cca(id=" << id << ")" << endl;
+        if(Traits<EPOS::S::TSTP>::hysterically_debugged)
+            db<TSTP_MAC<Radio>>(TRC) << "TSTP_MAC::cca(id=" << id << ")" << endl;
+
         assert(N_MICROFRAMES > 1);
+
+        Radio::listen();
+
         // Try to send the first Microframe
         if(Radio::cca(CCA_TIME)) {
             _mf_time = Timer::read();
@@ -230,7 +243,9 @@ private:
 
     // State: RX MF (part 1/3)
     static void rx_mf(const IC::Interrupt_Id & id) {
-        db<TSTP_MAC<Radio>>(TRC) << "TSTP_MAC::rx_mf(id=" << id << ")" << endl;
+        if(Traits<EPOS::S::TSTP>::hysterically_debugged)
+            db<TSTP_MAC<Radio>>(TRC) << "TSTP_MAC::rx_mf(id=" << id << ")" << endl;
+
         //FIXME: no need to set both flags
         _in_rx_mf = true;
         _in_rx_data = false;
@@ -243,7 +258,9 @@ private:
 
     // State: RX Data (part 1/3)
     static void rx_data(const IC::Interrupt_Id & id) {
-        db<TSTP_MAC<Radio>>(TRC) << "TSTP_MAC::rx_data(id=" << id << ")" << endl;
+        if(Traits<EPOS::S::TSTP>::hysterically_debugged)
+            db<TSTP_MAC<Radio>>(TRC) << "TSTP_MAC::rx_data(id=" << id << ")" << endl;
+
         //FIXME: no need to set both flags
         _in_rx_data = true;
         _in_rx_mf = false;
@@ -256,7 +273,9 @@ private:
 
     // State: TX MFs
     static void tx_mf(const IC::Interrupt_Id & id) {
-        db<TSTP_MAC<Radio>>(TRC) << "TSTP_MAC::tx_mf(id=" << id << ")" << endl;
+        if(Traits<EPOS::S::TSTP>::hysterically_debugged)
+            db<TSTP_MAC<Radio>>(TRC) << "TSTP_MAC::tx_mf(id=" << id << ")" << endl;
+
         // The first Microframe is sent at cca()
         Radio::transmit_no_cca();
 
@@ -274,7 +293,9 @@ private:
     }
 
     static void tx_data(const IC::Interrupt_Id & id) {
-        db<TSTP_MAC<Radio>>(TRC) << "TSTP_MAC::tx_data(id=" << id << ")" << endl;
+        if(Traits<EPOS::S::TSTP>::hysterically_debugged)
+            db<TSTP_MAC<Radio>>(TRC) << "TSTP_MAC::tx_data(id=" << id << ")" << endl;
+
         if(!_tx_pending->destined_to_me) { // Transition: [Is not dest.]
             // State: TX Data
             Radio::transmit_no_cca();

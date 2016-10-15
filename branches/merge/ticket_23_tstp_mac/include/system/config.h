@@ -7,15 +7,15 @@
 // ARCHITECTURE, MACHINE, AND APPLICATION SELECTION
 // This section is generated automatically from makedefs by $EPOS/etc/makefile
 //============================================================================
-#define MODE library
-#define ARCH armv7
-#define MACH cortex
-#define MMOD emote3
-#define APPL tstp_mac_test
-#define __mode_library__
-#define __arch_armv7__
-#define __mach_cortex__
-#define __mmod_emote3__
+#define MODE xxx
+#define ARCH xxx
+#define MACH xxx
+#define MMOD xxx
+#define APPL xxx
+#define __mode_xxx__
+#define __arch_xxx__
+#define __mach_xxx__
+#define __mmod_xxx__
 
 #if defined (__arch_avr__)
 #define __no_networking__
@@ -71,8 +71,8 @@ namespace EPOS {
 //============================================================================
 // ASSERT (for pre and post conditions)
 //============================================================================
-#define assert(expr)    ((expr) ? static_cast<void>(0) : Assert::fail (#expr, __FILE__, __LINE__, __PRETTY_FUNCTION__))
-//#define assert(expr)    (static_cast<void>(0))
+//#define assert(expr)    ((expr) ? static_cast<void>(0) : Assert::fail (#expr, __FILE__, __LINE__, __PRETTY_FUNCTION__))
+#define assert(expr)    (static_cast<void>(0))
 
 //============================================================================
 // CONFIGURATION

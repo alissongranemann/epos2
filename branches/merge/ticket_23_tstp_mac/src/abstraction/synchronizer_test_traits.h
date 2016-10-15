@@ -169,7 +169,7 @@ template<> struct Traits<Network>: public Traits<void>
     static const unsigned int RETRIES = 3;
     static const unsigned int TIMEOUT = 10; // s
 
-    // This list is positional, with one network for each NIC in traits<NIC>::NICS
+    // This list is positional, with one network for each NIC in Traits<NIC>::NICS
     typedef LIST<IP> NETWORKS;
 };
 
@@ -183,6 +183,11 @@ template<> struct Traits<ELP>: public Traits<Network>
 template<> struct Traits<TSTP>: public Traits<Network>
 {
     static const bool enabled = NETWORKS::Count<TSTP>::Result;
+
+    // Approximated radio range of nodes, in meters
+    static const unsigned int RADIO_RANGE = 1700;
+    static const unsigned int PERIOD = 250000;
+    static const bool drop_expired = true;
 };
 
 template<> template <typename S> struct Traits<Smart_Data<S>>: public Traits<Network>

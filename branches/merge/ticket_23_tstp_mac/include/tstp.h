@@ -481,7 +481,7 @@ public:
     TSTP_Locator();
     ~TSTP_Locator();
 
-    static Coordinates here() { return Coordinates(50,50,50); } // TODO
+    static Coordinates here();// { return Coordinates(50,50,50); } // TODO
 
     static void bootstrap();
 
@@ -531,7 +531,7 @@ private:
     static void offset(Buffer * buf) {
         //long long dist = abs(buf->my_distance - (buf->sender_distance - RADIO_RANGE));
         //long long betha = (G * RADIO_RADIUS * 1000000) / (dist * G);
-        buf->offset = abs(buf->my_distance - (buf->sender_distance - RADIO_RANGE));        
+        buf->offset = abs(buf->my_distance - (buf->sender_distance - RADIO_RANGE));
     }
 
 };
