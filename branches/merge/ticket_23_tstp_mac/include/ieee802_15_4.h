@@ -27,6 +27,9 @@ public:
     // IEEE 802.15.4 Physical Layer
     static const unsigned int MTU = 127;
 
+    static const unsigned int CCA_TX_GAP = 320;
+    static const unsigned int TURNAROUND_TIME = 192;
+
     typedef unsigned char Data[MTU];
 
     // Frame

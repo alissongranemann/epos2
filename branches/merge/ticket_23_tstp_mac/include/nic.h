@@ -154,24 +154,24 @@ public:
     // Buffer Metadata added to frames by higher-level protocols
     struct IEEE802_15_4_Metadata
     {
-        int rssi;                  // Received Signal Strength Indicator
+        int rssi; // Received Signal Strength Indicator
     };
 
     struct TSTP_Metadata : public IEEE802_15_4_Metadata
     {
-        long long sfd_time_stamp;  // + Start-of-frame reception time stamp
-        unsigned int id;           // - Message identifier
-        long long offset;          // - MAC contention offset
-        bool destined_to_me;       //   Whether this node is the final destination for this message
-        bool downlink;             // + Message direction
-        long long deadline;        //   Time until when this message must arrive at the final destination        
-        long long origin_time;     //   Time when this message was created at the source node
-        long long my_distance;     // + This node's distance to the message's final destination
-        long long sender_distance; //   Last hop's distance to the message's final destination
-        bool is_new;               //   Whether this message was just created by this node
-        bool is_microframe;        //   Whether this message is a Microframe
-        bool relevant;             //   Whether any component is interested in this message
-        bool trusted;              //   If true, this message was successfully verified by the Security Manager
+        unsigned long long sfd_time_stamp;  // + Start-of-frame reception time stamp
+        unsigned int id;                    // - Message identifier
+        unsigned long long offset;          // - MAC contention offset
+        bool destined_to_me;                //   Whether this node is the final destination for this message
+        bool downlink;                      // + Message direction
+        unsigned long long deadline;        //   Time until when this message must arrive at the final destination        
+        unsigned long long origin_time;     //   Time when this message was created at the source node
+        unsigned long long my_distance;     // + This node's distance to the message's final destination
+        unsigned long long sender_distance; //   Last hop's distance to the message's final destination
+        bool is_new;                        //   Whether this message was just created by this node
+        bool is_microframe;                 //   Whether this message is a Microframe
+        bool relevant;                      //   Whether any component is interested in this message
+        bool trusted;                       //   If true, this message was successfully verified by the Security Manager
     };
 
 

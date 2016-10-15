@@ -481,9 +481,11 @@ public:
     TSTP_Locator();
     ~TSTP_Locator();
 
-    static Coordinates here() { return Coordinates(0,0,0); } // TODO
+    static Coordinates here() { return Coordinates(50,50,50); } // TODO
 
     static void bootstrap();
+
+    static void marshal(Buffer * buf);
 
     void update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf);
 };
@@ -501,12 +503,18 @@ public:
 
     static void bootstrap();
 
+    static void marshal(Buffer * buf);
+
     void update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf);
 };
 
 class TSTP_Router: public TSTP_Common, private NIC::Observer
 {
 private:
+    static const unsigned int CCA_TX_GAP = IEEE802_15_4::CCA_TX_GAP;
+    static const unsigned int RADIO_RANGE = Traits<EPOS::S::TSTP>::RADIO_RANGE;
+    static const unsigned int PERIOD = Traits<EPOS::S::TSTP>::PERIOD;
+
     typedef NIC::Buffer Buffer;
 
 public:
@@ -515,7 +523,17 @@ public:
 
     static void bootstrap();
 
+    static void marshal(Buffer * buf);
+
     void update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf);
+
+private:
+    static void offset(Buffer * buf) {
+        //long long dist = abs(buf->my_distance - (buf->sender_distance - RADIO_RANGE));
+        //long long betha = (G * RADIO_RADIUS * 1000000) / (dist * G);
+        buf->offset = abs(buf->my_distance - (buf->sender_distance - RADIO_RANGE));        
+    }
+
 };
 
 class TSTP_Security_Manager: public TSTP_Common, private NIC::Observer
@@ -528,6 +546,8 @@ public:
     ~TSTP_Security_Manager();
 
     static void bootstrap();
+
+    static void marshal(Buffer * buf);
 
     void update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf);
 };
@@ -747,6 +767,7 @@ public:
             db<TSTP>(TRC) << "TSTP::Interested::send() => " << reinterpret_cast<const Interest &>(*this) << endl;
             Buffer * buf = _nic->alloc(NIC::Address::BROADCAST, NIC::TSTP, 0, 0, sizeof(Interest));
             memcpy(buf->frame()->data<Interest>(), this, sizeof(Interest));
+            TSTP::marshal(buf);
             _nic->send(buf);
         }
 
@@ -781,6 +802,7 @@ public:
             db<TSTP>(TRC) << "TSTP::Responsive::send(x=" << expiry << ")" << endl;
             Buffer * buf = _nic->alloc(NIC::Address::BROADCAST, NIC::TSTP, 0, 0, _size);
             memcpy(buf->frame()->data<Response>(), this, _size);
+            TSTP::marshal(buf);
             db<TSTP>(INF) << "TSTP::Responsive::send:response=" << this << " => " << reinterpret_cast<const Response &>(*this) << endl;
             _nic->send(buf);
         }
@@ -811,7 +833,7 @@ public:
     ~TSTP();
 
     static Coordinates here() { return TSTP_Locator::here(); }
-    static Coordinates sink() { return Coordinates(10, 10, 10); } // TODO
+    static Coordinates sink() { return Coordinates(0, 0, 0); }
     static Time now() { return TSTP_Time_Manager::now(); }
 
     static void attach(Observer * obs, void * subject) { _observed.attach(obs, int(subject)); }
@@ -821,6 +843,14 @@ public:
     static void init(unsigned int unit);
 
 private:
+    // Assemble Buffer Metainformation before transmitting
+    static void marshal(Buffer * buf) {
+        TSTP_Locator::marshal(buf);
+        TSTP_Time_Manager::marshal(buf);
+        TSTP_Router::marshal(buf);
+        TSTP_Security_Manager::marshal(buf);
+    }
+
     static Coordinates absolute(const Coordinates & coordinates) { return coordinates; }
     void update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf);
 

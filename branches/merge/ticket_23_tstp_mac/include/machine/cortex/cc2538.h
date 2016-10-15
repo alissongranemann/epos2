@@ -327,7 +327,7 @@ public:
         const static unsigned long long CLOCK = 32 * 1000 * 1000; // 32MHz
 
     public:
-        typedef long long Time_Stamp;
+        typedef unsigned long long Time_Stamp;
 
     public:
         Timer() {}
