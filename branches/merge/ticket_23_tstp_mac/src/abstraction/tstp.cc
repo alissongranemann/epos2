@@ -12,8 +12,9 @@ __BEGIN_SYS
 // Class attributes
 
 // Methods
-void TSTP_Locator::update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf)
+void TSTP_Locator::update(NIC::Observed * obs, NIC::Protocol prot, NIC::Buffer * b)
 {
+    Buffer * buf = reinterpret_cast<Buffer*>(b);
     db<TSTP_Locator>(TRC) << "TSTP_Locator::update(obs=" << obs << ",buf=" << buf << ")" << endl;
     if(buf->is_microframe)
         buf->sender_distance = buf->frame()->data<Microframe>()->hint();
@@ -40,8 +41,9 @@ TSTP_Locator::Coordinates TSTP_Locator::here() { return Coordinates(5,5,5); } //
 // Class attributes
 
 // Methods
-void TSTP_Time_Manager::update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf)
+void TSTP_Time_Manager::update(NIC::Observed * obs, NIC::Protocol prot, NIC::Buffer * b)
 {
+    Buffer * buf = reinterpret_cast<Buffer*>(b);
     db<TSTP_Time_Manager>(TRC) << "TSTP_Time_Manager::update(obs=" << obs << ",buf=" << buf << ")" << endl;
     buf->expiry = TSTP::destination(buf).t1;
 }
@@ -72,17 +74,21 @@ TSTP_Time_Manager::Time TSTP_Time_Manager::now()
 // Class attributes
 
 // Methods
-void TSTP_Router::update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf)
+void TSTP_Router::update(NIC::Observed * obs, NIC::Protocol prot, NIC::Buffer * b)
 {
+    Buffer * buf = reinterpret_cast<Buffer*>(b);
     db<TSTP_Router>(TRC) << "TSTP_Router::update(obs=" << obs << ",buf=" << buf << ")" << endl;
-    if(buf->is_microframe && !buf->relevant)
-        buf->relevant = TSTP::here() - TSTP::sink() < buf->sender_distance;
+    if(buf->is_microframe && !buf->relevant) {
+        TSTP::Coordinates::Number distance = TSTP::here() - TSTP::sink();
+        assert(distance >= 0);
+        buf->relevant = static_cast<unsigned long long>(distance) < buf->sender_distance;
+    }
     if(!buf->is_microframe) {
         buf->destined_to_me = TSTP::destination(buf).contains(TSTP::here(), TSTP::now());
         if(buf->my_distance < buf->sender_distance) {
             // Forward the message
 
-            Buffer * send_buf = TSTP::_nic->alloc(TSTP::_nic->broadcast(), NIC::TSTP, 0, 0, buf->size());
+            Buffer * send_buf = TSTP::alloc(buf->size());
 
             // Copy frame contents
             memcpy(send_buf->frame(), buf->frame(), buf->size());
@@ -126,8 +132,9 @@ TSTP_Router::~TSTP_Router()
 // Class attributes
 
 // Methods
-void TSTP_Security_Manager::update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf)
+void TSTP_Security_Manager::update(NIC::Observed * obs, NIC::Protocol prot, NIC::Buffer * b)
 {
+    Buffer * buf = reinterpret_cast<Buffer*>(b);
     db<TSTP_Security_Manager>(TRC) << "TSTP_Security_Manager::update(obs=" << obs << ",buf=" << buf << ")" << endl;
 }
 
@@ -157,8 +164,9 @@ TSTP::~TSTP()
     _nic->detach(this, 0);
 }
 
-void TSTP::update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf)
+void TSTP::update(NIC::Observed * obs, NIC::Protocol prot, NIC::Buffer * b)
 {
+    Buffer * buf = reinterpret_cast<Buffer*>(b);
     db<TSTP>(TRC) << "TSTP::update(obs=" << obs << ",buf=" << buf << ")" << endl;
 
     if(buf->is_microframe)

@@ -473,11 +473,24 @@ __END_SYS
 
 __BEGIN_SYS
 
-class TSTP_Locator: public TSTP_Common, private NIC::Observer
+class TSTP_Component_Common: public TSTP_Common
 {
-private:
-    typedef NIC::Buffer Buffer;
+    // Buffer Wrapper used to allow compilation if TSTP is disabled
+    template<typename T>
+    class Buffer_Wrapper: public T, public NIC_Common::TSTP_Metadata { };
 
+    template<typename T>
+    class Meta_Buffer: public T {
+        friend class TSTP_Component_Common;
+        typedef typename IF<EQUAL <typename T::Metadata, NIC_Common::TSTP_Metadata>::Result, T, Buffer_Wrapper<T>>::Result Result;
+    };
+
+public:
+    typedef Meta_Buffer<NIC::Buffer>::Result Buffer;
+};
+
+class TSTP_Locator: public TSTP_Component_Common, private NIC::Observer
+{
 public:
     TSTP_Locator();
     ~TSTP_Locator();
@@ -488,14 +501,11 @@ public:
 
     static void marshal(Buffer * buf);
 
-    void update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf);
+    void update(NIC::Observed * obs, NIC::Protocol prot, NIC::Buffer * buf);
 };
 
-class TSTP_Time_Manager: public TSTP_Common, private NIC::Observer
+class TSTP_Time_Manager: public TSTP_Component_Common, private NIC::Observer
 {
-private:
-    typedef NIC::Buffer Buffer;
-
 public:
     TSTP_Time_Manager();
     ~TSTP_Time_Manager();
@@ -506,17 +516,15 @@ public:
 
     static void marshal(Buffer * buf);
 
-    void update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf);
+    void update(NIC::Observed * obs, NIC::Protocol prot, NIC::Buffer * buf);
 };
 
-class TSTP_Router: public TSTP_Common, private NIC::Observer
+class TSTP_Router: public TSTP_Component_Common, private NIC::Observer
 {
 private:
     static const unsigned int CCA_TX_GAP = IEEE802_15_4::CCA_TX_GAP;
     static const unsigned int RADIO_RANGE = Traits<EPOS::S::TSTP>::RADIO_RANGE;
     static const unsigned int PERIOD = Traits<EPOS::S::TSTP>::PERIOD;
-
-    typedef NIC::Buffer Buffer;
 
 public:
     TSTP_Router();
@@ -526,7 +534,7 @@ public:
 
     static void marshal(Buffer * buf);
 
-    void update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf);
+    void update(NIC::Observed * obs, NIC::Protocol prot, NIC::Buffer * buf);
 
 private:
     static void offset(Buffer * buf) {
@@ -537,11 +545,8 @@ private:
 
 };
 
-class TSTP_Security_Manager: public TSTP_Common, private NIC::Observer
+class TSTP_Security_Manager: public TSTP_Component_Common, private NIC::Observer
 {
-private:
-    typedef NIC::Buffer Buffer;
-
 public:
     TSTP_Security_Manager();
     ~TSTP_Security_Manager();
@@ -550,10 +555,10 @@ public:
 
     static void marshal(Buffer * buf);
 
-    void update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf);
+    void update(NIC::Observed * obs, NIC::Protocol prot, NIC::Buffer * buf);
 };
 
-class TSTP: public TSTP_Common, private NIC::Observer
+class TSTP: public TSTP_Component_Common, private NIC::Observer
 {
     template<typename> friend class Smart_Data;
     friend class TSTP_Locator;
@@ -562,10 +567,6 @@ class TSTP: public TSTP_Common, private NIC::Observer
     friend class TSTP_Security_Manager;
 
 public:
-    // Buffers received from the NIC
-    typedef NIC::Buffer Buffer;
-
-
     // Packet
     static const unsigned int MTU = NIC::MTU - sizeof(Header);
     template<Scale S>
@@ -766,7 +767,7 @@ public:
     private:
         void send() {
             db<TSTP>(TRC) << "TSTP::Interested::send() => " << reinterpret_cast<const Interest &>(*this) << endl;
-            Buffer * buf = _nic->alloc(NIC::Address::BROADCAST, NIC::TSTP, 0, 0, sizeof(Interest));
+            Buffer * buf = alloc(sizeof(Interest));
             memcpy(buf->frame()->data<Interest>(), this, sizeof(Interest));
             TSTP::marshal(buf);
             _nic->send(buf);
@@ -803,7 +804,7 @@ public:
             assert(expiry > now());
             db<TSTP>(TRC) << "TSTP::Responsive::send(x=" << expiry << ")" << endl;
             _expiry = expiry - now();
-            Buffer * buf = _nic->alloc(NIC::Address::BROADCAST, NIC::TSTP, 0, 0, _size);
+            Buffer * buf = alloc(_size);
             memcpy(buf->frame()->data<Response>(), this, _size);
             TSTP::marshal(buf);
             db<TSTP>(INF) << "TSTP::Responsive::send:response=" << this << " => " << reinterpret_cast<const Response &>(*this) << endl;
@@ -854,8 +855,13 @@ private:
         TSTP_Security_Manager::marshal(buf);
     }
 
+    static Buffer * alloc(unsigned int size) {
+        assert((!Traits<TSTP::enabled> || EQUAL<NIC::Buffer::Metadata, NIC_Common::TSTP_Metadata>::Result));
+        return reinterpret_cast<Buffer*>(_nic->alloc(NIC::Address::BROADCAST, NIC::TSTP, 0, 0, size));
+    }
+
     static Coordinates absolute(const Coordinates & coordinates) { return coordinates; }
-    void update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf);
+    void update(NIC::Observed * obs, NIC::Protocol prot, NIC::Buffer * buf);
 
 private:
     static NIC * _nic;
