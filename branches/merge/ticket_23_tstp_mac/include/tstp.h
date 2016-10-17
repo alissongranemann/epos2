@@ -510,7 +510,7 @@ public:
     TSTP_Time_Manager();
     ~TSTP_Time_Manager();
 
-    static Time now();
+    static Time now() { return NIC_Timer::read() * 1000000ll / NIC_Timer::frequency(); };
 
     static void bootstrap();
 

@@ -60,16 +60,6 @@ TSTP_Time_Manager::~TSTP_Time_Manager()
     TSTP::_nic->detach(this, 0);
 }
 
-TSTP_Time_Manager::Time TSTP_Time_Manager::now()
-{
-    // FIXME: this is not a pretty way to access the MAC timer...
-#ifdef __mmod_emote3__
-    return TSTP_MAC<CC2538RF>::Timer::count2us(TSTP_MAC<CC2538RF>::Timer::now());
-#else
-    return RTC::seconds_since_epoch();
-#endif
-}
-
 // TSTP_Router
 // Class attributes
 
