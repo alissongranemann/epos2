@@ -113,7 +113,6 @@ namespace EPOS {
 #define __USB_H                 __HEADER_MACH(usb)
 #define __NIC_H                 __HEADER_MACH(nic)
 #define __GPIO_H                __HEADER_MACH(gpio)
-#define __NIC_TIMER_H           __HEADER_MACH(nic_timer)
 #endif
 
 #ifdef __mmod_emote3__
@@ -127,7 +126,6 @@ namespace EPOS {
 #define __I2C_H                 __HEADER_MACH(i2c)
 #define __GPIO_H                __HEADER_MACH(gpio)
 #define __ADC_H                 __HEADER_MACH(adc)
-#define __NIC_TIMER_H           __HEADER_MACH(nic_timer)
 #endif
 
 #ifdef __mmod_zynq__

@@ -85,6 +85,8 @@ public:
     typedef Data_Observed<Buffer, Protocol> Observed;
 
 public:
+    typedef Device::Timer Timer;
+
     template<unsigned int UNIT = 0>
     NIC(unsigned int u = UNIT) {
         _dev = reinterpret_cast<Device *>(NICS::Get<UNIT>::Result::get(u));

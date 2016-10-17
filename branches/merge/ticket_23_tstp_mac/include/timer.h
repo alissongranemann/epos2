@@ -26,20 +26,5 @@ __END_SYS
 #ifdef __TIMER_H
 #include __TIMER_H
 #endif
-#ifdef __NIC_TIMER_H
-#include __NIC_TIMER_H
-#else
-__BEGIN_SYS
-class NIC_Timer: private Timer_Common
-{
-public:
-    typedef TSC::Time_Stamp Time_Stamp;
-    static void set(const Time_Stamp & t) {}
-    static Time_Stamp read() { return TSC::time_stamp(); }
-
-    static Hertz frequency() { return TSC::frequency(); }
-};
-__END_SYS
-#endif
 
 #endif
