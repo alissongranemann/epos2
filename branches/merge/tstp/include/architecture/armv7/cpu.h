@@ -265,9 +265,9 @@ public:
         register T old;
         register T one = 1;
         ASM("1: ldrexb  %0, [%1]        \n"
-            "   strexb  r12, %2, [%1]    \n"
-            "   cmp     r12, #0          \n"
-            "   bne     1b              \n" : "=&r" (old) : "r"(&lock), "r"(one) : "r12" );
+            "   strexb  r4, %2, [%1]    \n"
+            "   cmp     r4, #0          \n"
+            "   bne     1b              \n" : "=&r" (old) : "r"(&lock), "r"(one) : "r4" );
         return old;
     }
 

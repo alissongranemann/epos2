@@ -164,9 +164,9 @@ public:
     }
 
     bool rxd_ok() { return !(reg(FR) & RXFE); }
-    bool txd_ok() { return !(reg(FR) & TXFF); }
+    volatile bool txd_ok() { return !(reg(FR) & TXFF); }
 
-    bool busy() { return (reg(FR) & BUSY); }
+    volatile bool busy() { return (reg(FR) & BUSY); }
 
 private:
     volatile Reg32 & reg(unsigned int o) { return reinterpret_cast<volatile Reg32*>(_base)[o / sizeof(Reg32)]; }

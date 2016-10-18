@@ -25,7 +25,7 @@ private:
             // Finding last '1' bit of k
             unsigned int t = Bignum::BITS_PER_DIGIT;
             int b_len = sizeof(Bignum::Word) + 1;
-            typename Bignum::Digit now; //= x._data[Bignum::word - 1];
+            typename Bignum::Digit now; //= x._data[Bignum::word - 1];   
             do {
                 now = b.data[(--b_len) - 1];
             } while(now == 0);
@@ -58,9 +58,9 @@ private:
                 }
             }
 
-            Bignum Z;
+            Bignum Z; 
             z.invert();
-            Z = z;
+            Z = z; 
             Z *= z;
 
             x *= Z;
@@ -96,11 +96,11 @@ private:
             x -= aux;
 
             y -= x; y *= C;
-            y -= B;
+            y -= B; 
         }
 
         void add_jacobian_affine(const ECC_Point & b) __attribute__((noinline)) {
-            Bignum A(z), B, C, X, Y, aux, aux2;
+            Bignum A(z), B, C, X, Y, aux, aux2;  
 
             A *= z;
 
@@ -130,7 +130,7 @@ private:
 
             z *= C;
 
-            x = X; y = Y;
+            x = X; y = Y;  
         }
 
     private:

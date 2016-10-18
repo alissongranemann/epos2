@@ -64,8 +64,7 @@ public:
     void lap() { if(_start != 0) _stop = Alarm::_elapsed; }
     void stop() { lap(); }
 
-    // The cast provides resolution for intermediate calculations
-    Microsecond read() { return static_cast<unsigned long long>(ticks()) * 1000000 / frequency(); }
+    Microsecond read() { return ticks() * 1000000 / frequency(); }
 
 private:
     Time_Stamp ticks() {

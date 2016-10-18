@@ -115,7 +115,7 @@ private:
 };
 
 // The lookup-tables are marked const so they can be placed in read-only storage instead of RAM
-// The numbers below can be computed dynamically trading ROM for RAM -
+// The numbers below can be computed dynamically trading ROM for RAM - 
 // This can be useful in (embedded) bootloader applications, where ROM is often limited.
 template<unsigned int KEY_LENGTH>
 const unsigned char AES<KEY_LENGTH>::sbox[256] = { // 0     1     2     3     4     5     6     7     8     9     a     b     c     d     e     f

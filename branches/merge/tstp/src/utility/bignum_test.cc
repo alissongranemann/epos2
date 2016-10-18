@@ -37,6 +37,7 @@ int main()
     a += b;
     cout << "a + b = " << a << endl;
 
+    
     unsigned int seed = Random::random();
     Random::seed(seed);
     cout << "Random seed = " << seed << endl;

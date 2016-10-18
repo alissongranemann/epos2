@@ -19,29 +19,34 @@ CC2538::CC2538(unsigned int unit): _unit(unit)
     _address[0] = ffsm(SHORT_ADDR0);
     _address[1] = ffsm(SHORT_ADDR1);
 
-    xreg(FRMFILT0) |= FRAME_FILTER_EN; // Enable frame filtering
+    // Enable frame filtering
+    xreg(FRMFILT0) |= FRAME_FILTER_EN;
     xreg(FRMFILT1) &= ~ACCEPT_FT2_ACK; // ACK frames are handled only when expected
 
-    xreg(SRCMATCH) |= SRC_MATCH_EN; // Enable automatic source address matching
+    // Enable automatic source address matching
+    xreg(SRCMATCH) |= SRC_MATCH_EN;
 
-    xreg(FRMCTRL0) |= AUTO_CRC; // Enable auto-CRC
+    // Enable auto-CRC
+    xreg(FRMCTRL0) |= AUTO_CRC;
 
-    channel(13);
+    channel(15);
 
-    xreg(FRMCTRL0) |= AUTO_ACK; // Enable auto ACK
+    // Enable auto ACK
+    xreg(FRMCTRL0) |= AUTO_ACK;
 
-    reset(); // Reset statistics
+    // Reset statistics
+    reset();
 
     xreg(FRMCTRL1) |= SET_RXENMASK_ON_TX; // Enter receive mode after TX
 
     // Enable useful device interrupts
-    // WARNING: do not enable INT_TXDONE, because CC2538RF::tx_done() handles it
-    // WARNING: do not enable INT_RXPKTDONE, because CC2538RF::rx_done() handles it
+    // WARNING: do not enable INT_TXDONE, because _send_and_wait handles it
     xreg(RFIRQM0) = INT_FIFOP;
     xreg(RFIRQM1) = 0;
     xreg(RFERRM) = 0;
 
-    MAC::constructor_epilogue(); // Device is configured, let the MAC use it
+    // Issue the listen command
+    sfr(RFST) = ISTXON;
 }
 
 

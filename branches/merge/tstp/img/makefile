@@ -48,6 +48,6 @@ endif
 
 strip:		$(SYSTEM) $(APPLICATION)
 		@for file in $^; do $(STRIP) "$${file}"; done;
-
+		
 clean:
 		$(CLEAN) $(SYSTEM) $(APPLICATION)

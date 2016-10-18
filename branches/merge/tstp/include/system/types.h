@@ -120,6 +120,7 @@ class Cortex_M_Scratchpad;
 class Cortex_M_NIC;
 class Cortex_M_IEEE802_15_4;
 class Cortex_M_I2C;
+class Cortex_M_ADC;
 
 class ATmega;
 class ATmega_IC;
@@ -187,6 +188,7 @@ class Network;
 
 class ELP;
 
+class TSTPOE;
 class TSTP;
 
 template<typename NIC, typename Network, unsigned int HTYPE>

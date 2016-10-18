@@ -34,7 +34,7 @@ const Cortex_M_USB::Full_Config Cortex_M_USB::_config =
     {
         sizeof(Descriptor::Configuration), // Descriptor length
         DESC_CONFIGURATION,              // Descriptor type (DESC_CONFIGURATION)
-        sizeof(Full_Config),             // Total length of data returned for this configuration
+        sizeof(Full_Config),         // Total length of data returned for this configuration
         0x02,                            // Number of interfaces supported by this configuration
         0x01,                            // Value to use as an argument to the SetConfiguration() request to select this configuration
         0x00,                            // Index of string descriptor describing this configuration
@@ -184,4 +184,5 @@ void Cortex_M_USB::init()
 
     IC::int_vector(IC::irq2int(USB_IRQ), &int_handler);
     IC::enable(USB_IRQ);
+    CPU::int_enable();
 }
