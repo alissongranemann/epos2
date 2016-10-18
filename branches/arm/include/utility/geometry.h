@@ -28,7 +28,7 @@ public:
     bool operator!=(const Point & p) const { return !(*this == p); }
 
     friend OStream & operator<<(OStream & os, const Point<T, 2> & c) {
-        os << "{" << Print_Type(c.x) << "," << Print_Type(c.y) << "}";
+        os << "{" << static_cast<Print_Type>(c.x) << "," << static_cast<Print_Type>(c.y) << "}";
         return os;
     }
 
@@ -57,7 +57,7 @@ public:
     bool operator!=(const Point & p) const { return !(*this == p); }
 
     friend OStream & operator<<(OStream & os, const Point & c) {
-        os << "(" << Print_Type(c.x) << "," << Print_Type(c.y) << "," << Print_Type(c.z) << ")";
+        os << "(" << Print_Type(c.x) << "," << Print_Type(c.y) << "," << static_cast<Print_Type>(c.z) << ")";
         return os;
     }
 
@@ -81,7 +81,7 @@ public:
     bool contains(const Center & c) const { return (center - c) <= radius; }
 
     friend OStream & operator<<(OStream & os, const Sphere & s) {
-        os << "{" << "c=" << s.center << ",r=" << Print_Type(s.radius) << "}";
+        os << "{" << "c=" << s.center << ",r=" << static_cast<Print_Type>(s.radius) << "}";
         return os;
     }
 
