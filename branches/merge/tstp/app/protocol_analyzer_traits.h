@@ -23,14 +23,14 @@ template<> struct Traits<Build>
     enum {IA32, ARMv7};
     static const unsigned int ARCHITECTURE = ARMv7;
 
-    enum {PC, Cortex_M, Cortex_A};
-    static const unsigned int MACHINE = Cortex_M;
+    enum {PC, Cortex};
+    static const unsigned int MACHINE = Cortex;
 
-    enum {Legacy_PC, eMote3, LM3S811};
+    enum {Legacy_PC, eMote3, LM3S811, Zynq};
     static const unsigned int MODEL = eMote3;
 
     static const unsigned int CPUS = 1;
-    static const unsigned int NODES = 1; // > 1 => NETWORKING
+    static const unsigned int NODES = 2; // > 1 => NETWORKING
 };
 
 
@@ -99,7 +99,6 @@ __END_SYS
 
 #include __ARCH_TRAITS_H
 #include __MACH_TRAITS_H
-#include __MACH_CONFIG_H
 
 __BEGIN_SYS
 
@@ -138,7 +137,7 @@ template<> struct Traits<Thread>: public Traits<void>
 {
     static const bool smp = Traits<System>::multicore;
 
-    typedef Scheduling_Criteria::RR Criterion;
+    typedef Scheduling_Criteria::RM Criterion;
     static const unsigned int QUANTUM = 10000; // us
 
     static const bool trace_idle = hysterically_debugged;
@@ -182,20 +181,24 @@ template<> struct Traits<Network>: public Traits<void>
     static const unsigned int TIMEOUT = 10; // s
 
     // This list is positional, with one network for each NIC in Traits<NIC>::NICS
-    typedef LIST<IP> NETWORKS;
+    typedef LIST<ELP> NETWORKS;
 };
 
 template<> struct Traits<ELP>: public Traits<Network>
 {
     static const bool enabled = NETWORKS::Count<ELP>::Result;
 
-    static const bool acknowledged = true;
-    static const bool promiscuous = false;
+    static const bool acknowledged = false;
 };
 
 template<> struct Traits<TSTP>: public Traits<Network>
 {
     static const bool enabled = NETWORKS::Count<TSTP>::Result;
+
+    // Approximated radio range of nodes, in meters
+    static const unsigned int RADIO_RANGE = 1700;
+    static const unsigned int PERIOD = 250000;
+    static const bool drop_expired = true;
 };
 
 template<> template <typename S> struct Traits<Smart_Data<S>>: public Traits<Network>
