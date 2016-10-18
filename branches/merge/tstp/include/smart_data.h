@@ -50,17 +50,17 @@ public:
     struct DB_Record {
         double value;
         unsigned char error;
-        unsigned long x;
-        unsigned long y;
-        unsigned long z;
+        long x;
+        long y;
+        long z;
         unsigned long long t;
     };
 
     struct DB_Series {
         unsigned long unit;
-        unsigned long x;
-        unsigned long y;
-        unsigned long z;
+        long x;
+        long y;
+        long z;
         unsigned long r;
         unsigned long long t0;
         unsigned long long t1;

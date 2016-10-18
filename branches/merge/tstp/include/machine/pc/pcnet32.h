@@ -387,7 +387,7 @@ protected:
 
 
 // PCNet32 PC Ethernet NIC
-class PCNet32: public Ethernet::NIC_Base<Ethernet, Traits<PC_Ethernet>::NICS::Polymorphic>, private Am79C970A
+class PCNet32: public Ethernet::NIC_Base<Ethernet, Traits<NIC>::NICS::Polymorphic>, private Am79C970A
 {
     template<int unit> friend void call_init();
 

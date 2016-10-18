@@ -1,4 +1,4 @@
-// EPOS PC_NIC Test Programs
+// EPOS NIC Test Programs
 
 #include <utility/ostream.h>
 #include <nic.h>

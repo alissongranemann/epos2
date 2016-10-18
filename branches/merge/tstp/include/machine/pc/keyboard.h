@@ -118,9 +118,9 @@ public:
     }
 };
 
-class PC_Keyboard: public Keyboard_Common, private i8042
+class PS2_Keyboard: public Keyboard_Common, private i8042
 {
-    friend class PC;
+    friend class Machine;
 
 private:
     typedef i8042 Engine;
@@ -158,7 +158,7 @@ public:
     typedef _UTIL::Observed Observed;
 
 public:
-    PC_Keyboard() {}
+    PS2_Keyboard() {}
 
     static char get();
     static bool ready_to_get() { return (status() & OUT_BUF_FULL); }
@@ -187,6 +187,8 @@ private:
 
     static Observed _observed;
 };
+
+class Keyboard: public IF<Traits<Serial_Keyboard>::enabled, Serial_Keyboard, PS2_Keyboard>::Result {};
 
 __END_SYS
 

@@ -53,7 +53,7 @@ def mount_request(data):
                 "tstp_si": tstp_si,
                 "mac_hash": mac_hash,
                 "spatial_scale": scale[0],
-                "temporal_scale": scale[1] 
+                "temporal_scale": scale[1]
             }
         }
         return post

@@ -89,7 +89,7 @@ def modbus_data(data_type, number, data):
     return MODBUS_FUNCTIONS[data_type](number, data)
 
 
-    
+
 @app.route('/network/', methods=['POST'])
 def network():
     '''This function handles actuator requests for the network.'''

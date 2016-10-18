@@ -323,7 +323,7 @@ public:
 
 };
 
-class E100: public Ethernet::NIC_Base<Ethernet, Traits<PC_Ethernet>::NICS::Polymorphic>, private i82559
+class E100: public Ethernet::NIC_Base<Ethernet, Traits<NIC>::NICS::Polymorphic>, private i82559
 {
     template<int unit> friend void call_init();
 

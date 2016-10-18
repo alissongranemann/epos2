@@ -25,7 +25,7 @@ class Serial_Display: public Display_Common
 {
     friend class PC_Setup;
     friend class Serial_Keyboard;
-    friend class First_Object;
+    friend class Machine;
 
 private:
     static const int LINES = Traits<Serial_Display>::LINES;
@@ -147,6 +147,10 @@ __END_SYS
 
 #ifdef __DISPLAY_H
 #include __DISPLAY_H
+#else
+__BEGIN_SYS
+class Display: public IF<Traits<Serial_Display>::enabled, Serial_Display, Dummy>::Result {};
+__END_SYS
 #endif
 
 #endif

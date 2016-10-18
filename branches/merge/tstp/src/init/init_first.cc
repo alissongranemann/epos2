@@ -32,7 +32,7 @@ public:
 
         db<Init>(INF) << "Initializing the first process: " << endl;
 
-        System_Info<Machine> * si = System::info();
+        System_Info * si = System::info();
         Thread * first;
         if(Machine::cpu_id() == 0) {
             if(Traits<System>::multitask) {
@@ -40,7 +40,7 @@ public:
                                    new (SYSTEM) Segment(Log_Addr(si->lm.app_code), si->lm.app_code_size, Segment::Flags::APP),
                                    new (SYSTEM) Segment(Log_Addr(si->lm.app_data), si->lm.app_data_size, Segment::Flags::APP),
                                    reinterpret_cast<Main2>(si->lm.app_entry),
-                                   Log_Addr(Memory_Map<Machine>::APP_CODE), Log_Addr(Memory_Map<Machine>::APP_DATA),
+                                   Log_Addr(Memory_Map::APP_CODE), Log_Addr(Memory_Map::APP_DATA),
                                    static_cast<int>(si->lm.app_extra_size), reinterpret_cast<char **>(si->lm.app_extra));
 
                 // Thread::self() and Task::self() can be safely called after the construction of the Main task.

@@ -5,11 +5,11 @@
 
 __BEGIN_SYS
 
-void IA32_MMU::init()
+void MMU::init()
 {
     db<Init, MMU>(TRC) << "MMU::init()" << endl;
 
-    System_Info<PC> * si = System::info();
+    System_Info * si = System::info();
 
     db<Init, MMU>(INF) << "MMU::memory={base=" << reinterpret_cast<void *>(si->pmm.mem_base) << ",size="
                        << (si->bm.mem_top - si->bm.mem_base) / 1024 << "KB}" << endl;

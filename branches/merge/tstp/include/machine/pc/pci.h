@@ -8,15 +8,15 @@
 
 __BEGIN_SYS
 
-class PC_PCI: public PCI_Common
+class PCI: public PCI_Common
 {
-    friend class PC;
+    friend class Machine;
 
 private:
-    static const int MAX_BUS = Traits<PC_PCI>::MAX_BUS;
-    static const int MAX_DEV_FN = Traits<PC_PCI>::MAX_DEV_FN;
-    static const unsigned int MAX_REGION_SIZE = Traits<PC_PCI>::MAX_REGION_SIZE;
-    static const unsigned long LOG_IO_MEM = Memory_Map<PC>::PCI;
+    static const int MAX_BUS = Traits<PCI>::MAX_BUS;
+    static const int MAX_DEV_FN = Traits<PCI>::MAX_DEV_FN;
+    static const unsigned int MAX_REGION_SIZE = Traits<PCI>::MAX_REGION_SIZE;
+    static const unsigned long LOG_IO_MEM = Memory_Map::PCI;
 
     // From Intel 82443BX manual
     // CONFADDR is a 32 bit register accessed only when referenced as a Dword.
@@ -38,7 +38,7 @@ private:
     static const int CONFDATA = 0xcfc;
 
 public:
-    PC_PCI() {}
+    PCI() {}
 
     static Locator scan(const Class_Id & c, int order);
     static Locator scan(const Vendor_Id & v, const Device_Id & d, int order);

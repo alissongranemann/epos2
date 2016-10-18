@@ -8,13 +8,13 @@
 
 __BEGIN_SYS
 
-class PC_EEPROM: public EEPROM_Common, private MC146818
+class EEPROM: public EEPROM_Common, private MC146818
 {
 public:
     typedef EEPROM_Common::Address Address;
 
 public:
-    PC_EEPROM() {};
+    EEPROM() {};
 
     unsigned char read(const Address & a) { return cmos_read(a); }
     void write(const Address & a, unsigned char d) { cmos_write(a, d); }

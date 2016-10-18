@@ -10,7 +10,7 @@ int main()
     OStream cout;
     cout << "IA32 test" << endl;
 
-    IA32 cpu;
+    CPU cpu;
 
     {
         volatile bool lock = false;
@@ -44,7 +44,20 @@ int main()
             else
         	cout << "fdec(): ok" << endl;
     }
-
+    {
+        volatile int number = 100;
+        volatile int compare = number;
+        volatile int replacement = number - 1;
+        volatile int tmp;
+        if((tmp = cpu.cas(number, compare, replacement)) != compare)
+            cout << "cas(): doesn't function properly [1] (n=" << tmp << ", should be " << compare << ")!" << endl;
+        else
+            if((tmp = cpu.cas(number, compare, replacement)) != replacement)
+                cout << "cas(): doesn't function properly [2] (n=" << tmp << ", should be " << replacement << ")!" << endl;
+            else
+                cout << "cas(): ok" << endl;
+    }
+ 
     cout << "IA32 test finished" << endl;
 
     return 0;

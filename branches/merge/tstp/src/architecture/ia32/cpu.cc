@@ -8,11 +8,11 @@ extern "C" { void _exec(void *); }
 __BEGIN_SYS
 
 // Class attributes
-unsigned int IA32::_cpu_clock;
-unsigned int IA32::_bus_clock;
+unsigned int CPU::_cpu_clock;
+unsigned int CPU::_bus_clock;
 
 // Class methods
-void IA32::Context::save() volatile
+void CPU::Context::save() volatile
 {
     // Save the running thread context into its own stack (mostly for debugging)
     ASM("     push    %ebp                                            \n"
@@ -33,7 +33,7 @@ void IA32::Context::save() volatile
         "     pop     %ebp                                            \n");
 }
 
-void IA32::Context::load() const volatile
+void CPU::Context::load() const volatile
 {
     // Reload Segment Registers with user-level selectors
     if(Traits<System>::multitask)
@@ -45,13 +45,13 @@ void IA32::Context::load() const volatile
 
     // Adjust the user-level stack pointer in the dummy TSS (what for?)
     ASM("       mov     4(%esp), %esp         # sp = this           \n");
-    ASM("       pop     %0                                          \n" : "=m"(reinterpret_cast<TSS *>(Memory_Map<PC>::TSS0)->esp) : );
+    ASM("       pop     %0                                          \n" : "=m"(reinterpret_cast<TSS *>(Memory_Map::TSS0)->esp) : );
 
     // Adjust the system-level stack pointer in the dummy TSS (that will be used by system calls and interrupts) for this Thread
     if(Traits<System>::multitask)
         ASM("       mov     %%esp, %%eax                                \n"
             "       add     $52, %%eax                                  \n"
-            "       movl     %%eax, %0                                  \n" : "=m"(reinterpret_cast<TSS *>(Memory_Map<PC>::TSS0)->esp0) : );
+            "       movl     %%eax, %0                                  \n" : "=m"(reinterpret_cast<TSS *>(Memory_Map::TSS0)->esp0) : );
 
     // Perform a possibly cross-level return (from kernel to user-level)
     // Stack contents depend on the CPL in CS, either ss, esp, eflags, cs, eip (for cross-level)
@@ -60,7 +60,7 @@ void IA32::Context::load() const volatile
         "       iret                                                \n");
 }
 
-void IA32::switch_context(Context * volatile * o, Context * volatile n)
+void CPU::switch_context(Context * volatile * o, Context * volatile n)
 {
     // Recover the return address from the stack and
     // save the previously running thread context ("o") into its stack
@@ -70,26 +70,26 @@ void IA32::switch_context(Context * volatile * o, Context * volatile n)
         "       push    %cs                                         \n"
         "       push    %esi                    # eip               \n"
         "       pusha                                               \n");
-    ASM("       push    %0                                          \n" : : "m"(reinterpret_cast<TSS *>(Memory_Map<PC>::TSS0)->esp));
+    ASM("       push    %0                                          \n" : : "m"(reinterpret_cast<TSS *>(Memory_Map::TSS0)->esp));
     ASM("       mov     48(%esp), %eax          # old               \n"
         "       mov     %esp, (%eax)                                \n");
 
     // Restore the next thread context ("n") from its stack (and the user-level stack pointer, updating the dummy TSS)
     ASM("       mov     52(%esp), %esp          # new	        \n");
-    ASM("       pop     %0                                      \n" : "=m"(reinterpret_cast<TSS *>(Memory_Map<PC>::TSS0)->esp) : );
+    ASM("       pop     %0                                      \n" : "=m"(reinterpret_cast<TSS *>(Memory_Map::TSS0)->esp) : );
 
     // Adjust the system-level stack pointer in the dummy TSS (that will be used by system calls and interrupts) for this Thread
     if(Traits<System>::multitask)
         ASM("       mov     %%esp, %%eax                            \n"
             "       add     $52, %%eax                              \n"
-            "       movl     %%eax, %0                              \n" : "=m"(reinterpret_cast<TSS *>(Memory_Map<PC>::TSS0)->esp0) : );
+            "       movl     %%eax, %0                              \n" : "=m"(reinterpret_cast<TSS *>(Memory_Map::TSS0)->esp0) : );
 
     // Change context through the IRET, will pop FLAGS, CS, and IP
     ASM("       popa                                            \n"
         "       iret                                            \n");
 }
 
-void IA32::syscalled()
+void CPU::syscalled()
 {
     // We get here when an APP triggers INT_SYSCALL with the message address in CX
     // The CPU saves the user-level stack pointer in the stack and restores the system-level stack pointer also from the TSS

@@ -65,25 +65,25 @@ class PC_Setup
 {
 private:
     // Physical memory map
-    static const unsigned int SYS_INFO = Memory_Map<PC>::SYS_INFO;
-    static const unsigned int MEM_BASE = Memory_Map<PC>::MEM_BASE;
-    static const unsigned int MEM_TOP = Memory_Map<PC>::MEM_TOP;
+    static const unsigned int SYS_INFO = Memory_Map::SYS_INFO;
+    static const unsigned int MEM_BASE = Memory_Map::MEM_BASE;
+    static const unsigned int MEM_TOP = Memory_Map::MEM_TOP;
     static const unsigned int APIC_PHY = APIC::LOCAL_APIC_PHY_ADDR;
     static const unsigned int APIC_SIZE = APIC::LOCAL_APIC_SIZE;
-    static const unsigned int VGA_PHY = PC_Display::FB_PHY_ADDR;
-    static const unsigned int VGA_SIZE = PC_Display::FB_SIZE;
+    static const unsigned int VGA_PHY = VGA::FB_PHY_ADDR;
+    static const unsigned int VGA_SIZE = VGA::FB_SIZE;
 
     // Logical memory map
-    static const unsigned int IDT = Memory_Map<PC>::IDT;
-    static const unsigned int GDT = Memory_Map<PC>::GDT;
-    static const unsigned int TSS0 = Memory_Map<PC>::TSS0;
-    static const unsigned int PHY_MEM = Memory_Map<PC>::PHY_MEM;
-    static const unsigned int SYS_PT = Memory_Map<PC>::SYS_PT;
-    static const unsigned int SYS_PD = Memory_Map<PC>::SYS_PD;
-    static const unsigned int SYS = Memory_Map<PC>::SYS;
-    static const unsigned int SYS_DATA = Memory_Map<PC>::SYS_DATA;
-    static const unsigned int SYS_CODE = Memory_Map<PC>::SYS_CODE;
-    static const unsigned int SYS_STACK = Memory_Map<PC>::SYS_STACK;
+    static const unsigned int IDT = Memory_Map::IDT;
+    static const unsigned int GDT = Memory_Map::GDT;
+    static const unsigned int TSS0 = Memory_Map::TSS0;
+    static const unsigned int PHY_MEM = Memory_Map::PHY_MEM;
+    static const unsigned int SYS_PT = Memory_Map::SYS_PT;
+    static const unsigned int SYS_PD = Memory_Map::SYS_PD;
+    static const unsigned int SYS = Memory_Map::SYS;
+    static const unsigned int SYS_DATA = Memory_Map::SYS_DATA;
+    static const unsigned int SYS_CODE = Memory_Map::SYS_CODE;
+    static const unsigned int SYS_STACK = Memory_Map::SYS_STACK;
 
     // IA32 Imports
     typedef CPU::Reg32 Reg32;
@@ -99,9 +99,9 @@ private:
     typedef MMU::PT_Entry PT_Entry;
 
     // System_Info Imports
-    typedef System_Info<PC>::Boot_Map BM;
-    typedef System_Info<PC>::Physical_Memory_Map PMM;
-    typedef System_Info<PC>::Load_Map LM;
+    typedef System_Info::Boot_Map BM;
+    typedef System_Info::Physical_Memory_Map PMM;
+    typedef System_Info::Load_Map LM;
 
 public:
     PC_Setup(char * boot_image);
@@ -131,7 +131,7 @@ private:
 
 private:
     char * bi;
-    System_Info<PC> * si;
+    System_Info * si;
 };
 
 //========================================================================
@@ -139,13 +139,13 @@ PC_Setup::PC_Setup(char * boot_image)
 {
     // Get boot image loaded by the bootstrap
     bi = reinterpret_cast<char *>(boot_image);
-    si = reinterpret_cast<System_Info<PC> *>(bi);
+    si = reinterpret_cast<System_Info *>(bi);
 
     Display::init();
-    PC_Display::init(VGA_PHY); // Display can be Serial_Display, so PC_Display here!
+    VGA::init(VGA_PHY); // Display can be Serial_Display, so VGA here!
 
-    if(si->bm.n_cpus > Traits<PC>::CPUS)
-        si->bm.n_cpus = Traits<PC>::CPUS;
+    if(si->bm.n_cpus > Traits<Machine>::CPUS)
+        si->bm.n_cpus = Traits<Machine>::CPUS;
 
     // Multicore conditional start up
     int cpu_id = Machine::cpu_id();
@@ -193,9 +193,9 @@ PC_Setup::PC_Setup(char * boot_image)
 
         // Adjust pointers that will still be used to their logical addresses
         bi = reinterpret_cast<char *>(unsigned(bi) | PHY_MEM);
-        si = reinterpret_cast<System_Info<PC> *>(SYS_INFO);
-        PC_Display::init(Memory_Map<PC>::VGA); // Display can be Serial_Display, so PC_Display here!
-        APIC::remap(Memory_Map<PC>::APIC);
+        si = reinterpret_cast<System_Info *>(SYS_INFO);
+        VGA::init(Memory_Map::VGA); // Display can be Serial_Display, so VGA here!
+        APIC::remap(Memory_Map::APIC);
 
         // Configure a TSS for system calls and inter-level interrupt handling
         setup_tss0();
@@ -750,9 +750,9 @@ void PC_Setup::setup_sys_pd()
     for(unsigned int j = 0; i < io_size; i++, j++)
         pts[i] = (si->pmm.io_base + j * sizeof(Page)) | Flags::PCI;
 
-    // Attach devices' memory at Memory_Map<PC>::IO
+    // Attach devices' memory at Memory_Map::IO
     for(int i = 0; i < n_pts; i++)
-        sys_pd[MMU::directory(Memory_Map<PC>::IO) + i] = (si->pmm.io_pts + i * sizeof(Page)) | Flags::PCI;
+        sys_pd[MMU::directory(Memory_Map::IO) + i] = (si->pmm.io_pts + i * sizeof(Page)) | Flags::PCI;
 
     // Map the system 4M logical address space at the top of the 4Gbytes
     sys_pd[MMU::directory(SYS_CODE)] = si->pmm.sys_pt | Flags::SYS;
@@ -793,9 +793,9 @@ void PC_Setup::setup_tss0()
 void PC_Setup::load_parts()
 {
     // Relocate System_Info
-    if(sizeof(System_Info<PC>) > sizeof(Page))
-        db<Setup>(WRN) << "System_Info is bigger than a page (" << sizeof(System_Info<PC>) << ")!" << endl;
-    memcpy(reinterpret_cast<void *>(SYS_INFO), bi, sizeof(System_Info<PC>));
+    if(sizeof(System_Info) > sizeof(Page))
+        db<Setup>(WRN) << "System_Info is bigger than a page (" << sizeof(System_Info) << ")!" << endl;
+    memcpy(reinterpret_cast<void *>(SYS_INFO), bi, sizeof(System_Info));
 
     // Load INIT
     if(si->lm.has_ini) {
@@ -901,10 +901,10 @@ void PC_Setup::detect_memory(unsigned int * base, unsigned int * top)
 
     unsigned int i;
     unsigned int * mem = reinterpret_cast<unsigned int *>(MEM_BASE / sizeof(int));
-    for(i = Traits<PC>::INIT; i < MEM_TOP; i += 16 * sizeof(MMU::Page))
+    for(i = Traits<Machine>::INIT; i < MEM_TOP; i += 16 * sizeof(MMU::Page))
         mem[i /  sizeof(int)] = i;
 
-    for(i = Traits<PC>::INIT; i < MEM_TOP; i += 16 * sizeof(MMU::Page))
+    for(i = Traits<Machine>::INIT; i < MEM_TOP; i += 16 * sizeof(MMU::Page))
         if(mem[i / sizeof(int)] != i) {
             db<Setup>(ERR) << "Less memory was detected (" << i / 1024 << " kb) than specified in the configuration (" << MEM_TOP / 1024 << " kb)!" << endl;
             break;
@@ -1046,10 +1046,10 @@ void _start()
     APIC::reset(APIC::LOCAL_APIC_PHY_ADDR);
 
     // The boot strap loaded the boot image at BOOT_IMAGE_ADDR
-    char * bi = reinterpret_cast<char *>(Traits<PC>::BOOT_IMAGE_ADDR);
+    char * bi = reinterpret_cast<char *>(Traits<Machine>::BOOT_IMAGE_ADDR);
 
     // Get the System_Info  (first thing in the boot image)
-    System_Info<PC> * si = reinterpret_cast<System_Info<PC> *>(bi);
+    System_Info * si = reinterpret_cast<System_Info *>(bi);
 
     // Multicore conditional start up
     if(APIC::id() == 0) { // Boot strap CPU (BSP)
@@ -1080,7 +1080,7 @@ void _start()
         // Move the boot image to after SETUP, so there will be nothing else
         // below SETUP to be preserved
         // SETUP code + data + 1 stack per CPU)
-        register char * dst = MMU::align_page(entry + size + Traits<PC>::CPUS * sizeof(MMU::Page));
+        register char * dst = MMU::align_page(entry + size + Traits<Machine>::CPUS * sizeof(MMU::Page));
         memcpy(dst, bi, si->bm.img_size);
 
         // Passes a pointer to the just allocated stack pool to other CPUs
@@ -1112,9 +1112,9 @@ void _start()
         // Wait for BSP's ACK
         while(si->bm.cpu_status[APIC::id()] != 2);
 
-        if(APIC::id() >= int(Traits<PC>::CPUS)) {
+        if(APIC::id() >= int(Traits<Machine>::CPUS)) {
             db<Setup>(WRN) << "More CPUs were detected than the current "
-                           << "configuration supports (" << Traits<PC>::CPUS
+                           << "configuration supports (" << Traits<Machine>::CPUS
                            << ")." << endl;
             db<Setup>(WRN) << "Disabling CPU " << APIC::id() << "!" << endl;
 

@@ -4,7 +4,11 @@ include	../makedefs
 
 SYSTEM := $(shell find . -name $(MACH)_\* -and -not -name $(MACH)_boot)
 IMAGE  := $(addsuffix .img,$(APPLICATION))
+ifeq ($(MMOD),zynq)
+FLASH  := $(IMAGE)
+else
 FLASH  := $(addsuffix .hex,$(APPLICATION))
+endif
 OUTPUT := $(addsuffix .out,$(APPLICATION))
 EMULATORR := $(EMULATOR)
 EMULATORS := $(subst 1235,1236,$(EMULATOR))
@@ -48,6 +52,6 @@ endif
 
 strip:		$(SYSTEM) $(APPLICATION)
 		@for file in $^; do $(STRIP) "$${file}"; done;
-		
+
 clean:
 		$(CLEAN) $(SYSTEM) $(APPLICATION)
