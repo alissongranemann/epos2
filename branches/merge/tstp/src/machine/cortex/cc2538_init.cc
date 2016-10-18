@@ -13,9 +13,8 @@ CC2538::CC2538(unsigned int unit): _unit(unit), _rx_cur_consume(0), _rx_cur_prod
     db<CC2538>(TRC) << "CC2538(unit=" << unit << ")" << endl;
 
     // Initialize RX buffer pool
-    for(unsigned int i = 0; i < RX_BUFS; i++) {
+    for(unsigned int i = 0; i < RX_BUFS; i++)
         _rx_bufs[i] = new (SYSTEM) Buffer(0, 0);
-    }
 
     // Set Address
     ffsm(SHORT_ADDR0) = _address[0];
@@ -23,20 +22,22 @@ CC2538::CC2538(unsigned int unit): _unit(unit), _rx_cur_consume(0), _rx_cur_prod
     _address[0] = ffsm(SHORT_ADDR0);
     _address[1] = ffsm(SHORT_ADDR1);
 
-    xreg(FRMFILT0) |= FRAME_FILTER_EN; // Enable frame filtering
+    //xreg(FRMFILT0) |= FRAME_FILTER_EN; // Enable frame filtering
+    xreg(FRMFILT0) &= ~FRAME_FILTER_EN; // Disable frame filtering
     xreg(FRMFILT1) &= ~ACCEPT_FT2_ACK; // ACK frames are handled only when expected
 
-    xreg(SRCMATCH) |= SRC_MATCH_EN; // Enable automatic source address matching
+    //xreg(SRCMATCH) |= SRC_MATCH_EN; // Enable automatic source address matching
+    xreg(SRCMATCH) &= ~SRC_MATCH_EN; // Disable automatic source address matching
 
     xreg(FRMCTRL0) |= AUTO_CRC; // Enable auto-CRC
 
-    channel(15);
+    channel(13);
 
     xreg(FRMCTRL0) |= AUTO_ACK; // Enable auto ACK
 
     reset(); // Reset statistics
 
-    xreg(FRMCTRL1) |= SET_RXENMASK_ON_TX; // Enter receive mode after TX
+    xreg(FRMCTRL1) &= ~SET_RXENMASK_ON_TX; // Do not enter receive mode after ISTXON
 
     // Enable useful device interrupts
     // WARNING: do not enable INT_TXDONE, because CC2538RF::tx_done() handles it
@@ -52,6 +53,14 @@ CC2538::CC2538(unsigned int unit): _unit(unit), _rx_cur_consume(0), _rx_cur_prod
 void CC2538::init(unsigned int unit)
 {
     db<Init, CC2538>(TRC) << "Radio::init(unit=" << unit << ")" << endl;
+
+    // Enable debug signals
+    xreg(RFC_OBS_CTRL0) = SIGNAL_TX_ACTIVE;
+    xreg(RFC_OBS_CTRL1) = SIGNAL_RX_ACTIVE;
+    cctest(CCTEST_OBSSEL4) = OBSSEL_SIG0;
+    cctest(CCTEST_OBSSEL6) = OBSSEL_SIG1;
+
+    Timer::init();
 
     // Initialize the device
     CC2538 * dev = new (SYSTEM) CC2538(unit);
@@ -69,14 +78,16 @@ void CC2538::init(unsigned int unit)
 
 void CC2538::Timer::init()
 {
-    mactimer(MTCTRL) |= MTCTRL_RUN; // Stop counting
+    db<Init, CC2538>(TRC) << "Radio::Timer::init()" << endl;
+    mactimer(MTCTRL) &= ~MTCTRL_RUN; // Stop counting
     mactimer(MTIRQM) = 0; // Mask interrupts
     mactimer(MTIRQF) = 0; // Clear interrupts
     mactimer(MTCTRL) &= ~MTCTRL_SYNC; // We can't use the sync feature because we want to change the count and overflow values when the timer is stopped
     mactimer(MTCTRL) |= MTCTRL_LATCH_MODE; // count and overflow will be latched at once
-    IC::int_vector(IC::irq2int(NVIC::IRQ_MACTIMER), &int_handler);
-    IC::enable(33);
-    int_enable(INT_OVERFLOW_PER);
+    IC::int_vector(IC::INT_NIC0_TIMER, &int_handler); // Register and enable interrupt at IC
+    IC::enable(IC::INT_NIC0_TIMER);
+    int_enable(INT_OVERFLOW_PER); // Enable overflow interrupt
+    mactimer(MTCTRL) |= MTCTRL_RUN; // Start counting
 }
 
 __END_SYS

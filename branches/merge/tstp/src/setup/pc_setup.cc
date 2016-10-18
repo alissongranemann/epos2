@@ -70,6 +70,8 @@ private:
     static const unsigned int MEM_TOP = Memory_Map::MEM_TOP;
     static const unsigned int APIC_PHY = APIC::LOCAL_APIC_PHY_ADDR;
     static const unsigned int APIC_SIZE = APIC::LOCAL_APIC_SIZE;
+    static const unsigned int IO_APIC_PHY = APIC::IO_APIC_PHY_ADDR;
+    static const unsigned int IO_APIC_SIZE = APIC::IO_APIC_SIZE;
     static const unsigned int VGA_PHY = VGA::FB_PHY_ADDR;
     static const unsigned int VGA_SIZE = VGA::FB_SIZE;
 
@@ -438,7 +440,8 @@ void PC_Setup::build_pmm()
     detect_pci(&si->pmm.io_base, &si->pmm.io_top);
     unsigned int io_size = MMU::pages(si->pmm.io_top - si->pmm.io_base);
     io_size += APIC_SIZE / sizeof(Page); // Add room for APIC (4 kB, 1 page)
-    io_size += VGA_SIZE / sizeof(Page); // Add room for VGA (64 kB, 16 pages)
+    io_size += IO_APIC_SIZE / sizeof(Page); // Add room for IO_APIC (4 kB, 1 page)
+    io_size += VGA_SIZE / sizeof(Page); // Add room for VGA (32 kB, 8 pages)
     top_page -= (io_size + MMU::PT_ENTRIES - 1) / MMU::PT_ENTRIES;
     si->pmm.io_pts = top_page * sizeof(Page);
 
@@ -745,7 +748,9 @@ void PC_Setup::setup_sys_pd()
     unsigned int i = 0;
     for(; i < (APIC_SIZE / sizeof(Page)); i++)
         pts[i] = (APIC_PHY + i * sizeof(Page)) | Flags::APIC;
-    for(unsigned int j = 0; i < ((APIC_SIZE / sizeof(Page)) + (VGA_SIZE / sizeof(Page))); i++, j++)
+    for(unsigned int j = 0; i < ((APIC_SIZE / sizeof(Page)) + (IO_APIC_SIZE / sizeof(Page))); i++, j++)
+        pts[i] = (IO_APIC_PHY + j * sizeof(Page)) | Flags::APIC;
+    for(unsigned int j = 0; i < ((APIC_SIZE / sizeof(Page)) + (IO_APIC_SIZE / sizeof(Page)) + (VGA_SIZE / sizeof(Page))); i++, j++)
         pts[i] = (VGA_PHY + j * sizeof(Page)) | Flags::VGA;
     for(unsigned int j = 0; i < io_size; i++, j++)
         pts[i] = (si->pmm.io_base + j * sizeof(Page)) | Flags::PCI;

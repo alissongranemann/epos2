@@ -20,10 +20,16 @@ public:
 
     // Version
     // This field is packed first and matches the Frame Type field in the Frame Control in IEEE 802.15.4 MAC.
-    // A version number above 4 renders TSTP into the reserved frame type zone and should avoid interfernce.
+    // A version number above 4 renders TSTP into the reserved frame type zone and should avoid interference.
     enum Version {
         V0 = 4
     };
+
+    // MAC definitions
+    typedef CPU::Reg16 Frame_ID;
+    typedef CPU::Reg32 Hint;
+    typedef NIC_Common::CRC16 CRC;
+    typedef unsigned short MF_Count;
 
     // Packet Types
     typedef unsigned char Type;
@@ -46,7 +52,7 @@ public:
     // Time
     typedef RTC::Microsecond Microsecond;
     typedef unsigned long long Time;
-    typedef unsigned long Time_Offset;
+    typedef long Time_Offset;
 
     // Geographic Coordinates
     template<Scale S>
@@ -79,35 +85,81 @@ public:
     } __attribute__((packed));
     typedef _Region<SCALE> Region;
 
+    // MAC Preamble Microframe
+    class Microframe
+    {
+    public:
+        Microframe() {}
+
+        Microframe(bool all_listen, const Frame_ID & id, const MF_Count & count, const Hint & hint = 0)
+        : _al_count_idh((id & 0xf) | ((count & 0x7ff) << 4) | (static_cast<unsigned int>(all_listen) << 15)), _idl(id & 0xff), _hint(hint) {}
+
+        MF_Count count() const { return (_al_count_idh & (0x7ff << 4)) >> 4; }
+        MF_Count dec_count() {
+            MF_Count c = count();
+            _al_count_idh &= ~(0x7ff << 4);
+            _al_count_idh |= (c-1) << 4;
+            return c;
+        }
+
+        Frame_ID id() const { return ((_al_count_idh | 0xf) << 8) + _idl; }
+        void id(Frame_ID id) {
+            _al_count_idh &= 0xfff0;
+            _al_count_idh |= (id & 0xf00) >> 8;
+            _idl = id & 0xff;
+        }
+
+        void all_listen(bool all_listen) {
+            if(all_listen)
+                _al_count_idh |= (1 << 15);
+            else
+                _al_count_idh &= ~(1 << 15);
+        }
+        bool all_listen() const { return _al_count_idh & (1 << 15); }
+
+        Hint hint() const { return _hint; }
+        void hint(const Hint & h) { _hint = h; }
+
+        friend Debug & operator<<(Debug & db, const Microframe & m) {
+            db << "{al=" << m.all_listen() << ",c=" << m.count() << ",id=" << m.id() << ",h=" << m._hint << ",crc=" << m._crc << "}";
+            return db;
+        }
+
+    private:
+        unsigned short _al_count_idh; // all_listen : 1
+                                      // count : 11
+                                      // id MSBs: 4
+        unsigned char _idl;           // id LSBs: 8
+        Hint _hint;
+        CRC _crc;
+    } __attribute__((packed));
+
     // Packet Header
     template<Scale S>
     class _Header
     {
         // Format
-        // Bit   7    5    3  2    0                0         0         0         0         0         0         0         0
-        //     +------+----+--+----+----------------+--- ~ ---+--- ~ ---+--- ~ ---+--- ~ ---+--- ~ ---+--- ~ ---+--- ~ ---+
-        //     | ver  |type|tr|scal|   confidence   | elapsed |   o.x   |   o.y   |   o.z   |   l.x   |   l.y   |   l.z   |
-        //     +------+----+--+----+----------------+--- ~ ---+--- ~ ---+--- ~ ---+--- ~ ---+--- ~ ---+--- ~ ---+--- ~ ---+
-        // Bits          8                  8            32     8/16/32   8/16/32   8/16/32   8/16/32   8/16/32   8/16/32
+        // Bit 0      3    5  6    0                0         0         0         0         0         0         0         0
+        //     +------+----+--+----+----------------+--- ~ ---+--- ~ ---+--- ~ ---+--- ~ ---+--- ~ ---+--- ~ ---+--- ~ ---+--- ~ ---+
+        //     | ver  |type|tr|scal|   confidence   |   o.t   |   o.x   |   o.y   |   o.z   |   l.t   |   l.x   |   l.y   |   l.z   |
+        //     +------+----+--+----+----------------+--- ~ ---+--- ~ ---+--- ~ ---+--- ~ ---+--- ~ ---+--- ~ ---+--- ~ ---+--- ~ ---+
+        // Bits          8                  8            64     8/16/32   8/16/32   8/16/32      64     8/16/32   8/16/32   8/16/32
 
     public:
-        _Header(const Type & t, bool tr = false, unsigned char c = 0, const Coordinates & o = 0, const Coordinates & l = 0, const Time_Offset & e = 0, const Version & v = V0)
-        : _config(v << 5 | t << 3 | tr << 2 | S), _confidence(c), _origin(o), _last_hop(l), _elapsed(e) {}
+        _Header(const Type & t, bool tr = false, unsigned char c = 0, const Time & ot = 0, const Coordinates & o = 0, const Coordinates & l = 0, const Version & v = V0)
+        : _config((S & 0x03) << 6 | tr << 5 | (t & 0x03) << 3 | (v & 0x07)), _confidence(c), _origin_time(ot), _origin(o), _last_hop(l) {}
 
-        Version version() const { return static_cast<Version>((_config >> 5) & 0x07); }
-        void version(const Version & v) { _config = (_config & 0x1f) | (v << 5); }
+        Version version() const { return static_cast<Version>(_config & 0x07); }
+        void version(const Version & v) { _config = (_config & 0xf8) | (v & 0x07); }
 
         Type type() const { return static_cast<Type>((_config >> 3) & 0x03); }
-        void type(const Type & t) { _config = (_config & 0xe4) | (t << 3); }
+        void type(const Type & t) { _config = (_config & 0xe7) | ((t & 0x03) << 3); }
 
-        bool time_request() const { return (_config >> 2) & 0x01; }
-        void time_request(bool tr) { _config = (_config & 0xfb) | (tr << 2); }
+        bool time_request() const { return (_config >> 5) & 0x01; }
+        void time_request(bool tr) { _config = (_config & 0xdf) | (tr << 5); }
 
-        Scale scale() const { return static_cast<Scale>(_config & 0x03); }
-        void scale(const Scale & s) { _config = (_config & 0xfc) | s; }
-
-        Time_Offset elapsed() const { return _elapsed; }
-        void elapsed(const Time_Offset & e) { _elapsed = e; }
+        Scale scale() const { return static_cast<Scale>((_config >> 6) & 0x03); }
+        void scale(const Scale & s) { _config = (_config & 0x3f) | (s & 0x03) << 6; }
 
         const Coordinates & origin() const { return _origin; }
         void origin(const Coordinates & c) { _origin = c; }
@@ -115,20 +167,24 @@ public:
         const Coordinates & last_hop() const { return _last_hop; }
         void last_hop(const Coordinates & c) { _last_hop = c; }
 
-        Time time() const;
-        void time(const Time & t);
+        Time time() const { return _origin_time; }
+        void time(const Time & t) { _origin_time = t; }
+
+        Time last_hop_time() const { return _last_hop_time; }
+        void last_hop_time(const Time & t) { _last_hop_time = t; }
 
         friend Debug & operator<<(Debug & db, const _Header & h) {
-            db << "{v=" << h.version() - V0 << ",t=" << ((h.type() == INTEREST) ? 'I' :  (h.type() == RESPONSE) ? 'R' : (h.type() == COMMAND) ? 'C' : 'P') << ",tr=" << h.time_request() << ",s=" << h.scale() << ",e=" << h._elapsed << ",o=" << h._origin << ",l=" << h._last_hop << "}";
+            db << "{v=" << h.version() - V0 << ",t=" << ((h.type() == INTEREST) ? 'I' :  (h.type() == RESPONSE) ? 'R' : (h.type() == COMMAND) ? 'C' : 'P') << ",tr=" << h.time_request() << ",s=" << h.scale() << ",ot=" << h._origin_time << ",o=" << h._origin << ",lt=" << h._last_hop_time << ",l=" << h._last_hop << "}";
             return db;
         }
 
     protected:
         unsigned char _config;
         unsigned char _confidence;
+        Time _origin_time;
         Coordinates _origin;
+        Time _last_hop_time; // TODO: change to Time_Offset
         Coordinates _last_hop;
-        Time_Offset _elapsed;
     } __attribute__((packed));
     typedef _Header<SCALE> Header;
 
@@ -417,14 +473,100 @@ __END_SYS
 
 __BEGIN_SYS
 
-class TSTP: public TSTP_Common, private NIC::Observer
+class TSTP_Component_Common: public TSTP_Common
+{
+    // Buffer Wrapper used to allow compilation if TSTP is disabled
+    template<typename T>
+    class Buffer_Wrapper: public T, public NIC_Common::TSTP_Metadata { };
+
+    template<typename T>
+    class Meta_Buffer: public T {
+        friend class TSTP_Component_Common;
+        typedef typename IF<EQUAL <typename T::Metadata, NIC_Common::TSTP_Metadata>::Result, T, Buffer_Wrapper<T>>::Result Result;
+    };
+
+public:
+    typedef Meta_Buffer<NIC::Buffer>::Result Buffer;
+};
+
+class TSTP_Locator: public TSTP_Component_Common, private NIC::Observer
+{
+public:
+    TSTP_Locator();
+    ~TSTP_Locator();
+
+    static Coordinates here();// { return Coordinates(50,50,50); } // TODO
+
+    static void bootstrap();
+
+    static void marshal(Buffer * buf);
+
+    void update(NIC::Observed * obs, NIC::Protocol prot, NIC::Buffer * buf);
+};
+
+class TSTP_Time_Manager: public TSTP_Component_Common, private NIC::Observer
+{
+public:
+    TSTP_Time_Manager();
+    ~TSTP_Time_Manager();
+
+    static Time now() { return NIC::Timer::read() * 1000000ll / NIC::Timer::frequency(); };
+
+    static void bootstrap();
+
+    static void marshal(Buffer * buf);
+
+    void update(NIC::Observed * obs, NIC::Protocol prot, NIC::Buffer * buf);
+};
+
+class TSTP_Router: public TSTP_Component_Common, private NIC::Observer
+{
+private:
+    static const unsigned int CCA_TX_GAP = IEEE802_15_4::CCA_TX_GAP;
+    static const unsigned int RADIO_RANGE = Traits<EPOS::S::TSTP>::RADIO_RANGE;
+    static const unsigned int PERIOD = Traits<EPOS::S::TSTP>::PERIOD;
+
+public:
+    TSTP_Router();
+    ~TSTP_Router();
+
+    static void bootstrap();
+
+    static void marshal(Buffer * buf);
+
+    void update(NIC::Observed * obs, NIC::Protocol prot, NIC::Buffer * buf);
+
+private:
+    static void offset(Buffer * buf) {
+        //long long dist = abs(buf->my_distance - (buf->sender_distance - RADIO_RANGE));
+        //long long betha = (G * RADIO_RADIUS * 1000000) / (dist * G);
+        buf->offset = abs(buf->my_distance - (buf->sender_distance - RADIO_RANGE));
+    }
+
+};
+
+class TSTP_Security_Manager: public TSTP_Component_Common, private NIC::Observer
+{
+public:
+    TSTP_Security_Manager();
+    ~TSTP_Security_Manager();
+
+    static void bootstrap();
+
+    static void marshal(Buffer * buf);
+
+    void update(NIC::Observed * obs, NIC::Protocol prot, NIC::Buffer * buf);
+};
+
+class TSTP: public TSTP_Component_Common, private NIC::Observer
 {
     template<typename> friend class Smart_Data;
+    friend class TSTP_Locator;
+    friend class TSTP_Time_Manager;
+    friend class TSTP_Router;
+    friend class TSTP_Security_Manager;
+
 public:
-    // Buffers received from the NIC
-    typedef NIC::Buffer Buffer;
-
-
     // Packet
     static const unsigned int MTU = NIC::MTU - sizeof(Header);
     template<Scale S>
@@ -481,12 +623,12 @@ public:
     {
     public:
         Interest(const Region & region, const Unit & unit, const Mode & mode, const Error & precision, const Microsecond & expiry, const Microsecond & period = 0)
-        : Header(INTEREST, 0, 0, here(), here(), 0), _region(region), _unit(unit), _mode(mode), _precision(0), _expiry(expiry), _period(period) {}
+        : Header(INTEREST, 0, 0, now(), here(), here()), _region(region), _unit(unit), _mode(mode), _precision(0), _expiry(expiry), _period(period) {}
 
         const Unit & unit() const { return _unit; }
         const Region & region() const { return _region; }
         Microsecond period() const { return _period; }
-        Time expiry() const { return _expiry; } // TODO: must return absolute time
+        Time expiry() const { return _origin_time + _expiry; }
         Mode mode() const { return static_cast<Mode>(_mode); }
         Error precision() const { return static_cast<Error>(_precision); }
 
@@ -515,10 +657,10 @@ public:
 
     public:
         Response(const Unit & unit, const Error & error = 0, const Time & expiry = 0)
-        : Header(RESPONSE, 0, 0, here(), here(), 0), _unit(unit), _error(error), _expiry(expiry) {}
+        : Header(RESPONSE, 0, 0, now(), here(), here()), _unit(unit), _error(error), _expiry(expiry) {}
 
         const Unit & unit() const { return _unit; }
-        Time expiry() const { return _expiry; }
+        Time expiry() const { return _origin_time + _expiry; }
         Error error() const { return _error; }
 
         template<typename T>
@@ -550,7 +692,7 @@ public:
 
     public:
         Command(const Unit & unit, const Region & region)
-        : Header(COMMAND, 0, 0, here(), here(), 0), _region(region), _unit(unit) {}
+        : Header(COMMAND, 0, 0, now(), here(), here()), _region(region), _unit(unit) {}
 
         const Region & region() const { return _region; }
         const Unit & unit() const { return _unit; }
@@ -580,7 +722,7 @@ public:
 
     public:
         Control(const Unit & unit, const Region & region)
-        : Header(CONTROL, 0, 0, here(), here(), 0), _region(region), _unit(unit) {}
+        : Header(CONTROL, 0, 0, now(), here(), here()), _region(region), _unit(unit) {}
 
         const Region & region() const { return _region; }
         const Unit & unit() const { return _unit; }
@@ -625,8 +767,9 @@ public:
     private:
         void send() {
             db<TSTP>(TRC) << "TSTP::Interested::send() => " << reinterpret_cast<const Interest &>(*this) << endl;
-            Buffer * buf = _nic->alloc(NIC::Address::BROADCAST, NIC::TSTP, 0, 0, sizeof(Interest));
+            Buffer * buf = alloc(sizeof(Interest));
             memcpy(buf->frame()->data<Interest>(), this, sizeof(Interest));
+            TSTP::marshal(buf);
             _nic->send(buf);
         }
 
@@ -658,9 +801,12 @@ public:
 
     private:
         void send(const Time & expiry) {
+            assert(expiry > now());
             db<TSTP>(TRC) << "TSTP::Responsive::send(x=" << expiry << ")" << endl;
-            Buffer * buf = _nic->alloc(NIC::Address::BROADCAST, NIC::TSTP, 0, 0, _size);
+            _expiry = expiry - now();
+            Buffer * buf = alloc(_size);
             memcpy(buf->frame()->data<Response>(), this, _size);
+            TSTP::marshal(buf);
             db<TSTP>(INF) << "TSTP::Responsive::send:response=" << this << " => " << reinterpret_cast<const Response &>(*this) << endl;
             _nic->send(buf);
         }
@@ -670,14 +816,29 @@ public:
         Responsives::Element _link;
     };
 
+    static Region destination(Buffer * buf) {
+        switch(buf->frame()->data<Frame>()->type()) {
+            case INTEREST:
+                return buf->frame()->data<Interest>()->region();
+            default:
+            case RESPONSE:
+                return Region(sink(), 0, buf->frame()->data<Response>()->time(), buf->frame()->data<Response>()->expiry());
+            case COMMAND:
+                return buf->frame()->data<Command>()->region();
+            case CONTROL:
+                return buf->frame()->data<Control>()->region();
+        }
+    }
+
 protected:
     TSTP();
 
 public:
     ~TSTP();
 
-    static Coordinates here() { return Coordinates(0, 0, 0); }
-    static Time now() { return RTC::seconds_since_epoch(); }
+    static Coordinates here() { return TSTP_Locator::here(); }
+    static Coordinates sink() { return Coordinates(0, 0, 0); }
+    static Time now() { return TSTP_Time_Manager::now(); }
 
     static void attach(Observer * obs, void * subject) { _observed.attach(obs, int(subject)); }
     static void detach(Observer * obs, void * subject) { _observed.detach(obs, int(subject)); }
@@ -686,8 +847,21 @@ public:
     static void init(unsigned int unit);
 
 private:
+    // Assemble Buffer Metainformation before transmitting
+    static void marshal(Buffer * buf) {
+        TSTP_Locator::marshal(buf);
+        TSTP_Time_Manager::marshal(buf);
+        TSTP_Router::marshal(buf);
+        TSTP_Security_Manager::marshal(buf);
+    }
+
+    static Buffer * alloc(unsigned int size) {
+        assert((!Traits<TSTP::enabled> || EQUAL<NIC::Buffer::Metadata, NIC_Common::TSTP_Metadata>::Result));
+        return reinterpret_cast<Buffer*>(_nic->alloc(NIC::Address::BROADCAST, NIC::TSTP, 0, 0, size));
+    }
+
     static Coordinates absolute(const Coordinates & coordinates) { return coordinates; }
-    void update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf);
+    void update(NIC::Observed * obs, NIC::Protocol prot, NIC::Buffer * buf);
 
 private:
     static NIC * _nic;
@@ -696,16 +870,6 @@ private:
     static Observed _observed; // Channel protocols are singletons
  };
 
-
-template<TSTP_Common::Scale S>
-inline TSTP_Common::Time TSTP_Common::_Header<S>::time() const {
-    return TSTP::now() + _elapsed;
-}
-
-template<TSTP_Common::Scale S>
-inline void TSTP_Common::_Header<S>::time(const TSTP_Common::Time & t) {
-    _elapsed = t - TSTP::now();
-}
 
 __END_SYS
 

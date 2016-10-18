@@ -152,22 +152,26 @@ public:
     };
 
     // Buffer Metadata added to frames by higher-level protocols
-    struct TSTP_Metadata
+    struct IEEE802_15_4_Metadata
     {
-        TSTP_Metadata() {}
+        int rssi; // Received Signal Strength Indicator
+    };
 
-        int rssi;
-        long long sfd_time_stamp;
-        unsigned int id;
-        long long offset;
-        bool destined_to_me;
-        long long deadline;
-        long long origin_time;
-        long my_distance;
-        bool is_tx;
-        bool is_microframe;
-        bool relevant;
-        bool trusted;
+    struct TSTP_Metadata : public IEEE802_15_4_Metadata
+    {
+        unsigned long long sfd_time_stamp;  // Start-of-frame reception time stamp
+        unsigned int id;                    // Message identifier
+        unsigned long long offset;          // MAC contention offset
+        bool destined_to_me;                // Whether this node is the final destination for this message
+        bool downlink;                      // Message direction
+        unsigned long long expiry;          // Time until when this message must arrive at the final destination
+        unsigned long long origin_time;     // Time when this message was created at the source node
+        unsigned long long my_distance;     // This node's distance to the message's final destination
+        unsigned long long sender_distance; // Last hop's distance to the message's final destination
+        bool is_new;                        // Whether this message was just created by this node
+        bool is_microframe;                 // Whether this message is a Microframe
+        bool relevant;                      // Whether any component is interested in this message
+        bool trusted;                       // If true, this message was successfully verified by the Security Manager
     };
 
 

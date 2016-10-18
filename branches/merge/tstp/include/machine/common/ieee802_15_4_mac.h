@@ -24,6 +24,12 @@ private:
 
 public:
     using IEEE802_15_4::Address;
+    using IEEE802_15_4::Header;
+    using IEEE802_15_4::Frame;
+
+    static const unsigned int MTU = IEEE802_15_4::MTU - sizeof(Header);
+
+    typedef _UTIL::Buffer<NIC, Frame, void, IEEE802_15_4_Metadata> Buffer;
 
 protected:
     IEEE802_15_4_MAC() {}
@@ -34,29 +40,21 @@ protected:
         Radio::listen();
     }
 
-public:
-    unsigned int marshal(Buffer * buf) {
-        IEEE802_15_4::Phy_Frame * frame = buf->frame();
-        int size = frame->length() - sizeof(Header) + sizeof(Phy_Header) - sizeof(CRC); // Phy_Header is included in Header, but is already discounted in frame_length
-        if(size > 0) {
-            buf->size(size);
-            return buf->size();
-        } else
-            return 0;
-    }
+    // Filter and assemble RX Buffer Metainformation
+    bool pre_notify(Buffer * buf) { return true; }
 
-    unsigned int marshal(Buffer * buf, const Address & src, const Address & dst, const Type & type, const void * data, unsigned int size) {
-        if(size > Frame::MTU)
-            size = Frame::MTU;
-        Frame * frame = new (buf->frame()) Frame(type, src, dst, data, size);
+    bool post_notify(Buffer * buf) { return false; }
+
+public:
+    // Assemble TX Buffer Metainformation and MAC Header
+    void marshal(Buffer * buf, const Address & src, const Address & dst, const Type & type) {
+        Frame * frame = new (buf->frame()) Frame(type, src, dst);
         frame->ack_request(acknowledged && dst != broadcast());
-        buf->size(size);
-        return size;
     }
 
     unsigned int unmarshal(Buffer * buf, Address * src, Address * dst, Type * type, void * data, unsigned int size) {
-        Frame * frame = reinterpret_cast<Frame *>(buf->frame());
-        unsigned int data_size = frame->length() - sizeof(Header) - sizeof(CRC) + sizeof(Phy_Header); // Phy_Header is included in Header, but is already discounted in frame_length
+        Frame * frame = buf->frame();
+        unsigned int data_size = buf->size() - sizeof(Header);
         if(size > data_size)
             size = data_size;
         *src = frame->src();
@@ -67,11 +65,11 @@ public:
     }
 
     int send(Buffer * buf) {
-        bool do_ack = acknowledged && reinterpret_cast<Frame *>(buf->frame())->ack_request();
+        bool do_ack = acknowledged && buf->frame()->ack_request();
 
         Radio::power(Power_Mode::LIGHT);
 
-        Radio::copy_to_nic(buf->frame());
+        Radio::copy_to_nic(buf->frame(), buf->size());
         bool sent, ack_ok;
         ack_ok = sent = backoff_and_send();
 
@@ -100,7 +98,11 @@ public:
             Radio::power(Power_Mode::FULL);
         }
 
-        return ack_ok ? buf->size() : 0;
+        unsigned int size = buf->size();
+
+        delete buf;
+
+        return ack_ok ? size : 0;
     }
 
 private:
@@ -122,7 +124,6 @@ private:
                 backoff *= 2;
             }
         }
-        // Radio::normal();
         return (retry < CSMA_CA_RETRIES);
     }
 };

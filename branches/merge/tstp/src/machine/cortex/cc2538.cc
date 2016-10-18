@@ -12,8 +12,16 @@
 __BEGIN_SYS
 
 // Class attributes
-CC2538RF::Reg32 CC2538RF::Timer::_overflow_count;
-CC2538RF::Reg32 CC2538RF::Timer::_interrupt_overflow_count;
+volatile CC2538RF::Reg32 CC2538RF::Timer::_overflow_count;
+volatile CC2538RF::Reg32 CC2538RF::Timer::_ints;
+CC2538RF::Timer::Time_Stamp CC2538RF::Timer::_int_request_time;
+CC2538RF::Timer::Time_Stamp CC2538RF::Timer::_offset;
+IC::Interrupt_Handler CC2538RF::Timer::_handler;
+bool CC2538RF::Timer::_overflow_match;
+bool CC2538RF::Timer::_msb_match;
+
+// TODO: Static because of TSTP_MAC
+bool CC2538RF::_cca_done;
 
 CC2538::Device CC2538::_devices[UNITS];
 
@@ -27,13 +35,9 @@ int CC2538::send(const Address & dst, const Type & type, const void * data, unsi
 {
     db<CC2538>(TRC) << "CC2538::send(s=" << address() << ",d=" << dst << ",p=" << hex << type << dec << ",d=" << data << ",s=" << size << ")" << endl;
 
-    Buffer * b;
-    if((b = alloc(reinterpret_cast<NIC*>(this), dst, type, 0, 0, size))) {
-        // Assemble the Frame Header and buffer Metainformation
-        MAC::marshal(b, address(), dst, type, data, size);
-        return send(b);
-    }
-    return 0;
+    Buffer * b = alloc(reinterpret_cast<NIC*>(this), dst, type, 0, 0, size);
+    memcpy(b->frame()->data<void>(), data, size);
+    return send(b);
 }
 
 int CC2538::receive(Address * src, Type * type, void * data, unsigned int size)
@@ -41,7 +45,8 @@ int CC2538::receive(Address * src, Type * type, void * data, unsigned int size)
     db<CC2538>(TRC) << "CC2538::receive(s=" << *src << ",p=" << hex << *type << dec << ",d=" << data << ",s=" << size << ") => " << endl;
 
     Buffer * buf;
-    for(buf = 0; !buf; ++_rx_cur_consume %= RX_BUFS) {
+    for(buf = 0; !buf; ++_rx_cur_consume %= RX_BUFS) { // _xx_cur_xxx are simple accelerators to avoid scanning the ring buffer from the beginning.
+                                                       // Losing a write in a race condition is assumed to be harmless. The FINC + CAS alternative seems too expensive.
         unsigned int idx = _rx_cur_consume;
         if(_rx_bufs[idx]->lock()) {
             if(_rx_bufs[idx]->size() > 0)
@@ -65,7 +70,10 @@ CC2538::Buffer * CC2538::alloc(NIC * nic, const Address & dst, const Type & type
     db<CC2538>(TRC) << "CC2538::alloc(s=" << address() << ",d=" << dst << ",p=" << hex << type << dec << ",on=" << once << ",al=" << always << ",ld=" << payload << ")" << endl;
 
     // Initialize the buffer
-    return new (SYSTEM) Buffer(nic, once + always + payload, once + always + payload); // the last parameter is passed to Phy_Frame as the length
+    Buffer * buf = new (SYSTEM) Buffer(nic, once + always + payload + sizeof(MAC::Header));
+    MAC::marshal(buf, address(), dst, type);
+
+    return buf;
 }
 
 int CC2538::send(Buffer * buf)
@@ -80,8 +88,6 @@ int CC2538::send(Buffer * buf)
         _statistics.tx_bytes += size;
     } else
         db<CC2538>(WRN) << "CC2538::send(buf=" << buf << ")" << " => failed!" << endl;
-
-    delete buf;
 
     return size;
 }
@@ -107,6 +113,8 @@ void CC2538::reset()
 
 void CC2538::handle_int()
 {
+    char rssi = xreg(RSSI); // TODO: get the RSSI appended by hardware at the end of the frame when filtering is enabled
+
     db<CC2538>(TRC) << "CC2538::handle_int()" << endl;
 
     Reg32 irqrf0 = sfr(RFIRQF0);
@@ -133,10 +141,12 @@ void CC2538::handle_int()
             _rx_cur_produce = (idx + 1) % RX_BUFS;
 
             if(buf) {
-                CC2538RF::copy_from_nic(buf->frame());
-                if(MAC::marshal(buf)) {
-                    db<CC2538>(TRC) << "CC2538::handle_int:receive(b=" << buf << ") => " << *buf << endl;
-                    if(!notify(reinterpret_cast<Frame*>(buf->frame())->type(), buf))
+                buf->rssi = rssi;
+                buf->size(CC2538RF::copy_from_nic(buf->frame()));
+                if(MAC::pre_notify(buf)) {
+                    db<CC2538>(TRC) << "CC2538::handle_int:receive(b=" << buf << ") => " << *buf << endl;                    
+                    bool notified = notify(reinterpret_cast<IEEE802_15_4::Header *>(buf->frame())->type(), buf);
+                    if(!MAC::post_notify(buf) && !notified)
                         buf->unlock(); // No one was waiting for this frame, so make it available for receive()
                 } else {
                     db<CC2538>(TRC) << "CC2538::handle_int: frame dropped by MAC"  << endl;
