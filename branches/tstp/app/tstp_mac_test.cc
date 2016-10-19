@@ -39,7 +39,7 @@ int main()
     cout << "sizeof(Microsecond) = " << sizeof(RTC_Common::Microsecond) << endl;
     cout << "sizeof(CC2538RF::Timer::Time_Stamp) = " << sizeof(CC2538RF::Timer::Time_Stamp) << endl;
 
-    Region dst = Region(Coordinates(5, 5, 5), 10, 0, TSTP::now() + 3000000ULL);
+    Region dst = Region(Coordinates(5, 5, 5), 10, 0, TSTP::now() + 1000000ULL);
     if(!dst.contains(TSTP::here(), TSTP::now())) {
         Acceleration a0(dst, 10000000);
         while(true);

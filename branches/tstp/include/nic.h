@@ -152,6 +152,8 @@ public:
         unsigned int tx_bytes;
     };
 
+    // TODO: union of every Metadata
+
     // Buffer Metadata added to frames by higher-level protocols
     struct IEEE802_15_4_Metadata
     {

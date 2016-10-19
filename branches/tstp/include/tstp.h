@@ -96,7 +96,7 @@ public:
         Microframe() {}
 
         Microframe(bool all_listen, const Frame_ID & id, const MF_Count & count, const Hint & hint = 0)
-        : _al_count_idh((id & 0xf) | ((count & 0x7ff) << 4) | (static_cast<unsigned int>(all_listen) << 15)), _idl(id & 0xff), _hint(hint) {}
+        : _al_count_idh(((id & 0xf00) >> 8) | ((count & 0x7ff) << 4) | (static_cast<unsigned int>(all_listen) << 15)), _idl(id & 0xff), _hint(hint) {}
 
         MF_Count count() const { return (_al_count_idh & (0x7ff << 4)) >> 4; }
         MF_Count dec_count() {
@@ -106,7 +106,7 @@ public:
             return c;
         }
 
-        Frame_ID id() const { return ((_al_count_idh | 0xf) << 8) + _idl; }
+        Frame_ID id() const { return ((_al_count_idh & 0xf) << 8) + _idl; }
         void id(Frame_ID id) {
             _al_count_idh &= 0xfff0;
             _al_count_idh |= (id & 0xf00) >> 8;
@@ -769,7 +769,7 @@ public:
         }
         ~Timekeeper();
 
-        static Time now() { return NIC::Timer::read() * 1000000ll / NIC::Timer::frequency(); };
+        static Time now() { return NIC::Timer::read() * 1000000ll / NIC::Timer::frequency(); }
 
         static void bootstrap();
 

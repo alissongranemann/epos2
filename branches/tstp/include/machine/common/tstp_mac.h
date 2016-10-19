@@ -37,14 +37,14 @@ public:
 
 public: // TODO: should be private. public just for debugging
 
-    static const unsigned int INT_HANDLING_DELAY = 19; // Time delay between scheduled tx_mf interrupt and actual Radio TX
+    static const unsigned int INT_HANDLING_DELAY = 9; // Time delay between scheduled tx_mf interrupt and actual Radio TX
     static const unsigned int TX_DELAY = INT_HANDLING_DELAY + Radio::RX_TO_TX_DELAY;
 
     static const unsigned int G = IEEE802_15_4::CCA_TX_GAP;
     static const unsigned int Tu = IEEE802_15_4::TURNAROUND_TIME;
-    static const unsigned int Ti = Tu + Radio::RX_TO_TX_DELAY + INT_HANDLING_DELAY;
+    static const unsigned int Ti = Tu + Radio::RX_TO_TX_DELAY + INT_HANDLING_DELAY + 50; // 50us margin for delay between Microframes (FIXME)
     static const unsigned int TIME_BETWEEN_MICROFRAMES = Ti;
-    static const unsigned int Ts = static_cast<unsigned long long>(sizeof(Microframe) + Phy_Layer::PHY_HEADER_SIZE) * 1000000ull 
+    static const unsigned int Ts = static_cast<unsigned long long>(sizeof(Microframe) + Phy_Layer::PHY_HEADER_SIZE) * 1000000ull
                                     / static_cast<unsigned long long>(Phy_Layer::BYTE_RATE) + Radio::TX_TO_RX_DELAY; // Time to send a single Microframe (including PHY headers)
     static const unsigned int MICROFRAME_TIME = Ts;
     static const unsigned int Tr = 2*Ts + Ti;
