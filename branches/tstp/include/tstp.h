@@ -12,6 +12,10 @@ __BEGIN_SYS
 
 class TSTP_Common: public IEEE802_15_4
 {
+public: // TODO: should be protected. public just for debugging
+    static const unsigned int RADIO_RANGE = 1700; // Approximated radio range of nodes, in centimeters
+    static const bool drop_expired = true;
+
 public:
     static const unsigned int PAN = 10; // Nodes
     static const unsigned int SAN = 100; // Nodes

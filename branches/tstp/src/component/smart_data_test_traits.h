@@ -63,7 +63,6 @@ template<> struct Traits<Observers>: public Traits<void>
     // Some observed objects are created before initializing the Display
     // Enabling debug may cause trouble in some Machines
     static const bool debugged = false;
-
 };
 
 // System Parts (mostly to fine control debugging)
@@ -121,7 +120,8 @@ template<> struct Traits<System>: public Traits<void>
     static const bool multiheap = (mode != Traits<Build>::LIBRARY) || Traits<Scratchpad>::enabled;
 
     enum {FOREVER = 0, SECOND = 1, MINUTE = 60, HOUR = 3600, DAY = 86400, WEEK = 604800, MONTH = 2592000, YEAR = 31536000};
-    static const unsigned long LIFE_SPAN = 1 * HOUR; // in seconds
+    static const unsigned long long LIFE_SPAN = 1 * HOUR; // in seconds
+    static const unsigned int DUTY_CYCLE = 1000; // in ppm
 
     static const bool reboot = true;
 
@@ -195,11 +195,6 @@ template<> struct Traits<ELP>: public Traits<Network>
 template<> struct Traits<TSTP>: public Traits<Network>
 {
     static const bool enabled = NETWORKS::Count<TSTP>::Result;
-
-    // Approximated radio range of nodes, in meters
-    static const unsigned int RADIO_RANGE = 1700;
-    static const unsigned int PERIOD = 250000;
-    static const bool drop_expired = true;
 };
 
 template<> template <typename S> struct Traits<Smart_Data<S>>: public Traits<Network>

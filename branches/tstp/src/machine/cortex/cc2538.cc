@@ -144,7 +144,7 @@ void CC2538::handle_int()
                 buf->rssi = rssi;
                 buf->size(CC2538RF::copy_from_nic(buf->frame()));
                 if(MAC::pre_notify(buf)) {
-                    db<CC2538>(TRC) << "CC2538::handle_int:receive(b=" << buf << ") => " << *buf << endl;                    
+                    db<CC2538>(TRC) << "CC2538::handle_int:receive(b=" << buf << ") => " << *buf << endl;
                     bool notified = notify(reinterpret_cast<IEEE802_15_4::Header *>(buf->frame())->type(), buf);
                     if(!MAC::post_notify(buf) && !notified)
                         buf->unlock(); // No one was waiting for this frame, so make it available for receive()

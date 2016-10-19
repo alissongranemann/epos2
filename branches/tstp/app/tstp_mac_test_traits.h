@@ -10,7 +10,7 @@ template<typename T>
 struct Traits
 {
     static const bool enabled = true;
-    static const bool debugged = true;
+    static const bool debugged = false;
     static const bool hysterically_debugged = false;
     typedef TLIST<> ASPECTS;
 };
@@ -20,17 +20,17 @@ template<> struct Traits<Build>
     enum {LIBRARY, BUILTIN, KERNEL};
     static const unsigned int MODE = LIBRARY;
 
-    enum {IA32};
-    static const unsigned int ARCHITECTURE = IA32;
+    enum {IA32, ARMv7};
+    static const unsigned int ARCHITECTURE = ARMv7;
 
-    enum {PC};
-    static const unsigned int MACHINE = PC;
+    enum {PC, Cortex};
+    static const unsigned int MACHINE = Cortex;
 
-    enum {Legacy_PC};
-    static const unsigned int MODEL = Legacy_PC;
+    enum {Legacy_PC, eMote3, LM3S811, Zynq};
+    static const unsigned int MODEL = eMote3;
 
-    static const unsigned int CPUS = 4;
-    static const unsigned int NODES = 1; // > 1 => NETWORKING
+    static const unsigned int CPUS = 1;
+    static const unsigned int NODES = 2; // > 1 => NETWORKING
 };
 
 
@@ -39,8 +39,8 @@ template<> struct Traits<Debug>
 {
     static const bool error   = true;
     static const bool warning = true;
-    static const bool info    = false;
-    static const bool trace   = false;
+    static const bool info    = true;
+    static const bool trace   = true;
 };
 
 template<> struct Traits<Lists>: public Traits<void>
@@ -58,6 +58,12 @@ template<> struct Traits<Heaps>: public Traits<void>
     static const bool debugged = hysterically_debugged;
 };
 
+template<> struct Traits<Observers>: public Traits<void>
+{
+    // Some observed objects are created before initializing the Display
+    // Enabling debug may cause trouble in some Machines
+    static const bool debugged = false;
+};
 
 // System Parts (mostly to fine control debugging)
 template<> struct Traits<Boot>: public Traits<void>
@@ -82,6 +88,11 @@ template<> struct Traits<Serial_Display>: public Traits<void>
     static const int COLUMNS = 80;
     static const int LINES = 24;
     static const int TAB_SIZE = 8;
+};
+
+template<> struct Traits<Serial_Keyboard>: public Traits<void>
+{
+    static const bool enabled = true;
 };
 
 __END_SYS
@@ -112,7 +123,7 @@ template<> struct Traits<System>: public Traits<void>
     static const unsigned long long LIFE_SPAN = 1 * HOUR; // in seconds
     static const unsigned int DUTY_CYCLE = 1000; // in ppm
 
-    static const bool reboot = true;
+    static const bool reboot = false;
 
     static const unsigned int STACK_SIZE = Traits<Machine>::STACK_SIZE;
     static const unsigned int HEAP_SIZE = (Traits<Application>::MAX_THREADS + 1) * Traits<Application>::STACK_SIZE;
@@ -127,7 +138,7 @@ template<> struct Traits<Thread>: public Traits<void>
 {
     static const bool smp = Traits<System>::multicore;
 
-    typedef Scheduling_Criteria::PEDF Criterion;
+    typedef Scheduling_Criteria::RM Criterion;
     static const unsigned int QUANTUM = 10000; // us
 
     static const bool trace_idle = hysterically_debugged;
@@ -171,7 +182,7 @@ template<> struct Traits<Network>: public Traits<void>
     static const unsigned int TIMEOUT = 10; // s
 
     // This list is positional, with one network for each NIC in Traits<NIC>::NICS
-    typedef LIST<IP> NETWORKS;
+    typedef LIST<TSTP> NETWORKS;
 };
 
 template<> struct Traits<ELP>: public Traits<Network>
