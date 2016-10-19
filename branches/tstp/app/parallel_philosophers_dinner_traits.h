@@ -1,1 +1,1 @@
-../src/abstraction/scheduler_cpu_affinity_test_traits.h
+../src/component/scheduler_cpu_affinity_test_traits.h

@@ -223,7 +223,7 @@ private:
     static void flush() { reg(CS0_CSIL) |= CSIL_INPKTRDY; }
 
     static volatile USB_2_0::STATE _state;
-    static volatile bool _ready_to_put;
+    static volatile bool _ready_to_put; //FIXME: wrong semantics
     static bool _ready_to_put_next;
     static bool _was_locked;
 

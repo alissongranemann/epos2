@@ -1,6 +1,7 @@
 // EPOS TI CC2538 IEEE 802.15.4 NIC Mediator Declarations
 
-#if !defined(__cc2538_h) && !defined(__mmod_zynq__)
+#include <system/config.h>
+#if !defined(__cc2538_h) && defined(__NIC_H) && !defined(__mmod_zynq__)
 #define __cc2538_h
 
 #include <ieee802_15_4.h>

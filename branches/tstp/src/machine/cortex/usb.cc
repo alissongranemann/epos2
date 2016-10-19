@@ -1,9 +1,9 @@
 // EPOS Cortex USB Mediator Implementation
 
-#include <usb.h>
 #include <ic.h>
+#include <usb.h>
 
-#ifndef __mmod_zynq__
+#ifdef __USB_H
 
 __USING_SYS
 

@@ -8,66 +8,66 @@
 
 __BEGIN_SYS
 
-// TSTP_Locator
+// TSTP::Locator
 // Class attributes
 
 // Methods
-void TSTP_Locator::update(NIC::Observed * obs, NIC::Protocol prot, NIC::Buffer * b)
+void TSTP::Locator::update(NIC::Observed * obs, NIC::Protocol prot, NIC::Buffer * b)
 {
     Buffer * buf = reinterpret_cast<Buffer*>(b);
-    db<TSTP_Locator>(TRC) << "TSTP_Locator::update(obs=" << obs << ",buf=" << buf << ")" << endl;
+    db<TSTP>(TRC) << "TSTP::Locator::update(obs=" << obs << ",buf=" << buf << ")" << endl;
     if(buf->is_microframe)
         buf->sender_distance = buf->frame()->data<Microframe>()->hint();
     else
         buf->my_distance = here() - TSTP::destination(buf).center;
 }
 
-void TSTP_Locator::marshal(Buffer * buf)
+void TSTP::Locator::marshal(Buffer * buf)
 {
-    db<TSTP_Locator>(TRC) << "TSTP_Locator::marshal(buf=" << buf << ")" << endl;
+    db<TSTP>(TRC) << "TSTP::Locator::marshal(buf=" << buf << ")" << endl;
     buf->my_distance = here() - TSTP::destination(buf).center;
     buf->sender_distance = buf->my_distance;
 }
 
-TSTP_Locator::~TSTP_Locator()
+TSTP::Locator::~Locator()
 {
-    db<TSTP_Locator>(TRC) << "TSTP_Locator::~TSTP_Locator()" << endl;
+    db<TSTP>(TRC) << "TSTP::~Locator()" << endl;
     TSTP::_nic->detach(this, 0);
 }
 
-TSTP_Locator::Coordinates TSTP_Locator::here() { return Coordinates(5,5,5); } // TODO
+TSTP::Coordinates TSTP::Locator::here() { return Coordinates(5,5,5); } // TODO
 
-// TSTP_Time_Manager
+// TSTP::Timekeeper
 // Class attributes
 
 // Methods
-void TSTP_Time_Manager::update(NIC::Observed * obs, NIC::Protocol prot, NIC::Buffer * b)
+void TSTP::Timekeeper::update(NIC::Observed * obs, NIC::Protocol prot, NIC::Buffer * b)
 {
     Buffer * buf = reinterpret_cast<Buffer*>(b);
-    db<TSTP_Time_Manager>(TRC) << "TSTP_Time_Manager::update(obs=" << obs << ",buf=" << buf << ")" << endl;
+    db<TSTP>(TRC) << "TSTP::Timekeeper::update(obs=" << obs << ",buf=" << buf << ")" << endl;
     buf->expiry = TSTP::destination(buf).t1;
 }
 
-void TSTP_Time_Manager::marshal(Buffer * buf)
+void TSTP::Timekeeper::marshal(Buffer * buf)
 {
-    db<TSTP_Time_Manager>(TRC) << "TSTP_Time_Manager::marshal(buf=" << buf << ")" << endl;
+    db<TSTP>(TRC) << "TSTP::Timekeeper::marshal(buf=" << buf << ")" << endl;
     buf->expiry = TSTP::destination(buf).t1;
 }
 
-TSTP_Time_Manager::~TSTP_Time_Manager()
+TSTP::Timekeeper::~Timekeeper()
 {
-    db<TSTP_Time_Manager>(TRC) << "TSTP_Time_Manager::~TSTP_Time_Manager()" << endl;
+    db<TSTP>(TRC) << "TSTP::~Timekeeper()" << endl;
     TSTP::_nic->detach(this, 0);
 }
 
-// TSTP_Router
+// TSTP::Router
 // Class attributes
 
 // Methods
-void TSTP_Router::update(NIC::Observed * obs, NIC::Protocol prot, NIC::Buffer * b)
+void TSTP::Router::update(NIC::Observed * obs, NIC::Protocol prot, NIC::Buffer * b)
 {
     Buffer * buf = reinterpret_cast<Buffer*>(b);
-    db<TSTP_Router>(TRC) << "TSTP_Router::update(obs=" << obs << ",buf=" << buf << ")" << endl;
+    db<TSTP>(TRC) << "TSTP::Router::update(obs=" << obs << ",buf=" << buf << ")" << endl;
     if(buf->is_microframe && !buf->relevant) {
         TSTP::Coordinates::Number distance = TSTP::here() - TSTP::sink();
         assert(distance >= 0);
@@ -102,9 +102,9 @@ void TSTP_Router::update(NIC::Observed * obs, NIC::Protocol prot, NIC::Buffer * 
     }
 }
 
-void TSTP_Router::marshal(Buffer * buf)
+void TSTP::Router::marshal(Buffer * buf)
 {
-    db<TSTP_Router>(TRC) << "TSTP_Router::marshal(buf=" << buf << ")" << endl;
+    db<TSTP>(TRC) << "TSTP::Router::marshal(buf=" << buf << ")" << endl;
     TSTP::Region dest = TSTP::destination(buf);
     buf->downlink = dest.center == TSTP::sink();
     buf->destined_to_me = dest.contains(TSTP::here(), TSTP::now());
@@ -112,30 +112,30 @@ void TSTP_Router::marshal(Buffer * buf)
     offset(buf);
 }
 
-TSTP_Router::~TSTP_Router()
+TSTP::Router::~Router()
 {
-    db<TSTP_Router>(TRC) << "TSTP_Router::~TSTP_Router()" << endl;
+    db<TSTP>(TRC) << "TSTP::~Router()" << endl;
     TSTP::_nic->detach(this, 0);
 }
 
-// TSTP_Security_Manager
+// TSTP::Security
 // Class attributes
 
 // Methods
-void TSTP_Security_Manager::update(NIC::Observed * obs, NIC::Protocol prot, NIC::Buffer * b)
+void TSTP::Security::update(NIC::Observed * obs, NIC::Protocol prot, NIC::Buffer * b)
 {
     Buffer * buf = reinterpret_cast<Buffer*>(b);
-    db<TSTP_Security_Manager>(TRC) << "TSTP_Security_Manager::update(obs=" << obs << ",buf=" << buf << ")" << endl;
+    db<TSTP>(TRC) << "TSTP::Security::update(obs=" << obs << ",buf=" << buf << ")" << endl;
 }
 
-void TSTP_Security_Manager::marshal(Buffer * buf)
+void TSTP::Security::marshal(Buffer * buf)
 {
-    db<TSTP_Security_Manager>(TRC) << "TSTP_Security_Manager::marshal(buf=" << buf << ")" << endl;
+    db<TSTP>(TRC) << "TSTP::Security::marshal(buf=" << buf << ")" << endl;
 }
 
-TSTP_Security_Manager::~TSTP_Security_Manager()
+TSTP::Security::~Security()
 {
-    db<TSTP_Security_Manager>(TRC) << "TSTP_Security_Manager::~TSTP_Security_Manager()" << endl;
+    db<TSTP>(TRC) << "TSTP::~Security()" << endl;
     TSTP::_nic->detach(this, 0);
 }
 

@@ -1,1 +1,1 @@
-../src/abstraction/synchronizer_test_traits.h
+../src/component/synchronizer_test_traits.h

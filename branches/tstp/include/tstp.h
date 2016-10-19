@@ -473,100 +473,16 @@ __END_SYS
 
 __BEGIN_SYS
 
-class TSTP_Component_Common: public TSTP_Common
-{
-    // Buffer Wrapper used to allow compilation if TSTP is disabled
-    template<typename T>
-    class Buffer_Wrapper: public T, public NIC_Common::TSTP_Metadata { };
-
-    template<typename T>
-    class Meta_Buffer: public T {
-        friend class TSTP_Component_Common;
-        typedef typename IF<EQUAL <typename T::Metadata, NIC_Common::TSTP_Metadata>::Result, T, Buffer_Wrapper<T>>::Result Result;
-    };
-
-public:
-    typedef Meta_Buffer<NIC::Buffer>::Result Buffer;
-};
-
-class TSTP_Locator: public TSTP_Component_Common, private NIC::Observer
-{
-public:
-    TSTP_Locator();
-    ~TSTP_Locator();
-
-    static Coordinates here();// { return Coordinates(50,50,50); } // TODO
-
-    static void bootstrap();
-
-    static void marshal(Buffer * buf);
-
-    void update(NIC::Observed * obs, NIC::Protocol prot, NIC::Buffer * buf);
-};
-
-class TSTP_Time_Manager: public TSTP_Component_Common, private NIC::Observer
-{
-public:
-    TSTP_Time_Manager();
-    ~TSTP_Time_Manager();
-
-    static Time now() { return NIC::Timer::read() * 1000000ll / NIC::Timer::frequency(); };
-
-    static void bootstrap();
-
-    static void marshal(Buffer * buf);
-
-    void update(NIC::Observed * obs, NIC::Protocol prot, NIC::Buffer * buf);
-};
-
-class TSTP_Router: public TSTP_Component_Common, private NIC::Observer
-{
-private:
-    static const unsigned int CCA_TX_GAP = IEEE802_15_4::CCA_TX_GAP;
-    static const unsigned int RADIO_RANGE = Traits<EPOS::S::TSTP>::RADIO_RANGE;
-    static const unsigned int PERIOD = Traits<EPOS::S::TSTP>::PERIOD;
-
-public:
-    TSTP_Router();
-    ~TSTP_Router();
-
-    static void bootstrap();
-
-    static void marshal(Buffer * buf);
-
-    void update(NIC::Observed * obs, NIC::Protocol prot, NIC::Buffer * buf);
-
-private:
-    static void offset(Buffer * buf) {
-        //long long dist = abs(buf->my_distance - (buf->sender_distance - RADIO_RANGE));
-        //long long betha = (G * RADIO_RADIUS * 1000000) / (dist * G);
-        buf->offset = abs(buf->my_distance - (buf->sender_distance - RADIO_RANGE));
-    }
-
-};
-
-class TSTP_Security_Manager: public TSTP_Component_Common, private NIC::Observer
-{
-public:
-    TSTP_Security_Manager();
-    ~TSTP_Security_Manager();
-
-    static void bootstrap();
-
-    static void marshal(Buffer * buf);
-
-    void update(NIC::Observed * obs, NIC::Protocol prot, NIC::Buffer * buf);
-};
-
-class TSTP: public TSTP_Component_Common, private NIC::Observer
+class TSTP: public TSTP_Common, private NIC::Observer
 {
     template<typename> friend class Smart_Data;
-    friend class TSTP_Locator;
-    friend class TSTP_Time_Manager;
-    friend class TSTP_Router;
-    friend class TSTP_Security_Manager;
 
 public:
+    // Buffer wrapper to compile TSTP when it's disabled
+    template<typename T>
+    class Buffer_Wrapper: public T, public NIC_Common::TSTP_Metadata {};
+    typedef IF<Traits<TSTP>::enabled, NIC::Buffer, Buffer_Wrapper<NIC::Buffer>>::Result Buffer;
+
     // Packet
     static const unsigned int MTU = NIC::MTU - sizeof(Header);
     template<Scale S>
@@ -744,6 +660,8 @@ public:
         Data _data;
     } __attribute__((packed));
 
+
+    // TSTP Smart Data bindings
     // Interested (binder between Interest messages and Smart Data)
     class Interested: public Interest
     {
@@ -816,6 +734,113 @@ public:
         Responsives::Element _link;
     };
 
+
+    // TSTP Locator
+    class Locator: private NIC::Observer
+    {
+    public:
+        Locator() {
+            db<TSTP>(TRC) << "TSTP::Locator()" << endl;
+            TSTP::_nic->attach(this, NIC::TSTP);
+        }
+        ~Locator();
+
+        static Coordinates here();// { return Coordinates(50,50,50); } // TODO
+
+        static void bootstrap();
+
+        static void marshal(Buffer * buf);
+
+        void update(NIC::Observed * obs, NIC::Protocol prot, NIC::Buffer * buf);
+    };
+
+
+    // TSTP Timekeeper
+    class Timekeeper: private NIC::Observer
+    {
+    public:
+        Timekeeper() {
+            db<TSTP>(TRC) << "TSTP::Timekeeper()" << endl;
+            TSTP::_nic->attach(this, NIC::TSTP);
+        }
+        ~Timekeeper();
+
+        static Time now() { return NIC::Timer::read() * 1000000ll / NIC::Timer::frequency(); };
+
+        static void bootstrap();
+
+        static void marshal(Buffer * buf);
+
+        void update(NIC::Observed * obs, NIC::Protocol prot, NIC::Buffer * buf);
+    };
+
+
+    // TSTP Router
+    class Router: private NIC::Observer
+    {
+    private:
+        static const unsigned int CCA_TX_GAP = IEEE802_15_4::CCA_TX_GAP;
+        static const unsigned int RADIO_RANGE = 1700;
+        static const unsigned int PERIOD = 250000;
+
+    public:
+        Router() {
+            db<TSTP>(TRC) << "TSTP::Router()" << endl;
+            TSTP::_nic->attach(this, NIC::TSTP);
+        }
+        ~Router();
+
+        static void bootstrap();
+
+        static void marshal(Buffer * buf);
+
+        void update(NIC::Observed * obs, NIC::Protocol prot, NIC::Buffer * buf);
+
+    private:
+        static void offset(Buffer * buf) {
+            //long long dist = abs(buf->my_distance - (buf->sender_distance - RADIO_RANGE));
+            //long long betha = (G * RADIO_RADIUS * 1000000) / (dist * G);
+            buf->offset = abs(buf->my_distance - (buf->sender_distance - RADIO_RANGE));
+        }
+
+    };
+
+
+    // TSTP Security
+    class Security: private NIC::Observer
+    {
+    public:
+        Security() {
+            db<TSTP>(TRC) << "TSTP::Security()" << endl;
+            TSTP::_nic->attach(this, NIC::TSTP);
+        }
+        ~Security();
+
+        static void bootstrap();
+
+        static void marshal(Buffer * buf);
+
+        void update(NIC::Observed * obs, NIC::Protocol prot, NIC::Buffer * buf);
+    };
+
+
+protected:
+    TSTP();
+
+public:
+    ~TSTP();
+
+    static Coordinates here() { return Locator::here(); }
+    static Coordinates sink() { return Coordinates(0, 0, 0); }
+    static Time now() { return Timekeeper::now(); }
+
+    static void attach(Observer * obs, void * subject) { _observed.attach(obs, int(subject)); }
+    static void detach(Observer * obs, void * subject) { _observed.detach(obs, int(subject)); }
+    static bool notify(void * subject, Buffer * buf) { return _observed.notify(int(subject), buf); }
+
+    static void init(unsigned int unit);
+
+private:
     static Region destination(Buffer * buf) {
         switch(buf->frame()->data<Frame>()->type()) {
             case INTEREST:
@@ -830,29 +855,11 @@ public:
         }
     }
 
-protected:
-    TSTP();
-
-public:
-    ~TSTP();
-
-    static Coordinates here() { return TSTP_Locator::here(); }
-    static Coordinates sink() { return Coordinates(0, 0, 0); }
-    static Time now() { return TSTP_Time_Manager::now(); }
-
-    static void attach(Observer * obs, void * subject) { _observed.attach(obs, int(subject)); }
-    static void detach(Observer * obs, void * subject) { _observed.detach(obs, int(subject)); }
-    static bool notify(void * subject, Buffer * buf) { return _observed.notify(int(subject), buf); }
-
-    static void init(unsigned int unit);
-
-private:
-    // Assemble Buffer Metainformation before transmitting
     static void marshal(Buffer * buf) {
-        TSTP_Locator::marshal(buf);
-        TSTP_Time_Manager::marshal(buf);
-        TSTP_Router::marshal(buf);
-        TSTP_Security_Manager::marshal(buf);
+        Locator::marshal(buf);
+        Timekeeper::marshal(buf);
+        Router::marshal(buf);
+        Security::marshal(buf);
     }
 
     static Buffer * alloc(unsigned int size) {
@@ -869,7 +876,6 @@ private:
     static Responsives _responsives;
     static Observed _observed; // Channel protocols are singletons
  };
-
 
 __END_SYS
 

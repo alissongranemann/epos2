@@ -1,1 +1,1 @@
-../src/abstraction/scheduler_cpu_affinity_test.cc
+../src/component/scheduler_cpu_affinity_test.cc
