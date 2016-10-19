@@ -32,22 +32,26 @@ public:
 
     typedef _UTIL::Buffer<NIC, Phy_Frame, void, TSTP_Metadata> Buffer;
 
-//private:
+//private: // TODO: commentend just for debugging
 
-    //TODO: Check. Maybe move something to Traits
+    static const unsigned int INT_HANDLING_DELAY = 19; // Time delay between schedule tx_mf interrupt and actual Radio TX
+    static const unsigned int TX_TO_RX = Radio::TX_TO_RX_DELAY;
+    static const unsigned int RX_TO_TX = Radio::RX_TO_TX_DELAY + INT_HANDLING_DELAY;
+
     static const bool drop_expired = Traits<EPOS::S::TSTP>::drop_expired;
     static const unsigned int PERIOD = Traits<EPOS::S::TSTP>::PERIOD;
     static const unsigned int CI = PERIOD;
-    static const unsigned int Tu = IEEE802_15_4::TURNAROUND_TIME + 2; // Radio takes an extra 2us to get ready
+    static const unsigned int Tu = IEEE802_15_4::TURNAROUND_TIME;
     static const unsigned int G = IEEE802_15_4::CCA_TX_GAP;
     static const unsigned int RADIO_RANGE = Traits<EPOS::S::TSTP>::RADIO_RANGE;
-    static const unsigned int Ts = 680 - Tu; // Time to send a single microframe (including PHY headers)
+    static const unsigned int Ts = 480 + TX_TO_RX; // Time to send a single Microframe (including PHY headers)
     static const unsigned int MICROFRAME_TIME = Ts;
-    static const unsigned int MIN_Ti = G;//Tu; // Minimum time between consecutive microframes
-    static const unsigned int TX_DELAY = 0;//5100; //TODO
+    static const unsigned int MIN_Ti = Tu + RX_TO_TX; // Minimum time between consecutive Microframes
+    static const unsigned int TX_DELAY = INT_HANDLING_DELAY;
 
     static const unsigned int NMF = (1 + ((CI - Ts) / (MIN_Ti + Ts))) > 0xfff ? 0xfff :
                                     (1 + ((CI - Ts) / (MIN_Ti + Ts)));
+
     static const unsigned int N_MICROFRAMES = NMF;
     static const unsigned int Ti = (CI - Ts) / (NMF - 1) - Ts;
     static const unsigned int TIME_BETWEEN_MICROFRAMES = Ti;
@@ -323,6 +327,8 @@ private:
     static bool _in_rx_mf;
     static bool _in_rx_data;
 };
+
+// The compiler makes sure that template static variables are only defined once
 
 template<typename Radio>
 TSTP_Common::Microframe TSTP_MAC<Radio>::_mf;

@@ -23,6 +23,9 @@ protected:
 
     static const bool promiscuous = Traits<CC2538>::promiscuous;
 
+    static const unsigned int TX_TO_RX_DELAY = 2; // Radio takes extra 2us to go from TX to RX or idle
+    static const unsigned int RX_TO_TX_DELAY = 0;
+
 public:
     // Bases
     enum {

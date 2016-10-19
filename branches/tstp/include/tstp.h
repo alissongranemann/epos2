@@ -147,7 +147,7 @@ public:
 
     public:
         _Header(const Type & t, bool tr = false, unsigned char c = 0, const Time & ot = 0, const Coordinates & o = 0, const Coordinates & l = 0, const Version & v = V0)
-        : _config((S & 0x03) << 6 | tr << 5 | (t & 0x03) << 3 | (v & 0x07)), _confidence(c), _origin_time(ot), _origin(o), _last_hop(l) {}
+        : _config((S & 0x03) << 6 | tr << 5 | (t & 0x03) << 3 | (v & 0x07)), _confidence(c), _time(ot), _origin(o), _last_hop(l) {}
 
         Version version() const { return static_cast<Version>(_config & 0x07); }
         void version(const Version & v) { _config = (_config & 0xf8) | (v & 0x07); }
@@ -167,21 +167,21 @@ public:
         const Coordinates & last_hop() const { return _last_hop; }
         void last_hop(const Coordinates & c) { _last_hop = c; }
 
-        Time time() const { return _origin_time; }
-        void time(const Time & t) { _origin_time = t; }
+        Time time() const { return _time; }
+        void time(const Time & t) { _time = t; }
 
         Time last_hop_time() const { return _last_hop_time; }
         void last_hop_time(const Time & t) { _last_hop_time = t; }
 
         friend Debug & operator<<(Debug & db, const _Header & h) {
-            db << "{v=" << h.version() - V0 << ",t=" << ((h.type() == INTEREST) ? 'I' :  (h.type() == RESPONSE) ? 'R' : (h.type() == COMMAND) ? 'C' : 'P') << ",tr=" << h.time_request() << ",s=" << h.scale() << ",ot=" << h._origin_time << ",o=" << h._origin << ",lt=" << h._last_hop_time << ",l=" << h._last_hop << "}";
+            db << "{v=" << h.version() - V0 << ",t=" << ((h.type() == INTEREST) ? 'I' :  (h.type() == RESPONSE) ? 'R' : (h.type() == COMMAND) ? 'C' : 'P') << ",tr=" << h.time_request() << ",s=" << h.scale() << ",ot=" << h._time << ",o=" << h._origin << ",lt=" << h._last_hop_time << ",l=" << h._last_hop << "}";
             return db;
         }
 
     protected:
         unsigned char _config;
         unsigned char _confidence;
-        Time _origin_time;
+        Time _time;
         Coordinates _origin;
         Time _last_hop_time; // TODO: change to Time_Offset
         Coordinates _last_hop;
@@ -544,7 +544,7 @@ public:
         const Unit & unit() const { return _unit; }
         const Region & region() const { return _region; }
         Microsecond period() const { return _period; }
-        Time expiry() const { return _origin_time + _expiry; }
+        Time expiry() const { return _time + _expiry; }
         Mode mode() const { return static_cast<Mode>(_mode); }
         Error precision() const { return static_cast<Error>(_precision); }
 
@@ -576,7 +576,7 @@ public:
         : Header(RESPONSE, 0, 0, now(), here(), here()), _unit(unit), _error(error), _expiry(expiry) {}
 
         const Unit & unit() const { return _unit; }
-        Time expiry() const { return _origin_time + _expiry; }
+        Time expiry() const { return _time + _expiry; }
         Error error() const { return _error; }
 
         template<typename T>
@@ -863,7 +863,7 @@ private:
     }
 
     static Buffer * alloc(unsigned int size) {
-        assert((!Traits<TSTP::enabled> || EQUAL<NIC::Buffer::Metadata, NIC_Common::TSTP_Metadata>::Result));
+        assert((!Traits<TSTP>::enabled || EQUAL<NIC::Buffer, Buffer>::Result));
         return reinterpret_cast<Buffer*>(_nic->alloc(NIC::Address::BROADCAST, NIC::TSTP, 0, 0, size));
     }
 

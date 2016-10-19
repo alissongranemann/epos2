@@ -62,7 +62,7 @@ private:
 
 public:
     static void * alloc(unsigned int bytes, const EPOS::Color & allocator) {
-        assert(reinterpret_cast<unsigned int>(allocator) <= COLORS);
+        assert(static_cast<unsigned int>(allocator) <= COLORS);
         return _heap[allocator]->alloc(bytes);
     }
 
