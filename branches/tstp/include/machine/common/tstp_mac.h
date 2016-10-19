@@ -37,16 +37,15 @@ public:
 
 public: // TODO: should be private. public just for debugging
 
-    static const unsigned int INT_HANDLING_DELAY = 19; // Time delay between schedule tx_mf interrupt and actual Radio TX
+    static const unsigned int INT_HANDLING_DELAY = 19; // Time delay between scheduled tx_mf interrupt and actual Radio TX
     static const unsigned int TX_DELAY = INT_HANDLING_DELAY + Radio::RX_TO_TX_DELAY;
 
     static const unsigned int G = IEEE802_15_4::CCA_TX_GAP;
     static const unsigned int Tu = IEEE802_15_4::TURNAROUND_TIME;
     static const unsigned int Ti = Tu + Radio::RX_TO_TX_DELAY + INT_HANDLING_DELAY;
     static const unsigned int TIME_BETWEEN_MICROFRAMES = Ti;
-    static const unsigned int Ts = (static_cast<unsigned long long>((sizeof(Microframe) + Phy_Layer::PHY_HEADER_SIZE)) 
-                                    * static_cast<unsigned long long>(Phy_Layer::BYTE_RATE)) 
-                                    / 1000000ull + Radio::TX_TO_RX_DELAY; // Time to send a single Microframe (including PHY headers)
+    static const unsigned int Ts = static_cast<unsigned long long>(sizeof(Microframe) + Phy_Layer::PHY_HEADER_SIZE) * 1000000ull 
+                                    / static_cast<unsigned long long>(Phy_Layer::BYTE_RATE) + Radio::TX_TO_RX_DELAY; // Time to send a single Microframe (including PHY headers)
     static const unsigned int MICROFRAME_TIME = Ts;
     static const unsigned int Tr = 2*Ts + Ti;
     static const unsigned int RX_MF_TIMEOUT = Tr;
@@ -58,10 +57,10 @@ public: // TODO: should be private. public just for debugging
     static const unsigned int PERIOD = CI;
     static const unsigned int SLEEP_PERIOD = CI - RX_MF_TIMEOUT;
 
-    static const typename IF<(static_cast<unsigned long long>(Tr) * 1000000ull / static_cast<unsigned long long>(CI) <= Traits<System>::DUTY_CYCLE), 
-        unsigned int, 
-        void>::Result DUTY_CYCLE = (static_cast<unsigned long long>(Tr) * 1000000ull / static_cast<unsigned long long>(CI) <= Traits<System>::DUTY_CYCLE); // in ppm. This line failing means that TSTP_MAC is unable to provide a duty cycle smaller than or equal to Traits<System>::DUTY_CYCLE
-    
+    static const typename IF<(static_cast<unsigned long long>(Tr) * 1000000ull / static_cast<unsigned long long>(CI) <= Traits<System>::DUTY_CYCLE),
+        unsigned int,
+        void>::Result DUTY_CYCLE = static_cast<unsigned long long>(Tr) * 1000000ull / static_cast<unsigned long long>(CI); // in ppm. This line failing means that TSTP_MAC is unable to provide a duty cycle smaller than or equal to Traits<System>::DUTY_CYCLE
+
     static const unsigned int DATA_LISTEN_MARGIN = TIME_BETWEEN_MICROFRAMES / 2; // Subtract this amount when calculating time until data transmission
     static const unsigned int DATA_SKIP_TIME = DATA_LISTEN_MARGIN + 4500;
 
