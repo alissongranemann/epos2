@@ -21,6 +21,9 @@ __BEGIN_SYS
 template<typename Radio>
 class TSTP_MAC: public TSTP_Common, public TSTP_Common::Observed, public Radio
 {
+private:
+    typedef IEEE802_15_4 Phy_Layer;
+
 public:
     using TSTP_Common::Address;
     using TSTP_Common::Header;
@@ -32,35 +35,38 @@ public:
 
     typedef _UTIL::Buffer<NIC, Phy_Frame, void, TSTP_Metadata> Buffer;
 
-//private:
+private:
 
-    //TODO: Check. Maybe move something to Traits
-    static const bool drop_expired = Traits<EPOS::S::TSTP>::drop_expired;
-    static const unsigned int PERIOD = Traits<EPOS::S::TSTP>::PERIOD;
-    static const unsigned int CI = PERIOD;
-    static const unsigned int Tu = IEEE802_15_4::TURNAROUND_TIME + 2; // Radio takes an extra 2us to get ready
+    static const unsigned int INT_HANDLING_DELAY = 19; // Time delay between schedule tx_mf interrupt and actual Radio TX
+    static const unsigned int TX_DELAY = INT_HANDLING_DELAY + Radio::RX_TO_TX_DELAY;
+
     static const unsigned int G = IEEE802_15_4::CCA_TX_GAP;
-    static const unsigned int RADIO_RANGE = Traits<EPOS::S::TSTP>::RADIO_RANGE;
-    static const unsigned int Ts = 680 - Tu; // Time to send a single microframe (including PHY headers)
-    static const unsigned int MICROFRAME_TIME = Ts;
-    static const unsigned int MIN_Ti = G;//Tu; // Minimum time between consecutive microframes
-    static const unsigned int TX_DELAY = 0;//5100; //TODO
-
-    static const unsigned int NMF = (1 + ((CI - Ts) / (MIN_Ti + Ts))) > 0xfff ? 0xfff :
-                                    (1 + ((CI - Ts) / (MIN_Ti + Ts)));
-    static const unsigned int N_MICROFRAMES = NMF;
-    static const unsigned int Ti = (CI - Ts) / (NMF - 1) - Ts;
+    static const unsigned int Tu = IEEE802_15_4::TURNAROUND_TIME;
+    static const unsigned int Ti = Tu + Radio::RX_TO_TX_DELAY + INT_HANDLING_DELAY;
     static const unsigned int TIME_BETWEEN_MICROFRAMES = Ti;
-    static const unsigned int DATA_LISTEN_MARGIN = TIME_BETWEEN_MICROFRAMES / 2; // Subtract this amount when calculating time until data transmission
-    static const unsigned int DATA_SKIP_TIME = DATA_LISTEN_MARGIN + 4500;
+    static const unsigned int Ts = (static_cast<unsigned long long>((sizeof(Microframe) + Phy_Layer::PHY_HEADER_SIZE)) 
+                                    * static_cast<unsigned long long>(Phy_Layer::BYTE_RATE)) 
+                                    / 1000000ull + Radio::TX_TO_RX_DELAY; // Time to send a single Microframe (including PHY headers)
+    static const unsigned int MICROFRAME_TIME = Ts;
     static const unsigned int Tr = 2*Ts + Ti;
     static const unsigned int RX_MF_TIMEOUT = Tr;
-    static const unsigned int S = PERIOD - RX_MF_TIMEOUT;
-    static const unsigned int SLEEP_PERIOD = S;
-    static const unsigned int DUTY_CYCLE = (RX_MF_TIMEOUT * 1000000) / PERIOD; //ppm
+
+    static const unsigned int NMF = 1 + (((1000000ull * static_cast<unsigned long long>(Tr)) / static_cast<unsigned long long>(Traits<System>::DUTY_CYCLE)) + (Ti + Ts) - 1) / (Ti + Ts);
+    static const unsigned int N_MICROFRAMES = NMF;
+
+    static const unsigned int CI = Ts + (NMF - 1) * (Ts + Ti);
+    static const unsigned int PERIOD = CI;
+    static const unsigned int SLEEP_PERIOD = CI - RX_MF_TIMEOUT;
+
+    static const typename IF<(static_cast<unsigned long long>(Tr) * 1000000ull / static_cast<unsigned long long>(CI) <= Traits<System>::DUTY_CYCLE), 
+        unsigned int, 
+        void>::Result DUTY_CYCLE = (static_cast<unsigned long long>(Tr) * 1000000ull / static_cast<unsigned long long>(CI) <= Traits<System>::DUTY_CYCLE); // in ppm. This line failing means that TSTP_MAC is unable to provide a duty cycle smaller than or equal to Traits<System>::DUTY_CYCLE
+    
+    static const unsigned int DATA_LISTEN_MARGIN = TIME_BETWEEN_MICROFRAMES / 2; // Subtract this amount when calculating time until data transmission
+    static const unsigned int DATA_SKIP_TIME = DATA_LISTEN_MARGIN + 4500;
 
     static const unsigned int RX_DATA_TIMEOUT = DATA_SKIP_TIME + DATA_LISTEN_MARGIN + 4 * (MICROFRAME_TIME + TIME_BETWEEN_MICROFRAMES);
-    static const unsigned int CCA_TIME = (2 * MICROFRAME_TIME + TIME_BETWEEN_MICROFRAMES) > 256 ? (2 * MICROFRAME_TIME + TIME_BETWEEN_MICROFRAMES) : 256;
+    static const unsigned int CCA_TIME = (2 * Ts + Ti) > G ? (2 * Ts + Ti) : G;
 
 protected:
     TSTP_MAC() {}
@@ -323,6 +329,8 @@ private:
     static bool _in_rx_mf;
     static bool _in_rx_data;
 };
+
+// The compiler makes sure that template static variables are only defined once
 
 template<typename Radio>
 TSTP_Common::Microframe TSTP_MAC<Radio>::_mf;

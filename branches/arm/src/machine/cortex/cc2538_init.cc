@@ -22,6 +22,7 @@ CC2538::CC2538(unsigned int unit): _unit(unit), _rx_cur_consume(0), _rx_cur_prod
     _address[0] = ffsm(SHORT_ADDR0);
     _address[1] = ffsm(SHORT_ADDR1);
 
+    // TODO: Define what will be used for each MAC
     //xreg(FRMFILT0) |= FRAME_FILTER_EN; // Enable frame filtering
     xreg(FRMFILT0) &= ~FRAME_FILTER_EN; // Disable frame filtering
     xreg(FRMFILT1) &= ~ACCEPT_FT2_ACK; // ACK frames are handled only when expected

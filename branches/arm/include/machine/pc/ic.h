@@ -484,13 +484,15 @@ public:
 
     static void int_vector(const Interrupt_Id & i, const Interrupt_Handler & h) {
         db<IC>(TRC) << "IC::int_vector(int=" << i << ",h=" << reinterpret_cast<void *>(h) <<")" << endl;
-        assert(i < INTS);
-        _int_vector[i] = h;
+        //assert(i < INTS);
+        _int_vector[i] = h; // FIXME:
+                            // In static member function 'static void EPOS::S::FPGA::init()':
+                            // ic.h:488: error: array subscript is above array bounds
+                            // Only when assert is enabled ??
     }
 
     static void enable() {
         db<IC>(TRC) << "IC::enable()" << endl;
-        assert(i < INTS);
         Engine::enable();
     }
 
@@ -502,7 +504,6 @@ public:
 
     static void disable() {
         db<IC>(TRC) << "IC::disable()" << endl;
-        assert(i < INTS);
         Engine::disable();
     }
 

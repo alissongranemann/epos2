@@ -6,6 +6,6 @@
 
 __USING_SYS
 
-eMote3_Flash::Data eMote3_Flash::data{};
+//eMote3_Flash::Data eMote3_Flash::data{}; // FIXME
 
 #endif

@@ -35,11 +35,12 @@ int main()
     cout << "Thread A exited with status " << status_a
          << " and thread B exited with status " << status_b << "" << endl;
 
+    // WARNING: One of these deletes will break "assert(_state != RUNNING);" on ~Thread()
     delete a;
     delete b;
     delete m;
 
-    cout << "It should not be shown on the display!" << endl;
+    cout << "This should not be shown on the display!" << endl;
 
     return 0;
 }
