@@ -66,6 +66,8 @@ public:
     CPU::Phy_Addr phy_address() { enter(); CPU::Phy_Addr res = Component::phy_address(); leave(); return res; }
     int resize(int amount) { enter(); int res = Component::resize(amount); leave(); return res; }
 
+    static void set_as_read_only(unsigned long log_addr, unsigned long size, bool user = 1) { static_enter(); Component::set_as_read_only(log_addr, size, user); static_leave(); }
+
     // Synchronization
     void lock() { enter(); Component::lock(); leave(); }
     void unlock() { enter(); Component::unlock(); leave(); }

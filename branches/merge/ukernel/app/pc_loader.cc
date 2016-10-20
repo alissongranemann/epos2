@@ -45,6 +45,8 @@ int main(int argc, char * argv[])
         cout << "failed! Application code segment is corrupted! Exiting!" << endl;
         return -1;
     }
+    unsigned long code_log_addr = code;
+    Address_Space::set_as_read_only(code_log_addr, cs->size());
     as->detach(cs);
     cout << "done!" << endl;
 

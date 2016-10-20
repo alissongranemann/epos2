@@ -89,6 +89,8 @@ public:
     CPU::Phy_Addr phy_address() { return invoke(SEGMENT_PHY_ADDRESS); }
     int resize(int amount) { return invoke(SEGMENT_RESIZE, amount); }
 
+    static void set_as_read_only(unsigned long log_addr, unsigned long size, bool user = 1) { static_invoke(ADDRESS_SPACE_SET_AS_READ_ONLY, log_addr, size, user); }
+
     // Synchronization
     void lock() { invoke(SYNCHRONIZER_LOCK); }
     void unlock() { invoke(SYNCHRONIZER_UNLOCK); }

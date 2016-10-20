@@ -98,6 +98,8 @@ public:
     CPU::Phy_Addr phy_address() const { return _stub->phy_address(); }
     int resize(int amount) { return _stub->resize(amount); }
 
+    static void set_as_read_only(unsigned long log_addr, unsigned long size, bool user = 1) { _Stub::set_as_read_only(log_addr, size, user); }
+
     // Synchronization
     void lock() { _stub->lock(); }
     void unlock() { _stub->unlock(); }

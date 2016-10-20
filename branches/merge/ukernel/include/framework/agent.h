@@ -220,6 +220,15 @@ void Agent::handle_address_space()
         in(addr);
         res = as->physical(addr);
     } break;
+    case ADDRESS_SPACE_SET_AS_READ_ONLY: {
+        unsigned long log_addr;
+        unsigned long size;
+        bool user;
+
+        in(log_addr, size, user);
+
+        Adapter<MMU>::set_as_read_only(log_addr, size, user);
+    } break;
     default:
         res = UNDEFINED;
     }

@@ -123,6 +123,7 @@ private:
     void setup_tss();
 
     void load_parts();
+    void set_code_pages_read_only();
     void call_next();
 
     void detect_memory(unsigned int * base, unsigned int * top);
@@ -206,6 +207,11 @@ PC_Setup::PC_Setup(char * boot_image)
         // Load EPOS parts (e.g. INIT, SYSTEM, APP)
         load_parts();
 
+        if (Traits<Build>::MODE == Traits<Build>::KERNEL) {
+            set_code_pages_read_only();
+            CPU::cr0(CPU::cr0() | CPU::CR0_WP); /* inhibits supervisor-level procedures from writing into read-only pages */
+        }
+
         // Signalize other CPUs that paging is up
         Paging_Ready = true;
 
@@ -216,6 +222,10 @@ PC_Setup::PC_Setup(char * boot_image)
 
         // Enable paging
         enable_paging();
+
+         if (Traits<Build>::MODE == Traits<Build>::KERNEL) {
+            CPU::cr0(CPU::cr0() | CPU::CR0_WP); /* inhibits supervisor-level procedures from writing into read-only pages */
+        }
 
         setup_tss();
     }
@@ -869,6 +879,26 @@ void PC_Setup::load_parts()
 }
 
 //========================================================================
+
+void PC_Setup::set_code_pages_read_only()
+{
+    /* Letting the last code page of init to be read/write because that lies the
+        .bss data section where variables such as the local static
+        PC::smp_barrier(unsigned long)::ready are.
+        The .rodata section ends on the same page that .bss begins.
+        So the potential problem here is allowing for .rodata code to overwritten
+        (the same for .ctors and .dtors that are in between .rodata and .bss).
+        A better solution would be force .bss start in a new page.
+    */
+    MMU::set_flags(si->lm.ini_code, si->lm.ini_code_size - sizeof(Page), MMU::IA32_Flags::APP_CODE);
+
+    MMU::set_flags(si->lm.sys_code, si->lm.sys_code_size, MMU::IA32_Flags::SYS_CODE);
+
+    MMU::set_flags(si->lm.app_code, si->lm.app_code_size, MMU::IA32_Flags::APP_CODE);
+}
+
+//========================================================================
+
 void PC_Setup::call_next()
 {
     int cpu_id = Machine::cpu_id();

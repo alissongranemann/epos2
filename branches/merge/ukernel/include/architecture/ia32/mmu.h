@@ -48,6 +48,8 @@ public:
             IO_APIC = (SYS | PCD),
             VGA = (SYS | PCD),
             DMA  = (SYS | PCD | CT),
+            APP_CODE = (PRE | ACC | USR),
+            SYS_CODE = (PRE | ACC)
         };
 
     public:
@@ -378,6 +380,29 @@ public:
     static void flush_tlb(const Log_Addr & addr) {
         ASM("invlpg %0" : : "m"(addr));
     }
+
+    /// Sets a memory region to be read only
+    /*! Sets a memory region to be read only.
+     *  This method takes into account the current page directory of the CPU that
+     * executes this code.
+     */
+    static void set_as_read_only(unsigned long log_addr, unsigned long size, bool user = 1) {
+        if (user) {
+            set_flags(log_addr, size, MMU::IA32_Flags::APP_CODE);
+        }
+        else {
+            set_flags(log_addr, size, MMU::IA32_Flags::SYS_CODE);
+        }
+    }
+
+    /// Sets a memory region with the informed MMU flags
+    /*! Sets a memory region with the informed MMU flags.
+     * This method OR's all flags but R/W flag (it discard the current R/W bit
+     * and applies the new one).
+     * This method takes into account the current page directory of the CPU that
+     * executes this code.
+     * */
+    static void set_flags(unsigned long log_addr, unsigned long size, unsigned long flags);
 
 private:
     static void init();
