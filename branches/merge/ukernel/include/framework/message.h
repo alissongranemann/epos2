@@ -13,10 +13,9 @@ __BEGIN_SYS
 
 class Message
 {
-private:
+public:
     static const unsigned int MAX_PARAMETERS_SIZE = 20;
 
-public:
     enum {
         CREATE,
         CREATE1,
