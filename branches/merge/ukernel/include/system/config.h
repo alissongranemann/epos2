@@ -130,6 +130,7 @@ namespace EPOS {
 
 #ifdef __mmod_zynq__
 #define __TSC_H                 __HEADER_ARCH(tsc)
+#define __PMU_H                 __HEADER_ARCH(pmu)
 
 #define __RTC_H                 __HEADER_MACH(rtc)
 #define __UART_H                __HEADER_MACH(uart)
