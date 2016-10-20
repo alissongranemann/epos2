@@ -19,7 +19,7 @@ protected:
 
 public:
     static const unsigned int IRQS = 64;
-    static const unsigned int TIMERS = Traits<TSC>::enabled ? 3 : 4; // TSC takes the last user timer channel
+    static const unsigned int TIMERS = 4;
     static const unsigned int UARTS = 2;
     static const unsigned int USBS = 1;
     static const unsigned int GPIO_PORTS = 4;
@@ -1036,7 +1036,6 @@ protected:
 // UART
     unsigned int enable_uart(unsigned int unit) {
         assert(unit < UARTS);
-        init_clock(); // Setup the clock first!
 
         power_uart(unit, FULL);
 
@@ -1088,7 +1087,6 @@ protected:
         assert(unit < USBS);
         switch(mode) {
         case FULL: {
-            init_clock();
             // Set D+ USB pull-up resistor, which is controlled by GPIO pin C2 in eMote3
             const unsigned int pin_bit = 1 << 2;
             gpioc(AFSEL) &= ~pin_bit; // Set pin C2 as software-controlled
@@ -1277,7 +1275,7 @@ public:
     static volatile Reg32 & gpiod(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(GPIOD_BASE)[o / sizeof(Reg32)]; }
 
 protected:
-    static void pre_init(); // TODO
+    static void pre_init();
     static void init();
 };
 

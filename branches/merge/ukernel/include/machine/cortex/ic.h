@@ -123,6 +123,7 @@ public:
         INT_NIC0_RX     = IRQ_ETHERNET0,
         INT_NIC0_TX     = IRQ_ETHERNET0,
         INT_NIC0_ERR    = IRQ_ETHERNET0,
+        INT_NIC0_TIMER  = 0,
         INT_FIRST_HARD  = HARD_INT,
         INT_LAST_HARD   = IRQ_PARITY,
         INT_RESCHEDULER = IRQ_SOFTWARE0
@@ -225,7 +226,8 @@ public:
     static const unsigned int HARD_INT = 16;
     static const unsigned int SOFT_INT = HARD_INT + IRQS;
     enum {
-        INT_TIMER       = 15,
+        INT_HARD_FAULT  = ARMv7_M::EXC_HARD,
+        INT_TIMER       = ARMv7_M::EXC_SYSTICK,
         INT_FIRST_HARD  = HARD_INT,
         INT_USER_TIMER0 = HARD_INT + IRQ_GPT0A,
         INT_USER_TIMER1 = HARD_INT + IRQ_GPT1A,
@@ -239,6 +241,7 @@ public:
         INT_NIC0_RX     = HARD_INT + IRQ_RFTXRX,
         INT_NIC0_TX     = HARD_INT + IRQ_RFTXRX,
         INT_NIC0_ERR    = HARD_INT + IRQ_RFERR,
+        INT_NIC0_TIMER  = HARD_INT + IRQ_MACTIMER,
         INT_USB0        = HARD_INT + IRQ_USB,
         INT_LAST_HARD   = HARD_INT + IRQS,
         INT_RESCHEDULER = SOFT_INT
@@ -258,6 +261,8 @@ public:
     }
 
     static void enable(const Interrupt_Id & id) {
+        if(id <= HARD_INT)
+            return;
         IRQ i = int2irq(id);
         db<IC>(TRC) << "IC::enable(irq=" << i << ")" << endl;
         assert(i < IRQS);
@@ -274,6 +279,8 @@ public:
     }
 
     static void disable(const Interrupt_Id & id) {
+        if(id <= HARD_INT)
+            return;
         IRQ i = int2irq(id);
         db<IC>(TRC) << "IC::disable(irq=" << i << ")" << endl;
         assert(i < IRQS);
@@ -330,6 +337,7 @@ public:
     using Engine::INT_USB0;
     using Engine::INT_NIC0_RX;
     using Engine::INT_NIC0_TX;
+    using Engine::INT_NIC0_TIMER;
     using Engine::INT_RESCHEDULER;
 
 public:
@@ -348,7 +356,6 @@ public:
 
     static void enable() {
         db<IC>(TRC) << "IC::enable()" << endl;
-        assert(i < INTS);
         Engine::enable();
     }
 
@@ -360,7 +367,6 @@ public:
 
     static void disable() {
         db<IC>(TRC) << "IC::disable()" << endl;
-        assert(i < INTS);
         Engine::disable();
     }
 

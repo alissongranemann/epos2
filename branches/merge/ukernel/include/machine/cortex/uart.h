@@ -206,6 +206,7 @@ public:
         reg(UIM) = UIMTX | UIMRX;               // Mask TX and RX interrupts for polling operation
         reg(UCR) |= UEN | TXE | RXE;            // Enable UART
     }
+
     void config(unsigned int * baud_rate, unsigned int * data_bits, unsigned int * parity, unsigned int * stop_bits) {
         Reg32 lcrh = reg(LCRH);
         *data_bits = 5 + (lcrh & WLEN8);

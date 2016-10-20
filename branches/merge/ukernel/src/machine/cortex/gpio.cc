@@ -1,10 +1,9 @@
 // EPOS Cortex-M GPIO Mediator Implementation
 
-#include <machine.h>
 #include <ic.h>
-#include <machine/cortex/gpio.h>
+#include <gpio.h>
 
-#ifndef __mmod_zynq__
+#ifdef __GPIO_H
 
 __BEGIN_SYS
 

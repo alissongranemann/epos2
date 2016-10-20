@@ -12,15 +12,14 @@ __BEGIN_SYS
 class LM3S811
 {
     friend class TSC;
-    
+
 protected:
     typedef CPU::Reg32 Reg32;
     typedef CPU::Log_Addr Log_Addr;
 
 public:
     static const unsigned int IRQS = 30;
-    static const unsigned int TIMERS = Traits<TSC>::enabled ? 1 : 2; // This model has 3 timers, but QEMU (v2.7.50) only implements 2
-                                                                     // TSC takes the last user timer channel
+    static const unsigned int TIMERS = 2; // This model has 3 timers, but QEMU (v2.7.50) only implements 2
     static const unsigned int UARTS = 2;
     static const unsigned int GPIO_PORTS = 5;
     static const bool supports_gpio_power_up = false;
@@ -330,7 +329,7 @@ public:
         DEN		= 0x51c,	// Digital Enable 	        rw 	0x0000.00ff
         P_EDGE_CTRL     = 0x704,        // Power-up Int. Edge Control   rw      0x0000.0000
         PI_IEN          = 0x710,	// Power-up Interrupt Enable    rw 	0x0000.0000
-        IRQ_DETECT_ACK  = 0x718,	// Power-up Interrupt Status/Clear R/W 0x0000.0000
+        IRQ_DETECT_ACK  = 0x718, // Power-up Interrupt Status/Clear R/W 0x0000.0000
         PeriphID4	= 0xfd0,	// Peripheral Identification 4	ro	0x0000.0000
         PeriphID5	= 0xfd4,	// Peripheral Identification 5 	ro	0x0000.0000
         PeriphID6	= 0xfd8,	// Peripheral Identification 6	ro	0x0000.0000
@@ -480,7 +479,7 @@ public:
     static volatile Reg32 & tsc(unsigned int o) { return reinterpret_cast<volatile Reg32 *>(TIMER1_BASE)[o / sizeof(Reg32)]; }
 
 protected:
-    static void pre_init(); // TODO
+    static void pre_init();
     static void init();
 };
 
