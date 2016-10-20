@@ -22,6 +22,16 @@ int main()
 {
     cout << "Task test" << endl;
 
+    Port<IPC> * comm = new Port<IPC>(8000);
+
+    S::Message msg1(_SYS::Id(11, 0), 0, "test");
+    comm->send(&msg1);
+    S::Message msg2;
+    comm->receive(&msg2);
+    char parms[S::Message::MAX_PARAMETERS_SIZE];
+    msg2.in(parms);
+    cout << "Task::received:msg=" << parms << endl;
+
     m = Thread::self();
 
     Task * task0 = Task::self();
