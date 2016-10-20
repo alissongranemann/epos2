@@ -55,7 +55,6 @@ public:
 class VGA: public Display_Common, private MC6845
 {
     friend class PC_Setup;
-    friend class First_Object;
     friend class Machine;
 
 public:

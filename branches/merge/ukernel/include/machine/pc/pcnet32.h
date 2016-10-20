@@ -401,6 +401,7 @@ private:
     static const unsigned int UNITS = Traits<PCNet32>::UNITS;
     static const unsigned int TX_BUFS = Traits<PCNet32>::SEND_BUFFERS;
     static const unsigned int RX_BUFS =	Traits<PCNet32>::RECEIVE_BUFFERS;
+    static const bool promiscuous = Traits<PCNet32>::promiscuous;
 
     // Size of the DMA Buffer that will host the ring buffers and the init block
     static const unsigned int DMA_BUFFER_SIZE = ((sizeof(Init_Block) + 15) & ~15U) +
