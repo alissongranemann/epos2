@@ -46,14 +46,14 @@ void PCI::header(const PCI::Locator & l, PCI::Header * h)
                 h->region[i].log_addr = phy2log(h->region[i].phy_addr);
                 h->region[i].size = ~(h->region[i].size & BASE_ADDRESS_MEM_MASK) + 1;
 
-                if(! h->region[i].phy_addr) { // Broken devices report false regions often starting at zero
+                if(!h->region[i].phy_addr) { // Broken devices report false regions often starting at zero
                     h->region[i].memory = false;
                     db<PCI>(TRC) << "PCI: device " << l << " reports implausible region (starting at zero). Ignoring!" << endl;
                 }
 
                 if(h->region[i].size > MAX_REGION_SIZE) { // Broken devices report false regions often starting at zero and extending up to the PIC area
-                        h->region[i].memory = false;
-                        db<PCI>(WRN) << "PCI: device " << l << " reports implausible large region. Ignoring!" << endl;
+                    h->region[i].memory = false;
+                    db<PCI>(WRN) << "PCI: device " << l << " reports implausible large region. Ignoring!" << endl;
                 }
             }
             h->cardbus_cis = cfg32(l.bus, l.dev_fn, CARDBUS_CIS);
@@ -76,8 +76,8 @@ PCI::Locator PCI::scan(const PCI::Class_Id & c, int order)
     for(int bus = 0 ; bus <= MAX_BUS; bus++)
         for(int dfn = 0; dfn <= MAX_DEV_FN; dfn++)
             if(class_id(bus, dfn) == c)
-            if(!order--)
-                return Locator(bus, dfn);
+        	if(!order--)
+        	    return Locator(bus, dfn);
 
     return Locator(Locator::INVALID, Locator::INVALID);
 }
@@ -89,8 +89,8 @@ PCI::Locator PCI::scan(const PCI::Vendor_Id & v, const PCI::Device_Id & d, int o
     for(int bus = 0 ; bus <= MAX_BUS; bus++)
         for(int dfn = 0; dfn <= MAX_DEV_FN; dfn++)
             if((vendor_id(bus, dfn) == v) && (device_id(bus, dfn) == d))
-            if(!order--)
-                return Locator(bus, dfn);
+        	if(!order--)
+        	    return Locator(bus, dfn);
 
     return Locator(Locator::INVALID, Locator::INVALID);
 }

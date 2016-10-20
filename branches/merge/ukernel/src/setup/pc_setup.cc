@@ -424,11 +424,9 @@ void PC_Setup::build_pmm()
     top_page -= 1;
     si->pmm.sys_info = top_page * sizeof(Page);
 
-    // TSS, one for each CPU, one page each.
-    for (unsigned int i = 0; i < Traits<Machine>::CPUS; i++) {
-        top_page -= 1; // (1 x sizeof(Page))
-        si->pmm.tss[i] = top_page * sizeof(Page);
-    }
+    // TSS0 (1 x sizeof(Page) x CPUS)
+    top_page -= Traits<Machine>::CPUS;
+    si->pmm.tss = top_page * sizeof(Page);
 
     // Page tables to map the whole physical memory
     // = NP/NPTE_PT * sizeof(Page)
@@ -654,7 +652,7 @@ void PC_Setup::setup_sys_pt()
                    << ",pt="   << (void *)si->pmm.sys_pt
                    << ",pd="   << (void *)si->pmm.sys_pd
                    << ",info=" << (void *)si->pmm.sys_info
-                   << ",tss[0]=" << Phy_Addr(si->pmm.tss[0])
+                   << ",tss="  << Phy_Addr(si->pmm.tss)
                    << ",mem="  << (void *)si->pmm.phy_mem_pts
                    << ",io="   << (void *)si->pmm.io_pts
                    << ",sysc=" << (void *)si->pmm.sys_code
@@ -763,9 +761,9 @@ void PC_Setup::setup_sys_pd()
     unsigned int i = 0;
     for(; i < (APIC_SIZE / sizeof(Page)); i++)
         pts[i] = (APIC_PHY + i * sizeof(Page)) | Flags::APIC;
-    for (unsigned int j = 0; i < ((APIC_SIZE / sizeof(Page)) + (IO_APIC_SIZE / sizeof(Page))); i++, j++)
-        pts[i] = (IO_APIC_PHY + j * sizeof(Page)) | Flags::IO_APIC;
-    for (unsigned int j = 0; i < ((APIC_SIZE / sizeof(Page)) + (IO_APIC_SIZE / sizeof(Page)) + (VGA_SIZE / sizeof(Page))); i++, j++)
+    for(unsigned int j = 0; i < ((APIC_SIZE / sizeof(Page)) + (IO_APIC_SIZE / sizeof(Page))); i++, j++)
+        pts[i] = (IO_APIC_PHY + j * sizeof(Page)) | Flags::APIC;
+    for(unsigned int j = 0; i < ((APIC_SIZE / sizeof(Page)) + (IO_APIC_SIZE / sizeof(Page)) + (VGA_SIZE / sizeof(Page))); i++, j++)
         pts[i] = (VGA_PHY + j * sizeof(Page)) | Flags::VGA;
     for(unsigned int j = 0; i < io_size; i++, j++)
         pts[i] = (si->pmm.io_base + j * sizeof(Page)) | Flags::PCI;

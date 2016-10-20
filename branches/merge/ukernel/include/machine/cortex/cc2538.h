@@ -23,6 +23,9 @@ protected:
 
     static const bool promiscuous = Traits<CC2538>::promiscuous;
 
+    static const unsigned int TX_TO_RX_DELAY = 2; // Radio takes extra 2us to go from TX to RX or idle
+    static const unsigned int RX_TO_TX_DELAY = 0;
+
 public:
     // Bases
     enum {
@@ -328,7 +331,9 @@ public:
         const static unsigned long long CLOCK = 32 * 1000 * 1000; // 32MHz
 
     public:
-        typedef long long Time_Stamp;
+        typedef unsigned long long Time_Stamp;
+
+        static unsigned long long frequency() { return CLOCK; }
 
     public:
         Timer() {}
@@ -696,6 +701,8 @@ protected:
     CC2538(unsigned int unit);
 
 public:
+    typedef CC2538RF::Timer Timer;
+
     ~CC2538();
 
     int send(const Address & dst, const Protocol & prot, const void * data, unsigned int size);

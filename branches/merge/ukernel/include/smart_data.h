@@ -15,7 +15,7 @@ struct Smart_Data_Type_Wrapper
 };
 
 // Smart Data encapsulates Transducers (i.e. sensors and actuators), local or remote, and bridges them with TSTP
-// Transducers must implement either sense() or actuate() and must define UNIT, NUM, and ERROR.
+// Transducers must be Observed objects, must implement either sense() or actuate(), and must define UNIT, NUM, and ERROR.
 template<typename Transducer>
 class Smart_Data: private TSTP::Observer, private Transducer::Observer
 {
