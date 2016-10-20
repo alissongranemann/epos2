@@ -177,7 +177,7 @@ template<> struct Traits<Network>: public Traits<void>
     static const unsigned int RETRIES = 3;
     static const unsigned int TIMEOUT = 10; // s
 
-    // This list is positional, with one network for each NIC in traits<NIC>::NICS
+    // This list is positional, with one network for each NIC in Traits<NIC>::NICS
     typedef LIST<IP> NETWORKS;
 };
 

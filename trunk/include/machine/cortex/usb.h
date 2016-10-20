@@ -223,7 +223,7 @@ private:
     static void flush() { reg(CS0_CSIL) |= CSIL_INPKTRDY; }
 
     static volatile USB_2_0::STATE _state;
-    static volatile bool _configured;
+    static volatile bool _ready_to_put; //FIXME: wrong semantics
     static bool _ready_to_put_next;
     static bool _was_locked;
 
@@ -235,16 +235,6 @@ public:
     static char get();
     static void put(char c);
     static void put(const char * c, unsigned int size);
-    static void disable();
-
-    static unsigned int get(char * out, unsigned int max_size);
-
-    static void eoi(const IC::Interrupt_Id & int_id) {
-        // USB interrupt flags are cleared when read
-        _cif |= reg(CIF);
-        _iif |= reg(IIF);
-        _oif |= reg(OIF);
-    }
 
     static bool ready_to_get() {
         if(!configured())
@@ -256,10 +246,22 @@ public:
         return ret;
     }
 
-    static bool ready_to_put() { return _configured; }
+    static bool ready_to_put() { return _ready_to_put; }
+
+    static void disable();
+
+    static unsigned int get(char * out, unsigned int max_size);
+
+    static void eoi(const IC::Interrupt_Id & int_id) {
+        // USB interrupt flags are cleared when read
+        _cif |= reg(CIF);
+        _iif |= reg(IIF);
+        _oif |= reg(OIF);
+    }
 
 private:
-    static bool configured() { return _configured; }
+    static bool configured() { return state() >= USB_2_0::STATE::CONFIGURED; }
+
     static void endpoint(int index) { reg(INDEX) = index; }
     static int endpoint() { return reg(INDEX); }
     static void control() { endpoint(0); }

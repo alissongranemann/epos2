@@ -21,6 +21,9 @@ __BEGIN_SYS
 template<typename Radio>
 class TSTP_MAC: public TSTP_Common, public TSTP_Common::Observed, public Radio
 {
+private:
+    typedef IEEE802_15_4 Phy_Layer;
+
 public:
     using TSTP_Common::Address;
     using TSTP_Common::Header;
@@ -32,37 +35,37 @@ public:
 
     typedef _UTIL::Buffer<NIC, Phy_Frame, void, TSTP_Metadata> Buffer;
 
-//private:
+private:
 
-    //TODO: Check. Maybe move something to Traits
-    static const bool drop_expired = true;
-    static const unsigned int PERIOD = 225000;
-    static const unsigned int CI = PERIOD;
-    static const unsigned int Tu = 192; // IEEE 802.15.4 TX Turnaround Time
-    static const unsigned int G = Tu + 128; // Tu + 8 / symbol_rate
-    static const unsigned int Ts = 480; // Time to send a single microframe (including PHY headers)
-    //static const unsigned int Ts = 580 - Tu; // Time to send a single microframe (including PHY headers)
-    static const unsigned int MICROFRAME_TIME = Ts;
-    static const unsigned int MIN_Ti = G;//Tu;// Minimum time between consecutive microframes
-    static const unsigned int TX_UNTIL_PROCESS_DATA_DELAY = 0;//5100; //TODO
-    static const unsigned long long RADIO_RADIUS = 1700;
+    static const unsigned int INT_HANDLING_DELAY = 19; // Time delay between scheduled tx_mf interrupt and actual Radio TX
+    static const unsigned int TX_DELAY = INT_HANDLING_DELAY + Radio::RX_TO_TX_DELAY;
 
-    //static const unsigned int NMF = (1 + ((CI - Ts) / (MIN_Ti + Ts))) > 0xfff ? 0xfff :
-    //                                (1 + ((CI - Ts) / (MIN_Ti + Ts)));
-    static const unsigned int NMF = 5;
-    static const unsigned int N_MICROFRAMES = NMF;
-    static const unsigned int Ti = (CI - Ts) / (NMF - 1) - Ts;
+    static const unsigned int G = IEEE802_15_4::CCA_TX_GAP;
+    static const unsigned int Tu = IEEE802_15_4::TURNAROUND_TIME;
+    static const unsigned int Ti = Tu + Radio::RX_TO_TX_DELAY + INT_HANDLING_DELAY;
     static const unsigned int TIME_BETWEEN_MICROFRAMES = Ti;
-    static const unsigned int DATA_LISTEN_MARGIN = TIME_BETWEEN_MICROFRAMES / 2; // Subtract this amount when calculating time until data transmission
-    static const unsigned int DATA_SKIP_TIME = DATA_LISTEN_MARGIN + 4500;
+    static const unsigned int Ts = static_cast<unsigned long long>(sizeof(Microframe) + Phy_Layer::PHY_HEADER_SIZE) * 1000000ull 
+                                    / static_cast<unsigned long long>(Phy_Layer::BYTE_RATE) + Radio::TX_TO_RX_DELAY; // Time to send a single Microframe (including PHY headers)
+    static const unsigned int MICROFRAME_TIME = Ts;
     static const unsigned int Tr = 2*Ts + Ti;
     static const unsigned int RX_MF_TIMEOUT = Tr;
-    static const unsigned int S = PERIOD - RX_MF_TIMEOUT;
-    static const unsigned int SLEEP_PERIOD = S;
-    static const unsigned int DUTY_CYCLE = (RX_MF_TIMEOUT * 1000000) / PERIOD; //ppm
+
+    static const unsigned int NMF = 1 + (((1000000ull * static_cast<unsigned long long>(Tr)) / static_cast<unsigned long long>(Traits<System>::DUTY_CYCLE)) + (Ti + Ts) - 1) / (Ti + Ts);
+    static const unsigned int N_MICROFRAMES = NMF;
+
+    static const unsigned int CI = Ts + (NMF - 1) * (Ts + Ti);
+    static const unsigned int PERIOD = CI;
+    static const unsigned int SLEEP_PERIOD = CI - RX_MF_TIMEOUT;
+
+    static const typename IF<(static_cast<unsigned long long>(Tr) * 1000000ull / static_cast<unsigned long long>(CI) <= Traits<System>::DUTY_CYCLE),
+        unsigned int,
+        void>::Result DUTY_CYCLE = static_cast<unsigned long long>(Tr) * 1000000ull / static_cast<unsigned long long>(CI); // in ppm. This line failing means that TSTP_MAC is unable to provide a duty cycle smaller than or equal to Traits<System>::DUTY_CYCLE
+
+    static const unsigned int DATA_LISTEN_MARGIN = TIME_BETWEEN_MICROFRAMES / 2; // Subtract this amount when calculating time until data transmission
+    static const unsigned int DATA_SKIP_TIME = DATA_LISTEN_MARGIN + 4500;
 
     static const unsigned int RX_DATA_TIMEOUT = DATA_SKIP_TIME + DATA_LISTEN_MARGIN + 4 * (MICROFRAME_TIME + TIME_BETWEEN_MICROFRAMES);
-    static const unsigned int CCA_TIME = (2 * MICROFRAME_TIME + TIME_BETWEEN_MICROFRAMES) > 256 ? (2 * MICROFRAME_TIME + TIME_BETWEEN_MICROFRAMES) : 256;
+    static const unsigned int CCA_TIME = (2 * Ts + Ti) > G ? (2 * Ts + Ti) : G;
 
 protected:
     TSTP_MAC() {}
@@ -74,7 +77,9 @@ protected:
 
     // Filter and assemble RX Buffer Metainformation
     bool pre_notify(Buffer * buf) {
-        db<TSTP_MAC<Radio>>(TRC) << "pre_notify(buf=" << buf << ")" << endl;
+        if(Traits<EPOS::S::TSTP>::hysterically_debugged)
+            db<TSTP_MAC<Radio>>(TRC) << "pre_notify(buf=" << buf << ")" << endl;
+
         assert(_in_rx_mf || _in_rx_data);
 
         if(_in_rx_mf) { // State: RX MF (part 2/3)
@@ -85,14 +90,18 @@ protected:
                 Microframe * mf = buf->frame()->data<Microframe>();
                 Frame_ID id = mf->id();
 
+                // Forge a TSTP identifier to make the radio notify listeners
+                mf->id(TSTP << 8);
+
                 // Initialize Buffer Metainformation
                 buf->sfd_time_stamp = Timer::sfd();
                 buf->id = id;
                 buf->downlink = mf->all_listen();
-                buf->is_new = true;
+                buf->is_new = false;
                 buf->is_microframe = true;
                 buf->relevant = mf->all_listen();
                 buf->trusted = false;
+                buf->sender_distance = mf->hint();
 
                 // Clear scheduled messages with same ID
                 for(Buffer::Element * el = _tx_schedule.head(); el; ) {
@@ -115,17 +124,19 @@ protected:
             buf->sfd_time_stamp = Timer::sfd();
             buf->id = _receiving_data_id;
             buf->sender_distance = _receiving_data_hint;
-            buf->is_new = true;
+            buf->is_new = false;
             buf->is_microframe = false;
             buf->relevant = true;
             buf->trusted = false;
-            buf->offset = 1000000;
 
             return true;
         }
     }
 
     bool post_notify(Buffer * buf) {
+        if(Traits<EPOS::S::TSTP>::hysterically_debugged)
+            db<TSTP_MAC<Radio>>(TRC) << "post_notify(buf=" << buf << ")" << endl;
+
         assert(_in_rx_mf || _in_rx_data);
 
         if(_in_rx_mf) { // State: RX MF (part 3/3)
@@ -135,23 +146,14 @@ protected:
             if(buf->relevant) { // Transition: [Relevant MF]
                 _receiving_data_id = buf->id;
                 _receiving_data_hint = mf->hint();
-                free(buf);
                 // State: Sleep until Data
                 Timer::interrupt(data_time, rx_data);
-                return true;
-            } else { // Transition: [Irrelevant MF]
+            } else // Transition: [Irrelevant MF]
                 Timer::interrupt(data_time + Timer::us2count(DATA_SKIP_TIME), update_tx_schedule);
-                return false;
-            }
+
+            free(buf);
+            return true;
         } else { // State: RX Data (part 3/3)
-            // Normalize offset calculated by the router
-            long long dist = abs(buf->my_distance - (buf->sender_distance - RADIO_RADIUS));
-            long long betha = (G * RADIO_RADIUS * 1000000) / (dist * G);
-            buf->offset = buf->offset * betha / 1000000;
-
-            // Introduce Euclidean Distance component to offset
-            buf->offset = (((buf->offset * dist * 1000000) / (G * RADIO_RADIUS / SLEEP_PERIOD)) * G) / 1000000;
-
             update_tx_schedule(0);
             return false;
         }
@@ -161,22 +163,16 @@ public:
     // Assemble TX Buffer Metainformation
     void marshal(Buffer * buf, const Address & src, const Address & dst, const Type & type) {
         buf->id = Random::random() & 0xfff;// TODO
-        unsigned long long r = Random::random();
-        unsigned long long mod = SLEEP_PERIOD / G + 1;
-        buf->offset = (r % mod) * G * 1000000;
         buf->is_microframe = false;
         buf->trusted = false;
-        buf->destined_to_me = false; // TODO
-        buf->tx_time = Timer::count2us(Timer::read());// TODO
-        buf->deadline = buf->tx_time + SLEEP_PERIOD * 10;// TODO
-        buf->downlink = true;// TODO
+        buf->is_new = true;
     }
 
     unsigned int unmarshal(Buffer * buf, Address * src, Address * dst, Type * type, void * data, unsigned int size) { /*TODO*/ return 0; }
 
     int send(Buffer * buf) {
         _tx_schedule.insert(buf->link());
-        return 0;
+        return buf->size();
     }
 
 private:
@@ -184,7 +180,9 @@ private:
     // State Machine
 
     static void update_tx_schedule(const IC::Interrupt_Id & id) {
-        db<TSTP_MAC<Radio>>(TRC) << "TSTP_MAC::update_tx_schedule(id=" << id << ")" << endl;
+        if(Traits<EPOS::S::TSTP>::hysterically_debugged)
+            db<TSTP_MAC<Radio>>(TRC) << "TSTP_MAC::update_tx_schedule(id=" << id << ")" << endl;
+
         // State: Update TX Schedule
         Radio::power(Power_Mode::SLEEP);
         _in_rx_data = false;
@@ -193,17 +191,17 @@ private:
         _tx_pending = 0;
 
         Time_Stamp now_ts = Timer::read();
-        Time_Stamp now_us = Timer::count2us(now_ts);
+        Microsecond now_us = Timer::count2us(now_ts);
 
         // Fetch next message and remove expired ones
         // TODO: Turn _tx_schedule into an ordered list
         for(Buffer::Element * el = _tx_schedule.head(); el; ) {
             Buffer::Element * next = el->next();
             Buffer * b = el->object();
-            if(drop_expired && (b->deadline <= now_us)) {
+            if(drop_expired && (b->expiry <= now_us)) {
                 _tx_schedule.remove(el);
                 delete b;
-            } else if((b->tx_time <= now_us) && ((!_tx_pending) || (_tx_pending->deadline >= b->deadline)))
+            } else if((!_tx_pending) || (_tx_pending->expiry >= b->expiry))
                 _tx_pending = b;
             el = next;
         }
@@ -213,9 +211,9 @@ private:
             new (&_mf) Microframe(_tx_pending->downlink, _tx_pending->id, N_MICROFRAMES - 1, _tx_pending->my_distance);
             Radio::power(Power_Mode::LIGHT);
             Radio::copy_to_nic(&_mf, sizeof(Microframe));
-            Radio::listen();
 
-            Timer::interrupt(Timer::read() + Timer::us2count(_tx_pending->offset) / 1000000, cca);
+            Time_Stamp offset = Timer::us2count(((_tx_pending->offset * SLEEP_PERIOD) / (G*RADIO_RANGE)) * G); // TODO: find a way to do this at buffer initialization
+            Timer::interrupt(Timer::read() + offset, cca);
         } else { // Transition: [No TX pending]
             // State: Sleep S
             Timer::interrupt(now_ts + Timer::us2count(SLEEP_PERIOD), rx_mf);
@@ -224,8 +222,13 @@ private:
 
     // State: Backoff CCA (CCA part)
     static void cca(const IC::Interrupt_Id & id) {
-        db<TSTP_MAC<Radio>>(TRC) << "TSTP_MAC::cca(id=" << id << ")" << endl;
+        if(Traits<EPOS::S::TSTP>::hysterically_debugged)
+            db<TSTP_MAC<Radio>>(TRC) << "TSTP_MAC::cca(id=" << id << ")" << endl;
+
         assert(N_MICROFRAMES > 1);
+
+        Radio::listen();
+
         // Try to send the first Microframe
         if(Radio::cca(CCA_TIME)) {
             _mf_time = Timer::read();
@@ -243,7 +246,9 @@ private:
 
     // State: RX MF (part 1/3)
     static void rx_mf(const IC::Interrupt_Id & id) {
-        db<TSTP_MAC<Radio>>(TRC) << "TSTP_MAC::rx_mf(id=" << id << ")" << endl;
+        if(Traits<EPOS::S::TSTP>::hysterically_debugged)
+            db<TSTP_MAC<Radio>>(TRC) << "TSTP_MAC::rx_mf(id=" << id << ")" << endl;
+
         //FIXME: no need to set both flags
         _in_rx_mf = true;
         _in_rx_data = false;
@@ -256,7 +261,9 @@ private:
 
     // State: RX Data (part 1/3)
     static void rx_data(const IC::Interrupt_Id & id) {
-        db<TSTP_MAC<Radio>>(TRC) << "TSTP_MAC::rx_data(id=" << id << ")" << endl;
+        if(Traits<EPOS::S::TSTP>::hysterically_debugged)
+            db<TSTP_MAC<Radio>>(TRC) << "TSTP_MAC::rx_data(id=" << id << ")" << endl;
+
         //FIXME: no need to set both flags
         _in_rx_data = true;
         _in_rx_mf = false;
@@ -269,7 +276,9 @@ private:
 
     // State: TX MFs
     static void tx_mf(const IC::Interrupt_Id & id) {
-        db<TSTP_MAC<Radio>>(TRC) << "TSTP_MAC::tx_mf(id=" << id << ")" << endl;
+        if(Traits<EPOS::S::TSTP>::hysterically_debugged)
+            db<TSTP_MAC<Radio>>(TRC) << "TSTP_MAC::tx_mf(id=" << id << ")" << endl;
+
         // The first Microframe is sent at cca()
         Radio::transmit_no_cca();
 
@@ -281,17 +290,17 @@ private:
             Radio::copy_to_nic(&_mf, sizeof(Microframe));
             Timer::interrupt(_mf_time, tx_mf);
         } else {
+            _tx_pending->frame()->data<Header>()->last_hop_time(_mf_time + Timer::us2count(TX_DELAY));
             Radio::copy_to_nic(_tx_pending->frame(), _tx_pending->size());
             Timer::interrupt(_mf_time, tx_data);
         }
     }
 
     static void tx_data(const IC::Interrupt_Id & id) {
-        db<TSTP_MAC<Radio>>(TRC) << "TSTP_MAC::tx_data(id=" << id << ")" << endl;
-        if(!_tx_pending->destined_to_me) { // Transition: [Is not dest.]
-            //hdr->last_hop_time(ts); // TODO
-            //hdr->elapsed(hdr->elapsed() + TSTP_Timer::ts_to_us(ts - _tx_pending->sfd_time_stamp())); // TODO
+        if(Traits<EPOS::S::TSTP>::hysterically_debugged)
+            db<TSTP_MAC<Radio>>(TRC) << "TSTP_MAC::tx_data(id=" << id << ")" << endl;
 
+        if(!_tx_pending->destined_to_me) { // Transition: [Is not dest.]
             // State: TX Data
             Radio::transmit_no_cca();
             while(!Radio::tx_done());
@@ -313,12 +322,14 @@ private:
     static Microframe _mf;
     static Time_Stamp _mf_time;
     static Frame_ID _receiving_data_id;
-    static long _receiving_data_hint;
+    static Hint _receiving_data_hint;
     static Buffer::List _tx_schedule;
     static Buffer * _tx_pending;
     static bool _in_rx_mf;
     static bool _in_rx_data;
 };
+
+// The compiler makes sure that template static variables are only defined once
 
 template<typename Radio>
 TSTP_Common::Microframe TSTP_MAC<Radio>::_mf;
@@ -330,7 +341,7 @@ template<typename Radio>
 TSTP_Common::Frame_ID TSTP_MAC<Radio>::_receiving_data_id;
 
 template<typename Radio>
-long TSTP_MAC<Radio>::_receiving_data_hint;
+typename TSTP_MAC<Radio>::Hint TSTP_MAC<Radio>::_receiving_data_hint;
 
 template<typename Radio>
 TSTP_MAC<Radio>::Buffer::List TSTP_MAC<Radio>::_tx_schedule;

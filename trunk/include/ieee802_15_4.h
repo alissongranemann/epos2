@@ -26,6 +26,10 @@ public:
 
     // IEEE 802.15.4 Physical Layer
     static const unsigned int MTU = 127;
+    static const unsigned int CCA_TX_GAP = 320;
+    static const unsigned int TURNAROUND_TIME = 192;
+    static const unsigned int BYTE_RATE = 31250; // Bytes per second
+    static const unsigned int PHY_HEADER_SIZE = 6;
 
     typedef unsigned char Data[MTU];
 
@@ -131,8 +135,8 @@ public:
                 return db;
             }
 
-            private:
-                unsigned short _fc;
+        private:
+            unsigned short _fc;
         } __attribute__((packed));
 
     public:

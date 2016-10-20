@@ -35,11 +35,9 @@ int CC2538::send(const Address & dst, const Type & type, const void * data, unsi
 {
     db<CC2538>(TRC) << "CC2538::send(s=" << address() << ",d=" << dst << ",p=" << hex << type << dec << ",d=" << data << ",s=" << size << ")" << endl;
 
-    if(Buffer * b = alloc(reinterpret_cast<NIC*>(this), dst, type, 0, 0, size)) {
-        memcpy(b->frame()->data<void>(), data, size);
-        return send(b);
-    }
-    return 0;
+    Buffer * b = alloc(reinterpret_cast<NIC*>(this), dst, type, 0, 0, size);
+    memcpy(b->frame()->data<void>(), data, size);
+    return send(b);
 }
 
 int CC2538::receive(Address * src, Type * type, void * data, unsigned int size)
@@ -90,8 +88,6 @@ int CC2538::send(Buffer * buf)
         _statistics.tx_bytes += size;
     } else
         db<CC2538>(WRN) << "CC2538::send(buf=" << buf << ")" << " => failed!" << endl;
-
-    delete buf;
 
     return size;
 }
@@ -149,7 +145,7 @@ void CC2538::handle_int()
                 buf->size(CC2538RF::copy_from_nic(buf->frame()));
                 if(MAC::pre_notify(buf)) {
                     db<CC2538>(TRC) << "CC2538::handle_int:receive(b=" << buf << ") => " << *buf << endl;
-                    bool notified = notify(reinterpret_cast<MAC::Header *>(buf->frame())->type(), buf);
+                    bool notified = notify(reinterpret_cast<IEEE802_15_4::Header *>(buf->frame())->type(), buf);
                     if(!MAC::post_notify(buf) && !notified)
                         buf->unlock(); // No one was waiting for this frame, so make it available for receive()
                 } else {

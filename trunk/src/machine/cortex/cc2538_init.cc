@@ -22,20 +22,23 @@ CC2538::CC2538(unsigned int unit): _unit(unit), _rx_cur_consume(0), _rx_cur_prod
     _address[0] = ffsm(SHORT_ADDR0);
     _address[1] = ffsm(SHORT_ADDR1);
 
-    xreg(FRMFILT0) |= FRAME_FILTER_EN; // Enable frame filtering
+    // TODO: Define what will be used for each MAC
+    //xreg(FRMFILT0) |= FRAME_FILTER_EN; // Enable frame filtering
+    xreg(FRMFILT0) &= ~FRAME_FILTER_EN; // Disable frame filtering
     xreg(FRMFILT1) &= ~ACCEPT_FT2_ACK; // ACK frames are handled only when expected
 
-    xreg(SRCMATCH) |= SRC_MATCH_EN; // Enable automatic source address matching
+    //xreg(SRCMATCH) |= SRC_MATCH_EN; // Enable automatic source address matching
+    xreg(SRCMATCH) &= ~SRC_MATCH_EN; // Disable automatic source address matching
 
     xreg(FRMCTRL0) |= AUTO_CRC; // Enable auto-CRC
 
-    channel(15);
+    channel(13);
 
     xreg(FRMCTRL0) |= AUTO_ACK; // Enable auto ACK
 
     reset(); // Reset statistics
 
-    xreg(FRMCTRL1) |= SET_RXENMASK_ON_TX; // Enter receive mode after TX
+    xreg(FRMCTRL1) &= ~SET_RXENMASK_ON_TX; // Do not enter receive mode after ISTXON
 
     // Enable useful device interrupts
     // WARNING: do not enable INT_TXDONE, because CC2538RF::tx_done() handles it
@@ -51,6 +54,14 @@ CC2538::CC2538(unsigned int unit): _unit(unit), _rx_cur_consume(0), _rx_cur_prod
 void CC2538::init(unsigned int unit)
 {
     db<Init, CC2538>(TRC) << "Radio::init(unit=" << unit << ")" << endl;
+
+    // Enable debug signals
+    xreg(RFC_OBS_CTRL0) = SIGNAL_TX_ACTIVE;
+    xreg(RFC_OBS_CTRL1) = SIGNAL_RX_ACTIVE;
+    cctest(CCTEST_OBSSEL4) = OBSSEL_SIG0;
+    cctest(CCTEST_OBSSEL6) = OBSSEL_SIG1;
+
+    Timer::init();
 
     // Initialize the device
     CC2538 * dev = new (SYSTEM) CC2538(unit);

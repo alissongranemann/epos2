@@ -111,7 +111,7 @@ public:
     ARMv7_A_PMU() {}
 
     static void config(const Channel & channel, const Event & event, const Flags & flags = NONE) {
-        assert((channel < CHANNELS) && (event < EVENTS));
+        assert((static_cast<unsigned int>(channel) < CHANNELS) && (static_cast<unsigned int>(event) < EVENTS));
         db<PMU>(TRC) << "PMU::config(c=" << channel << ",e=" << event << ",f=" << flags << ")" << endl;
         pmselr(channel);
         pmxevtyper(event);

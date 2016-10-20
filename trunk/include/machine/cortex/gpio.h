@@ -43,6 +43,7 @@ public:
         } else
             *_data = 0xff * value;
     }
+
     void clear() { set(false); }
 
     void direction(const Direction & dir) {
