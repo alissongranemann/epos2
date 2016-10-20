@@ -182,6 +182,11 @@ void Agent::handle_address_space()
     case CREATE:
         id(Id(ADDRESS_SPACE_ID, reinterpret_cast<Id::Unit_Id>(new Adapter<Address_Space>())));
         break;
+    case CREATE1:
+        MMU::Page_Directory * pd;
+        in(pd);
+        id(Id(ADDRESS_SPACE_ID, reinterpret_cast<Id::Unit_Id>(new Adapter<Address_Space>(pd))));
+        break;
     case DESTROY:
         delete as;
         break;
@@ -199,12 +204,18 @@ void Agent::handle_address_space()
         in(seg, addr);
         res = as->attach(seg, addr);
     } break;
-    case ADDRESS_SPACE_DETACH: {
+    case ADDRESS_SPACE_DETACH1: {
         Segment * seg;
         in(seg);
         as->detach(seg);
     } break;
-    case ADDRESS_PHYSICAL: {
+    case ADDRESS_SPACE_DETACH2: {
+        Segment * seg;
+        CPU::Log_Addr addr;
+        in(seg, addr);
+        as->detach(seg, addr);
+    } break;
+    case ADDRESS_SPACE_PHYSICAL: {
         CPU::Log_Addr addr;
         in(addr);
         res = as->physical(addr);

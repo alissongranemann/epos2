@@ -59,6 +59,8 @@ public:
     CPU::Log_Addr attach(Segment * seg) { enter(); CPU::Log_Addr res = Component::attach(seg); leave(); return res; }
     CPU::Log_Addr attach(Segment * seg, const CPU::Log_Addr & addr) { enter(); CPU::Log_Addr res = Component::attach(seg, addr); leave(); return res; }
     void detach(Segment * seg) { enter(); Component::detach(seg); leave(); }
+    void detach(Segment * seg, const CPU::Log_Addr & addr) { enter(); Component::detach(seg, addr); leave(); }
+    CPU::Phy_Addr physical(const CPU::Log_Addr & addr) { enter(); CPU::Phy_Addr res = Component::physical(addr); leave(); return res; }
 
     unsigned int size() { enter(); unsigned int res = Component::size(); leave(); return res; }
     CPU::Phy_Addr phy_address() { enter(); CPU::Phy_Addr res = Component::phy_address(); leave(); return res; }
