@@ -27,42 +27,19 @@ public:
     // IEEE 802.15.4 Physical Layer
     static const unsigned int MTU = 127;
 
-    // Header
-    class Phy_Header
-    {
-    public:
-        Phy_Header() {};
-        Phy_Header(const Reg8 & len): _length(len) {};
-
-        const Reg8 & length() const { return _length; }
-        void length(const Reg8 & len) { _length = len; }
-
-        friend Debug & operator<<(Debug & db, const Phy_Header & h) {
-            db << "{l=" << h._length << "}";
-            return db;
-        }
-
-    protected:
-        Reg8 _length;
-    } __attribute__((packed));
-
     typedef unsigned char Data[MTU];
 
     // Frame
-    class Phy_Frame: public Phy_Header
+    class Phy_Frame
     {
     public:
         Phy_Frame() {}
-        Phy_Frame(const Reg8 & len): Phy_Header(len) {}
-        Phy_Frame(const void * data, const Reg8 & len): Phy_Header(len) { memcpy(_data, data, len); }
-
-        Phy_Header * header() { return this; }
 
         template<typename T>
         T * data() { return reinterpret_cast<T *>(&_data); }
 
         friend Debug & operator<<(Debug & db, const Phy_Frame & f) {
-            db << "{h=" << reinterpret_cast<const Phy_Header &>(f) << ",d=" << f._data << "}";
+            db << "{d=" << f._data << "}";
             return db;
         }
 
@@ -115,7 +92,7 @@ public:
     // Header
     // 802.15.4 headers can have variable format, for now this only
     // supports a simple, fixed format
-    class Header: public Phy_Header
+    class Header
     {
     public:
         // Frame Control
@@ -161,14 +138,11 @@ public:
     public:
         Header() {}
 
-        Header(const Type & type, const Reg8 & len)
-        : Phy_Header(len + sizeof(Header) - sizeof(Phy_Header)), _frame_control(type), _sequence_number(0), _dst_pan_id(PAN_ID_BROADCAST) {};
+        Header(const Type & type)
+        : _frame_control(type), _sequence_number(0), _dst_pan_id(PAN_ID_BROADCAST) {};
 
         Header(const Type & type, const Address & src, const Address & dst)
-        : Phy_Header(0 + sizeof(Header) - sizeof(Phy_Header)), _frame_control(type), _sequence_number(0), _dst_pan_id(PAN_ID_BROADCAST), _dst(dst), _src(src) { ack_request(dst != broadcast()); }
-
-        Header(const Type & type, const Address & src, const Address & dst, const Reg8 & len)
-        : Phy_Header(len + sizeof(Header) - sizeof(Phy_Header)), _frame_control(type), _sequence_number(0), _dst_pan_id(PAN_ID_BROADCAST), _dst(dst), _src(src) { ack_request(dst != broadcast()); }
+        : _frame_control(type), _sequence_number(0), _dst_pan_id(PAN_ID_BROADCAST), _dst(dst), _src(src) { ack_request(dst != broadcast()); }
 
         const Address & src() const { return _src; }
         const Address & dst() const { return _dst; }
@@ -183,7 +157,7 @@ public:
         bool ack_request() { return _frame_control.ar(); }
 
         friend Debug & operator<<(Debug & db, const Header & h) {
-            db << "{ph=" << reinterpret_cast<const Phy_Header &>(h) << ",fc=" << h._frame_control << ",sn=" << h._sequence_number << ",pid=" << h._dst_pan_id << ",dst=" << h._dst << ",src=" << h._src << "," << "}";
+            db << "{" << "fc=" << h._frame_control << ",sn=" << h._sequence_number << ",pid=" << h._dst_pan_id << ",dst=" << h._dst << ",src=" << h._src << "," << "}";
             return db;
         }
 
@@ -198,14 +172,17 @@ public:
     class Frame: public Header
     {
     public:
-        static const unsigned int MTU = IEEE802_15_4::MTU - sizeof(Header) + sizeof(Phy_Header) - sizeof(CRC);
+        static const unsigned int MTU = IEEE802_15_4::MTU - sizeof(Header) - sizeof(CRC);
         typedef unsigned char Data[MTU];
 
     public:
         Frame() {}
         Frame(const Type & type, const Address & src, const Address & dst): Header(type, src, dst) {}
         Frame(const Type & type, const Address & src, const Address & dst, const void * data, unsigned int size)
-        : Header(type, src, dst, ((size & (~0x7f)) ? 0x7f : size) + sizeof(CRC)) { memcpy(_data, data, size); }
+        : Header(type, src, dst) {
+            assert(size <= MTU);
+            memcpy(_data, data, size);
+        }
 
         Header * header() { return this; }
 
@@ -224,15 +201,12 @@ public:
 
     typedef Frame PDU;
 
-
     // Buffers used to hold frames across a zero-copy network stack
-    typedef _UTIL::Buffer<NIC, Phy_Frame, void, IF<Traits<_SYS::TSTP>::enabled, TSTP_Metadata, Dummy>::Result> Buffer;
-
+    typedef _UTIL::Buffer<NIC, IF<Traits<_SYS::TSTP>::enabled, Phy_Frame, Frame>::Result, void, IF<Traits<_SYS::TSTP>::enabled, TSTP_Metadata, IEEE802_15_4_Metadata>::Result> Buffer;
 
     // Observers of a protocol get a also a pointer to the received buffer
     typedef Data_Observer<Buffer, Type> Observer;
     typedef Data_Observed<Buffer, Type> Observed;
-
 
     // Meaningful statistics for IEEE 802.15.4
     struct Statistics: public NIC_Common::Statistics

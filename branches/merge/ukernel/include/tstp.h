@@ -25,6 +25,12 @@ public:
         V0 = 4
     };
 
+    // MAC definitions
+    typedef CPU::Reg16 Frame_ID;
+    typedef CPU::Reg32 Hint;
+    typedef NIC_Common::CRC16 CRC;
+    typedef unsigned short MF_Count;
+
     // Packet Types
     typedef unsigned char Type;
     enum {
@@ -46,7 +52,7 @@ public:
     // Time
     typedef RTC::Microsecond Microsecond;
     typedef unsigned long long Time;
-    typedef unsigned long Time_Offset;
+    typedef long Time_Offset;
 
     // Geographic Coordinates
     template<Scale S>
@@ -78,6 +84,55 @@ public:
         Time t1;
     } __attribute__((packed));
     typedef _Region<SCALE> Region;
+
+    // MAC Preamble Microframe
+    class Microframe
+    {
+    public:
+        Microframe() {}
+
+        Microframe(bool all_listen, const Frame_ID & id, const MF_Count & count, const Hint & hint = 0)
+        : _al_count_idh((id & 0xf) | ((count & 0x7ff) << 4) | (static_cast<unsigned int>(all_listen) << 15)), _idl(id & 0xff), _hint(hint) {}
+
+        MF_Count count() const { return (_al_count_idh & (0x7ff << 4)) >> 4; }
+        MF_Count dec_count() {
+            MF_Count c = count();
+            _al_count_idh &= ~(0x7ff << 4);
+            _al_count_idh |= (c-1) << 4;
+            return c;
+        }
+
+        Frame_ID id() const { return ((_al_count_idh | 0xf) << 8) + _idl; }
+        void id(Frame_ID id) {
+            _al_count_idh &= 0xfff0;
+            _al_count_idh |= (id & 0xf00) >> 8;
+            _idl = id & 0xff;
+        }
+
+        void all_listen(bool all_listen) {
+            if(all_listen)
+                _al_count_idh |= (1 << 15);
+            else
+                _al_count_idh &= ~(1 << 15);
+        }
+        bool all_listen() const { return _al_count_idh & (1 << 15); }
+
+        Hint hint() const { return _hint; }
+        void hint(const Hint & h) { _hint = h; }
+
+        friend Debug & operator<<(Debug & db, const Microframe & m) {
+            db << "{al=" << m.all_listen() << ",c=" << m.count() << ",id=" << m.id() << ",h=" << m._hint << ",crc=" << m._crc << "}";
+            return db;
+        }
+
+    private:
+        unsigned short _al_count_idh; // all_listen : 1
+                                      // count : 11
+                                      // id MSBs: 4
+        unsigned char _idl;           // id LSBs: 8
+        Hint _hint;
+        CRC _crc;
+    } __attribute__((packed));
 
     // Packet Header
     template<Scale S>
@@ -417,9 +472,25 @@ __END_SYS
 
 __BEGIN_SYS
 
+class TSTP_Router: public TSTP_Common, private NIC::Observer
+{
+private:
+    typedef NIC::Buffer Buffer;
+
+public:
+    TSTP_Router();
+    ~TSTP_Router();
+
+    static bool bootstrap() { return true; }
+
+    void update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf);
+};
+
 class TSTP: public TSTP_Common, private NIC::Observer
 {
     template<typename> friend class Smart_Data;
+    friend class TSTP_Router;
+    
 public:
     // Buffers received from the NIC
     typedef NIC::Buffer Buffer;
@@ -676,8 +747,9 @@ protected:
 public:
     ~TSTP();
 
-    static Coordinates here() { return Coordinates(0, 0, 0); }
-    static Time now() { return RTC::seconds_since_epoch(); }
+    static Coordinates here() { return Coordinates(0, 0, 0); } // TODO
+    static Coordinates sink_address() { return Coordinates(10, 10, 10); } // TODO
+    static Time now() { return RTC::seconds_since_epoch(); } // TODO
 
     static void attach(Observer * obs, void * subject) { _observed.attach(obs, int(subject)); }
     static void detach(Observer * obs, void * subject) { _observed.detach(obs, int(subject)); }
