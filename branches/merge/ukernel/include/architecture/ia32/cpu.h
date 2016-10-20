@@ -593,6 +593,23 @@ public:
         ASM("ljmp *%0" : "=o" (address));
     }
 
+    static Reg16 tss_selector(unsigned int cpu_id)
+    {
+        assert(cpu_id >= 0 && cpu_id < Traits<Machine>::CPUS);
+
+        unsigned int GDT_TSS_i = gdt_tss_index(cpu_id);
+        unsigned int SEL_TSS_i = (GDT_TSS_i << 3)  | PL_SYS;
+
+        return SEL_TSS_i;
+    }
+
+    static unsigned int gdt_tss_index(unsigned int cpu_id)
+    {
+        assert(cpu_id >= 0 && cpu_id < Traits<Machine>::CPUS);
+
+        return GDT_TSS0 + cpu_id;
+    }
+
 private:
     template<typename Head, typename ... Tail>
     static void init_stack_helper(Log_Addr sp, Head head, Tail ... tail) {

@@ -120,7 +120,7 @@ private:
     void setup_sys_pt();
     void setup_sys_pd();
     void enable_paging();
-    void setup_tss0();
+    void setup_tss();
 
     void load_parts();
     void call_next();
@@ -200,7 +200,7 @@ PC_Setup::PC_Setup(char * boot_image)
         APIC::remap(Memory_Map::APIC);
 
         // Configure a TSS for system calls and inter-level interrupt handling
-        setup_tss0();
+        setup_tss();
 
         // Load EPOS parts (e.g. INIT, SYSTEM, APP)
         load_parts();
@@ -215,6 +215,8 @@ PC_Setup::PC_Setup(char * boot_image)
 
         // Enable paging
         enable_paging();
+
+        setup_tss();
     }
 
     Machine::smp_barrier(si->bm.n_cpus);
@@ -421,9 +423,11 @@ void PC_Setup::build_pmm()
     top_page -= 1;
     si->pmm.sys_info = top_page * sizeof(Page);
 
-    // TSS0 (1 x sizeof(Page))
-    top_page -= 1;
-    si->pmm.tss0 = top_page * sizeof(Page);
+    // TSS, one for each CPU, one page each.
+    for (unsigned int i = 0; i < Traits<Machine>::CPUS; i++) {
+        top_page -= 1; // (1 x sizeof(Page))
+        si->pmm.tss[i] = top_page * sizeof(Page);
+    }
 
     // Page tables to map the whole physical memory
     // = NP/NPTE_PT * sizeof(Page)
@@ -624,14 +628,21 @@ void PC_Setup::setup_gdt()
     gdt[CPU::GDT_FLT_DATA]  = GDT_Entry(0,  0xfffff, CPU::SEG_FLT_DATA);
     gdt[CPU::GDT_APP_CODE]  = GDT_Entry(0,  0xfffff, CPU::SEG_APP_CODE);
     gdt[CPU::GDT_APP_DATA]  = GDT_Entry(0,  0xfffff, CPU::SEG_APP_DATA);
-    gdt[CPU::GDT_TSS0]      = GDT_Entry(TSS0, 0xfff, CPU::SEG_TSS0);
+
+    for (unsigned int i = 0; i < Traits<Machine>::CPUS; i++) {
+        gdt[CPU::gdt_tss_index(i)] = GDT_Entry(Memory_Map::tss_logical_address(i), 0xfff, CPU::SEG_TSS0);
+    }
 
     db<Setup>(INF) << "GDT[NULL=" << CPU::GDT_NULL     << "]=" << gdt[CPU::GDT_NULL] << endl;
     db<Setup>(INF) << "GDT[SYCD=" << CPU::GDT_SYS_CODE << "]=" << gdt[CPU::GDT_SYS_CODE] << endl;
     db<Setup>(INF) << "GDT[SYDT=" << CPU::GDT_SYS_DATA << "]=" << gdt[CPU::GDT_SYS_DATA] << endl;
     db<Setup>(INF) << "GDT[APCD=" << CPU::GDT_APP_CODE << "]=" << gdt[CPU::GDT_APP_CODE] << endl;
     db<Setup>(INF) << "GDT[APDT=" << CPU::GDT_APP_DATA << "]=" << gdt[CPU::GDT_APP_DATA] << endl;
-    db<Setup>(INF) << "GDT[TSS0=" << CPU::GDT_TSS0     << "]=" << gdt[CPU::GDT_TSS0] << endl;
+
+    for (unsigned int i = 0; i < Traits<Machine>::CPUS; i++) {
+        db<Setup>(INF) << "GDT[TSS " << i << "=" << CPU::gdt_tss_index(i) << "]=" << gdt[CPU::gdt_tss_index(i)] << endl;
+    }
+
 }
 
 //========================================================================
@@ -642,7 +653,7 @@ void PC_Setup::setup_sys_pt()
                    << ",pt="   << (void *)si->pmm.sys_pt
                    << ",pd="   << (void *)si->pmm.sys_pd
                    << ",info=" << (void *)si->pmm.sys_info
-                   << ",tss0=" << Phy_Addr(si->pmm.tss0)
+                   << ",tss[0]=" << Phy_Addr(si->pmm.tss[0])
                    << ",mem="  << (void *)si->pmm.phy_mem_pts
                    << ",io="   << (void *)si->pmm.io_pts
                    << ",sysc=" << (void *)si->pmm.sys_code
@@ -672,8 +683,10 @@ void PC_Setup::setup_sys_pt()
     // GDT
     sys_pt[MMU::page(GDT)] = si->pmm.gdt | Flags::SYS;
 
-    // TSS0
-    sys_pt[MMU::page(TSS0)] = si->pmm.tss0 | Flags::SYS;
+    // TSSs
+    for (unsigned int i = 0; i < Traits<Machine>::CPUS; i++) {
+        sys_pt[MMU::page(Memory_Map::tss_logical_address(i))] = si->pmm.tss[i] | Flags::SYS;
+    }
 
     // Set an entry to this page table, so the system can access it later
     sys_pt[MMU::page(SYS_PT)] = si->pmm.sys_pt | Flags::SYS;
@@ -766,32 +779,35 @@ void PC_Setup::setup_sys_pd()
 }
 
 //========================================================================
-void PC_Setup::setup_tss0()
+void PC_Setup::setup_tss()
 {
-    db<Setup>(TRC) << "setup_tss0(tss0=" << Log_Addr(TSS0) << ")" << endl;
+    // Get TSS's logical address (after enabling paging)
+    unsigned int cpu_id = Machine::cpu_id();
+    unsigned int tss_address = Memory_Map::tss_logical_address(cpu_id);
 
-    // Get TSS0's logical address (after enabling paging)
-    TSS * tss0 = reinterpret_cast<TSS *>(TSS0);
+    db<Setup>(TRC) << "setup_tss_i(tss[" << cpu_id << "] = " << reinterpret_cast<void *>(tss_address) << ")" << endl;
 
-    // Clear TSS0
-    memset(tss0, 0, sizeof(Page));
+    TSS * tss = reinterpret_cast<TSS *>(tss_address);
 
-    // Configure only the segment selectors and the kernel stack on the bootstrap CPU
-    tss0->ss0 = CPU::SEL_SYS_DATA;
-    tss0->esp0 = SYS_STACK + Traits<System>::STACK_SIZE;
-    tss0->cs = (CPU::GDT_SYS_CODE << 3)  | CPU::PL_APP;
-    tss0->ss = (CPU::GDT_SYS_DATA << 3)  | CPU::PL_APP;
-    tss0->ds = tss0->ss;
-    tss0->es = tss0->ss;
-    tss0->fs = tss0->ss;
-    tss0->gs = tss0->ss;
+    // Clear TSS
+    memset(tss, 0, sizeof(Page));
 
-    // Load TR with TSS0
-    CPU::Reg16 tr = CPU::SEL_TSS0;
+    tss->ss0 = CPU::SEL_SYS_DATA;
+    if (cpu_id == 0)
+        tss->esp0 = SYS_STACK + Traits<System>::STACK_SIZE; /* APs' tss->esp0 will be configured later by CPU::Context::load */
+    tss->cs = (CPU::GDT_SYS_CODE << 3)  | CPU::PL_APP;
+    tss->ss = (CPU::GDT_SYS_DATA << 3)  | CPU::PL_APP;
+    tss->ds = tss->ss;
+    tss->es = tss->ss;
+    tss->fs = tss->ss;
+    tss->gs = tss->ss;
+
+    // Load TR with TSS
+    CPU::Reg16 tr = CPU::tss_selector(cpu_id);
     CPU::tr(tr);
     tr = CPU::tr();
 
-    db<Setup>(INF) << "TR=" << tr << ",TSS0={ss0=" << tss0->ss0 << ",esp0=" << Log_Addr(tss0->esp0) << "}" << endl;
+    db<Setup>(INF) << "TR=" << tr << ",TSS[" << cpu_id << "]={ss0=" << tss->ss0 << ",esp0=" << Log_Addr(tss->esp0) << "}" << endl;
 }
 
 //========================================================================

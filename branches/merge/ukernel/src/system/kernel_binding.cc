@@ -2,8 +2,11 @@
 
 #include <framework/main.h>
 #include <framework/agent.h>
+#include <big_kernel_lock.h>
 
 __BEGIN_SYS
+
+Spin Big_Kernel_Lock::_lock;
 
 IPC::Observed IPC::_observed;
 
@@ -25,4 +28,15 @@ Agent::Member Agent::_handlers[] = {&Agent::handle_thread,
 __END_SYS
 
 __USING_SYS;
-extern "C" { void _exec(void * m) { reinterpret_cast<Agent *>(m)->exec(); } }
+extern "C" {
+    void _exec(void * m)
+    {
+        if (Traits<Thread>::smp)
+            Big_Kernel_Lock::lock();
+
+        reinterpret_cast<Agent *>(m)->exec();
+
+        if (Traits<Thread>::smp)
+            Big_Kernel_Lock::unlock();
+    }
+}

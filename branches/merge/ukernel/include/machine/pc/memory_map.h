@@ -41,6 +41,13 @@ struct Memory_Map
         SYS_STACK     = SYS + 0x003c0000,
         SYS_HEAP      = SYS + 0x00400000
     };
+
+    static unsigned int tss_logical_address(unsigned int cpu_id)
+    {
+        assert(cpu_id >= 0 && cpu_id < Traits<Machine>::CPUS);
+
+        return TSS0 + cpu_id * 0x1000;
+    }
 };
 
 __END_SYS

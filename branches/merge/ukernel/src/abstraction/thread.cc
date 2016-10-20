@@ -4,6 +4,7 @@
 #include <system.h>
 #include <thread.h>
 #include <alarm.h> // for FCFS
+#include <big_kernel_lock.h>
 
 // This_Thread class attributes
 __BEGIN_UTIL
@@ -369,6 +370,9 @@ void Thread::dispatch(Thread * prev, Thread * next, bool charge)
 
         if(smp)
             _lock.release();
+
+        if(multitask && smp)
+            Big_Kernel_Lock::unlock();
 
         if(multitask && (next->_task != prev->_task))
             next->_task->activate();

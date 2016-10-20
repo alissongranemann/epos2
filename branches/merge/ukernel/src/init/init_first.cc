@@ -10,6 +10,8 @@ extern "C" { void __epos_app_entry(); }
 
 __BEGIN_SYS
 
+volatile bool Task_Master_Ready = false;
+
 class Init_First
 {
 private:
@@ -45,6 +47,7 @@ public:
 
                 // Thread::self() and Task::self() can be safely called after the construction of the Main task.
                 first = Thread::self();
+                Task_Master_Ready = true;
             } else {
                 // If EPOS is a library, then adjust the application entry point to __epos_app_entry,
                 // which will directly call main(). In this case, _init will have already been called,
@@ -54,8 +57,12 @@ public:
 
             // Idle thread creation must succeed main, thus avoiding implicit rescheduling.
             new (SYSTEM) Thread(Thread::Configuration(Thread::READY, Thread::IDLE), &Thread::idle);
-        } else
+        } else {
+            if(Traits<System>::multitask)
+                while (! Task_Master_Ready);
+
             first = new (SYSTEM) Thread(Thread::Configuration(Thread::RUNNING, Thread::IDLE), &Thread::idle);
+        }
 
         Machine::smp_barrier();
 
