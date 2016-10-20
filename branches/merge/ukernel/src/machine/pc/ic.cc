@@ -7,6 +7,7 @@ __BEGIN_SYS
 
 // Class attributes
 APIC::Log_Addr APIC::_base;
+IO_APIC::Log_Addr IO_APIC::_base;
 IC::Interrupt_Handler IC::_int_vector[IC::INTS];
 
 

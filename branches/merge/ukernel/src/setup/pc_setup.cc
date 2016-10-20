@@ -198,6 +198,7 @@ PC_Setup::PC_Setup(char * boot_image)
         si = reinterpret_cast<System_Info *>(SYS_INFO);
         VGA::init(Memory_Map::VGA); // Display can be Serial_Display, so VGA here!
         APIC::remap(Memory_Map::APIC);
+        IO_APIC::remap(Memory_Map::IO_APIC);
 
         // Configure a TSS for system calls and inter-level interrupt handling
         setup_tss();
@@ -753,6 +754,7 @@ void PC_Setup::setup_sys_pd()
     // Calculate the number of page tables needed to map the IO address space
     unsigned int io_size = MMU::pages(si->pmm.io_top - si->pmm.io_base);
     io_size += APIC_SIZE / sizeof(Page); // Add room for APIC (4 kB, 1 page)
+    io_size += IO_APIC_SIZE / sizeof(Page); // Add room for IO_APIC (4 kB, 1 page)
     io_size += VGA_SIZE / sizeof(Page); // Add room for VGA (64 kB, 16 pages)
     n_pts = (io_size + MMU::PT_ENTRIES - 1) / MMU::PT_ENTRIES;
 
