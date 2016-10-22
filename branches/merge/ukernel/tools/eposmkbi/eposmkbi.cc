@@ -73,6 +73,10 @@ int main(int argc, char **argv)
     // Say hello
     printf("\nEPOS bootable image tool\n\n");
 
+#ifdef BIG_IMAGE
+    printf("Compiled with Big Image Support!\n");
+#endif
+
     // Read configuration
     char file[256];
     sprintf(file, "%s/%s", argv[1], CFG_FILE);
@@ -448,11 +452,19 @@ template<typename T> bool add_boot_map(int fd, System_Info * si)
 bool add_machine_secrets(int fd, unsigned int i_size, char * mach, char *mmod)
 {
     if (!strcmp(mach, "pc")) { //PC
+#ifdef BIG_IMAGE
+        const unsigned int   floppy_size   = 3932160;
+#else
         const unsigned int   floppy_size   = 1474560;
+#endif
         const unsigned short count_offset  = 508;
         const unsigned short master_offset = 510;
         const unsigned short boot_id       = 0xaa55;
+#ifdef BIG_IMAGE
+        const unsigned short num_sect      = 332;
+#else
         const unsigned short num_sect      = ((i_size + 511) / 512);
+#endif
 
         // Pad the image to the size of a standard floppy
         if(lseek(fd, 0, SEEK_END) < 0) {

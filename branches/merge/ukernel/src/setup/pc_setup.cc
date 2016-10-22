@@ -140,8 +140,14 @@ private:
 //========================================================================
 PC_Setup::PC_Setup(char * boot_image)
 {
+#ifdef BIG_IMAGE
+    // Ignoring boot image loaded by the bootstrap. Ignoring that _start has copied the boot image to after SETUP.
+    bi = reinterpret_cast<char *>(Traits<Machine>::RAMDISK + Traits<Machine>::BOOT_LENGTH_MAX);
+#else
     // Get boot image loaded by the bootstrap
     bi = reinterpret_cast<char *>(boot_image);
+#endif
+
     si = reinterpret_cast<System_Info *>(bi);
 
     Display::init();
@@ -203,6 +209,11 @@ PC_Setup::PC_Setup(char * boot_image)
 
         // Configure a TSS for system calls and inter-level interrupt handling
         setup_tss();
+
+#ifdef BIG_IMAGE
+        // Set Ramdisk to be read-only. It is assumed RAMDISK is in a memory region that uses 1:1 (logical to physical) mapping.
+        /// MMU_Aux::set_flags(Traits<PC>::RAMDISK, Traits<PC>::RAMDISK_SIZE, MMU::IA32_Flags::SYS_CODE);
+#endif
 
         // Load EPOS parts (e.g. INIT, SYSTEM, APP)
         load_parts();
@@ -771,9 +782,9 @@ void PC_Setup::setup_sys_pd()
     unsigned int i = 0;
     for(; i < (APIC_SIZE / sizeof(Page)); i++)
         pts[i] = (APIC_PHY + i * sizeof(Page)) | Flags::APIC;
-    for(unsigned int j = 0; i < ((APIC_SIZE / sizeof(Page)) + (IO_APIC_SIZE / sizeof(Page))); i++, j++)
-        pts[i] = (IO_APIC_PHY + j * sizeof(Page)) | Flags::APIC;
-    for(unsigned int j = 0; i < ((APIC_SIZE / sizeof(Page)) + (IO_APIC_SIZE / sizeof(Page)) + (VGA_SIZE / sizeof(Page))); i++, j++)
+    for (unsigned int j = 0; i < ((APIC_SIZE / sizeof(Page)) + (IO_APIC_SIZE / sizeof(Page))); i++, j++)
+        pts[i] = (IO_APIC_PHY + j * sizeof(Page)) | Flags::IO_APIC;
+    for (unsigned int j = 0; i < ((APIC_SIZE / sizeof(Page)) + (IO_APIC_SIZE / sizeof(Page)) + (VGA_SIZE / sizeof(Page))); i++, j++)
         pts[i] = (VGA_PHY + j * sizeof(Page)) | Flags::VGA;
     for(unsigned int j = 0; i < io_size; i++, j++)
         pts[i] = (si->pmm.io_base + j * sizeof(Page)) | Flags::PCI;
@@ -1096,8 +1107,13 @@ void _start()
     // Initialize the APIC (if present)
     APIC::reset(APIC::LOCAL_APIC_PHY_ADDR);
 
+#ifdef BIG_IMAGE
+    // The boot strap loaded the boot image at BOOT_IMAGE_ADDR. Ignoring that and using the boot image loaded by Memdisk.
+    char * bi = reinterpret_cast<char *>(Traits<Machine>::RAMDISK + Traits<Machine>::BOOT_LENGTH_MAX);
+#else
     // The boot strap loaded the boot image at BOOT_IMAGE_ADDR
     char * bi = reinterpret_cast<char *>(Traits<Machine>::BOOT_IMAGE_ADDR);
+#endif
 
     // Get the System_Info  (first thing in the boot image)
     System_Info * si = reinterpret_cast<System_Info *>(bi);
@@ -1119,11 +1135,15 @@ void _start()
         // Be careful: by reloading SETUP, global variables have been reset to
         // the values stored in the ELF data segment
         // Also check if this wouldn't destroy the boot image
+#ifndef BIG_IMAGE
         char * addr = reinterpret_cast<char *>(elf->segment_address(0));
+#endif
         int size = elf->segment_size(0);
 
+#ifndef BIG_IMAGE
         if(addr <= &bi[si->bm.img_size])
             Machine::panic();
+#endif
         if(elf->load_segment(0) < 0)
             Machine::panic();
         APIC::remap(APIC::LOCAL_APIC_PHY_ADDR);

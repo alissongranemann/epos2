@@ -26,6 +26,10 @@ endif
 run1: all1
 		(cd img && $(MAKE) run)
 
+run_pxe: all1
+
+		(cd img && $(MAKE) run_pxe)
+
 debug: FORCE
 ifndef APPLICATION
 		$(foreach app,$(APPLICATIONS),$(MAKE) GDB=1 APPLICATION=$(app) $(PRECLEAN) all1 debug1;)

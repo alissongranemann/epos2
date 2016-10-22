@@ -1,5 +1,7 @@
 # EPOS Makefile Definitions
 
+BOOTING_FROM_BIG_IMAGE	:= 0
+
 # Functions
 GETTK		= $(shell sed -n -e '/^.* $(1)[ ]*=.*;.*$$/s/^.* =[ ]*\(.*\)[ ]*;.*$$/\1/p' $(2) | head -1 2> /dev/null)
 DBSEC           = $(1) 0x$(shell objdump -h $(1) | grep $(2) | tr -s ' ' | cut -d ' ' -f 5 2> /dev/null)
@@ -16,7 +18,9 @@ LIB		:= $(TOP)/lib
 IMG		:= $(TOP)/img
 ETC		:= $(TOP)/etc
 DOC             := $(TOP)/doc
+VAR		:= $(TOP)/var
 TOOLS           := $(TOP)/tools
+RES		:= http://lisha.ufsc.br/~mateus/res
 LARCHNAME	:= arch
 LMACHNAME	:= mach
 LSYSNAME	:= sys
@@ -97,7 +101,11 @@ BOOT_LENGTH_MIN	= $(call GETTK,BOOT_LENGTH_MIN,$(MACH_TRAITS))
 BOOT_LENGTH_MAX = $(call GETTK,BOOT_LENGTH_MAX,$(MACH_TRAITS))
 
 #Machine specifics
+ifeq ($(BOOTING_FROM_BIG_IMAGE),1)
+pc_CC_FLAGS             := -Wa,--32 -DBIG_IMAGE
+else
 pc_CC_FLAGS             := -Wa,--32
+endif
 pc_AS_FLAGS             := --32
 pc_LD_FLAGS             :=
 pc_EMULATOR             = qemu-system-i386 -smp $(CPUS) -m $(MEM_SIZE)k -nographic -no-reboot -fda
@@ -165,7 +173,11 @@ TCC		:= gcc -ansi -c -Werror
 TCCFLAGS	:= -m32 -Wall -O2 -I$(INCLUDE)
 
 TCXX		:= g++ -c -ansi -fno-exceptions -std=c++0x
+ifeq ($(BOOTING_FROM_BIG_IMAGE),1)
+TCXXFLAGS	:= -m32 -Wall -O2 -I$(INCLUDE) -DBIG_IMAGE
+else
 TCXXFLAGS	:= -m32 -Wall -O2 -I$(INCLUDE)
+endif
 
 TCPP		:= gcc -E
 TCPPFLAGS	:= -I$(INCLUDE)

@@ -20,6 +20,23 @@ all:		strip $(IMAGE)
 flash:		strip $(FLASH)
 		$(FLASHER) $(IMG)/$(FLASH)
 
+$(VAR)/epos.img:
+		$(INSTALL) $(IMAGE) $(VAR)/epos.img
+
+$(TOP)/gpxe-1.0.1-gpxe.dsk:
+		(cd $(TOP) && wget $(RES)/gpxe-1.0.1-gpxe.dsk)
+
+pxe_setup: $(TOP)/gpxe-1.0.1-gpxe.dsk
+		(cd $(TOP) && wget $(RES)/syslinux.tar.gz)
+		(cd $(TOP) && tar xzf syslinux.tar.gz -C $(VAR))
+		(cd $(TOP) && rm syslinux.tar.gz)
+
+ifeq ($(BOOTING_FROM_BIG_IMAGE),1)
+PXE_Z	:= pxelinux.0
+else
+PXE_Z	:= pxeeposx.0
+endif
+
 run:		strip $(IMAGE)
 ifeq ($(NODES),1)
 		$(EMULATOR) $(IMAGE) | $(TEE) $(OUTPUT)
@@ -33,6 +50,10 @@ else
 		&& $(TCPDUMP) s-$(APPLICATION).pcap > s-$(APPLICATION).net \
 		&& read -p 'Press [Enter] key to close ...'" &
 endif
+
+run_pxe: $(VAR)/epos.img pxe_setup
+		$(TERM) "cd $(VAR) && python2 -m SimpleHTTPServer" &
+		qemu-system-i386 -smp 4 -m 262144k -no-shutdown -no-reboot -net nic -net user -bootp http://10.0.2.2:8000/$(PXE_Z) -fda $(TOP)/gpxe-1.0.1-gpxe.dsk -serial stdio
 
 debug:		$(IMAGE)
 ifeq ($(NODES),1)
