@@ -1,4 +1,4 @@
-// EPOS-- ARMv7 MMU Mediator Initialization
+// EPOS ARMv7 MMU Mediator Initialization
 
 #include <mmu.h>
 #include <system.h>

@@ -10,13 +10,13 @@ __BEGIN_SYS
 const CPU::Reg32 ARMv7_A_PMU::_events[EVENTS] = {
                          /* CLOCK              */ CYCLE,
                          /* DVS_CLOCK          */ 0,
-                         /* INSTRUCTIONS       */ INSTRUCTIONS_ARCHITECTURALLY_EXECUTED,
-                         /* BRANCHES           */ BRANCHES_ARCHITECTURALLY_EXECUTED,
-                         /* BRANCH_MISSES      */ MISPREDICTED_BRANCH,
-                         /* L1_HIT             */ 0,
+                         /* INSTRUCTION        */ ISSUE_CORE_RENAMING,
+                         /* BRANCH             */ BRANCHES_ARCHITECTURALLY_EXECUTED,
+                         /* BRANCH_MISS        */ MISPREDICTED_BRANCH,
+                         /* L1_HIT             */ L1D_ACCESS,
                          /* L2_HIT             */ 0,
                          /* L3_HIT             */ 0,
-                         /* L1_MISS            */ 0,
+                         /* L1_MISS            */ L1D_REFILL,
                          /* L2_MISS            */ 0,
                          /* L3_MISS            */ 0,
 };
