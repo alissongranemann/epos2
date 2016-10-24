@@ -78,6 +78,9 @@ public:
         COMMUNICATOR_REPLY,
         COMMUNICATOR_RECEIVE,
 
+        MACHINE_CPU_ID = COMPONENT,
+        THIS_THREAD_ID_ID,
+
         PRINT = COMPONENT,
 
         UNDEFINED = -1

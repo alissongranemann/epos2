@@ -107,6 +107,11 @@ public:
     int read(Tn ... an) { return receive(an ...);}
     template<typename ... Tn>
     int write(Tn ... an) { return send(an ...);}
+
+    // Mediators
+    static unsigned int cpu_id() { static_enter(); int res = Component::cpu_id(); static_leave(); return res; }
+    static unsigned int this_thread_id() { static_enter(); unsigned res = Component::id(); static_leave(); return res; }
+
 };
 
 __END_SYS

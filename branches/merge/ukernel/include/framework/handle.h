@@ -137,6 +137,10 @@ public:
     template<typename ... Tn>
     int write(Tn ... an) { return _stub->write(an ...);}
 
+    // Mediators
+    static unsigned int cpu_id() { return _Stub::cpu_id(); }
+    static unsigned int this_thread_id() { return _Stub::this_thread_id(); }
+
 private:
     _Stub * _stub;
 };

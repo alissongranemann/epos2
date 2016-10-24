@@ -112,6 +112,7 @@ class E100;
 class CC2538;
 class AT86RF;
 class GEM;
+class Mediator;
 
 // Abstractions
 class System;
@@ -233,6 +234,8 @@ enum
     IPC_COMMUNICATOR_ID,
 
     UTILITY_ID,
+
+    MEDIATOR_ID,
 
     LAST_TYPE_ID,
 

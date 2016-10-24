@@ -21,6 +21,8 @@ __END_SYS
 extern "C" {
     void _panic() { _API::Thread::exit(-1); }
     void _exit(int s) { _API::Thread::exit(s); }
+    unsigned int _cpu_id() { return _API::Mediator::cpu_id(); }
+    unsigned int _this_thread_id() { return _API::Mediator::this_thread_id(); }
 }
 
 __USING_SYS;

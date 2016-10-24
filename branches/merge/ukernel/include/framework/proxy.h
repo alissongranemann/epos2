@@ -119,6 +119,10 @@ public:
     template<typename ... Tn>
     int write(Tn ... an) { return send(an ...); }
 
+    // Mediators
+    static unsigned int cpu_id() { return static_invoke(MACHINE_CPU_ID); }
+    static unsigned int this_thread_id() { return static_invoke(THIS_THREAD_ID_ID); }
+
  private:
     template<typename ... Tn>
     Result invoke(const Method & m, const Tn & ... an) {

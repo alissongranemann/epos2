@@ -20,6 +20,10 @@ extern "C" {
         Machine::panic();
     }
 
+    unsigned int _cpu_id() {
+        return Machine::cpu_id();
+    }
+
     void _exit(int s) {
         db<Setup>(ERR) << "_exit(" << s << ") called!" << endl;
         Machine::panic(); for(;;);
