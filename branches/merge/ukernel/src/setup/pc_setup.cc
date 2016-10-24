@@ -705,7 +705,7 @@ void PC_Setup::setup_sys_pt()
 
     // TSSs
     for (unsigned int i = 0; i < Traits<Machine>::CPUS; i++) {
-        sys_pt[MMU::page(Memory_Map::tss_logical_address(i))] = si->pmm.tss[i] | Flags::SYS;
+        sys_pt[MMU::page(Memory_Map::tss_logical_address(i))] = (si->pmm.tss + i * sizeof(Page)) | Flags::SYS;
     }
 
     // Set an entry to this page table, so the system can access it later
