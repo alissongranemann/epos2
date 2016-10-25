@@ -1,9 +1,9 @@
 /*=======================================================================*/
 /* MKBI.C                                                                */
 /*                                                                       */
-/* Desc: Tool to generate an EPOS bootable image.			 */
+/* Desc: Tool to generate an EPOS bootable image.                        */
 /*                                                                       */
-/* Parm: <boot image> <os image> <app1> <app2> ...	                 */
+/* Parm: <boot image> <os image> <app1> <app2> ...                       */
 /*                                                                       */
 /* Auth: Guto - Changed By Fauze                                         */
 /*=======================================================================*/
@@ -28,13 +28,13 @@ static const char CFG_FILE[] = "etc/eposmkbi.conf";
 // Target Machine Description
 struct Configuration
 {
-    char	  mode[16];
+    char          mode[16];
     char          mach[16];
     char          mmod[16];
-    char 	  arch[16];
+    char          arch[16];
     unsigned int  clock;
     unsigned char word_size;
-    bool 	  endianess; // true => little, false => big
+    bool          endianess; // true => little, false => big
     unsigned int  mem_base;
     unsigned int  mem_top;
     unsigned int  boot_length_min;
@@ -78,11 +78,11 @@ int main(int argc, char **argv)
     sprintf(file, "%s/%s", argv[1], CFG_FILE);
     FILE * cfg_file = fopen(file, "rb");
     if(!cfg_file) {
-   	fprintf(stderr, "Error: can't read configuration file \"%s\"!\n", file);
+        fprintf(stderr, "Error: can't read configuration file \"%s\"!\n", file);
         return 1;
     }
     if(!parse_config(cfg_file, &CONFIG)) {
-   	fprintf(stderr, "Error: invalid configuration file \"%s\"!\n", file);
+        fprintf(stderr, "Error: invalid configuration file \"%s\"!\n", file);
         return 1;
     }
 
@@ -217,7 +217,7 @@ int main(int argc, char **argv)
             return 1;
         }
         switch(CONFIG.word_size) {
-     	case  8: if(!add_boot_map<char>(fd_img, &si)) return 1; break;
+        case  8: if(!add_boot_map<char>(fd_img, &si)) return 1; break;
         case 16: if(!add_boot_map<short>(fd_img, &si)) return 1; break;
         case 32: if(!add_boot_map<long>(fd_img, &si)) return 1; break;
         case 64: if(!add_boot_map<long long>(fd_img, &si)) return 1; break;
@@ -451,8 +451,8 @@ bool add_machine_secrets(int fd, unsigned int i_size, char * mach, char *mmod)
         const unsigned int   floppy_size   = 1474560;
         const unsigned short count_offset  = 508;
         const unsigned short master_offset = 510;
-        const unsigned short boot_id	   = 0xaa55;
-        const unsigned short num_sect	   = ((i_size + 511) / 512);
+        const unsigned short boot_id       = 0xaa55;
+        const unsigned short num_sect      = ((i_size + 511) / 512);
 
         // Pad the image to the size of a standard floppy
         if(lseek(fd, 0, SEEK_END) < 0) {
@@ -589,7 +589,7 @@ int put_buf(int fd, void * buf, int size)
 template<typename T> int put_number(int fd, T num)
 {
     if((CONFIG.endianess != lil_endian()) && (sizeof(T) > 1))
-    	invert(num);
+        invert(num);
     if(write(fd, &num, sizeof(T)) < 0) {
         fprintf(stderr, "Error: can't write to file!\n");
         return 0;

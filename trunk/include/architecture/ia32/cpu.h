@@ -133,8 +133,7 @@ public:
         GDT_SYS_DATA  = GDT_FLT_DATA,
         GDT_APP_CODE  = 3,
         GDT_APP_DATA  = 4,
-        GDT_TSS0      = 5,
-        GDT_LAST      = GDT_TSS0
+        GDT_TSS0      = 5
     };
 
     // GDT Selectors
