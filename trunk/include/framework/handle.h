@@ -91,6 +91,8 @@ public:
     CPU::Log_Addr attach(Handle<Segment> * seg) { return _stub->attach(*seg->_stub); }
     CPU::Log_Addr attach(Handle<Segment> * seg, CPU::Log_Addr addr) { return _stub->attach(*seg->_stub, addr); }
     void detach(Handle<Segment> * seg) { _stub->detach(*seg->_stub); }
+    void detach(Handle<Segment> * seg, CPU::Log_Addr addr) { _stub->detach(*seg->_stub, addr); }
+    CPU::Phy_Addr physical(const CPU::Log_Addr addr) { return _stub->physical(addr); }
 
     unsigned int size() const { return _stub->size(); }
     CPU::Phy_Addr phy_address() const { return _stub->phy_address(); }
