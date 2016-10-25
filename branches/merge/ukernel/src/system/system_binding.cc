@@ -16,3 +16,32 @@ extern "C" {
         db<void>(ERR) << "Pure Virtual method called!" << endl;
     }
 }
+
+__BEGIN_UTIL
+void OStream::preamble()
+{
+    static char tag[] = "<0>: ";
+
+    int me = Machine::cpu_id();
+    int last = CPU::cas(_lock, -1, me);
+    for(int i = 0, owner = last; (i < 10) && (owner != me); i++, owner = CPU::cas(_lock, -1, me));
+    if(last != me) {
+        tag[1] = '0' + Machine::cpu_id();
+        print(tag);
+    }
+}
+
+void OStream::trailler()
+{
+    static char tag[] = " :<0>";
+
+    if(_lock != -1) {
+        tag[3] = '0' + Machine::cpu_id();
+        print(tag);
+
+        _lock = -1;
+    }
+    if(_error)
+        _panic();
+}
+__END_UTIL

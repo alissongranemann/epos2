@@ -23,6 +23,13 @@ extern "C" {
     void _exit(int s) { _API::Thread::exit(s); }
 }
 
+__BEGIN_UTIL
+void OStream::preamble() {}
+void OStream::trailler() {}
+
+unsigned int This_Thread::id() { return reinterpret_cast<volatile unsigned int>(_API::Thread::self()); }
+__END_UTIL
+
 __USING_SYS;
 extern "C" {
     void _syscall(void * m) { CPU::syscall(m); }
