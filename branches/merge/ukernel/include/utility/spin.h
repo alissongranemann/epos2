@@ -5,8 +5,6 @@
 
 #include <cpu.h>
 
-extern "C" { unsigned int _this_thread_id(); }
-
 __BEGIN_UTIL
 
 // Forwarder to the running thread id
@@ -27,24 +25,24 @@ public:
     Spin(): _level(0), _owner(0) {}
 
     void acquire() {
-        int me = _this_thread_id();
+        int me = This_Thread::id();
 
         while(CPU::cas(_owner, 0, me) != me);
         _level++;
 
         db<Spin>(TRC) << "Spin::acquire[SPIN=" << this
-                  << ",ID=" << me
-                  << "]() => {owner=" << _owner
-                  << ",level=" << _level << "}" << endl;
+        	      << ",ID=" << me
+        	      << "]() => {owner=" << _owner
+        	      << ",level=" << _level << "}" << endl;
     }
 
     void release() {
-        if(--_level <= 0)
+    	if(--_level <= 0)
             _owner = 0;
 
         db<Spin>(TRC) << "Spin::release[SPIN=" << this
-                  << "]() => {owner=" << _owner
-                  << ",level=" << _level << "}" << endl;
+        	      << "]() => {owner=" << _owner
+        	      << ",level=" << _level << "}" << endl;
     }
 
 private:

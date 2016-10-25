@@ -54,8 +54,6 @@ EXPORT(Function_Handler);
 EXPORT(System);
 EXPORT(Application);
 
-BIND(Mediator);
-
 BIND(Thread);
 BIND(Active);
 BIND(Periodic_Thread);

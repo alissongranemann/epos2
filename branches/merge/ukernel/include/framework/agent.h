@@ -61,7 +61,6 @@ private:
     void handle_chronometer();
     void handle_ipc();
     void handle_utility();
-    void handle_mediator();
 
 private:
     static Member _handlers[LAST_TYPE_ID];
@@ -445,27 +444,7 @@ void Agent::handle_utility()
     }
 
     result(res);
-}
-
-
-void Agent::handle_mediator()
-{
-    Result res = 0;
-    switch(method()) {
-    case MACHINE_CPU_ID:
-        res = Adapter<Machine>::cpu_id();
-    break;
-    case THIS_THREAD_ID_ID:
-        res = Adapter<This_Thread>::this_thread_id();
-    break;
-    default: {
-        db<Framework>(WRN) << "Undefined method for Machine agent. Method = " << method() << endl;
-        res = UNDEFINED;
-    }
-    }
-    result(res);
-}
-
+};
 
 __END_SYS
 
