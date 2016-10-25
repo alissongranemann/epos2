@@ -157,7 +157,7 @@ public:
         int rssi; // Received Signal Strength Indicator
     };
 
-    struct TSTP_Metadata : public IEEE802_15_4_Metadata
+    struct TSTP_Metadata: public IEEE802_15_4_Metadata
     {
         unsigned long long sfd_time_stamp;  // Start-of-frame reception time stamp
         unsigned int id;                    // Message identifier
