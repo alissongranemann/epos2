@@ -3,6 +3,7 @@
 #include <framework/main.h>
 #include <framework/agent.h>
 
+// Framework class attributes
 __BEGIN_SYS
 
 IPC::Observed IPC::_observed;

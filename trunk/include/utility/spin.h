@@ -30,24 +30,42 @@ public:
         while(CPU::cas(_owner, 0, me) != me);
         _level++;
 
-        db<Spin>(TRC) << "Spin::acquire[SPIN=" << this
-        	      << ",ID=" << me
-        	      << "]() => {owner=" << _owner
-        	      << ",level=" << _level << "}" << endl;
+        db<Spin>(TRC) << "Spin::acquire[SPIN=" << this << ",ID=" << me << "]() => {owner=" << _owner << ",level=" << _level << "}" << endl;
     }
 
     void release() {
     	if(--_level <= 0)
             _owner = 0;
 
-        db<Spin>(TRC) << "Spin::release[SPIN=" << this
-        	      << "]() => {owner=" << _owner
-        	      << ",level=" << _level << "}" << endl;
+        db<Spin>(TRC) << "Spin::release[SPIN=" << this << "]() => {owner=" << _owner << ",level=" << _level << "}" << endl;
     }
 
 private:
     volatile int _level;
     volatile int _owner;
+};
+
+// Flat Spin Lock
+class Simple_Spin
+{
+public:
+    Simple_Spin(): _locked(false) {}
+
+    void acquire() {
+        while(CPU::tsl(_locked));
+
+        db<Spin>(TRC) << "Spin::acquire[SPIN=" << this << "]()" << endl;
+    }
+
+    void release() {
+//        if(_locked)
+            _locked = 0;
+
+        db<Spin>(TRC) << "Spin::release[SPIN=" << this << "]()}" << endl;
+    }
+
+private:
+    volatile bool _locked;
 };
 
 __END_UTIL
