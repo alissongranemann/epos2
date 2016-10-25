@@ -185,8 +185,8 @@ int main(int argc, char **argv)
 
     // Add LOADER (if multiple applications) or the single application otherwise
     si.bm.application_offset = image_size - boot_size;
-    if((argc == 4) && strcmp(CONFIG.mode, "kernel")) { // Add Single APP
-    // if(argc == 4) { // Add Single APP
+    // if((argc == 4) && strcmp(CONFIG.mode, "kernel")) { // Add Single APP
+    if(argc == 4) { // Add Single APP
         printf("    Adding application \"%s\":", argv[3]);
         image_size += put_file(fd_img, argv[3]);
         si.bm.extras_offset = -1;
