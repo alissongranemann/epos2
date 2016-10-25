@@ -21,6 +21,8 @@ __END_SYS
 extern "C" {
     void _panic() { _API::Thread::exit(-1); }
     void _exit(int s) { _API::Thread::exit(s); }
+    void _cpu_int_enable() {}
+    void _cpu_int_disable() {}
 }
 
 __BEGIN_UTIL

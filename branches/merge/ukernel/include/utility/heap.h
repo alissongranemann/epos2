@@ -7,6 +7,9 @@
 #include <utility/list.h>
 #include <utility/spin.h>
 
+extern "C" { void _cpu_int_enable(); };
+extern "C" { void _cpu_int_disable(); };
+
 __BEGIN_UTIL
 
 // Heap
@@ -123,33 +126,33 @@ public:
     }
 
     void * alloc(unsigned int bytes) {
-	enter();
-	void * tmp = T::alloc(bytes);
-	leave();
-	return tmp;
+        enter();
+        void * tmp = T::alloc(bytes);
+        leave();
+        return tmp;
     }
 
     void free(void * ptr) {
-	enter();
-	T::free(ptr);
-	leave();
+        enter();
+        T::free(ptr);
+        leave();
     }
 
     void free(void * ptr, unsigned int bytes) {
-	enter();
-	T::free(ptr, bytes);
-	leave();
+        enter();
+        T::free(ptr, bytes);
+        leave();
     }
 
 private:
     void enter() {
         _lock.acquire();
-        CPU::int_disable();
+        _cpu_int_disable();
     }
 
     void leave() {
         _lock.release();
-        CPU::int_enable();
+        _cpu_int_enable();
     }
 
 private:

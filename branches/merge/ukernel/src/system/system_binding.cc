@@ -10,6 +10,8 @@ extern "C" {
     void _exit(int s) { Thread::exit(s); }
     void __exit() { Thread::exit(CPU::fr()); }  // must be handled by the Page Fault handler for user-level tasks
     void _print(const char * s) { Display::puts(s); }
+    void _cpu_int_enable() { CPU::int_enable(); }
+    void _cpu_int_disable() { CPU::int_disable(); }
 
     // LIBC Heritage
     void __cxa_pure_virtual() {
