@@ -283,8 +283,6 @@ template<> struct Type<Delay> { static const Type_Id ID = ALARM_ID; };
 
 template<> struct Type<Utility> { static const Type_Id ID = UTILITY_ID; };
 
-template<> struct Type<Mediator> { static const Type_Id ID = MEDIATOR_ID; };
-
 // Type IDs for system components whose parameters are themselves components are defined where they are declared.
 
 __END_SYS
