@@ -81,7 +81,7 @@ void CPU::switch_context(Context * volatile * o, Context * volatile n)
     if(Traits<System>::multitask)
         ASM("        mov     %%esp, %%eax                                    \n"
             "        add     $52, %%eax                                      \n"
-            "        movl    %%eax, %0                                       \n" : "=m"(reinterpret_cast<TSS *>(Memory_Map::TSS0 + Machine::cpu_id() * sizeof(MMU::Page))->esp0) : );
+            "        movl    %%eax, %0                                       \n" : "=m"(reinterpret_cast<TSS *>(Memory_Map::TSS0 + Machine::cpu_id() * sizeof(MMU::Page))->esp0) : : "eax");
 
     // Change context through the IRET, will pop FLAGS, CS, and IP
     ASM("        popa                                                    \n"
