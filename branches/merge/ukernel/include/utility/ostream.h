@@ -5,7 +5,11 @@
 #ifndef __ostream_h
 #define __ostream_h
 
-extern "C" { void _print(const char * s); }
+extern "C" {
+    void _print_preamble();
+    void _print(const char * s);
+    void _print_trailler(bool error);
+}
 
 __BEGIN_UTIL
 
@@ -21,7 +25,7 @@ public:
     struct Err {};
 
 public:
-    OStream(): _base(10), _lock(-1), _error(false) {}
+    OStream(): _base(10), _error(false) {}
 
     OStream & operator<<(const Begl & begl) {
         if(Traits<System>::multicore)
@@ -166,8 +170,8 @@ public:
     }
 
 private:
-    void preamble();
-    void trailler();
+    void preamble() { _print_preamble(); }
+    void trailler() { _print_trailler(_error); }
 
     void print(const char * s) { _print(s); }
 
@@ -179,7 +183,6 @@ private:
 
 private:
     int _base;
-    volatile int _lock;
     volatile bool _error;
 
     static const char _digits[];

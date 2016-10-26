@@ -7,9 +7,6 @@
 #include <utility/list.h>
 #include <utility/spin.h>
 
-extern "C" { void _cpu_int_enable(); };
-extern "C" { void _cpu_int_disable(); };
-
 __BEGIN_UTIL
 
 // Heap
@@ -104,6 +101,11 @@ public:
 
 
 // Wrapper for atomic heap
+extern "C" {
+    void _heap_lock();
+    void _heap_unlock();
+}
+
 template<typename T>
 class Heap_Wrapper<T, true>: public T
 {
@@ -145,18 +147,8 @@ public:
     }
 
 private:
-    void enter() {
-        _lock.acquire();
-        _cpu_int_disable();
-    }
-
-    void leave() {
-        _lock.release();
-        _cpu_int_enable();
-    }
-
-private:
-    Spin _lock;
+    void enter() { _heap_lock(); }
+    void leave() { _heap_unlock(); }
 };
 
 

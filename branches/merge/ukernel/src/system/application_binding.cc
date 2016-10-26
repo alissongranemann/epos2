@@ -1,5 +1,6 @@
 // EPOS Application Binding
 
+#include <utility/spin.h>
 #include <utility/ostream.h>
 #include <application.h>
 #include <cpu.h>
@@ -21,16 +22,13 @@ __END_SYS
 extern "C" {
     void _panic() { _API::Thread::exit(-1); }
     void _exit(int s) { _API::Thread::exit(s); }
-    void _cpu_int_enable() {}
-    void _cpu_int_disable() {}
+
+    // Utility methods that differ from kernel and user space.
+    // Heap
+    static _UTIL::Simple_Spin _heap_spin;
+    void _heap_lock() { _heap_spin.acquire(); }
+    void _heap_unlock() { _heap_spin.release();}
 }
-
-__BEGIN_UTIL
-void OStream::preamble() {}
-void OStream::trailler() {}
-
-unsigned int This_Thread::id() { return reinterpret_cast<volatile unsigned int>(_API::Thread::self()); }
-__END_UTIL
 
 __USING_SYS;
 extern "C" {
@@ -39,4 +37,6 @@ extern "C" {
         Message msg(Id(UTILITY_ID, 0), Message::PRINT, reinterpret_cast<unsigned int>(s));
         msg.act();
     }
+    void _print_preamble() {}
+    void _print_trailler(bool error) {}
 }

@@ -5,7 +5,6 @@
 
 #include <utility/string.h>
 #include <cpu.h>
-#include <rtc.h>
 
 __BEGIN_SYS
 
@@ -158,7 +157,7 @@ public:
         int rssi; // Received Signal Strength Indicator
     };
 
-    struct TSTP_Metadata : public IEEE802_15_4_Metadata
+    struct TSTP_Metadata: public IEEE802_15_4_Metadata
     {
         unsigned long long sfd_time_stamp;  // Start-of-frame reception time stamp
         unsigned int id;                    // Message identifier
@@ -175,25 +174,6 @@ public:
         bool trusted;                       // If true, this message was successfully verified by the Security Manager
     };
 
-    // NIC Timer Interface (to be implemented by NIC aiming at supporting time-synchronous protocols)
-    class Timer
-    {
-    private:
-        typedef RTC::Microsecond Microsecond;
-
-    public:
-        typedef unsigned long long Time_Stamp;
-
-    public:
-         Timer() {}
-
-         static Time_Stamp frequency() { return 0; }
-         static Time_Stamp read() { return 0; }
-         static Time_Stamp sfd() { return 0; }
-         static Time_Stamp now() { return 0; }
-         static Time_Stamp us2count(const Microsecond & us) { return 0; }
-         static Microsecond count2us(const Time_Stamp & ts) { return 0; }
-    };
 
     // Polymorphic NIC Base
     template<typename Family, bool polymorphic = true>

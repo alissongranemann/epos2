@@ -4,6 +4,7 @@
 #include <framework/agent.h>
 #include <big_kernel_lock.h>
 
+// Framework class attributes
 __BEGIN_SYS
 
 Spin Big_Kernel_Lock::_lock;

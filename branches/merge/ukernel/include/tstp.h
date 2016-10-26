@@ -769,7 +769,7 @@ public:
         }
         ~Timekeeper();
 
-        static Time now() { return NIC::Timer::read() * 1000000ll / NIC::Timer::frequency(); };
+        static Time now() { return 0; }// { return NIC::Timer::read() * 1000000ll / NIC::Timer::frequency(); };
 
         static void bootstrap();
 

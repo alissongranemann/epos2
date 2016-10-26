@@ -3,12 +3,13 @@
 #include <utility/ostream.h>
 #include <machine.h>
 
-extern "C" { void _panic(); }
-
 __BEGIN_UTIL
 
+// Class Attributes
 const char OStream::_digits[] = "0123456789abcdef";
 
+
+// Class Methods
 int OStream::itoa(int v, char * s)
 {
     unsigned int i = 0;
