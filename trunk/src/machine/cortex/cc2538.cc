@@ -174,7 +174,7 @@ void CC2538::int_handler(const IC::Interrupt_Id & interrupt)
 
 // TSTP binding
 template<typename Radio>
-void TSTP_MAC<Radio>::free(Buffer * b) { b->nic()->free(b); }
+void TSTP_MAC<Radio>::free(Buffer * b) { b->nic()->free(reinterpret_cast<NIC::Buffer*>(b)); }
 template void TSTP_MAC<CC2538RF>::free(Buffer * b);
 
 __END_SYS
