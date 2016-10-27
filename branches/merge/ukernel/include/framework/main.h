@@ -43,6 +43,8 @@ __END_SYS
 #define BIND(X) typedef _SYS::IF<(_SYS::Traits<_SYS::X>::ASPECTS::Length || (_SYS::Traits<_SYS::Build>::MODE == _SYS::Traits<_SYS::Build>::KERNEL)), _SYS::Handle<_SYS::X>, _SYS::X>::Result X;
 #define EXPORT(X) typedef _SYS::X X;
 
+#define SELECT(X) _SYS::IF<(_SYS::Traits<_SYS::X>::ASPECTS::Length || (_SYS::Traits<_SYS::Build>::MODE == _SYS::Traits<_SYS::Build>::KERNEL)), _SYS::Handle<_SYS::X>, _SYS::X>::Result
+
 __BEGIN_API
 
 __USING_UTIL
@@ -69,7 +71,18 @@ BIND(Condition);
 
 BIND(Clock);
 BIND(Chronometer);
-BIND(Alarm);
+// BIND(Alarm);
+class Alarm: public SELECT(Alarm) {
+    typedef SELECT(Alarm) Base;
+public:
+    Alarm(const _SYS::RTC::Microsecond & time, _SYS::Handler * handler, int times = 1): Base(time, handler, times) {}
+
+    static _SYS::TSC::Hertz frequency() {
+        return Base::alarm_frequency();
+    }
+
+
+};
 BIND(Delay);
 
 BIND(Network);
