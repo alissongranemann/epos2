@@ -16,21 +16,27 @@ private:
     static const bool supports_power_up = Machine_Model::supports_gpio_power_up;
 
 public:
-    GPIO(char port, unsigned int pin, const Direction & dir, const Pull & p = UP, const IC::Interrupt_Handler & handler = 0)
+    GPIO(char port, unsigned int pin, const Direction & dir, const Pull & p = UP, const IC::Interrupt_Handler & handler = 0, const Edge & int_edge = RISING)
     : _port(port - 'A'), _pin(pin), _pin_bit(1 << pin), _data(&gpio(_port, _pin_bit << 2)), _handler(handler) {
         assert((port >= 'A') && (port <= 'A' + GPIO_PORTS));
         gpio(_port, AFSEL) &= ~_pin_bit; // Set pin as software controlled
         direction(dir);
         pull(p);
         clear_interrupt();
-        if(handler) {
+        if(_handler) {
             _devices[_port][_pin] = this;
-            int_enable();
+            int_enable(int_edge);
         }
     }
 
+    ~GPIO() {
+        if(_handler)
+            int_disable();
+        _devices[_port][_pin] = 0;
+    }
+
     bool get() const {
-        assert(_direction == IN);
+        assert(_direction == IN || _direction == INOUT);
         return *_data;
     }
 
@@ -78,6 +84,8 @@ public:
     void int_enable(const Edge & edge, bool power_up = false, const Edge & power_up_edge = RISING);
     void int_disable() { gpio(_port, IM) &= ~_pin_bit; }
 
+    static void eoi(const IC::Interrupt_Id & i);
+
 private:
     void clear_interrupt() {
         gpio(_port, ICR) = _pin_bit;
@@ -95,6 +103,8 @@ private:
     IC::Interrupt_Handler _handler;
 
     static GPIO * _devices[GPIO_PORTS][8];
+    static unsigned char _mis[GPIO_PORTS];
+    static unsigned int _irq_detect_ack[GPIO_PORTS];
 };
 
 __END_SYS
