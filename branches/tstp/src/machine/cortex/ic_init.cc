@@ -203,6 +203,10 @@ void IC::init()
     _eoi_vector[INT_USER_TIMER3] = User_Timer::eoi;
     _eoi_vector[INT_NIC0_TIMER] = CC2538RF::Timer::eoi;
     _eoi_vector[INT_USB0] = USB::eoi;
+    _eoi_vector[INT_GPIOA] = GPIO::eoi;
+    _eoi_vector[INT_GPIOB] = GPIO::eoi;
+    _eoi_vector[INT_GPIOC] = GPIO::eoi;
+    _eoi_vector[INT_GPIOD] = GPIO::eoi;
 #endif
 #if defined(__mmod_emote3__) || defined(__mmod_lm3s811__)
 
