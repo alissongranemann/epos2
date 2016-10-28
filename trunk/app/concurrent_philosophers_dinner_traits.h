@@ -1,1 +1,1 @@
-../src/abstraction/semaphore_test_traits.h
+../src/component/semaphore_test_traits.h

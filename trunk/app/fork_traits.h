@@ -1,1 +1,1 @@
-../src/abstraction/task_test_traits.h
+../src/component/task_test_traits.h

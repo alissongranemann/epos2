@@ -1,1 +1,1 @@
-../src/abstraction/semaphore_test.cc
+../src/component/semaphore_test.cc
