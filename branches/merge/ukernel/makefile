@@ -58,6 +58,16 @@ test: $(subst .cc,_traits.h,$(TEST_SOURCES))
 		$(foreach tst,$(TESTS),$(MAKETEST) APPLICATION=$(tst) prebuild_$(tst) clean1 all1 posbuild_$(tst) prerun_$(tst) run1 posbuild_$(tst);)
 		$(foreach tst,$(TESTS),$(CLEAN) $(APP)/$(tst)*;)
 
+build_test: $(subst .cc,_traits.h,$(TEST_SOURCES))
+		$(INSTALL) $(TEST_SOURCES) $(APP)
+		$(INSTALL) $(subst .cc,_traits.h,$(TEST_SOURCES)) $(APP)
+		$(foreach tst,$(TESTS),$(MAKETEST) APPLICATION=$(tst) clean1 all1 test_install_$(tst);)
+		$(foreach tst,$(TESTS),$(CLEAN) $(APP)/$(tst)*;)
+
+test_install_$(APPLICATION):
+		$(INSTALL) $(IMG)/$(APPLICATION).img $(IMG2)
+
+
 .PHONY: prebuild_$(APPLICATION) posbuild_$(APPLICATION) prerun_$(APPLICATION)
 prebuild_$(APPLICATION):
 		@echo "Building $(APPLICATION) ..."
