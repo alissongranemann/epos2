@@ -29,7 +29,7 @@
 ;              :                       : 
 ;              |                       | 
 ; 0x000a 0000 -+-----------------------+ 
-;              | UNUSED (384K)         | 
+;              | UNUSED (380K)         |
 ;              :                       : 
 ;              |                       | 
 ; 0x000f f000 -+-----------------------+ 
@@ -262,7 +262,7 @@ load_sector:
                 mov     ax,#0x0201      ; function #2, load 1 sector
                 int     0x13
                 cli                     ; int 0x13 sets IF
-                jc      ls_disk_error	; if CY=1, error on reading
+                jc      ls_disk_error	; if CF=1, error on reading
 
 		pop	ax
 		popf
@@ -304,13 +304,13 @@ li_check:
 		pop	ax
 		dec	ax
                 inc     cl              ; get next sector
-                cmp     cl,#19		; was this last sector?
+                cmp     cl,[n_sec_track]; was this last sector?
                 jnz     li_next
-                mov     cl, #1
+                mov     cl,#1
                 inc     dh              ; get next side
-                cmp     dh, #2          ; read both?
+                cmp     dh,#2           ; read both?
                 jnz     li_next
-                mov     dh, #0
+                mov     dh,#0
                 inc     ch              ; get next track
                 call    say_z
 li_next:
@@ -387,7 +387,7 @@ setup_trampoline:
 		ret
 
 ;========================================================================
-; TRAMPOLIE
+; TRAMPOLINE
 ;
 ; Desc: "trampolines" additional CPUs into protected mode in SMP
 ;	configurations							=
@@ -473,8 +473,11 @@ msg_done:
 		.byte 0x00
 
 ; The following is to enable "sys" to define the actual size of the image.
-; The default value of 360 will be only used if you don't use sys.
-		.align 508
+; And the floppy geometry.
+; The default values 19 and 360 will only be used if you don't use sys.
+		.align 506
+n_sec_track:
+                .word 19
 n_sec_image:
 		.word 360
 
