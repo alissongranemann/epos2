@@ -113,7 +113,7 @@ class CC2538;
 class AT86RF;
 class GEM;
 
-// Abstractions
+// Components
 class System;
 class Application;
 
@@ -137,6 +137,7 @@ namespace Scheduling_Criteria
     class GEDF;
     class PEDF;
     class CEDF;
+    class PRM;
 };
 
 class Address_Space;

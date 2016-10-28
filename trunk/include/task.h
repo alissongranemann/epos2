@@ -1,4 +1,4 @@
-// EPOS Task Abstraction Declarations
+// EPOS Task Component Declarations
 
 #include <thread.h>
 

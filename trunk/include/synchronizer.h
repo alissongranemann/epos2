@@ -1,4 +1,4 @@
-// EPOS Synchronizer Abstractions Common Package
+// EPOS Synchronizer Components Common Package
 
 #ifndef __synchronizer_h
 #define __synchronizer_h

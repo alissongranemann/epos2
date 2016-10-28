@@ -1,4 +1,4 @@
-// EPOS Condition Variable Abstraction Declarations
+// EPOS Condition Variable Component Declarations
 
 #ifndef __condition_h
 #define __condition_h

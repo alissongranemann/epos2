@@ -1,4 +1,4 @@
-// EPOS Application Scaffold and Application Abstraction Implementation
+// EPOS Application Scaffold and Application Component Implementation
 
 #include <utility/ostream.h>
 #include <application.h>
