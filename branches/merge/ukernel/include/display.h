@@ -96,7 +96,8 @@ public:
 
 private:
     static void put(char c) {
-        _engine.put(c);
+        if (_engine_started)
+            _engine.put(c);
     }
 
     static void escape() {
@@ -135,9 +136,12 @@ private:
 
         _line = 0;
         _column = 0;
+
+        _engine_started = true;
     }
 
 private:
+    static bool _engine_started;
     static Engine _engine;
     static int _line;
     static int _column;
