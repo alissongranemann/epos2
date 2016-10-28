@@ -126,7 +126,7 @@ atmega_FLASHER          = $(TOOLS)/eposflash/eposflash-$(MMOD)
 
 $(MACH)_CODE_NAME       := .init
 $(MACH)_DATA_NAME       := .data
-ifeq ($(GDB),1)
+ifeq ($(DEBUG),1)
 MACH_CC_FLAGS           := -g -feliminate-unused-debug-symbols $($(MACH)_CC_FLAGS)
 MACH_AS_FLAGS           := -g $($(MACH)_AS_FLAGS)
 else
@@ -136,21 +136,12 @@ endif
 MACH_LD_FLAGS           := $($(MACH)_LD_FLAGS)
 MACH_CODE_NAME          := $($(MACH)_CODE_NAME)
 MACH_DATA_NAME          := $($(MACH)_DATA_NAME)
-ifeq ($(GDB),1)
+ifeq ($(DEBUG),1)
 MACH_EMULATOR           = $(subst -m ,-gdb tcp::1235 -S -m ,$($(MACH)_EMULATOR))
 else
 MACH_EMULATOR           = $($(MACH)_EMULATOR)
 endif
 MACH_DEBUGGER           = $(TERM) $($(MACH)_DEBUGGER) -ex "target remote:1235" -ex "set confirm off"
-ifneq ($(wildcard $(IMG)/$(MACH)_setup),)
-MACH_DEBUGGER           := $(MACH_DEBUGGER) -ex "add-symbol-file $(call DBSEC,$(SRC)/setup/$(MACH)_setup,.text)"
-endif
-ifneq ($(wildcard $(IMG)/$(MACH)_init),)
-MACH_DEBUGGER           := $(MACH_DEBUGGER) -ex "add-symbol-file $(call DBSEC,$(SRC)/init/$(MACH)_init,.text)"
-endif
-ifneq ($(wildcard $(IMG)/$(MACH)_system),)
-MACH_DEBUGGER           := $(MACH_DEBUGGER) -ex "add-symbol-file $(call DBSEC,$(SRC)/system/$(MACH)_system,.text)"
-endif
 MACH_FLASHER            := $($(MACH)_FLASHER)
 
 # Architecture specifics
