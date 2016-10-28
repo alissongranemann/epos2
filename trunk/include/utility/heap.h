@@ -128,22 +128,22 @@ public:
     }
 
     void * alloc(unsigned int bytes) {
-	enter();
-	void * tmp = T::alloc(bytes);
-	leave();
-	return tmp;
+        enter();
+        void * tmp = T::alloc(bytes);
+        leave();
+        return tmp;
     }
 
     void free(void * ptr) {
-	enter();
-	T::free(ptr);
-	leave();
+        enter();
+        T::free(ptr);
+        leave();
     }
 
     void free(void * ptr, unsigned int bytes) {
-	enter();
-	T::free(ptr, bytes);
-	leave();
+        enter();
+        T::free(ptr, bytes);
+        leave();
     }
 
 private:

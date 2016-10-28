@@ -515,7 +515,7 @@ void PC_Setup::say_hi()
         db<Setup>(INF) << "No SYSTEM in boot image, assuming EPOS is a library!" << endl;
 
     kout << "Setting up this machine as follows: " << endl;
-    kout << "  Processor:    IA32 at " << si->tm.cpu_clock / 1000000
+    kout << "  Processor:    " << Traits<Machine>::CPUS << " x IA32 at " << si->tm.cpu_clock / 1000000
          << " MHz (BUS clock = " << si->tm.bus_clock / 1000000 << " MHz)" << endl;
     kout << "  Memory:       " << (si->bm.mem_top - si->bm.mem_base) / 1024
          << " Kbytes [" << (void *)si->bm.mem_base

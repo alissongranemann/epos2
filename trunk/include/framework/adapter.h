@@ -84,6 +84,9 @@ public:
     int frequency() { enter(); int res = Component::frequency(); leave(); return res; }
     int ticks() { enter(); int res = Component::ticks(); leave(); return res; }
     int read() { enter(); int res = Component::read(); leave(); return res; }
+    const RTC::Microsecond period() { enter(); RTC::Microsecond res = Component::period(); leave(); return res; }
+    void period(const RTC::Microsecond p) { enter(); Component::period(p); leave(); }
+    static TSC::Hertz alarm_frequency() { static_enter(); TSC::Hertz res = Component::frequency(); static_leave(); return res; }
 
     // Communication
     template<typename ... Tn>
