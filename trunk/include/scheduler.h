@@ -299,13 +299,16 @@ class Scheduling_Queue<T, Scheduling_Criteria::CPU_Affinity>:
 public Scheduling_Multilist<T> {};
 
 template<typename T>
+class Scheduling_Queue<T, Scheduling_Criteria::PRM>:
+public Scheduling_Multilist<T> {};
+
+template<typename T>
 class Scheduling_Queue<T, Scheduling_Criteria::GEDF>:
 public Multihead_Scheduling_List<T> {};
 
 template<typename T>
 class Scheduling_Queue<T, Scheduling_Criteria::PEDF>:
 public Scheduling_Multilist<T> {};
-
 
 template<typename T>
 class Scheduling_Queue<T, Scheduling_Criteria::CEDF>:

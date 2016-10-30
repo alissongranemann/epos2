@@ -153,8 +153,9 @@ private:
 //========================================================================
 PC_Setup::PC_Setup(char * boot_image)
 {
-    // Get boot image loaded by the bootstrap
+    // Get boot imaged previosly loaded and relocated
     bi = reinterpret_cast<char *>(boot_image);
+
     si = reinterpret_cast<System_Info *>(bi);
 
     Display::init();
@@ -796,7 +797,7 @@ void PC_Setup::setup_tss()
 
     // Configure only the segment selectors and the kernel stack
     tss->ss0 = CPU::SEL_SYS_DATA;
-    tss->esp0 = SYS_STACK + Traits<System>::STACK_SIZE;
+    tss->esp0 = SYS_STACK + Traits<System>::STACK_SIZE; // APs' tss->esp0 will be reconfigured later by CPU::Context::load()
     tss->cs = (CPU::GDT_SYS_CODE << 3) | CPU::PL_APP;
     tss->ss = (CPU::GDT_SYS_DATA << 3) | CPU::PL_APP;
     tss->ds = tss->ss;
@@ -1071,8 +1072,14 @@ void _start()
     // The boot strap loaded the boot image at BOOT_IMAGE_ADDR
     char * bi = reinterpret_cast<char *>(Traits<Machine>::BOOT_IMAGE_ADDR);
 
-    // Get the System_Info  (first thing in the boot image)
+    // Get the System_Info (first thing in the boot image)
     System_Info * si = reinterpret_cast<System_Info *>(bi);
+
+    // Check if we are booting from a ramdisk and adjust the boot image pointer accordingly
+    if(si->bm.img_size > 2880 * 512) { // larger than a floppy
+        bi = reinterpret_cast<char *>(Traits<Machine>::RAMDISK + Traits<Machine>::BOOT_LENGTH_MAX);
+        si = reinterpret_cast<System_Info *>(bi);
+    }
 
     // Multicore conditional start up
     if(APIC::id() == 0) { // Boot strap CPU (BSP)
@@ -1091,10 +1098,8 @@ void _start()
         // Be careful: by reloading SETUP, global variables have been reset to
         // the values stored in the ELF data segment
         // Also check if this wouldn't destroy the boot image
-        char * addr = reinterpret_cast<char *>(elf->segment_address(0));
         int size = elf->segment_size(0);
-
-        if(addr <= &bi[si->bm.img_size])
+        if(elf->segment_address(0) <= reinterpret_cast<unsigned int>(&bi[si->bm.img_size]))
             Machine::panic();
         if(elf->load_segment(0) < 0)
             Machine::panic();

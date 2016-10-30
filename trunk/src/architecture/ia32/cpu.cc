@@ -42,8 +42,10 @@ void CPU::Context::load() const volatile
             "        mov     %0, %%fs                                        \n"
             "        mov     %0, %%gs                                        \n" : : "r"(SEL_APP_DATA));
 
-    // Adjust the user-level stack pointer in the dummy TSS (what for?)
+    // The thread's context in on its stack
     ASM("        mov     4(%esp), %esp         # sp = this               \n");
+
+    // Adjust the user-level stack pointer in the dummy TSS (what for?)
     ASM("        pop     %0                                              \n" : "=m"(reinterpret_cast<TSS *>(Memory_Map::TSS0 + Machine::cpu_id() * sizeof(MMU::Page))->esp) : );
 
     // Adjust the system-level stack pointer in the dummy TSS (that will be used by system calls and interrupts) for this Thread

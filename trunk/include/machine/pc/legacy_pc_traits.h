@@ -18,9 +18,12 @@ template<> struct Traits<Machine>: public Traits<Machine_Common>
     static const unsigned int CPUS = Traits<Build>::CPUS;
 
     // Boot Image
-    static const unsigned int BOOT_LENGTH_MIN   = 128;
+    static const unsigned int BOOT_LENGTH_MIN   = 512;
     static const unsigned int BOOT_LENGTH_MAX   = 512;
     static const unsigned int BOOT_IMAGE_ADDR   = 0x00008000;
+    static const unsigned int RAMDISK           = 0x0fa28000; // MEMDISK-dependent
+    static const unsigned int RAMDISK_SIZE      = 0x003c0000;
+
 
     // Physical Memory
     static const unsigned int MEM_BASE  = 0x00000000;

@@ -445,11 +445,10 @@ template<typename T> bool add_boot_map(int fd, System_Info * si)
 //=============================================================================
 // ADD_MACHINE_SCRETS
 //=============================================================================
-bool add_machine_secrets(int fd, unsigned int i_size, char * mach, char *mmod)
+bool add_machine_secrets(int fd, unsigned int i_size, char * mach, char * mmod)
 {
     if (!strcmp(mach, "pc")) { // PC
-        const unsigned short count_offset   = 506;
-        const unsigned short master_offset  = 510;
+        const unsigned int secrets_offset   = CONFIG.boot_length_min - 6;
         const unsigned short boot_id        = 0xaa55;
         const unsigned short num_sect       = ((i_size + 511) / 512);
         const unsigned short last_track_sec = num_sect <= 2880 ? 19 : 49; // either 144 tracks with 20 sectors or 144 tracks with 50 sectors
@@ -461,18 +460,12 @@ bool add_machine_secrets(int fd, unsigned int i_size, char * mach, char *mmod)
         }
 
         // Write the number of sectors to be read
-        if(lseek(fd, count_offset, SEEK_SET) < 0) {
+        if(lseek(fd, secrets_offset, SEEK_SET) < 0) {
             fprintf(stderr, "Error: can't seek the boot image!\n");
             return false;
         }
         put_number(fd, last_track_sec);
         put_number(fd, num_sect);
-
-        // Write master boot id
-        if(lseek(fd, master_offset, SEEK_SET) < 0) {
-            fprintf(stderr, "Error: can't seek the boot image!\n");
-            return false;
-        }
         put_number(fd, boot_id);
     } else if (!strcmp(mach, "rcx")) { // RCX
         char key_string[] = "Do you byte, when I knock?";
