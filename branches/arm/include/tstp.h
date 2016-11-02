@@ -481,11 +481,8 @@ class TSTP: public TSTP_Common, private NIC::Observer
 {
     template<typename> friend class Smart_Data;
 
-public:
-    // Buffer wrapper to compile TSTP when it's disabled
-    template<typename T>
-    class Buffer_Wrapper: public T, public NIC_Common::TSTP_Metadata {};
-    typedef IF<Traits<TSTP>::enabled, NIC::Buffer, Buffer_Wrapper<NIC::Buffer>>::Result Buffer;
+public:    
+    typedef NIC::Buffer Buffer;
 
     // Packet
     static const unsigned int MTU = NIC::MTU - sizeof(Header);

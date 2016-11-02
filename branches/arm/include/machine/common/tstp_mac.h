@@ -33,8 +33,6 @@ public:
 
     static const unsigned int MTU = Frame::MTU;
 
-    typedef _UTIL::Buffer<NIC, Phy_Frame, void, TSTP_Metadata> Buffer;
-
 private:
 
     static const unsigned int INT_HANDLING_DELAY = 19; // Time delay between scheduled tx_mf interrupt and actual Radio TX

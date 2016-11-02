@@ -29,7 +29,7 @@ public:
 
     static const unsigned int MTU = IEEE802_15_4::MTU - sizeof(Header);
 
-    typedef _UTIL::Buffer<NIC, Frame, void, IEEE802_15_4_Metadata> Buffer;
+    typedef _UTIL::Buffer<NIC, Frame, void, NIC_Common::Metadata> Buffer;
 
 protected:
     IEEE802_15_4_MAC() {}

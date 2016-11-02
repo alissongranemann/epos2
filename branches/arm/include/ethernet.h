@@ -86,7 +86,7 @@ public:
 
 
     // Buffers used to hold frames across a zero-copy network stack
-    typedef _UTIL::Buffer<NIC, Frame, void, IF<Traits<_SYS::TSTP>::enabled, TSTP_Metadata, Dummy>::Result> Buffer;
+    typedef _UTIL::Buffer<NIC, Frame, void, NIC_Common::Metadata> Buffer;
 
 
     // Observers of a protocol get a also a pointer to the received buffer

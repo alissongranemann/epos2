@@ -153,26 +153,37 @@ public:
     };
 
     // Buffer Metadata added to frames by higher-level protocols
-    struct IEEE802_15_4_Metadata
+    struct Metadata
     {
-        int rssi; // Received Signal Strength Indicator
-    };
+        union
+        {
+            // Note that the position of the structs matter. The TSTP field _r merges with the IEEE 802.15.4 field rssi.
 
-    struct TSTP_Metadata : public IEEE802_15_4_Metadata
-    {
-        unsigned long long sfd_time_stamp;  // Start-of-frame reception time stamp
-        unsigned int id;                    // Message identifier
-        unsigned long long offset;          // MAC contention offset
-        bool destined_to_me;                // Whether this node is the final destination for this message
-        bool downlink;                      // Message direction
-        unsigned long long expiry;          // Time until when this message must arrive at the final destination
-        unsigned long long origin_time;     // Time when this message was created at the source node
-        unsigned long long my_distance;     // This node's distance to the message's final destination
-        unsigned long long sender_distance; // Last hop's distance to the message's final destination
-        bool is_new;                        // Whether this message was just created by this node
-        bool is_microframe;                 // Whether this message is a Microframe
-        bool relevant;                      // Whether any component is interested in this message
-        bool trusted;                       // If true, this message was successfully verified by the Security Manager
+            // IEEE 802.15.4 Metadata
+            struct
+            {
+                int rssi;   // Received Signal Strength Indicator
+            };
+
+            // TSTP Metadata
+            struct
+            {
+                char _r[sizeof rssi];               // Received Signal Strength Indicator. Should be accessed as .rssi
+                unsigned long long sfd_time_stamp;  // Start-of-frame reception time stamp
+                unsigned int id;                    // Message identifier
+                unsigned long long offset;          // MAC contention offset
+                bool destined_to_me;                // Whether this node is the final destination for this message
+                bool downlink;                      // Message direction
+                unsigned long long expiry;          // Time until when this message must arrive at the final destination
+                unsigned long long origin_time;     // Time when this message was created at the source node
+                unsigned long long my_distance;     // This node's distance to the message's final destination
+                unsigned long long sender_distance; // Last hop's distance to the message's final destination
+                bool is_new;                        // Whether this message was just created by this node
+                bool is_microframe;                 // Whether this message is a Microframe
+                bool relevant;                      // Whether any component is interested in this message
+                bool trusted;                       // If true, this message was successfully verified by the Security Manager
+            };
+        };
     };
 
     // NIC Timer Interface (to be implemented by NIC aiming at supporting time-synchronous protocols)
