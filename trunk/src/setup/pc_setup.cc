@@ -1105,9 +1105,8 @@ void _start()
             Machine::panic();
         APIC::remap(APIC::LOCAL_APIC_PHY_ADDR);
 
-        // Move the boot image to after SETUP, so there will be nothing else
-        // below SETUP to be preserved
-        // SETUP code + data + 1 stack per CPU)
+        // Move the boot image to after SETUP, so there will be nothing else below SETUP to be preserved
+        // SETUP code + data + 1 stack per CPU
         register char * dst = MMU::align_page(entry + size + Traits<Machine>::CPUS * sizeof(MMU::Page));
         memcpy(dst, bi, si->bm.img_size);
 
@@ -1141,9 +1140,7 @@ void _start()
         while(si->bm.cpu_status[APIC::id()] != 2);
 
         if(APIC::id() >= int(Traits<Machine>::CPUS)) {
-            db<Setup>(WRN) << "More CPUs were detected than the current "
-                           << "configuration supports (" << Traits<Machine>::CPUS
-                           << ")." << endl;
+            db<Setup>(WRN) << "More CPUs were detected than the current " << "configuration supports (" << Traits<Machine>::CPUS << ")." << endl;
             db<Setup>(WRN) << "Disabling CPU " << APIC::id() << "!" << endl;
 
             CPU::int_disable();
