@@ -56,6 +56,11 @@ template<> struct Traits<Timer>: public Traits<Machine_Common>
     static const int FREQUENCY = 1000; // Hz
 };
 
+template<> struct Traits<SPI>: public Traits<Machine_Common>
+{
+    static const unsigned int UNITS = 1;
+};
+
 template<> struct Traits<UART>: public Traits<Machine_Common>
 {
     static const unsigned int UNITS = 2;

@@ -112,6 +112,7 @@ class E100;
 class CC2538;
 class AT86RF;
 class GEM;
+class SPI;
 
 // Abstractions
 class System;

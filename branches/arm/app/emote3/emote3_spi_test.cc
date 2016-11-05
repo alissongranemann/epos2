@@ -35,7 +35,7 @@ void spi_master()
 {
     cout << "SPI Master test\n";
 
-    GPIO g('c', 3, GPIO::OUTPUT);
+    GPIO g('C', 3, GPIO::OUT);
     SPI spi(SPI_UNIT, Traits<CPU>::CLOCK, SPI::FORMAT_MOTO_1, SPI::MASTER, 1000000, 8);
 
     while(1) {
@@ -54,7 +54,7 @@ void spi_slave()
 {
     cout << "SPI Slave test\n";
 
-    GPIO g('c', 3, GPIO::OUTPUT);
+    GPIO g('C', 3, GPIO::OUT);
     SPI spi(SPI_UNIT, Traits<CPU>::CLOCK, SPI::FORMAT_MOTO_1, SPI::SLAVE, 1000000, 8);
 
     while(1) {
