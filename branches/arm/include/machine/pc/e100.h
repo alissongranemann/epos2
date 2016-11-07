@@ -1,4 +1,4 @@
-// EPOS PC Intel PRO/100 (i82559) Ethernet NIC Mediator Declarations
+// EPOS PC Intel PRO/100 (i8255x) Ethernet NIC Mediator Declarations
 
 #ifndef __e100_h
 #define __e100_h
@@ -8,7 +8,11 @@
 
 __BEGIN_SYS
 
-class i82559
+/* Reference: Intel:8255x-OSSDM:2006
+ * Intel 8255x 10/100 Mbps Ethernet Controller Family
+ * Open Source Software Developer Manual
+ * 2006. */
+class i8255x
 {
 protected:
     typedef CPU::Reg8 Reg8;
@@ -23,7 +27,7 @@ protected:
 
 public:
 
-    #define FRAME_SIZE 1520 //Verify if neeeded
+    #define FRAME_SIZE 1514
 
     #define offsetof(TYPE, MEMBER) ((Reg32) &((TYPE *)0)->MEMBER)
     #define write32(b,addr) (*reinterpret_cast<volatile Reg32 *>(addr) = (b))
@@ -63,7 +67,7 @@ public:
     };
 
     /* CSR (Control/Status Registers) */
-    typedef struct csr {
+    typedef struct CSR {
         struct {
             volatile Reg8 status;
             volatile Reg8 stat_ack;
@@ -85,40 +89,109 @@ public:
         SELECTIVE_RESET = 0x0002,
     };
 
-    enum scb_status {
-        rus_idle         = 0x00,
-        rus_suspended    = 0x04,
-        rus_no_resources = 0x08,
-        rus_ready        = 0x10,
-        rus_mask         = 0x3C,
-        cus_idle         = 0xC0, // !cus_idle
-        cus_suspended    = 0x40,
+    /* System Control Block (SCB) */
+    // System Command Word
+    enum { /* Taking int account a word (16-bit) */
+        // SIMB: Specific Interrupt Mask Bits: (1) masks, (0) unmasks
+        SIMB_CX_MASK  = 0x8000, /* Bit[31] (Bit[15] of upper word) */
+        SIMB_FR_MASK  = 0x4000, /* Bit[30] (Bit[14] of upper word) */
+        SIMB_CNA_MASK = 0x2000, /* Bit[29] (Bit[13] of upper word) */
+        SIMB_RNR_MASK = 0x1000, /* Bit[28] (Bit[12] of upper word) */
+        SIMB_ER_MASK  = 0x0800, /* Bit[27] (Bit[11] of upper word) */
+        SIMB_FCP_MASK = 0x0400, /* Bit[26] (Bit[10] of upper word) */
+
+        // SI: Software generated Interrupt: (1) generates interrupt
+        SI            = 0x0200, /* Bit[25] (Bit[10] of upper word) */
+
+        // M: Mask interrupt: (1) masks, (0) unmasks
+        M             = 0x0100, /* Bit[24] (Bit[9] of upper word) */
     };
 
-    enum scb_cmd {
-        //specific interrupt mask bits
-        simb_intr_cx_mask  = 0x8000,
-        simb_intr_fr_mask  = 0x4000,
-        simb_intr_cna_mask = 0x2000,
-        simb_intr_rnr_mask = 0x1000,
-        simb_intr_er_mask  = 0x0800,
-        simb_intr_fcp_mask = 0x0400,
-        scb_cmd_si         = 0x0200,
-        scb_cmd_m          = 0x0100,
+    // System Status Word
+    // Upper half-word
+    enum { /* Taking into account a half-word (8-bit) */
+        CX_TNO               = 0x80, /* Bit[15] (Bit[7] of half word), CU finished executing a command with its interrupt bit set */
+        FR                   = 0x40, /* RU has finished receiving a frame or the header portion of a frame */
+        CNA                  = 0x20, /* CU has left the active state or has entered the idle state */
+        RNR                  = 0x10, /* RU not ready */
+        MDI                  = 0x08, /* Management Data Interface (MDI) read or write cycle has completed */
+        SWI                  = 0x04, /* Software generated interrupt */
+        FCP                  = 0x01, /* Flow Control Pause */
+        NOT_OURS             = 0x00,
+        NOT_PRESENT          = 0xFF,
+        STAT_ACK_RX          = (SWI | RNR | FR),
+        STAT_ACK_TX          = (CNA | CX_TNO),
+    };
+    // Lower half-word
+    enum {
+        // CU Status
+        CUS_MASK             = 0xc0, /* AND-mask */
+        CUS_SHIFT            = 6,
+        // possible values
+        CUS_HQP_ACTIVE       = 0x3,
+        CUS_LPQ_ACTIVE       = 0x2,
+        CUS_SUSPENDED        = 0x1,
+        CUS_IDLE             = 0x0,
+
+        // RU Status
+        RUS_MASK             = 0x3c, /* AND-mask */
+        RUS_SHIFT            = 2,
+        // possible values
+        RUS_READY            = 0x4,
+        RUS_NO_RESOURCES     = 0x2,
+        RUS_SUSPENDED        = 0x1,
+        RUS_IDLE             = 0x0
     };
 
-    enum rfd_status {
-        rfd_crc_error   = 0x800,
-        rfd_align_error = 0x400,
-        rfd_out_space   = 0x200,
-        rfd_dma_overrun = 0x100,
-        rfd_frame_short = 0x080,
-        rfd_type        = 0x020,
-        rfd_recv_error  = 0x010,
-        rfd_no_addr_mat = 0x004,
-        rfd_ia_match    = 0x002,
-        rfd_recv_colli  = 0x001,
+    /* --- */
+
+    /* Receive Frame Descriptor */
+    // Command Word
+    enum { /* Taking into account a word (16-bit) */
+        /* Not taking into account the offsets.
+         * Taking into account the work in isolation.
+         *  */
+        // RDF offset 0x00
+        RFD_EL_MASK             = 0x8000,
+        RFD_S_MASK              = 0x4000,
+        RFD_H_MASK              = 0x0010,
+        RFD_SF_MASK             = 0x0008,
+
+        // RDF offset 0x0c
+        RFD_SIZE_MASK           = 0x3fff
     };
+
+    // Status Word
+    enum { /* Taking into account a word (16-bit) */
+        /* Not taking into account the offsets.
+         * Taking into account the work in isolation.
+         *  */
+        // RDF offset 0x00
+        RFD_C_MASK              = 0x8000, /* Bit[15] */
+        RFD_OK_MASK             = 0x2000, /* Bit[13] */
+        RFD_STATUS_BITS_MASK    = 0x1fff, /* Bit[12:0] */
+
+        // RDF offset 0x0c
+        RFD_EOF_MASK            = 0x8000,
+        RFD_F_MASK              = 0x4000,
+        RFD_ACTUAL_COUNT_MASK   = 0x3fff
+    };
+
+    // Values for RFD_STATUS_BITS field
+    enum {
+        RFD_STATUS_BITS_CRC_ERROR       = 0x800,
+        RFD_STATUS_BITS_ALIGN_ERROR     = 0x400,
+        RFD_STATUS_BITS_OUT_SPACE       = 0x200,
+        RFD_STATUS_BITS_DMA_OVERRUN     = 0x100,
+        RFD_STATUS_BITS_SHORT_FRAME     = 0x080,
+        RFD_STATUS_BITS_TYPE_LENGTH     = 0x020,
+        RFD_STATUS_BITS_RECV_ERROR      = 0x010,
+        RFD_STATUS_BITS_NO_ADDR_MATCH   = 0x004,
+        RFD_STATUS_BITS_IA_MATCH        = 0x002,
+        RFD_STATUS_BITS_RECV_COLLI      = 0x001
+    };
+
+    /* --- */
 
     enum tx_rx_status {
         Rx_RFD_NOT_FILLED = 0x0,
@@ -127,33 +200,9 @@ public:
         Tx_CB_IN_USE = 0x1,
     };
 
-    enum cuc_status {
-        CUC_RUNNING = 0,
-        CUC_IDLE = 1,
-        CUC_SUSPENDED = 2,
-    };
-
-    enum ruc_status  {
-        RUC_RUNNING   = 0,
-        RUC_IDLE = 1,
-        RUC_SUSPENDED = 2,
-    };
-
     enum cb_status {
         cb_complete = 0x8000,
         cb_ok       = 0x2000,
-    };
-
-    enum scb_stat_ack {
-        stat_ack_not_ours    = 0x00,
-        stat_ack_sw_gen      = 0x04,
-        stat_ack_rnr         = 0x10,
-        stat_ack_cu_idle     = 0x20,
-        stat_ack_frame_rx    = 0x40,
-        stat_ack_cu_cmd_done = 0x80,
-        stat_ack_not_present = 0xFF,
-        stat_ack_rx = (stat_ack_sw_gen | stat_ack_rnr | stat_ack_frame_rx),
-        stat_ack_tx = (stat_ack_cu_idle | stat_ack_cu_cmd_done),
     };
 
     enum scb_cmd_hi {
@@ -277,9 +326,11 @@ public:
     // Receive Descriptor
     struct Rx_Desc: public Desc {
         volatile Reg32 rbd;
-        volatile Reg16 actual_size;
+        volatile Reg16 actual_count;
         volatile Reg16 size;
         char frame[FRAME_SIZE];
+
+        Reg32 _pad[1];
 
         friend Debug & operator<<(Debug & db, const Rx_Desc & d) {
             db << "{"
@@ -290,27 +341,20 @@ public:
     };
 
     // Transmit Descriptor
-    struct Tx_Desc: public Desc {
+    struct Base_Tx_Desc: public Desc {
         volatile Reg32 tbd_array;
         volatile Reg16 tcb_byte_count;
         volatile Reg8 threshold;
-        volatile Reg8 tbd_count;
-        char frame[FRAME_SIZE];
+        volatile Reg8 tbd_number;
 
-        friend Debug & operator<<(Debug & db, const Tx_Desc & d) {
-            db << "{" << d.tbd_array << ", "
-               << d.tcb_byte_count << ", "
-               << d.threshold << ", "
-               << d.tbd_count << ", "
-               << ", frame: ";
-
-            for (unsigned int i = 0; i < FRAME_SIZE; i++) {
-                db << (unsigned char) (*(d.frame + i));
-            }
-
-            db << "}";
-
-            return db;
+        Base_Tx_Desc(Reg32 phy_of_next) {
+            command = cb_s | cb_cid;
+            status = cb_complete;
+            tbd_array = 0xFFFFFFFF; // simplified mode
+            tcb_byte_count = 0;
+            threshold = 0xE0;
+            tbd_number = 0;
+            link = phy_of_next; //next TxCB
         }
     };
 
@@ -321,18 +365,178 @@ public:
         return log2_n;
     }
 
+protected:
+    void udelay(long long d) {
+        TSC::Time_Stamp end;
+        d *= TSC::frequency() / 1000000;
+        end = TSC::time_stamp() + d;
+        while(end > TSC::time_stamp());
+    }
+
+    static inline unsigned char read8(const volatile void *addr) {
+        return *((volatile unsigned char*) addr);
+    };
+
+    static inline void write8(unsigned char b, volatile void *addr) {
+        *((volatile unsigned char*) addr) = b;
+    };
+
+    static inline unsigned short read16(const volatile void *addr) {
+        return *((volatile unsigned short*) addr);
+    };
+
+    static inline void write16(unsigned short b, volatile void *addr) {
+        *((volatile unsigned short*) addr) = b;
+    };
+
+
+    int exec_command(Reg8 cmd, Reg32 dma_addr);
+
+protected:
+    CSR_Desc * _csr;
+
+    volatile unsigned int _tx_cuc_suspended;
+    Ethernet::Address _address;
+    Ethernet::Statistics _statistics;
+    Ethernet::Buffer * _tx_buffer_prev; // Previously transmitted buffer
 };
 
-class E100: public Ethernet::NIC_Base<Ethernet, Traits<NIC>::NICS::Polymorphic>, private i82559
+class i82559ER: public i8255x // Works with QEMU
 {
-    template<int unit> friend void call_init();
+protected:
+    // PCI ID
+    static const unsigned int PCI_VENDOR_ID = 0x8086;
+    static const unsigned int PCI_DEVICE_ID = 0x1209;
+    static const unsigned int PCI_REG_IO = 1;
+    static const unsigned int PCI_REG_MEM = 0;
 
-private:
+    static const unsigned int TBD_ARRAY_SIZE = 1;
+
+protected:
+
+    struct Transmit_Buffer_Descriptor {
+        volatile Reg32 address;
+        volatile Reg16 even_word;
+        volatile Reg16 odd_word;
+
+        enum {
+            // AND-masks
+            SIZE_MASK   =   0x7fff, // Take into account half word
+            EL_MASK     =   0x1     // Take into account half word
+        };
+
+        bool el() {
+            return odd_word & EL_MASK;
+        }
+
+        Reg16 size() {
+            return even_word & SIZE_MASK;
+        }
+
+        void size(Reg16 size) {
+            even_word = SIZE_MASK & size; // using SIZE_MASK to ensure that the last bit of even_word is zero.
+        }
+    };
+    typedef Transmit_Buffer_Descriptor TBD;
+
+    /* QEMU 2.4 requires from the TCB to use a TBD even while using simplified
+     * memory structure.
+     * Because of that, we keep tbd_array = 0xFFFFFFFF and tbd_number = 0
+     * Such workaround is not expected to work on a physical E100.
+     * For that, prefer using i82559c instead.
+     * */
+    struct Tx_Desc: public i8255x::Base_Tx_Desc {
+        TBD tbds[TBD_ARRAY_SIZE];
+
+        char _frame[FRAME_SIZE]; // XXX: Since TBD is in use, this could be placed at another place (e.g. TX Buffer).
+
+        Reg32 _pad[3];
+
+        Tx_Desc(Reg32 phy_of_next) : i8255x::Base_Tx_Desc(phy_of_next) {
+            for (unsigned int i = 0; i < TBD_ARRAY_SIZE; i++) {
+                /// tbds[i].address = reinterpret_cast<Reg32>(_frame); /// XXX: maybe must be the physical address of _frame here.
+                tbds[i].address = (phy_of_next - align128(sizeof(Tx_Desc))) + (reinterpret_cast<Reg32>(_frame) - reinterpret_cast<Reg32>(this));
+                // db<void>(WRN) << "(0) frame: " << reinterpret_cast<void *>(_frame) << " this: " << this << endl;
+                // db<void>(WRN) << "(1) _frame: " << reinterpret_cast<void *>(tbds[i].address) << endl;
+                // unsigned long present;
+                // db<void>(WRN) << "(2) _frame: " << reinterpret_cast<void *>(MMU_Aux::physical_address(reinterpret_cast<Reg32>(_frame), &present)) << endl;
+
+                tbds[i].size(FRAME_SIZE);
+            }
+        }
+
+        friend Debug & operator<<(Debug & db, const Tx_Desc & d) {
+            db << "{" << reinterpret_cast<void *>(d.tbd_array) << ", "
+               << d.tcb_byte_count << ", "
+               << reinterpret_cast<void *>(d.threshold) << ", "
+               << reinterpret_cast<void *>(d.tbd_number)
+               << "}";
+
+            return db;
+        }
+
+        char * frame() {
+            return _frame;
+        }
+    };
+};
+
+class i82559c: public i8255x // Works on E100 (i82559c) physical hardware
+{
+protected:
     // PCI ID
     static const unsigned int PCI_VENDOR_ID = 0x8086;
     static const unsigned int PCI_DEVICE_ID = 0x1229;
     static const unsigned int PCI_REG_IO = 1;
     static const unsigned int PCI_REG_MEM = 0;
+
+protected:
+
+    struct Tx_Desc: public i8255x::Base_Tx_Desc {
+        char _frame[FRAME_SIZE];
+
+        Tx_Desc(Reg32 phy_of_next) : i8255x::Base_Tx_Desc(phy_of_next) {
+        }
+
+        friend Debug & operator<<(Debug & db, const Tx_Desc & d) {
+            db << "{" << reinterpret_cast<void *>(d.tbd_array) << ", "
+               << d.tcb_byte_count << ", "
+               << reinterpret_cast<void *>(d.threshold) << ", "
+               << reinterpret_cast<void *>(d.tbd_number) << ", "
+               << "frame: ";
+
+            for (unsigned int i = 0; i < FRAME_SIZE; i++) {
+                db << (unsigned char) (*(d._frame + i));
+            }
+
+            db << "}";
+
+            return db;
+        }
+
+         char * frame() {
+            return _frame;
+    }
+    };
+
+};
+
+// typedef i82559c _Base_Dev; // Designed to work with physical E100 (i82559c version)
+typedef i82559ER _Base_Dev; // Designed to work with QEMU
+
+class E100: public Ethernet::NIC_Base<Ethernet, Traits<NIC>::NICS::Polymorphic>, private _Base_Dev
+{
+    template<int unit> friend void call_init();
+
+private:
+    typedef _Base_Dev Base_Dev;
+
+private:
+    // PCI ID
+    static const unsigned int PCI_VENDOR_ID = Base_Dev::PCI_VENDOR_ID;
+    static const unsigned int PCI_DEVICE_ID = Base_Dev::PCI_DEVICE_ID;
+    static const unsigned int PCI_REG_IO = Base_Dev::PCI_REG_IO;
+    static const unsigned int PCI_REG_MEM = Base_Dev::PCI_REG_MEM;
 
     // Transmit and Receive Ring Buffer sizes
     static const unsigned int UNITS = Traits<E100>::UNITS;
@@ -368,7 +572,7 @@ public:
 
     const Address & address() { return _address; }
     void address(const Address & address) { _address = address; }
-    
+
     const Statistics & statistics() { return _statistics; }
 
     void reset();
@@ -385,46 +589,21 @@ private:
     unsigned short eeprom_read(unsigned short * addr_len, unsigned short addr);
     unsigned char eeprom_mac_address(Reg16 addr);
 
-    int exec_command(Reg8 cmd, Reg32 dma_addr);
-
-    void i82559_flush() { read8(&csr->scb.status); }
-    void i82559_disable_irq() { write8(irq_mask_all, &csr->scb.cmd_hi); }
-    void i82559_enable_irq() { write8(irq_mask_none, &csr->scb.cmd_hi); }
-
-    void udelay(long long d) {
-        TSC::Time_Stamp end;
-        d *= TSC::frequency() / 1000000;
-        end = TSC::time_stamp() + d;
-        while(end > TSC::time_stamp());
-    }
+    void i82559_flush() { read8(&_csr->scb.status); }
+    void i82559_disable_irq() { write8(irq_mask_all, &_csr->scb.cmd_hi); }
+    void i82559_enable_irq() { write8(irq_mask_none, &_csr->scb.cmd_hi); }
 
     int self_test();
 
     void software_reset() {
-        write32(SELECTIVE_RESET, &csr->port);
+        write32(SELECTIVE_RESET, &_csr->port);
         i82559_flush(); udelay(20 * 1000);
-        write32(SOFTWARE_RESET, &csr->port);
+        write32(SOFTWARE_RESET, &_csr->port);
         i82559_flush(); udelay(20 * 1000);
         // disable IRQs
         i82559_disable_irq();
         i82559_flush(); udelay(1000);
     }
-
-    static inline unsigned char read8(const volatile void *addr) {
-        return *((volatile unsigned char*) addr);
-    };
-
-    static inline void write8(unsigned char b, volatile void *addr) {
-        *((volatile unsigned char*) addr) = b;
-    };
-
-    static inline unsigned short read16(const volatile void *addr) {
-        return *((volatile unsigned short*) addr);
-    };
-
-    static inline void write16(unsigned short b, volatile void *addr) {
-        *((volatile unsigned short*) addr) = b;
-    };
 
     void i82559_configure(void);
 
@@ -442,48 +621,84 @@ private:
         return 0;
     }
 
-    void print_csr() {
-        db<E100>(WRN) << "status: [" << csr->scb.status << "] => " << *reinterpret_cast<volatile Reg8 *>(&csr->scb.status) << endl;
-        db<E100>(WRN) << "stat_ack: [" << csr->scb.stat_ack << "] => " << *reinterpret_cast<volatile Reg8 *>(&csr->scb.stat_ack) << endl;
-        db<E100>(WRN) << "cmd_lo: [" << csr->scb.cmd_lo << "] => " << *reinterpret_cast<volatile Reg8 *>(&csr->scb.cmd_lo) << endl;
-        db<E100>(WRN) << "cmd_hi: [" << csr->scb.cmd_hi << "] => " << *reinterpret_cast<volatile Reg8 *>(&csr->scb.cmd_hi) << endl;
-        db<E100>(WRN) << "gen_ptr: [" << csr->scb.gen_ptr << "] => " << *reinterpret_cast<volatile Reg32 *>(&csr->scb.gen_ptr) << endl;
-        db<E100>(WRN) << "port: [" << csr->port << "] => " << *reinterpret_cast<volatile Reg32 *>(&csr->port) << endl;
-        db<E100>(WRN) << "flash_ctrl: [" << csr->flash_ctrl << "] => " << *reinterpret_cast<volatile Reg16 *>(&csr->flash_ctrl) << endl;
-        db<E100>(WRN) << "eeprom_ctrl_lo: [" << csr->eeprom_ctrl_lo << "] => " << *reinterpret_cast<volatile Reg8 *>(&csr->eeprom_ctrl_lo) << endl;
-        db<E100>(WRN) << "eeprom_ctrl_hi: [" << csr->eeprom_ctrl_hi << "] => " << *reinterpret_cast<volatile Reg8 *>(&csr->eeprom_ctrl_hi) << endl;
-        db<E100>(WRN) << "mdi_ctrl: [" << csr->mdi_ctrl << "] => " << *reinterpret_cast<volatile Reg32 *>(&csr->mdi_ctrl) << endl;
-        db<E100>(WRN) << "rx_dma_count: [" << csr->rx_dma_count << "] => " << *reinterpret_cast<volatile Reg32 *>(&csr->rx_dma_count) << endl;
-    }
-
-    void csr_hard_init() {
-        csr->scb.status = 0;
-        csr->scb.stat_ack = 0;
-        csr->scb.cmd_lo = 0;
-        csr->scb.cmd_hi = 1;
-        csr->scb.gen_ptr = 0;
-        csr->port = 0;
-        csr->flash_ctrl = 2;
-        csr->eeprom_ctrl_lo = 8;
-        csr->eeprom_ctrl_hi = 0;
-        csr->mdi_ctrl = 0x18217809;
-    }
-
     static void init(unsigned int unit);
 
 private:
-    unsigned int _unit;
+   void print_csr() {
+        db<E100>(WRN) << "CSR = " << _csr << endl;
+        // db<E100>(WRN) << "CSR.SCB: " << csr->scb << endl;
+        db<E100>(WRN) << "status = " << hex << _csr->scb.status << endl;
+        db<E100>(WRN) << "stat_ack = " << hex << _csr->scb.stat_ack << endl;
+        db<E100>(WRN) << "SCB Command: " << reinterpret_cast<void *>(*reinterpret_cast<unsigned long *>(_csr)) << endl;
+        db<E100>(WRN) << "cmd_lo: [" << _csr->scb.cmd_lo << "] => " << _csr->scb.cmd_lo << endl;
+        db<E100>(WRN) << "cmd_hi: [" << _csr->scb.cmd_hi << "] => " << _csr->scb.cmd_hi << endl;
+        db<E100>(WRN) << "gen_ptr: [" << _csr->scb.gen_ptr << "] => " << *reinterpret_cast<volatile Reg32 *>(&_csr->scb.gen_ptr) << endl;
+        db<E100>(WRN) << "port: [" << _csr->port << "] => " << *reinterpret_cast<volatile Reg32 *>(&_csr->port) << endl;
+        // db<E100>(WRN) << "flash_ctrl: [" << _csr->flash_ctrl << "] => " << *reinterpret_cast<volatile Reg16 *>(&_csr->flash_ctrl) << endl;
+        db<E100>(WRN) << "eeprom_ctrl_lo: [" << _csr->eeprom_ctrl_lo << "] => " << *reinterpret_cast<volatile Reg8 *>(&_csr->eeprom_ctrl_lo) << endl;
+        db<E100>(WRN) << "eeprom_ctrl_hi: [" << _csr->eeprom_ctrl_hi << "] => " << *reinterpret_cast<volatile Reg8 *>(&_csr->eeprom_ctrl_hi) << endl;
+        db<E100>(WRN) << "mdi_ctrl: [" << _csr->mdi_ctrl << "] => " << *reinterpret_cast<volatile Reg32 *>(&_csr->mdi_ctrl) << endl;
+        db<E100>(WRN) << "rx_dma_count: [" << _csr->rx_dma_count << "] => " << *reinterpret_cast<volatile Reg32 *>(&_csr->rx_dma_count) << endl;
+    }
 
-    Address _address;
-    Statistics _statistics;
+    void print_status() {
+        /* The SCB Status word is not updated immediately in response to SCB
+         * commands and this method is not currently taking that into account. */
+
+        // SCB Status Word, STAT/ACK bits
+        db<E100>(WRN) << "STAT/ACK = ";
+
+        Reg8 stat_ack = read8(&_csr->scb.stat_ack);
+
+        if (stat_ack == NOT_PRESENT) {
+            db<E100>(WRN) << "NOT_PRESENT" << endl;
+        } else if (stat_ack == NOT_OURS) {
+            db<E100>(WRN) << "NOT_OURS" << endl;
+        } else {
+            if (stat_ack & CX_TNO) db<E100>(WRN) << "CX_TNO ";
+            if (stat_ack & FR) db<E100>(WRN) << "FR ";
+            if (stat_ack & CNA) db<E100>(WRN) << "CNA ";
+            if (stat_ack & RNR) db<E100>(WRN) << "RNR ";
+            if (stat_ack & MDI) db<E100>(WRN) << "MDI ";
+            if (stat_ack & SWI) db<E100>(WRN) << "SWI ";
+            if (stat_ack & FCP) db<E100>(WRN) << "FCP ";
+
+            db<E100>(WRN) << endl;
+        }
+
+        Reg8 status = read8(&_csr->scb.status);
+        db<E100>(WRN) << "CU = ";
+        if (((status & CUS_MASK) >> CUS_SHIFT) == CUS_HQP_ACTIVE)
+            db<E100>(WRN) << "CUS_HQP_ACTIVE" << endl;
+        else if (((status & CUS_MASK) >> CUS_SHIFT) == CUS_LPQ_ACTIVE)
+            db<E100>(WRN) << "CUS_LPQ_ACTIVE" << endl;
+        else if (((status & CUS_MASK) >> CUS_SHIFT) == CUS_SUSPENDED)
+            db<E100>(WRN) << "CUS_SUSPENDED" << endl;
+        else if (((status & CUS_MASK) >> CUS_SHIFT) == CUS_IDLE)
+            db<E100>(WRN) << "CUS_IDLE" << endl;
+        else
+            db<E100>(WRN) << "Invalid CU status " << endl;
+
+        db<E100>(WRN) << "RU = ";
+        if (((status & RUS_MASK) >> RUS_SHIFT) == RUS_READY)
+            db<E100>(WRN) << "RUS_READY" << endl;
+        else if (((status & RUS_MASK) >> RUS_SHIFT) == RUS_NO_RESOURCES)
+            db<E100>(WRN) << "RUS_NO_RESOURCES" << endl;
+        else if (((status & RUS_MASK) >> RUS_SHIFT) == RUS_SUSPENDED)
+            db<E100>(WRN) << "RUS_SUSPENDED" << endl;
+        else if (((status & RUS_MASK) >> RUS_SHIFT) == RUS_IDLE)
+            db<E100>(WRN) << "RUS_IDLE" << endl;
+        else
+            db<E100>(WRN) << "Invalid RU status" << endl;
+    }
+
+private:
+    unsigned int _unit;
 
     Log_Addr _io_mem;
     IO_Irq _irq;
 
     volatile unsigned int _rx_ruc_no_more_resources;
-    volatile unsigned int _tx_cuc_suspended;
-
-    CSR_Desc * csr;
 
     ConfigureCB * configCB;
     Phy_Addr _configCB_phy;
@@ -507,11 +722,13 @@ private:
     Buffer * _rx_buffer[RX_BUFS];
     Buffer * _tx_buffer[TX_BUFS];
 
-    Buffer * _tx_buffer_prev; // Previously transmitted buffer
-
     DMA_Buffer * _dma_buffer;
 
     static Device _devices[UNITS];
+
+private:
+    static const bool HYSTERICALLY_DEBUGGED = true;
+
 };
 
 __END_SYS

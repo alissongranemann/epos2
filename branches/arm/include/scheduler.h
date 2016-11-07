@@ -176,6 +176,27 @@ namespace Scheduling_Criteria
         : RT_Common(p ? p : d, d, p, c) {}
     };
 
+    // Partitioned Rate Monotonic (multicore)
+    class PRM: public RM, public Variable_Queue
+    {
+        enum { ANY = Variable_Queue::ANY };
+
+    public:
+        static const unsigned int QUEUES = Traits<Machine>::CPUS;
+
+    public:
+        PRM(int p = APERIODIC)
+        : RM(p), Variable_Queue(((_priority == IDLE) || (_priority == MAIN)) ? Machine::cpu_id() : 0) {}
+
+        PRM(const Microsecond & d, const Microsecond & p = SAME, const Microsecond & c = UNKNOWN, int cpu = ANY)
+        : RM(d, p, c, cpu), Variable_Queue((cpu != ANY) ? cpu : ++_next_queue %= Machine::n_cpus()) {}
+
+        using Variable_Queue::queue;
+
+        static unsigned int current_queue() { return Machine::cpu_id(); }
+    };
+
+
      // Deadline Monotonic
      class DM: public RT_Common
      {
@@ -278,13 +299,16 @@ class Scheduling_Queue<T, Scheduling_Criteria::CPU_Affinity>:
 public Scheduling_Multilist<T> {};
 
 template<typename T>
+class Scheduling_Queue<T, Scheduling_Criteria::PRM>:
+public Scheduling_Multilist<T> {};
+
+template<typename T>
 class Scheduling_Queue<T, Scheduling_Criteria::GEDF>:
 public Multihead_Scheduling_List<T> {};
 
 template<typename T>
 class Scheduling_Queue<T, Scheduling_Criteria::PEDF>:
 public Scheduling_Multilist<T> {};
-
 
 template<typename T>
 class Scheduling_Queue<T, Scheduling_Criteria::CEDF>:

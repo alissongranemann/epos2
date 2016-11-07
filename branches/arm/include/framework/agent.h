@@ -182,6 +182,11 @@ void Agent::handle_address_space()
     case CREATE:
         id(Id(ADDRESS_SPACE_ID, reinterpret_cast<Id::Unit_Id>(new Adapter<Address_Space>())));
         break;
+    case CREATE1:
+        MMU::Page_Directory * pd;
+        in(pd);
+        id(Id(ADDRESS_SPACE_ID, reinterpret_cast<Id::Unit_Id>(new Adapter<Address_Space>(pd))));
+        break;
     case DESTROY:
         delete as;
         break;
@@ -199,12 +204,18 @@ void Agent::handle_address_space()
         in(seg, addr);
         res = as->attach(seg, addr);
     } break;
-    case ADDRESS_SPACE_DETACH: {
+    case ADDRESS_SPACE_DETACH1: {
         Segment * seg;
         in(seg);
         as->detach(seg);
     } break;
-    case ADDRESS_PHYSICAL: {
+    case ADDRESS_SPACE_DETACH2: {
+        Segment * seg;
+        CPU::Log_Addr addr;
+        in(seg, addr);
+        as->detach(seg, addr);
+    } break;
+    case ADDRESS_SPACE_PHYSICAL: {
         CPU::Log_Addr addr;
         in(addr);
         res = as->physical(addr);
@@ -293,6 +304,12 @@ void Agent::handle_alarm()
     Result res = 0;
 
     switch(method()) {
+    case CREATE2: {
+        Alarm::Microsecond time;
+        Handler * handler;
+        in(time, handler);
+        id(Id(ALARM_ID, reinterpret_cast<Id::Unit_Id>(new Adapter<Alarm>(time, handler))));
+    } break;
     case CREATE3: {
         Alarm::Microsecond time;
         Handler * handler;
@@ -303,6 +320,17 @@ void Agent::handle_alarm()
     case DESTROY:
         delete alarm;
         break;
+    case ALARM_GET_PERIOD:
+        res = alarm->period();
+    break;
+    case ALARM_SET_PERIOD: {
+        Alarm::Microsecond p;
+        in(p);
+        alarm->period(p);
+    } break;
+    case ALARM_FREQUENCY:
+        res = Adapter<Alarm>::alarm_frequency();
+    break;
     case ALARM_DELAY: {
         Alarm::Microsecond time;
         in(time);

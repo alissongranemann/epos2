@@ -9,29 +9,43 @@
 #include <utility/debug.h>
 #include <machine.h>
 
+// SETUP entry point is in .init (and not in .text)
+extern "C" { void _start() __attribute__ ((section (".init"))); }
 
-// LIBC Heritage
+// Bindings to reuse EPOS code at SETUP
 extern "C" {
     __USING_SYS;
 
-    void _start() __attribute__ ((section (".init")));
+    // Libc legacy
+    void _panic() { Machine::panic(); }
+    void _exit(int s) { db<Setup>(ERR) << "_exit(" << s << ") called!" << endl; }
+    void __cxa_pure_virtual() { db<void>(ERR) << "Pure Virtual method called!" << endl; }
 
-    void _panic() {
-        Machine::panic();
+    // Utility-related methods that differ from kernel and user space.
+    void _print(const char * s) { Display::puts(s); }
+    static volatile int _print_lock = -1;
+    void _print_preamble() {
+        static char tag[] = "<0>: ";
+
+        int me = Machine::cpu_id();
+        int last = CPU::cas(_print_lock, -1, me);
+        for(int i = 0, owner = last; (i < 10) && (owner != me); i++, owner = CPU::cas(_print_lock, -1, me));
+        if(last != me) {
+            tag[1] = '0' + Machine::cpu_id();
+            _print(tag);
+        }
     }
+    void _print_trailler(bool error) {
+        static char tag[] = " :<0>";
 
-    void _exit(int s) {
-        db<Setup>(ERR) << "_exit(" << s << ") called!" << endl;
-        Machine::panic(); for(;;);
-    }
+        if(_print_lock != -1) {
+            tag[3] = '0' + Machine::cpu_id();
+            _print(tag);
 
-    void _print(const char * s) {
-        Display::puts(s);
-    }
-
-    void __cxa_pure_virtual() {
-        db<Setup>(ERR) << "__cxa_pure_virtual() called!" << endl;
-        Machine::panic();
+            _print_lock = -1;
+        }
+        if(error)
+            _panic();
     }
 }
 
@@ -120,7 +134,7 @@ private:
     void setup_sys_pt();
     void setup_sys_pd();
     void enable_paging();
-    void setup_tss0();
+    void setup_tss();
 
     void load_parts();
     void call_next();
@@ -139,8 +153,9 @@ private:
 //========================================================================
 PC_Setup::PC_Setup(char * boot_image)
 {
-    // Get boot image loaded by the bootstrap
+    // Get boot imaged previosly loaded and relocated
     bi = reinterpret_cast<char *>(boot_image);
+
     si = reinterpret_cast<System_Info *>(bi);
 
     Display::init();
@@ -200,7 +215,7 @@ PC_Setup::PC_Setup(char * boot_image)
         APIC::remap(Memory_Map::APIC);
 
         // Configure a TSS for system calls and inter-level interrupt handling
-        setup_tss0();
+        setup_tss();
 
         // Load EPOS parts (e.g. INIT, SYSTEM, APP)
         load_parts();
@@ -213,8 +228,8 @@ PC_Setup::PC_Setup(char * boot_image)
         // Wait for the Boot CPU to setup page tables
         while(!Paging_Ready);
 
-        // Enable paging
         enable_paging();
+        setup_tss();
     }
 
     Machine::smp_barrier(si->bm.n_cpus);
@@ -421,9 +436,9 @@ void PC_Setup::build_pmm()
     top_page -= 1;
     si->pmm.sys_info = top_page * sizeof(Page);
 
-    // TSS0 (1 x sizeof(Page))
-    top_page -= 1;
-    si->pmm.tss0 = top_page * sizeof(Page);
+    // TSSs (1 x sizeof(Page) x CPUs)
+    top_page -= Traits<Machine>::CPUS;
+    si->pmm.tss = top_page * sizeof(Page);
 
     // Page tables to map the whole physical memory
     // = NP/NPTE_PT * sizeof(Page)
@@ -501,7 +516,7 @@ void PC_Setup::say_hi()
         db<Setup>(INF) << "No SYSTEM in boot image, assuming EPOS is a library!" << endl;
 
     kout << "Setting up this machine as follows: " << endl;
-    kout << "  Processor:    IA32 at " << si->tm.cpu_clock / 1000000
+    kout << "  Processor:    " << Traits<Machine>::CPUS << " x IA32 at " << si->tm.cpu_clock / 1000000
          << " MHz (BUS clock = " << si->tm.bus_clock / 1000000 << " MHz)" << endl;
     kout << "  Memory:       " << (si->bm.mem_top - si->bm.mem_base) / 1024
          << " Kbytes [" << (void *)si->bm.mem_base
@@ -624,14 +639,16 @@ void PC_Setup::setup_gdt()
     gdt[CPU::GDT_FLT_DATA]  = GDT_Entry(0,  0xfffff, CPU::SEG_FLT_DATA);
     gdt[CPU::GDT_APP_CODE]  = GDT_Entry(0,  0xfffff, CPU::SEG_APP_CODE);
     gdt[CPU::GDT_APP_DATA]  = GDT_Entry(0,  0xfffff, CPU::SEG_APP_DATA);
-    gdt[CPU::GDT_TSS0]      = GDT_Entry(TSS0, 0xfff, CPU::SEG_TSS0);
+    for(unsigned int i = 0; i < Traits<Machine>::CPUS; i++)
+        gdt[CPU::GDT_TSS0 + i] = GDT_Entry(TSS0 + i * sizeof(Page), 0xfff, CPU::SEG_TSS0);
 
     db<Setup>(INF) << "GDT[NULL=" << CPU::GDT_NULL     << "]=" << gdt[CPU::GDT_NULL] << endl;
     db<Setup>(INF) << "GDT[SYCD=" << CPU::GDT_SYS_CODE << "]=" << gdt[CPU::GDT_SYS_CODE] << endl;
     db<Setup>(INF) << "GDT[SYDT=" << CPU::GDT_SYS_DATA << "]=" << gdt[CPU::GDT_SYS_DATA] << endl;
     db<Setup>(INF) << "GDT[APCD=" << CPU::GDT_APP_CODE << "]=" << gdt[CPU::GDT_APP_CODE] << endl;
     db<Setup>(INF) << "GDT[APDT=" << CPU::GDT_APP_DATA << "]=" << gdt[CPU::GDT_APP_DATA] << endl;
-    db<Setup>(INF) << "GDT[TSS0=" << CPU::GDT_TSS0     << "]=" << gdt[CPU::GDT_TSS0] << endl;
+    for(unsigned int i = 0; i < Traits<Machine>::CPUS; i++)
+        db<Setup>(INF) << "GDT[TSS" << i << "=" << CPU::GDT_TSS0  + i << "]=" << gdt[CPU::GDT_TSS0 + i] << endl;
 }
 
 //========================================================================
@@ -642,7 +659,7 @@ void PC_Setup::setup_sys_pt()
                    << ",pt="   << (void *)si->pmm.sys_pt
                    << ",pd="   << (void *)si->pmm.sys_pd
                    << ",info=" << (void *)si->pmm.sys_info
-                   << ",tss0=" << Phy_Addr(si->pmm.tss0)
+                   << ",tss0=" << (void *)si->pmm.tss
                    << ",mem="  << (void *)si->pmm.phy_mem_pts
                    << ",io="   << (void *)si->pmm.io_pts
                    << ",sysc=" << (void *)si->pmm.sys_code
@@ -672,8 +689,9 @@ void PC_Setup::setup_sys_pt()
     // GDT
     sys_pt[MMU::page(GDT)] = si->pmm.gdt | Flags::SYS;
 
-    // TSS0
-    sys_pt[MMU::page(TSS0)] = si->pmm.tss0 | Flags::SYS;
+    // TSSs
+    for(unsigned int i = 0; i < Traits<Machine>::CPUS; i++)
+        sys_pt[MMU::page(TSS0) + i] = (si->pmm.tss + i * sizeof(Page)) | Flags::SYS;
 
     // Set an entry to this page table, so the system can access it later
     sys_pt[MMU::page(SYS_PT)] = si->pmm.sys_pt | Flags::SYS;
@@ -766,32 +784,33 @@ void PC_Setup::setup_sys_pd()
 }
 
 //========================================================================
-void PC_Setup::setup_tss0()
+void PC_Setup::setup_tss()
 {
-    db<Setup>(TRC) << "setup_tss0(tss0=" << Log_Addr(TSS0) << ")" << endl;
+    // Get current CPU's TSS logical address (after enabling paging)
+    unsigned int cpu_id = Machine::cpu_id();
+    TSS * tss = reinterpret_cast<TSS *>(TSS0 + cpu_id * sizeof(Page));
 
-    // Get TSS0's logical address (after enabling paging)
-    TSS * tss0 = reinterpret_cast<TSS *>(TSS0);
+    db<Setup>(TRC) << "setup_tss(tss" << cpu_id << "=" << Log_Addr(tss) << ")" << endl;
 
-    // Clear TSS0
-    memset(tss0, 0, sizeof(Page));
+    // Clear TSS
+    memset(tss, 0, sizeof(Page));
 
-    // Configure only the segment selectors and the kernel stack on the bootstrap CPU
-    tss0->ss0 = CPU::SEL_SYS_DATA;
-    tss0->esp0 = SYS_STACK + Traits<System>::STACK_SIZE;
-    tss0->cs = (CPU::GDT_SYS_CODE << 3)  | CPU::PL_APP;
-    tss0->ss = (CPU::GDT_SYS_DATA << 3)  | CPU::PL_APP;
-    tss0->ds = tss0->ss;
-    tss0->es = tss0->ss;
-    tss0->fs = tss0->ss;
-    tss0->gs = tss0->ss;
+    // Configure only the segment selectors and the kernel stack
+    tss->ss0 = CPU::SEL_SYS_DATA;
+    tss->esp0 = SYS_STACK + Traits<System>::STACK_SIZE; // APs' tss->esp0 will be reconfigured later by CPU::Context::load()
+    tss->cs = (CPU::GDT_SYS_CODE << 3) | CPU::PL_APP;
+    tss->ss = (CPU::GDT_SYS_DATA << 3) | CPU::PL_APP;
+    tss->ds = tss->ss;
+    tss->es = tss->ss;
+    tss->fs = tss->ss;
+    tss->gs = tss->ss;
 
-    // Load TR with TSS0
-    CPU::Reg16 tr = CPU::SEL_TSS0;
+    // Load TR with TSS
+    CPU::Reg16 tr = ((CPU::GDT_TSS0 + cpu_id) << 3) | CPU::PL_SYS;
     CPU::tr(tr);
     tr = CPU::tr();
 
-    db<Setup>(INF) << "TR=" << tr << ",TSS0={ss0=" << tss0->ss0 << ",esp0=" << Log_Addr(tss0->esp0) << "}" << endl;
+    db<Setup>(INF) << "TR=" << tr << ",TSS" << cpu_id << "={ss0=" << tss->ss0 << ",esp0=" << Log_Addr(tss->esp0) << "}" << endl;
 }
 
 //========================================================================
@@ -1053,8 +1072,14 @@ void _start()
     // The boot strap loaded the boot image at BOOT_IMAGE_ADDR
     char * bi = reinterpret_cast<char *>(Traits<Machine>::BOOT_IMAGE_ADDR);
 
-    // Get the System_Info  (first thing in the boot image)
+    // Get the System_Info (first thing in the boot image)
     System_Info * si = reinterpret_cast<System_Info *>(bi);
+
+    // Check if we are booting from a ramdisk and adjust the boot image pointer accordingly
+    if(si->bm.img_size > 2880 * 512) { // larger than a floppy
+        bi = reinterpret_cast<char *>(Traits<Machine>::RAMDISK + Traits<Machine>::BOOT_LENGTH_MAX);
+        si = reinterpret_cast<System_Info *>(bi);
+    }
 
     // Multicore conditional start up
     if(APIC::id() == 0) { // Boot strap CPU (BSP)
@@ -1073,18 +1098,15 @@ void _start()
         // Be careful: by reloading SETUP, global variables have been reset to
         // the values stored in the ELF data segment
         // Also check if this wouldn't destroy the boot image
-        char * addr = reinterpret_cast<char *>(elf->segment_address(0));
         int size = elf->segment_size(0);
-
-        if(addr <= &bi[si->bm.img_size])
+        if(elf->segment_address(0) <= reinterpret_cast<unsigned int>(&bi[si->bm.img_size]))
             Machine::panic();
         if(elf->load_segment(0) < 0)
             Machine::panic();
         APIC::remap(APIC::LOCAL_APIC_PHY_ADDR);
 
-        // Move the boot image to after SETUP, so there will be nothing else
-        // below SETUP to be preserved
-        // SETUP code + data + 1 stack per CPU)
+        // Move the boot image to after SETUP, so there will be nothing else below SETUP to be preserved
+        // SETUP code + data + 1 stack per CPU
         register char * dst = MMU::align_page(entry + size + Traits<Machine>::CPUS * sizeof(MMU::Page));
         memcpy(dst, bi, si->bm.img_size);
 
@@ -1118,9 +1140,7 @@ void _start()
         while(si->bm.cpu_status[APIC::id()] != 2);
 
         if(APIC::id() >= int(Traits<Machine>::CPUS)) {
-            db<Setup>(WRN) << "More CPUs were detected than the current "
-                           << "configuration supports (" << Traits<Machine>::CPUS
-                           << ")." << endl;
+            db<Setup>(WRN) << "More CPUs were detected than the current " << "configuration supports (" << Traits<Machine>::CPUS << ")." << endl;
             db<Setup>(WRN) << "Disabling CPU " << APIC::id() << "!" << endl;
 
             CPU::int_disable();

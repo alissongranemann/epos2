@@ -81,7 +81,9 @@ public:
     CPU::Phy_Addr pd() { return invoke(ADDRESS_SPACE_PD); }
     CPU::Log_Addr attach(const Proxy<Segment> & seg) { return invoke(ADDRESS_SPACE_ATTACH1, seg.id().unit()); }
     CPU::Log_Addr attach(const Proxy<Segment> & seg, CPU::Log_Addr addr) { return invoke(ADDRESS_SPACE_ATTACH2, seg.id().unit(), addr); }
-    void detach(const Proxy<Segment> & seg) { invoke(ADDRESS_SPACE_DETACH, seg.id().unit());}
+    void detach(const Proxy<Segment> & seg) { invoke(ADDRESS_SPACE_DETACH1, seg.id().unit());}
+    void detach(const Proxy<Segment> & seg, CPU::Log_Addr addr) { invoke(ADDRESS_SPACE_DETACH2, seg.id().unit(), addr); }
+    CPU::Phy_Addr physical(const CPU::Log_Addr addr) { return invoke(ADDRESS_SPACE_PHYSICAL, addr); }
 
     unsigned int size() { return invoke(SEGMENT_SIZE); }
     CPU::Phy_Addr phy_address() { return invoke(SEGMENT_PHY_ADDRESS); }

@@ -206,6 +206,7 @@ public:
          static Microsecond count2us(const Time_Stamp & ts) { return 0; }
     };
 
+
     // Polymorphic NIC Base
     template<typename Family, bool polymorphic = true>
     class NIC_Base: public Family, public Family::Observed

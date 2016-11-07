@@ -138,6 +138,7 @@ namespace Scheduling_Criteria
     class GEDF;
     class PEDF;
     class CEDF;
+    class PRM;
 };
 
 class Address_Space;

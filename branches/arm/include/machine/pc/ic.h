@@ -439,14 +439,14 @@ private:
         }
     }
 
-    static void connect()	{
-        CPU::out8(0x70, 0x22);
-        CPU::out8(0x01, 0x23);
+    static void connect() {
+        CPU::out8(0x22, 0x70);
+        CPU::out8(0x23, 0x01);
     }
 
-    static void disconnect()	{
-        CPU::out8(0x70, 0x22);
-        CPU::out8(0x00, 0x23);
+    static void disconnect() {
+        CPU::out8(0x22, 0x70);
+        CPU::out8(0x23, 0x00);
     }
 
 private:

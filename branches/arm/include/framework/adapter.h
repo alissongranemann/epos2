@@ -59,6 +59,8 @@ public:
     CPU::Log_Addr attach(Segment * seg) { enter(); CPU::Log_Addr res = Component::attach(seg); leave(); return res; }
     CPU::Log_Addr attach(Segment * seg, const CPU::Log_Addr & addr) { enter(); CPU::Log_Addr res = Component::attach(seg, addr); leave(); return res; }
     void detach(Segment * seg) { enter(); Component::detach(seg); leave(); }
+    void detach(Segment * seg, const CPU::Log_Addr & addr) { enter(); Component::detach(seg, addr); leave(); }
+    CPU::Phy_Addr physical(const CPU::Log_Addr & addr) { enter(); CPU::Phy_Addr res = Component::physical(addr); leave(); return res; }
 
     unsigned int size() { enter(); unsigned int res = Component::size(); leave(); return res; }
     CPU::Phy_Addr phy_address() { enter(); CPU::Phy_Addr res = Component::phy_address(); leave(); return res; }
@@ -82,6 +84,9 @@ public:
     int frequency() { enter(); int res = Component::frequency(); leave(); return res; }
     int ticks() { enter(); int res = Component::ticks(); leave(); return res; }
     int read() { enter(); int res = Component::read(); leave(); return res; }
+    const RTC::Microsecond period() { enter(); RTC::Microsecond res = Component::period(); leave(); return res; }
+    void period(const RTC::Microsecond p) { enter(); Component::period(p); leave(); }
+    static TSC::Hertz alarm_frequency() { static_enter(); TSC::Hertz res = Component::frequency(); static_leave(); return res; }
 
     // Communication
     template<typename ... Tn>

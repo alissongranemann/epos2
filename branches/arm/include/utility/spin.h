@@ -45,6 +45,29 @@ private:
     volatile int _owner;
 };
 
+// Flat Spin Lock
+class Simple_Spin
+{
+public:
+    Simple_Spin(): _locked(false) {}
+
+    void acquire() {
+        while(CPU::tsl(_locked));
+
+        db<Spin>(TRC) << "Spin::acquire[SPIN=" << this << "]()" << endl;
+    }
+
+    void release() {
+//        if(_locked)
+            _locked = 0;
+
+        db<Spin>(TRC) << "Spin::release[SPIN=" << this << "]()}" << endl;
+    }
+
+private:
+    volatile bool _locked;
+};
+
 __END_UTIL
 
 #endif

@@ -29,9 +29,10 @@ static const char CFG_FILE[] = "etc/eposmkbi.conf";
 struct Configuration
 {
     char          mode[16];
+    char          arch[16];
     char          mach[16];
     char          mmod[16];
-    char 	  arch[16];
+    unsigned short n_cpus;
     unsigned int  clock;
     unsigned char word_size;
     bool          endianess; // true => little, false => big
@@ -149,8 +150,14 @@ int main(int argc, char **argv)
         } else
             image_size += pad(fd_img, MAX_SI_LEN);
 
-    // Node ID
-    si.bm.node_id = CONFIG.node_id;
+    // Initialize the Boot_Map in System_Info
+    si.bm.n_cpus   = CONFIG.n_cpus; // can be adjusted by SETUP in some machines
+    si.bm.mem_base = CONFIG.mem_base;
+    si.bm.mem_top  = CONFIG.mem_top;
+    si.bm.io_base  = 0; // will be adjusted by SETUP
+    si.bm.io_top   = 0; // will be adjusted by SETUP
+    si.bm.node_id  = CONFIG.node_id;
+    si.bm.n_nodes  = CONFIG.n_nodes;
 
     // Add SETUP
     sprintf(file, "%s/img/%s_setup", argv[1], CONFIG.mach);
@@ -204,10 +211,8 @@ int main(int argc, char **argv)
         image_size += put_number(fd_img, 0);
     }
 
-    // Prepare the Boot_Map
-    si.bm.mem_base = CONFIG.mem_base;
-    si.bm.mem_top  = CONFIG.mem_top;
-    si.bm.img_size  = image_size - boot_size; // Boot not included
+    // Add the size of the image to the Boot_Map in System_Info (excluding BOOT)
+    si.bm.img_size = image_size - boot_size;
 
     // Add System_Info
     if(need_si) {
@@ -296,6 +301,18 @@ bool parse_config(FILE * cfg_file, Configuration * cfg)
         return false;
     }
     strtolower(cfg->mmod, token);
+
+    // CPUS
+    if(fgets(line, 256, cfg_file) != line) {
+        fprintf(stderr, "Error: failed to read CPUS from configuration file!\n");
+        return false;
+    }
+    token = strtok(line, "=");
+    if(strcmp(token, "CPUS") || !(token = strtok(NULL, "\n"))) {
+        fprintf(stderr, "Error: no valid CPUS in configuration!\n");
+        return false;
+    }
+    cfg->n_cpus = atoi(token);
 
     // Clock
     if(fgets(line, 256, cfg_file) != line) {
@@ -449,10 +466,10 @@ bool add_machine_secrets(int fd, unsigned int i_size, char * mach, char * mmod)
 {
     if (!strcmp(mach, "pc")) { // PC
         const unsigned int floppy_size   = 1474560;
-        const unsigned short count_offset  = 508;
-        const unsigned short master_offset = 510;
-        const unsigned short boot_id	   = 0xaa55;
-        const unsigned short num_sect	   = ((i_size + 511) / 512);
+        const unsigned int secrets_offset   = CONFIG.boot_length_min - 6;
+        const unsigned short boot_id        = 0xaa55;
+        const unsigned short num_sect       = ((i_size + 511) / 512);
+        const unsigned short last_track_sec = num_sect <= 2880 ? 19 : 49; // either 144 tracks with 20 sectors or 144 tracks with 50 sectors
 
         // Pad the image to the size of a standard floppy
         if(lseek(fd, 0, SEEK_END) < 0) {
@@ -462,17 +479,12 @@ bool add_machine_secrets(int fd, unsigned int i_size, char * mach, char * mmod)
         pad(fd, (floppy_size  - i_size));
 
         // Write the number of sectors to be read
-        if(lseek(fd, count_offset, SEEK_SET) < 0) {
+        if(lseek(fd, secrets_offset, SEEK_SET) < 0) {
             fprintf(stderr, "Error: can't seek the boot image!\n");
             return false;
         }
-        put_number(fd,num_sect);
-
-        // Write master boot id
-        if(lseek(fd, master_offset, SEEK_SET) < 0) {
-            fprintf(stderr, "Error: can't seek the boot image!\n");
-            return false;
-        }
+        put_number(fd, last_track_sec);
+        put_number(fd, num_sect);
         put_number(fd, boot_id);
     } else if (!strcmp(mach, "rcx")) { // RCX
         char key_string[] = "Do you byte, when I knock?";

@@ -35,6 +35,7 @@ eposmkbi.conf:	FORCE
 		@echo "ARCH=$(ARCH)" >> $@
 		@echo "MACH=$(MACH)" >> $@
 		@echo "MMOD=$(MMOD)" >> $@
+		@echo "CPUS=$(CPUS)" >> $@
 		@echo "CLOCK=$(ARCH_CLOCK)" >> $@
 		@echo "WORD_SIZE=$(ARCH_WORD_SIZE)" >> $@
 		@echo "ENDIANESS=$(ARCH_ENDIANESS)" >> $@
