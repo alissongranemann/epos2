@@ -15,8 +15,8 @@ private:
     static const unsigned long long MAX_LONG_LONG = (unsigned long long)(-1);
     // Adjusts the precision of the basic time type according to the system's life span,
     // forcing a compilation error through void when a counter overflow becomes possible.
-    typedef IF<(Traits<System>::LIFE_SPAN * 1000000 <= MAX_LONG), unsigned long,
-               IF<(Traits<System>::LIFE_SPAN * 1000000 <= MAX_LONG_LONG), unsigned long long,
+    typedef IF<(Traits<System>::LIFE_SPAN * 1000000ULL <= MAX_LONG), unsigned long,
+               IF<(Traits<System>::LIFE_SPAN * 1000000ULL <= MAX_LONG_LONG), unsigned long long,
                   void>::Result>::Result Time_Base;
 
 protected:
