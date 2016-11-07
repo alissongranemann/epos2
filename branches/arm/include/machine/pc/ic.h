@@ -434,7 +434,7 @@ private:
         }
         if(read(VERSION) & 0xf) { // !82489DX
             if(lvts > 3)
-        	write(ESR, 0);
+                write(ESR, 0);
             read(ESR);
         }
     }

@@ -1,4 +1,4 @@
-// EPOS Task Abstraction Implementation
+// EPOS Task Component Implementation
 
 #include <task.h>
 

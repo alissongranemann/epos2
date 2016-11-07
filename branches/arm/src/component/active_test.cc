@@ -1,4 +1,4 @@
-// EPOS Active Object Abstraction Test Program
+// EPOS Active Object Component Test Program
 
 #include <utility/ostream.h>
 #include <active.h>

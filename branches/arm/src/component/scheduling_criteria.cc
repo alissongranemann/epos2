@@ -1,4 +1,4 @@
-// EPOS CPU Affinity Scheduler Abstraction Implementation
+// EPOS CPU Affinity Scheduler Component Implementation
 
 #include <scheduler.h>
 

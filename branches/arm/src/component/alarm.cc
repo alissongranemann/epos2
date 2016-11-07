@@ -1,4 +1,4 @@
-// EPOS Alarm Abstraction Implementation
+// EPOS Alarm Component Implementation
 
 #include <semaphore.h>
 #include <alarm.h>

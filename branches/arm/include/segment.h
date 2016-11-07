@@ -1,4 +1,4 @@
-// EPOS Memory Segment Abstraction Declarations
+// EPOS Memory Segment Component Declarations
 
 #ifndef __segment_h
 #define __segment_h

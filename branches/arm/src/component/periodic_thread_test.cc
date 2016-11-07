@@ -1,4 +1,4 @@
-// EPOS Periodic Thread Abstraction Test Program
+// EPOS Periodic Thread Component Test Program
 
 #include <utility/ostream.h>
 #include <periodic_thread.h>
@@ -20,7 +20,7 @@ OStream cout;
 
 int main()
 {
-    cout << "Periodic Thread Abstraction Test" << endl;
+    cout << "Periodic Thread Component Test" << endl;
 
     cout << "\nThis test consists in creating three periodic threads as follows:" << endl;
     cout << "  Thread 1 prints \"a\" every " << period_a << " ms;" << endl;

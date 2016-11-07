@@ -114,7 +114,7 @@ class AT86RF;
 class GEM;
 class SPI;
 
-// Abstractions
+// Components
 class System;
 class Application;
 

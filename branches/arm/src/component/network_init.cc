@@ -1,4 +1,4 @@
-// EPOS Network Abstraction Initialization
+// EPOS Network Component Initialization
 
 #include <system/config.h>
 #ifndef __no_networking__

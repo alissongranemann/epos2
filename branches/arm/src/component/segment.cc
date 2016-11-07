@@ -1,4 +1,4 @@
-// EPOS Memory Segment Abstraction Implementation
+// EPOS Memory Segment Component Implementation
 
 #include <segment.h>
 

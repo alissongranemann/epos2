@@ -1,4 +1,4 @@
-// EPOS Active Object Abstraction Declarations
+// EPOS Active Object Component Declarations
 
 #ifndef __active_h
 #define __active_h

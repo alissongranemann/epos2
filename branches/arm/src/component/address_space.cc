@@ -1,4 +1,4 @@
-// EPOS Address_Space Abstraction Implementation
+// EPOS Address_Space Component Implementation
 
 #include <address_space.h>
 

@@ -30,19 +30,14 @@ public:
         while(CPU::cas(_owner, 0, me) != me);
         _level++;
 
-        db<Spin>(TRC) << "Spin::acquire[SPIN=" << this
-        	      << ",ID=" << me
-        	      << "]() => {owner=" << _owner
-        	      << ",level=" << _level << "}" << endl;
+        db<Spin>(TRC) << "Spin::acquire[SPIN=" << this << ",ID=" << me << "]() => {owner=" << _owner << ",level=" << _level << "}" << endl;
     }
 
     void release() {
     	if(--_level <= 0)
             _owner = 0;
 
-        db<Spin>(TRC) << "Spin::release[SPIN=" << this
-        	      << "]() => {owner=" << _owner
-        	      << ",level=" << _level << "}" << endl;
+        db<Spin>(TRC) << "Spin::release[SPIN=" << this << "]() => {owner=" << _owner << ",level=" << _level << "}" << endl;
     }
 
 private:

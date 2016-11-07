@@ -90,8 +90,6 @@ __END_SYS
 
 __BEGIN_SYS
 
-
-// Abstractions
 template<> struct Traits<Application>: public Traits<void>
 {
     static const unsigned int STACK_SIZE = 256 * 1024;
@@ -116,6 +114,8 @@ template<> struct Traits<System>: public Traits<void>
     static const unsigned int HEAP_SIZE = (Traits<Application>::MAX_THREADS + 1) * Traits<Application>::STACK_SIZE;
 };
 
+
+// Components
 template<> struct Traits<Task>: public Traits<void>
 {
     static const bool enabled = Traits<System>::multitask;

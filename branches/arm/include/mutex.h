@@ -1,4 +1,4 @@
-// EPOS Mutex Abstraction Declarations
+// EPOS Mutex Component Declarations
 
 #ifndef __mutex_h
 #define __mutex_h

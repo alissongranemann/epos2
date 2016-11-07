@@ -1,4 +1,4 @@
-// EPOS Condition Variable Abstraction Implementation
+// EPOS Condition Variable Component Implementation
 
 #include <condition.h>
 

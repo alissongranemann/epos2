@@ -1,4 +1,4 @@
-// EPOS Thread Abstraction Initialization
+// EPOS Thread Component Initialization
 
 #include <system.h>
 #include <thread.h>

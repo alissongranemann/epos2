@@ -1,4 +1,4 @@
-// EPOS Communication Channel Abstraction Declarations
+// EPOS Communication Channel Component Declarations
 
 #ifndef __channel_h
 #define __channel_h

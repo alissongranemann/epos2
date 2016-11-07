@@ -1,4 +1,4 @@
-// EPOS Address_Space Abstraction Declarations
+// EPOS Address_Space Component Declarations
 
 #ifndef __address_space_h
 #define __address_space_h

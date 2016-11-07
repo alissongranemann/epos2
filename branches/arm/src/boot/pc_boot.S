@@ -373,7 +373,7 @@ kf_emptyt:      test    al,#2           ; input buffer full?
 kf_delay:	ret
 
 ;========================================================================
-; SETUP_TRAMPOLIE
+; SETUP_TRAMPOLINE
 ;
 ; Desc: copy the SMP trampoline code to a page-aligned address
 ;========================================================================
@@ -387,7 +387,7 @@ setup_trampoline:
 		ret
 
 ;========================================================================
-; TRAMPOLIE
+; TRAMPOLINE
 ;
 ; Desc: "trampolines" additional CPUs into protected mode in SMP
 ;	configurations							=

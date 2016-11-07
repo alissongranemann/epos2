@@ -100,7 +100,7 @@ __END_SYS
 __BEGIN_SYS
 
 
-// Abstractions
+// Components
 template<> struct Traits<Application>: public Traits<void>
 {
     static const unsigned int STACK_SIZE = Traits<Machine>::STACK_SIZE;

@@ -1,4 +1,4 @@
-// EPOS Thread Abstraction Implementation
+// EPOS Thread Component Implementation
 
 #include <machine.h>
 #include <system.h>
@@ -378,6 +378,7 @@ void Thread::dispatch(Thread * prev, Thread * next, bool charge)
         if(smp)
             _lock.release();
 
+    // TODO: could this be moved to right after the switch_context?
     CPU::int_enable();
 }
 

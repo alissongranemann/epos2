@@ -7,8 +7,10 @@ extern "C" { void _panic(); }
 
 __BEGIN_UTIL
 
+// Class Attributes
 const char OStream::_digits[] = "0123456789abcdef";
 
+// Class Methods
 void OStream::preamble()
 {
     static char tag[] = "<0>: ";
