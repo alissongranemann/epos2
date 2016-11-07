@@ -32,9 +32,9 @@ run_pxe: all1
 
 debug: FORCE
 ifndef APPLICATION
-		$(foreach app,$(APPLICATIONS),$(MAKE) GDB=1 APPLICATION=$(app) $(PRECLEAN) all1 debug1;)
+		$(foreach app,$(APPLICATIONS),$(MAKE) DEBUG=1 APPLICATION=$(app) $(PRECLEAN) all1 debug1;)
 else
-		$(MAKE) GDB=1 all1 debug1
+		$(MAKE) DEBUG=1 all1 debug1
 endif
 
 debug1: FORCE

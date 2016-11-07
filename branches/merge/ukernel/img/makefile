@@ -12,6 +12,17 @@ endif
 OUTPUT := $(addsuffix .out,$(APPLICATION))
 EMULATORR := $(EMULATOR)
 EMULATORS := $(subst 1235,1236,$(EMULATOR))
+ifeq ($(DEBUG),1)
+ifneq ($(wildcard $(IMG)/$(MACH)_setup),)
+DEBUGGER	:= $(MACH_DEBUGGER) -ex "add-symbol-file $(call DBSEC,$(SRC)/setup/$(MACH)_setup,.text)"
+endif
+ifneq ($(wildcard $(IMG)/$(MACH)_init),)
+DEBUGGER	:= $(MACH_DEBUGGER) -ex "add-symbol-file $(call DBSEC,$(SRC)/init/$(MACH)_init,.text)"
+endif
+ifneq ($(wildcard $(IMG)/$(MACH)_system),)
+DEBUGGER	:= $(MACH_DEBUGGER) -ex "add-symbol-file $(call DBSEC,$(SRC)/system/$(MACH)_system,.text)"
+endif
+endif
 DEBUGGERR := $(DEBUGGER)
 DEBUGGERS := $(subst 1235,1236,$(DEBUGGER))
 
