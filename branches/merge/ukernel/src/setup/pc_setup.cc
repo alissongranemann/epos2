@@ -154,13 +154,8 @@ private:
 //========================================================================
 PC_Setup::PC_Setup(char * boot_image)
 {
-#ifdef BIG_IMAGE
-    // Ignoring boot image loaded by the bootstrap. Ignoring that _start has copied the boot image to after SETUP.
-    bi = reinterpret_cast<char *>(Traits<Machine>::RAMDISK + Traits<Machine>::BOOT_LENGTH_MAX);
-#else
-    // Get boot image loaded by the bootstrap
+    // Get boot imaged previosly loaded and relocated
     bi = reinterpret_cast<char *>(boot_image);
-#endif
 
     si = reinterpret_cast<System_Info *>(bi);
 
@@ -223,11 +218,6 @@ PC_Setup::PC_Setup(char * boot_image)
 
         // Configure a TSS for system calls and inter-level interrupt handling
         setup_tss();
-
-#ifdef BIG_IMAGE
-        // Set Ramdisk to be read-only. It is assumed RAMDISK is in a memory region that uses 1:1 (logical to physical) mapping.
-        /// MMU_Aux::set_flags(Traits<PC>::RAMDISK, Traits<PC>::RAMDISK_SIZE, MMU::IA32_Flags::SYS_CODE);
-#endif
 
         // Load EPOS parts (e.g. INIT, SYSTEM, APP)
         load_parts();
@@ -539,7 +529,7 @@ void PC_Setup::say_hi()
         db<Setup>(INF) << "No SYSTEM in boot image, assuming EPOS is a library!" << endl;
 
     kout << "Setting up this machine as follows: " << endl;
-    kout << "  Processor:    IA32 at " << si->tm.cpu_clock / 1000000
+    kout << "  Processor:    " << Traits<Machine>::CPUS << " x IA32 at " << si->tm.cpu_clock / 1000000
          << " MHz (BUS clock = " << si->tm.bus_clock / 1000000 << " MHz)" << endl;
     kout << "  Memory:       " << (si->bm.mem_top - si->bm.mem_base) / 1024
          << " Kbytes [" << (void *)si->bm.mem_base
@@ -821,7 +811,7 @@ void PC_Setup::setup_tss()
 
     // Configure only the segment selectors and the kernel stack
     tss->ss0 = CPU::SEL_SYS_DATA;
-    tss->esp0 = SYS_STACK + Traits<System>::STACK_SIZE;
+    tss->esp0 = SYS_STACK + Traits<System>::STACK_SIZE; // APs' tss->esp0 will be reconfigured later by CPU::Context::load()
     tss->cs = (CPU::GDT_SYS_CODE << 3)  | CPU::PL_APP;
     tss->ss = (CPU::GDT_SYS_DATA << 3)  | CPU::PL_APP;
     tss->ds = tss->ss;
@@ -1113,16 +1103,17 @@ void _start()
     // Initialize the APIC (if present)
     APIC::reset(APIC::LOCAL_APIC_PHY_ADDR);
 
-#ifdef BIG_IMAGE
-    // The boot strap loaded the boot image at BOOT_IMAGE_ADDR. Ignoring that and using the boot image loaded by Memdisk.
-    char * bi = reinterpret_cast<char *>(Traits<Machine>::RAMDISK + Traits<Machine>::BOOT_LENGTH_MAX);
-#else
     // The boot strap loaded the boot image at BOOT_IMAGE_ADDR
     char * bi = reinterpret_cast<char *>(Traits<Machine>::BOOT_IMAGE_ADDR);
-#endif
 
     // Get the System_Info  (first thing in the boot image)
     System_Info * si = reinterpret_cast<System_Info *>(bi);
+
+    // Check if we are booting from a ramdisk and adjust the boot image pointer accordingly
+    if(si->bm.img_size > 2880 * 512) { // larger than a floppy
+        bi = reinterpret_cast<char *>(Traits<Machine>::RAMDISK + Traits<Machine>::BOOT_LENGTH_MAX);
+        si = reinterpret_cast<System_Info *>(bi);
+    }
 
     // Multicore conditional start up
     if(APIC::id() == 0) { // Boot strap CPU (BSP)
@@ -1141,15 +1132,9 @@ void _start()
         // Be careful: by reloading SETUP, global variables have been reset to
         // the values stored in the ELF data segment
         // Also check if this wouldn't destroy the boot image
-#ifndef BIG_IMAGE
-        char * addr = reinterpret_cast<char *>(elf->segment_address(0));
-#endif
         int size = elf->segment_size(0);
-
-#ifndef BIG_IMAGE
-        if(addr <= &bi[si->bm.img_size])
+        if(elf->segment_address(0) <= reinterpret_cast<unsigned int>(&bi[si->bm.img_size]))
             Machine::panic();
-#endif
         if(elf->load_segment(0) < 0)
             Machine::panic();
         APIC::remap(APIC::LOCAL_APIC_PHY_ADDR);
