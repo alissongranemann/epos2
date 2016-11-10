@@ -44,22 +44,19 @@ private:
     static const unsigned int Tu = IEEE802_15_4::TURNAROUND_TIME;
     static const unsigned int Ti = Tu + Radio::RX_TO_TX_DELAY + INT_HANDLING_DELAY;
     static const unsigned int TIME_BETWEEN_MICROFRAMES = Ti;
-    static const unsigned int Ts = static_cast<unsigned long long>(sizeof(Microframe) + Phy_Layer::PHY_HEADER_SIZE) * 1000000ull 
+    static const unsigned int Ts = static_cast<unsigned long long>(sizeof(Microframe) + Phy_Layer::PHY_HEADER_SIZE) * 1000000ull
                                     / static_cast<unsigned long long>(Phy_Layer::BYTE_RATE) + Radio::TX_TO_RX_DELAY; // Time to send a single Microframe (including PHY headers)
     static const unsigned int MICROFRAME_TIME = Ts;
     static const unsigned int Tr = 2*Ts + Ti;
     static const unsigned int RX_MF_TIMEOUT = Tr;
 
-    static const unsigned int NMF = 1 + (((1000000ull * static_cast<unsigned long long>(Tr)) / static_cast<unsigned long long>(Traits<System>::DUTY_CYCLE)) + (Ti + Ts) - 1) / (Ti + Ts);
+    static const unsigned int DUTY_CYCLE = 10000; // ppm
+    static const unsigned int NMF = 1 + (((1000000ull * static_cast<unsigned long long>(Tr)) / static_cast<unsigned long long>(DUTY_CYCLE)) + (Ti + Ts) - 1) / (Ti + Ts);
     static const unsigned int N_MICROFRAMES = NMF;
 
     static const unsigned int CI = Ts + (NMF - 1) * (Ts + Ti);
     static const unsigned int PERIOD = CI;
     static const unsigned int SLEEP_PERIOD = CI - RX_MF_TIMEOUT;
-
-    static const typename IF<(static_cast<unsigned long long>(Tr) * 1000000ull / static_cast<unsigned long long>(CI) <= Traits<System>::DUTY_CYCLE),
-        unsigned int,
-        void>::Result DUTY_CYCLE = static_cast<unsigned long long>(Tr) * 1000000ull / static_cast<unsigned long long>(CI); // in ppm. This line failing means that TSTP_MAC is unable to provide a duty cycle smaller than or equal to Traits<System>::DUTY_CYCLE
 
     static const unsigned int DATA_LISTEN_MARGIN = TIME_BETWEEN_MICROFRAMES / 2; // Subtract this amount when calculating time until data transmission
     static const unsigned int DATA_SKIP_TIME = DATA_LISTEN_MARGIN + 4500;
