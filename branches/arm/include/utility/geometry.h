@@ -12,19 +12,21 @@ struct Point<T, 2>
 {
 private:
     typedef typename IF<EQUAL<char, T>::Result, int, T>::Result Print_Type;
+    typedef typename LARGER<T>::Result Larger_T;
 
 public:
-    typedef T Distance;
+    typedef typename UNSIGNED<Larger_T>::Result Distance;
 
     Point(const T & xi = 0, const T & yi = 0): x(xi), y(yi) {}
 
     Distance operator-(const Point<T, 2> & p) const {
-        T xx = p.x - x;
-        T yy = p.y - y;
+        // Care for unsigned T
+        Larger_T xx = p.x > x ? p.x - x : x - p.x;
+        Larger_T yy = p.y > y ? p.y - y : y - p.y;
         return sqrt(xx*xx + yy*yy);
     }
 
-    bool operator==(const Point & p) const { return x == p.x and y == p.y; }
+    bool operator==(const Point & p) const { return (x == p.x) && (y == p.y); }
     bool operator!=(const Point & p) const { return !(*this == p); }
 
     friend OStream & operator<<(OStream & os, const Point<T, 2> & c) {
@@ -40,20 +42,22 @@ struct Point<T, 3>
 {
 private:
     typedef typename IF<EQUAL<char, T>::Result, int, T>::Result Print_Type;
+    typedef typename LARGER<T>::Result Larger_T;
 
 public:
-    typedef T Distance;
+    typedef typename UNSIGNED<Larger_T>::Result Distance;
 
     Point(const T & xi = 0, const T & yi = 0, const T & zi = 0): x(xi), y(yi), z(zi) {}
 
     Distance operator-(const Point & p) const {
-        T xx = p.x - x;
-        T yy = p.y - y;
-        T zz = p.z - z;
+        // Care for unsigned T
+        Larger_T xx = p.x > x ? p.x - x : x - p.x;
+        Larger_T yy = p.y > y ? p.y - y : y - p.y;
+        Larger_T zz = p.z > z ? p.z - z : z - p.z;
         return sqrt(xx*xx + yy*yy + zz*zz);
     }
 
-    bool operator==(const Point & p) const { return x == p.x and y == p.y and z == p.z; }
+    bool operator==(const Point & p) const { return (x == p.x) && (y == p.y) && (z == p.z); }
     bool operator!=(const Point & p) const { return !(*this == p); }
 
     friend OStream & operator<<(OStream & os, const Point & c) {
@@ -67,10 +71,6 @@ public:
 template<typename T>
 struct Sphere
 {
-private:
-    typedef typename IF<EQUAL<char, typename Point<T, 3>::Distance>::Result, int, T>::Result Print_Type;
-
-public:
     typedef Point<T, 3> Center;
     typedef typename Point<T, 3>::Distance Distance;
     typedef typename Point<T, 3>::Distance Radius;
@@ -81,7 +81,7 @@ public:
     bool contains(const Center & c) const { return (center - c) <= radius; }
 
     friend OStream & operator<<(OStream & os, const Sphere & s) {
-        os << "{" << "c=" << s.center << ",r=" << static_cast<Print_Type>(s.radius) << "}";
+        os << "{" << "c=" << s.center << ",r=" << s.radius << "}";
         return os;
     }
 

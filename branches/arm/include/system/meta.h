@@ -218,6 +218,38 @@ void DESERIALIZE(char * buf, int index, T && a, Tn && ... an) {
     DESERIALIZE(buf, index + sizeof(T), an ...);
 }
 
+// Returns the UNSIGNED counterpart of primitive type T
+template<typename T>
+struct UNSIGNED {
+    typedef void Result; // Type T not supported
+};
+template<> struct UNSIGNED<char> { typedef unsigned char Result; };
+template<> struct UNSIGNED<short> { typedef unsigned short Result; };
+template<> struct UNSIGNED<int> { typedef unsigned int Result; };
+template<> struct UNSIGNED<long> { typedef unsigned long Result; };
+template<> struct UNSIGNED<long long> { typedef unsigned long long Result; };
+template<> struct UNSIGNED<unsigned char> { typedef unsigned char Result; };
+template<> struct UNSIGNED<unsigned short> { typedef unsigned short Result; };
+template<> struct UNSIGNED<unsigned int> { typedef unsigned int Result; };
+template<> struct UNSIGNED<unsigned long> { typedef unsigned long Result; };
+template<> struct UNSIGNED<unsigned long long> { typedef unsigned long long Result; };
+
+// Returns a type one rank LARGER than primitive type T
+template<typename T>
+struct LARGER {
+    typedef void Result; // Type T not supported;
+};
+template<> struct LARGER<bool> { typedef short Result; };
+template<> struct LARGER<char> { typedef short Result; };
+template<> struct LARGER<short> { typedef int Result; };
+template<> struct LARGER<int> { typedef long long Result; };
+template<> struct LARGER<long> { typedef long long Result; };
+template<> struct LARGER<unsigned char> { typedef unsigned short Result; };
+template<> struct LARGER<unsigned short> { typedef unsigned int Result; };
+template<> struct LARGER<unsigned int> { typedef unsigned long long Result; };
+template<> struct LARGER<unsigned long> { typedef unsigned long long Result; };
+
+
 __END_SYS
 
 #endif

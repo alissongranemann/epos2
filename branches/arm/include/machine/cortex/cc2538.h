@@ -96,10 +96,13 @@ public:
     };
 
     enum OBSSEL {
-        OBSSEL_EN = 1 << 7,
-        OBSSEL_SIG0 = OBSSEL_EN | 0, // Enable Signal 0
-        OBSSEL_SIG1 = OBSSEL_EN | 1, // Enable Signal 1
-        OBSSEL_SIG2 = OBSSEL_EN | 2, // Enable Signal 2
+        OBSSEL_EN = 1 << 7, // Signal X enable bit
+        OBSSEL_SIG0 = 0,    // Select signal 0
+        OBSSEL_SIG1 = 1,    // Select signal 1
+        OBSSEL_SIG2 = 2,    // Select signal 2
+        OBSSEL_SIG0_EN = OBSSEL_EN | OBSSEL_SIG0, // Select and enable signal 0
+        OBSSEL_SIG1_EN = OBSSEL_EN | OBSSEL_SIG1, // Select and enable signal 1
+        OBSSEL_SIG2_EN = OBSSEL_EN | OBSSEL_SIG2, // Select and enable signal 2
     };
 
     // Controls which observable signal from RF Core is to be muxed out to OBSSEL_SIGx
@@ -400,7 +403,7 @@ public:
 
         static void int_disable() { mactimer(MTIRQM) = INT_OVERFLOW_PER; }
 
-        static Time_Stamp us2count(const Microsecond & us) { return static_cast<Time_Stamp>(us) * CLOCK / 1000000ll; }
+        static Time_Stamp us2count(const Microsecond & us) { return static_cast<Time_Stamp>(us) * CLOCK / 1000000; }
         static Microsecond count2us(const Time_Stamp & ts) { return ts * 1000000ll / CLOCK; }
 
     private:

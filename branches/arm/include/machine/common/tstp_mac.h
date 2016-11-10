@@ -35,34 +35,34 @@ public:
 
 private:
 
-    static const unsigned int INT_HANDLING_DELAY = 19; // Time delay between scheduled tx_mf interrupt and actual Radio TX
+    static const unsigned int INT_HANDLING_DELAY = 9; // Time delay between scheduled tx_mf interrupt and actual Radio TX
     static const unsigned int TX_DELAY = INT_HANDLING_DELAY + Radio::RX_TO_TX_DELAY;
 
     static const unsigned int G = IEEE802_15_4::CCA_TX_GAP;
     static const unsigned int Tu = IEEE802_15_4::TURNAROUND_TIME;
-    static const unsigned int Ti = Tu + Radio::RX_TO_TX_DELAY + INT_HANDLING_DELAY;
+    static const unsigned int Ti = Tu + Radio::RX_TO_TX_DELAY + INT_HANDLING_DELAY + 750; // 750us margin for delay between Microframes // FIXME: this constant is way too relaxed
     static const unsigned int TIME_BETWEEN_MICROFRAMES = Ti;
-    static const unsigned int Ts = static_cast<unsigned long long>(sizeof(Microframe) + Phy_Layer::PHY_HEADER_SIZE) * 1000000ull
-                                    / static_cast<unsigned long long>(Phy_Layer::BYTE_RATE) + Radio::TX_TO_RX_DELAY; // Time to send a single Microframe (including PHY headers)
+    static const unsigned int Ts = (sizeof(Microframe) + Phy_Layer::PHY_HEADER_SIZE) * 1000000ull
+                                    / Phy_Layer::BYTE_RATE
+                                    + Radio::TX_TO_RX_DELAY; // Time to send a single Microframe (including PHY headers)
     static const unsigned int MICROFRAME_TIME = Ts;
     static const unsigned int Tr = 2*Ts + Ti;
     static const unsigned int RX_MF_TIMEOUT = Tr;
 
-    static const unsigned int NMF = 1 + (((1000000ull * static_cast<unsigned long long>(Tr)) / static_cast<unsigned long long>(Traits<System>::DUTY_CYCLE)) + (Ti + Ts) - 1) / (Ti + Ts);
+    static const unsigned int NMF = 1 + (((1000000ull * Tr) / Traits<System>::DUTY_CYCLE) + (Ti + Ts) - 1) / (Ti + Ts);
     static const unsigned int N_MICROFRAMES = NMF;
 
     static const unsigned int CI = Ts + (NMF - 1) * (Ts + Ti);
     static const unsigned int PERIOD = CI;
     static const unsigned int SLEEP_PERIOD = CI - RX_MF_TIMEOUT;
 
-    static const typename IF<(static_cast<unsigned long long>(Tr) * 1000000ull / static_cast<unsigned long long>(CI) <= Traits<System>::DUTY_CYCLE),
-        unsigned int,
-        void>::Result DUTY_CYCLE = static_cast<unsigned long long>(Tr) * 1000000ull / static_cast<unsigned long long>(CI); // in ppm. This line failing means that TSTP_MAC is unable to provide a duty cycle smaller than or equal to Traits<System>::DUTY_CYCLE
+    static const typename IF<(Tr * 1000000ull / CI <= Traits<System>::DUTY_CYCLE), unsigned int, void>::Result 
+        DUTY_CYCLE = Tr * 1000000ull / CI; // in ppm. This line failing means that TSTP_MAC is unable to provide a duty cycle smaller than or equal to Traits<System>::DUTY_CYCLE
 
-    static const unsigned int DATA_LISTEN_MARGIN = TIME_BETWEEN_MICROFRAMES / 2; // Subtract this amount when calculating time until data transmission
+    static const unsigned int DATA_LISTEN_MARGIN = 2 * TIME_BETWEEN_MICROFRAMES; // Subtract this amount when calculating time until data transmission // FIXME: this constant is way too relaxed
     static const unsigned int DATA_SKIP_TIME = DATA_LISTEN_MARGIN + 4500;
 
-    static const unsigned int RX_DATA_TIMEOUT = DATA_SKIP_TIME + DATA_LISTEN_MARGIN + 4 * (MICROFRAME_TIME + TIME_BETWEEN_MICROFRAMES);
+    static const unsigned int RX_DATA_TIMEOUT = DATA_SKIP_TIME + DATA_LISTEN_MARGIN + 4 * (MICROFRAME_TIME + TIME_BETWEEN_MICROFRAMES); // FIXME: this constant is way too relaxed
     static const unsigned int CCA_TIME = (2 * Ts + Ti) > G ? (2 * Ts + Ti) : G;
 
 protected:
@@ -88,9 +88,6 @@ protected:
                 Microframe * mf = buf->frame()->data<Microframe>();
                 Frame_ID id = mf->id();
 
-                // Forge a TSTP identifier to make the radio notify listeners
-                mf->id(TSTP << 8);
-
                 // Initialize Buffer Metainformation
                 buf->sfd_time_stamp = Timer::sfd();
                 buf->id = id;
@@ -111,6 +108,9 @@ protected:
                     }
                     el = next;
                 }
+
+                // Forge a TSTP identifier to make the radio notify listeners
+                mf->id(TSTP << 8);
 
                 return true;
             }
@@ -138,8 +138,10 @@ protected:
         assert(_in_rx_mf || _in_rx_data);
 
         if(_in_rx_mf) { // State: RX MF (part 3/3)
+            assert(buf->is_microframe);
+
             Microframe * mf = buf->frame()->data<Microframe>();
-            Time_Stamp data_time = buf->sfd_time_stamp + Timer::us2count(TIME_BETWEEN_MICROFRAMES) + static_cast<Time_Stamp>(mf->count()) * Timer::us2count(TIME_BETWEEN_MICROFRAMES + MICROFRAME_TIME) - Timer::us2count(DATA_LISTEN_MARGIN);
+            Time_Stamp data_time = buf->sfd_time_stamp + Timer::us2count(TIME_BETWEEN_MICROFRAMES) + mf->count() * Timer::us2count(TIME_BETWEEN_MICROFRAMES + MICROFRAME_TIME) - Timer::us2count(DATA_LISTEN_MARGIN);
 
             if(buf->relevant) { // Transition: [Relevant MF]
                 _receiving_data_id = buf->id;
@@ -196,10 +198,10 @@ private:
         for(Buffer::Element * el = _tx_schedule.head(); el; ) {
             Buffer::Element * next = el->next();
             Buffer * b = el->object();
-            if(drop_expired && (b->expiry <= now_us)) {
+            if(drop_expired && (b->deadline <= now_us)) {
                 _tx_schedule.remove(el);
                 delete b;
-            } else if((!_tx_pending) || (_tx_pending->expiry >= b->expiry))
+            } else if((!_tx_pending) || ((!_tx_pending->destined_to_me) && ((b->destined_to_me) || (_tx_pending->deadline >= b->deadline))))
                 _tx_pending = b;
             el = next;
         }

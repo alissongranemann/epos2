@@ -12,7 +12,7 @@ __BEGIN_SYS
 class eMote3
 {
     friend class TSC;
-    
+
 protected:
     typedef CPU::Reg32 Reg32;
     typedef CPU::Log_Addr Log_Addr;

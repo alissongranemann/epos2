@@ -135,17 +135,23 @@ private:
         case TSTP::INTEREST: {
             TSTP::Interest * interest = reinterpret_cast<TSTP::Interest *>(packet);
             db<Smart_Data>(INF) << "Smart_Data::update[I]:msg=" << interest << " => " << *interest << endl;
+            _responsive->t0(interest->region().t0);
+            _responsive->t1(interest->region().t1);
             if(interest->period()) {
-                if(!_thread)
+                if(!_thread) {
                     _thread = new Periodic_Thread(interest->period(), &updater, _device, interest->expiry(), this);
+                    //_thread->join(); // FIXME: _thread never executes without a join
+                }
                 else {
                     if(!interest->period() != _thread->period())
-                        _thread->period(interest->period()) ;
+                        _thread->period(interest->period());
                 }
             } else {
                 Transducer::sense(_device, this);
+                _time = TSTP::now();
                 _responsive->value(_value);
-                _responsive->respond(interest->expiry());
+                _responsive->time(_time);
+                _responsive->respond(_time + interest->expiry());
             }
         } break;
         case TSTP::RESPONSE: {
@@ -184,13 +190,16 @@ private:
         }
     }
 
-    static int updater(unsigned int dev, Time expiry, Smart_Data * data) {
+    static int updater(unsigned int dev, Time_Offset expiry, Smart_Data * data) {
         while(1) {
             Transducer::sense(dev, data);
-            data->_time = TSTP::now();
+            Time t = TSTP::now();
+            data->_time = t;
             data->_responsive->value(data->_value);
-            data->_responsive->time(data->_time);
-            data->_responsive->respond(expiry);
+            data->_responsive->time(t);
+            data->_responsive->respond(t + expiry);
+            if(t >= data->_responsive->t1())
+                break;
             Periodic_Thread::wait_next();
         }
         return 0;

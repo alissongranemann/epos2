@@ -77,9 +77,13 @@ public:
 
         _Region(const Coordinates & c, const Number & r, const Time & _t0, const Time & _t1): Base(c, r), t0(_t0), t1(_t1) {}
 
-        bool contains(const Coordinates & c, const Time & t) const { return ((Base::center - c) <= Base::radius) && ((t >= t0) && (t <= t1)); }
+        bool contains(const Coordinates & c, const Time & t) const { return ((t >= t0) && (t <= t1)) && Base::contains(c); }
 
         friend Debug & operator<<(Debug & db, const _Region & r) {
+            db << "{" << reinterpret_cast<const Base &>(r) << ",t0=" << r.t0 << ",t1=" << r.t1 << "}";
+            return db;
+        }
+        friend OStream & operator<<(OStream & db, const _Region & r) {
             db << "{" << reinterpret_cast<const Base &>(r) << ",t0=" << r.t0 << ",t1=" << r.t1 << "}";
             return db;
         }
@@ -96,7 +100,7 @@ public:
         Microframe() {}
 
         Microframe(bool all_listen, const Frame_ID & id, const MF_Count & count, const Hint & hint = 0)
-        : _al_count_idh((id & 0xf) | ((count & 0x7ff) << 4) | (static_cast<unsigned int>(all_listen) << 15)), _idl(id & 0xff), _hint(hint) {}
+        : _al_count_idh(((id & 0xf00) >> 8) | ((count & 0x7ff) << 4) | (static_cast<unsigned int>(all_listen) << 15)), _idl(id & 0xff), _hint(hint) {}
 
         MF_Count count() const { return (_al_count_idh & (0x7ff << 4)) >> 4; }
         MF_Count dec_count() {
@@ -106,7 +110,7 @@ public:
             return c;
         }
 
-        Frame_ID id() const { return ((_al_count_idh | 0xf) << 8) + _idl; }
+        Frame_ID id() const { return ((_al_count_idh & 0xf) << 8) + _idl; }
         void id(Frame_ID id) {
             _al_count_idh &= 0xfff0;
             _al_count_idh |= (id & 0xf00) >> 8;
@@ -545,7 +549,7 @@ public:
         const Unit & unit() const { return _unit; }
         const Region & region() const { return _region; }
         Microsecond period() const { return _period; }
-        Time expiry() const { return _time + _expiry; }
+        Time_Offset expiry() const { return _expiry; }
         Mode mode() const { return static_cast<Mode>(_mode); }
         Error precision() const { return static_cast<Error>(_precision); }
 
@@ -570,15 +574,16 @@ public:
     class Response: public Header
     {
     private:
-        typedef unsigned char Data[MTU - sizeof(Unit) - sizeof(Error) - sizeof(Time)];
+        typedef unsigned char Data[MTU - sizeof(Unit) - sizeof(Error) - sizeof(Time_Offset)];
 
     public:
         Response(const Unit & unit, const Error & error = 0, const Time & expiry = 0)
         : Header(RESPONSE, 0, 0, now(), here(), here()), _unit(unit), _error(error), _expiry(expiry) {}
 
         const Unit & unit() const { return _unit; }
-        Time expiry() const { return _time + _expiry; }
         Error error() const { return _error; }
+        Time expiry() const { return _time + _expiry; }
+        void expiry(const Time & e) { _expiry = e - _time; }
 
         template<typename T>
         void value(const T & v) { *reinterpret_cast<Value<Unit::GET<T>::NUM> *>(&_data) = v; }
@@ -702,7 +707,7 @@ public:
     public:
         template<typename T>
         Responsive(T * data, const Unit & unit, const Error & error, const Time & expiry)
-        : Response(unit, error, expiry), _size(sizeof(Response) + sizeof(typename T::Value)), _link(this, T::UNIT) {
+        : Response(unit, error, expiry), _size(sizeof(Response) - sizeof(Response::Data) + sizeof(typename T::Value)), _t0(0), _t1(0), _link(this, T::UNIT) {
             db<TSTP>(TRC) << "TSTP::Responsive(d=" << data << ",s=" << _size << ") => " << this << endl;
             db<TSTP>(INF) << "TSTP::Responsive() => " << reinterpret_cast<const Response &>(*this) << endl;
             _responsives.insert(&_link);
@@ -716,22 +721,32 @@ public:
         using Header::time;
         using Header::origin;
 
+        void t0(const Time & t) { _t0 = t; }
+        void t1(const Time & t) { _t1 = t; }
+        Time t0() const { return _t0; }
+        Time t1() const { return _t1; }
+
         void respond(const Time & expiry) { send(expiry); }
 
     private:
         void send(const Time & expiry) {
-            assert(expiry > now());
-            db<TSTP>(TRC) << "TSTP::Responsive::send(x=" << expiry << ")" << endl;
-            _expiry = expiry - now();
-            Buffer * buf = alloc(_size);
-            memcpy(buf->frame()->data<Response>(), this, _size);
-            TSTP::marshal(buf);
-            db<TSTP>(INF) << "TSTP::Responsive::send:response=" << this << " => " << reinterpret_cast<const Response &>(*this) << endl;
-            _nic->send(buf);
+            if(_time >= _t0 && _time <= _t1) {
+                assert(expiry > now());
+                db<TSTP>(TRC) << "TSTP::Responsive::send(x=" << expiry << ")" << endl;
+                Buffer * buf = alloc(_size);
+                Response * response = buf->frame()->data<Response>();
+                memcpy(response, this, _size);
+                response->expiry(expiry);
+                TSTP::marshal(buf);
+                db<TSTP>(INF) << "TSTP::Responsive::send:response=" << response << " => " << (*response) << endl;
+                _nic->send(buf);
+            }
         }
 
     private:
         unsigned int _size;
+        Time _t0;
+        Time _t1;
         Responsives::Element _link;
     };
 
@@ -766,7 +781,7 @@ public:
         }
         ~Timekeeper();
 
-        static Time now() { return NIC::Timer::read() * 1000000ll / NIC::Timer::frequency(); };
+        static Time now() { return NIC::Timer::read() * 1000000ll / NIC::Timer::frequency(); }
 
         static void bootstrap();
 
@@ -781,8 +796,7 @@ public:
     {
     private:
         static const unsigned int CCA_TX_GAP = IEEE802_15_4::CCA_TX_GAP;
-        static const unsigned int RADIO_RANGE = 1700;
-        static const unsigned int PERIOD = 250000;
+        static const unsigned int RADIO_RANGE = TSTP_Common::RADIO_RANGE;
 
     public:
         Router() {
@@ -800,10 +814,9 @@ public:
     private:
         static void offset(Buffer * buf) {
             //long long dist = abs(buf->my_distance - (buf->sender_distance - RADIO_RANGE));
-            //long long betha = (G * RADIO_RADIUS * 1000000) / (dist * G);
+            //long long betha = (CCA_TX_GAP * RADIO_RADIUS * 1000000) / (dist * CCA_TX_GAP);
             buf->offset = abs(buf->my_distance - (buf->sender_distance - RADIO_RANGE));
         }
-
     };
 
 
@@ -876,7 +889,7 @@ private:
     static Interests _interested;
     static Responsives _responsives;
     static Observed _observed; // Channel protocols are singletons
- };
+};
 
 __END_SYS
 

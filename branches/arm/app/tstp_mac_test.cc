@@ -41,13 +41,21 @@ int main()
     cout << "sizeof(Microsecond) = " << sizeof(RTC_Common::Microsecond) << endl;
     cout << "sizeof(CC2538RF::Timer::Time_Stamp) = " << sizeof(CC2538RF::Timer::Time_Stamp) << endl;
 
-    Region dst = Region(Coordinates(5, 5, 5), 10, 0, TSTP::now() + 1000000ULL);
-    if(!dst.contains(TSTP::here(), TSTP::now())) {
-        Acceleration a0(dst, 10000000);
+    cout << "TSTP::here() = " << TSTP::here() << endl;
+    Region dst(Coordinates(50, 50, 50), 10, 0, 20000000);
+
+    cout << "dst.center - here = " << dst.center - TSTP::here() << endl;
+    cout << "here - dst.center  = " << TSTP::here() - dst.center << endl;
+
+    if(dst.contains(TSTP::here(), TSTP::now() + 0)) {
+        cout << "Sensor" << endl;
+        Acceleration a0(0, 2000000, Acceleration::ADVERTISED);
+        while(true);
+    } else {
+        cout << "Sink" << endl;
+        Acceleration a0(dst, 3000000, 1000000);
         while(true);
     }
-
-    while(true);
 
     return 0;
 }

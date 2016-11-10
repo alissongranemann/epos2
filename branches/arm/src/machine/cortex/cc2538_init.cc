@@ -47,6 +47,14 @@ CC2538::CC2538(unsigned int unit): _unit(unit), _rx_cur_consume(0), _rx_cur_prod
     xreg(RFIRQM1) = 0;
     xreg(RFERRM) = 0;
 
+    // Enable debug signals
+    GPIO p_tx('C',4,GPIO::OUT,GPIO::FLOATING);
+    GPIO p_rx('C',6,GPIO::OUT,GPIO::FLOATING);
+    xreg(RFC_OBS_CTRL0) = SIGNAL_TX_ACTIVE;
+    xreg(RFC_OBS_CTRL1) = SIGNAL_RX_ACTIVE;
+    cctest(CCTEST_OBSSEL4) = OBSSEL_SIG0_EN;
+    cctest(CCTEST_OBSSEL6) = OBSSEL_SIG1_EN;
+
     MAC::constructor_epilogue(); // Device is configured, let the MAC use it
 }
 
@@ -54,12 +62,6 @@ CC2538::CC2538(unsigned int unit): _unit(unit), _rx_cur_consume(0), _rx_cur_prod
 void CC2538::init(unsigned int unit)
 {
     db<Init, CC2538>(TRC) << "Radio::init(unit=" << unit << ")" << endl;
-
-    // Enable debug signals
-    xreg(RFC_OBS_CTRL0) = SIGNAL_TX_ACTIVE;
-    xreg(RFC_OBS_CTRL1) = SIGNAL_RX_ACTIVE;
-    cctest(CCTEST_OBSSEL4) = OBSSEL_SIG0;
-    cctest(CCTEST_OBSSEL6) = OBSSEL_SIG1;
 
     Timer::init();
 
