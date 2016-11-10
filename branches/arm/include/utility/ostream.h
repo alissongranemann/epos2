@@ -29,13 +29,13 @@ public:
 
     OStream & operator<<(const Begl & begl) {
         if(Traits<System>::multicore)
-            preamble();
+            _print_preamble();
         return *this;
     }
 
     OStream & operator<<(const Endl & endl) {
         if(Traits<System>::multicore)
-            trailler();
+            _print_trailler(_error);
         print("\n");
         _base = 10;
         return *this;
@@ -170,9 +170,6 @@ public:
     }
 
 private:
-    void preamble() { _print_preamble(); }
-    void trailler() { _print_trailler(_error); }
-
     void print(const char * s) { _print(s); }
 
     int itoa(int v, char * s);

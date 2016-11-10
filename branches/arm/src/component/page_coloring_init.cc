@@ -14,7 +14,7 @@ void Page_Coloring::init()
     // Color 0, WHITE, is reserved for the system
     for(unsigned int i = 1; i < COLORS; i++) {
         _segment[i] = new (SYSTEM) Segment(HEAP_SIZE, Color(i), Segment::Flags::APP);
-        _heap[i] = new (SYSTEM) Heap(Address_Space(MMU::current()).attach(_segment[i], HEAP_SIZE), _segment[i]->size());
+        _heap[i] = new (SYSTEM) Heap(Address_Space(MMU::current()).attach(_segment[i]), _segment[i]->size());
    }
 }
 
