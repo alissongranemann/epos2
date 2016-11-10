@@ -194,6 +194,7 @@ public:
 
     public:
         typedef unsigned long long Time_Stamp;
+        typedef long long Offset;
 
     public:
          Timer() {}
@@ -201,7 +202,7 @@ public:
          static Time_Stamp frequency() { return 0; }
          static Time_Stamp read() { return 0; }
          static Time_Stamp sfd() { return 0; }
-         static Time_Stamp now() { return 0; }
+         static void adjust(const Offset & o) { }
          static Time_Stamp us2count(const Microsecond & us) { return 0; }
          static Microsecond count2us(const Time_Stamp & ts) { return 0; }
     };

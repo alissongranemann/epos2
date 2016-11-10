@@ -15,7 +15,7 @@ __BEGIN_SYS
 volatile CC2538RF::Reg32 CC2538RF::Timer::_overflow_count;
 volatile CC2538RF::Reg32 CC2538RF::Timer::_ints;
 CC2538RF::Timer::Time_Stamp CC2538RF::Timer::_int_request_time;
-CC2538RF::Timer::Time_Stamp CC2538RF::Timer::_offset;
+CC2538RF::Timer::Offset CC2538RF::Timer::_offset;
 IC::Interrupt_Handler CC2538RF::Timer::_handler;
 bool CC2538RF::Timer::_overflow_match;
 bool CC2538RF::Timer::_msb_match;

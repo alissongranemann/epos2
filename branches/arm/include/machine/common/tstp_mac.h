@@ -290,7 +290,7 @@ private:
             Radio::copy_to_nic(&_mf, sizeof(Microframe));
             Timer::interrupt(_mf_time, tx_mf);
         } else {
-            _tx_pending->frame()->data<Header>()->last_hop_time(_mf_time + Timer::us2count(TX_DELAY));
+            _tx_pending->frame()->data<Header>()->last_hop_time(_mf_time + Timer::us2count(TX_DELAY)); // TODO: shouldn't TURNAROUND_TIME be added too?
             Radio::copy_to_nic(_tx_pending->frame(), _tx_pending->size());
             Timer::interrupt(_mf_time, tx_data);
         }

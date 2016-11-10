@@ -335,47 +335,36 @@ public:
 
     public:
         typedef unsigned long long Time_Stamp;
+        typedef long long Offset;
 
         static unsigned long long frequency() { return CLOCK; }
 
     public:
         Timer() {}
 
-        static Time_Stamp read() { return read((OVERFLOW_COUNTER * MSEL_MTMOVFSEL) | (TIMER_COUNTER * MSEL_MTMSEL)); }
-        static Time_Stamp sfd() { return read(TIMER_CAPTURE * MSEL_MTMSEL); }
-        static Time_Stamp now() { return read() + _offset; }
+        static Time_Stamp read() { return read((OVERFLOW_COUNTER * MSEL_MTMOVFSEL) | (TIMER_COUNTER * MSEL_MTMSEL)) + _offset; }
+        static Time_Stamp sfd() { return read(TIMER_CAPTURE * MSEL_MTMSEL) + _offset; }
 
-        static void set(const Time_Stamp & t) {
-            mactimer(MTCTRL) &= ~MTCTRL_RUN; // Stop counting
-            mactimer(MTMSEL) = (OVERFLOW_COUNTER * MSEL_MTMOVFSEL) | (TIMER_COUNTER * MSEL_MTMSEL);
-
-            mactimer(MTMOVF0) = t >> 16ll;
-            mactimer(MTMOVF1) = t >> 24ll;
-            mactimer(MTMOVF2) = t >> 32ll; // MOVF2 must be written last
-            _overflow_count = t >> 40ll;
-
-            mactimer(MTM0) = t; // M0 must be written first
-            mactimer(MTM1) = t >> 8ll;
-
-            mactimer(MTCTRL) |= MTCTRL_RUN; // Start counting
-        }
+        static void adjust(const Offset & o) { _offset += o; }
 
         static void interrupt(const Time_Stamp & when, const IC::Interrupt_Handler & h) {
+            Time_Stamp ts = when - _offset;
+
             //mactimer(MTCTRL) &= ~MTCTRL_RUN; // Stop counting
             mactimer(MTIRQM) = 0; // Mask interrupts
             // Clear any pending compare interrupts
             mactimer(MTIRQF) = mactimer(MTIRQF) & INT_OVERFLOW_PER;
             _ints = _ints & INT_OVERFLOW_PER;
             mactimer(MTMSEL) = (OVERFLOW_COMPARE1 * MSEL_MTMOVFSEL) | (TIMER_COMPARE1 * MSEL_MTMSEL);
-            mactimer(MTM0) = when;
-            mactimer(MTM1) = when >> 8;
-            mactimer(MTMOVF0) = when >> 16;
-            mactimer(MTMOVF1) = when >> 24;
-            mactimer(MTMOVF2) = when >> 32;
+            mactimer(MTM0) = ts;
+            mactimer(MTM1) = ts >> 8;
+            mactimer(MTMOVF0) = ts >> 16;
+            mactimer(MTMOVF1) = ts >> 24;
+            mactimer(MTMOVF2) = ts >> 32;
 
 
             _handler = h;
-            _int_request_time = when;
+            _int_request_time = ts;
 
             int_enable(INT_COMPARE1 | INT_OVERFLOW_PER);
             //mactimer(MTCTRL) |= MTCTRL_RUN; // Start counting
@@ -430,7 +419,7 @@ public:
             if(ints & INT_OVERFLOW_PER)
                 _overflow_count++;
 
-            if(_handler && (_int_request_time <= read())) {
+            if(_handler && (_int_request_time <= read((OVERFLOW_COUNTER * MSEL_MTMOVFSEL) | (TIMER_COUNTER * MSEL_MTMSEL)))) {
                 int_disable();
                 IC::Interrupt_Handler h = _handler;
                 _handler = 0;
@@ -467,7 +456,7 @@ public:
         static void init();
 
     private:
-        static Time_Stamp _offset;
+        static Offset _offset;
         static IC::Interrupt_Handler _handler;
         static volatile Reg32 _overflow_count;
         static volatile Reg32 _ints;
