@@ -1,4 +1,4 @@
-// EPOS Mutex Abstraction Implementation
+// EPOS Mutex Component Implementation
 
 #include <mutex.h>
 

@@ -1,4 +1,4 @@
-// EPOS Semaphore Abstraction Implementation
+// EPOS Semaphore Component Implementation
 
 #include <semaphore.h>
 

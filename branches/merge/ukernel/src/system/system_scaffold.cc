@@ -1,4 +1,4 @@
-// EPOS System Scaffold and System Abstraction Implementation
+// EPOS System Scaffold and System Component Implementation
 
 #include <utility/ostream.h>
 #include <utility/heap.h>

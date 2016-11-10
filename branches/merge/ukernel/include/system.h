@@ -1,4 +1,4 @@
-// EPOS Global System Abstraction Declarations
+// EPOS Global System Component Declarations
 
 #ifndef __system_h
 #define __system_h

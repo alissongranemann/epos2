@@ -1,4 +1,4 @@
-// EPOS Periodic Thread Abstraction Declarations
+// EPOS Periodic Thread Component Declarations
 
 // Periodic threads are achieved by programming an alarm handler to invoke
 // p() on a control semaphore after each job (i.e. task activation). Base

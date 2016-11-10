@@ -1,4 +1,4 @@
-// EPOS Semaphore Abstraction Test Program
+// EPOS Semaphore Component Test Program
 
 #include <utility/ostream.h>
 #include <thread.h>

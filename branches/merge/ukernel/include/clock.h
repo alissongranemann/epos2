@@ -1,4 +1,4 @@
-// EPOS Clock Abstraction Declarations
+// EPOS Clock Component Declarations
 
 #ifndef __clock_h
 #define __clock_h

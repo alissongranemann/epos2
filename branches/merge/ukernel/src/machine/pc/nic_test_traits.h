@@ -114,7 +114,7 @@ template <> struct Traits<System>: public Traits<void>
 };
 
 
-// Abstractions
+// Components
 template <> struct Traits<Task>: public Traits<void>
 {
     static const bool enabled = Traits<System>::multitask;

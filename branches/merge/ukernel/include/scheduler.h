@@ -1,4 +1,4 @@
-// EPOS Scheduler Abstraction Declarations
+// EPOS Scheduler Component Declarations
 
 #ifndef __scheduler_h
 #define __scheduler_h

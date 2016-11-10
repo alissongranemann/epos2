@@ -49,7 +49,7 @@ void task_c()
 
 int main()
 {
-    cout << "Periodic Thread Abstraction Test" << endl;
+    cout << "Periodic Thread Component Test" << endl;
 
     cout << "\nThis test consists in creating" << TASKS << "periodic threads as follows:" << endl;
     for(int i = 0; i < TASKS; i++) {

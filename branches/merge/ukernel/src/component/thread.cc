@@ -1,4 +1,4 @@
-// EPOS Thread Abstraction Implementation
+// EPOS Thread Component Implementation
 
 #include <machine.h>
 #include <system.h>

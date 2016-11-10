@@ -1,4 +1,4 @@
-// EPOS Network Abstraction Declarations
+// EPOS Network Component Declarations
 
 #ifndef __network_h
 #define __network_h

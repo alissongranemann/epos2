@@ -113,7 +113,7 @@ class CC2538;
 class AT86RF;
 class GEM;
 
-// Abstractions
+// Components
 class System;
 class Application;
 

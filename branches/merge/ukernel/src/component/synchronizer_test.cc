@@ -1,4 +1,4 @@
-// EPOS Synchronizer Abstraction Test Program
+// EPOS Synchronizer Component Test Program
 
 #include <utility/ostream.h>
 #include <thread.h>

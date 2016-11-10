@@ -1,4 +1,4 @@
-// EPOS Thread Abstraction Declarations
+// EPOS Thread Component Declarations
 
 #ifndef __thread_h
 #define __thread_h

@@ -1,4 +1,4 @@
-// EPOS Chronometer Abstraction Test Program
+// EPOS Chronometer Component Test Program
 
 #include <utility/ostream.h>
 #include <chronometer.h>
