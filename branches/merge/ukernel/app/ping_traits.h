@@ -1,1 +1,1 @@
-../src/abstraction/ip_test_traits.h
+../src/component/ip_test_traits.h
