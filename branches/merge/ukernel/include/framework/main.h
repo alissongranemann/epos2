@@ -52,6 +52,18 @@ __USING_UTIL
 EXPORT(CPU);
 EXPORT(Handler);
 EXPORT(Function_Handler);
+// EXPORT(Semaphore_Handler);
+class Semaphore_Handler: public _SYS::Handler
+{
+public:
+    Semaphore_Handler(_SYS::Handle<_SYS::Semaphore> * h) : _handler(h) {}
+    ~Semaphore_Handler() {}
+
+    void operator()() { _handler->v(); }
+
+private:
+    _SYS::Handle<_SYS::Semaphore> * _handler; // Semaphore here is Handle<Semaphore>
+};
 
 EXPORT(System);
 EXPORT(Application);
@@ -72,7 +84,8 @@ BIND(Condition);
 BIND(Clock);
 BIND(Chronometer);
 // BIND(Alarm);
-class Alarm: public SELECT(Alarm) {
+class Alarm: public SELECT(Alarm)
+{
     typedef SELECT(Alarm) Base;
 public:
     Alarm(const _SYS::RTC::Microsecond & time, _SYS::Handler * handler, int times = 1): Base(time, handler, times) {}

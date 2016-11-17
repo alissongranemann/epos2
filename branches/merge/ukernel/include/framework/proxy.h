@@ -106,7 +106,7 @@ public:
     template<typename T>
     static void delay(T t) { static_invoke(ALARM_DELAY, t); }
 
-    const RTC::Microsecond period() const { return invoke(ALARM_GET_PERIOD); }
+    const RTC::Microsecond period() { return invoke(ALARM_GET_PERIOD); }
     void period(const RTC::Microsecond p) { invoke(ALARM_SET_PERIOD, p); }
     static TSC::Hertz alarm_frequency() { return static_invoke(ALARM_FREQUENCY); }
 

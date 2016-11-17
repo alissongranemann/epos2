@@ -39,4 +39,7 @@ extern "C" {
     }
     void _print_preamble() {}
     void _print_trailler(bool error) {}
+
+    void __cxa_pure_virtual() { db<void>(ERR) << "Pure Virtual method called!" << endl; }
+
 }
