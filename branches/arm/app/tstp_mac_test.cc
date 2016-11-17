@@ -45,19 +45,30 @@ int main()
     for(unsigned int i = 0; i < 8; i++)
         cout << " " << hex << Machine::id()[i];
     cout << endl;
+
     cout << "TSTP::here() = " << TSTP::here() << endl;
-    Region dst(Coordinates(50, 50, 50), 10, 0, 20000000);
 
-    cout << "dst.center - here = " << dst.center - TSTP::here() << endl;
-    cout << "here - dst.center  = " << TSTP::here() - dst.center << endl;
+    if(TSTP::here() == TSTP::sink()) {
+        cout << "Sink" << endl;
 
-    if(dst.contains(TSTP::here(), TSTP::now() + 0)) {
-        cout << "Sensor" << endl;
-        Acceleration a0(0, 2000000, Acceleration::ADVERTISED);
+        Region dst(Coordinates(10, 0, 0), 0, 0, 20000000);
+        Acceleration a0(dst, 3000000, 1000000);
+
+        while(a0 != 'a') {
+            cout << "a0 = " << a0 << endl;
+            Delay(500000);
+        }
+
         while(true);
     } else {
-        cout << "Sink" << endl;
-        Acceleration a0(dst, 3000000, 1000000);
+        cout << "Sensor" << endl;
+
+        Acceleration a0(0, 2000000, Acceleration::ADVERTISED);
+
+        while(true) {
+            cout << "a0 = " << a0 << endl;
+            Delay(500000);
+        }
         while(true);
     }
 

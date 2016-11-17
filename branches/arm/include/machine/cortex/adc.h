@@ -43,7 +43,7 @@ public:
         BITS_12 = 3  // 12 bits resolution, 512 decimation rate
     };
 
-    ADC(const Channel & channel = SINGLE_ENDED_ADC0, const Reference & reference = SYSTEM_REF, const Resolution & resolution = BITS_12)
+    ADC(const Channel & channel = SINGLE_ENDED_ADC7, const Reference & reference = SYSTEM_REF, const Resolution & resolution = BITS_12)
     : _channel(channel), _reference(reference), _resolution(resolution) {
         Machine_Model::adc_config(_channel);
     }

@@ -38,6 +38,8 @@ public:
         COMMANDED = 3
     };
 
+    static const unsigned int REMOTE = -1;
+
     typedef RTC::Microsecond Microsecond;
 
     typedef TSTP::Unit Unit;
@@ -81,7 +83,7 @@ public:
     }
     // Remote, event-driven (period = 0) or time-triggered data source
     Smart_Data(const Region & region, const Microsecond & expiry, const Microsecond & period = 0)
-    : _unit(UNIT), _value(0), _error(ERROR), _coordinates(0), _time(0), _expiry(expiry), _device(0), _mode(PRIVATE), _thread(0), _interested(new Interested(this, region, UNIT, TSTP::SINGLE, 0, expiry, period)), _responsive(0) {
+    : _unit(UNIT), _value(0), _error(ERROR), _coordinates(0), _time(0), _expiry(expiry), _device(REMOTE), _mode(PRIVATE), _thread(0), _interested(new Interested(this, region, UNIT, TSTP::SINGLE, 0, expiry, period)), _responsive(0) {
         TSTP::attach(this, _interested);
     }
 
@@ -100,7 +102,7 @@ public:
 
     operator Value() {
         if(TSTP::now() > (_time + _expiry))
-            if(_device) { // Local data source
+            if(_device != REMOTE) { // Local data source
                 Transducer::sense(_device, this); // read sensor
                 _time = TSTP::now();
             } else // Other data sources must have called update() timely
@@ -112,7 +114,7 @@ public:
 
     friend Debug & operator<<(Debug & db, const Smart_Data & d) {
         db << "{";
-        if(d._device) {
+        if(d._device != REMOTE) {
             switch(d._mode) {
             case PRIVATE:    db << "PRI."; break;
             case ADVERTISED: db << "ADV."; break;
