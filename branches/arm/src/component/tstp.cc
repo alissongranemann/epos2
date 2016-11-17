@@ -39,11 +39,21 @@ TSTP::Locator::~Locator()
 // TODO: we need a better way to define static locations
 TSTP::Coordinates TSTP::Locator::here()
 {
-    if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xca\x0e\x16\x06", 8))
+    if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x1a\x84\x0d\x06", 8))
+        return TSTP::sink();
+    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xec\x82\x0d\x06", 8))
+        return Coordinates( 0,10, 0);
+    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xae\x82\x0d\x06", 8))
+        return Coordinates(10,10, 0);
+    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x67\x83\x0d\x06", 8))
+        return Coordinates(10, 0, 0);
+
+    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xca\x0e\x16\x06", 8))
         return TSTP::sink();
     else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xee\x0e\x16\x06", 8))
-        return Coordinaties(50,50,50);
-    else 
+        return Coordinates(50,50,50);
+
+    else
         return Coordinates(-1, -1, -1);
 }
 
