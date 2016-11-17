@@ -42,6 +42,7 @@ struct Configuration
     unsigned int  boot_length_max;
     short         node_id;   // node id in SAN (-1 => get from net)
     short         n_nodes;   // nodes in SAN (-1 => dynamic)
+    unsigned char uuid[8];   // EPOS image Universally Unique Identifier
 };
 
 // System_Info
@@ -115,6 +116,9 @@ int main(int argc, char **argv)
         printf("  Node id: will get from the network\n");
     else
         printf("  Node id: %d\n", CONFIG.node_id);
+    printf("  EPOS Image UUID: ");
+    for(unsigned int i = 0; i < 8; i++)
+        printf("%.2x", CONFIG.uuid[i]);
 
     // Create the boot image
     unsigned int image_size = 0;
@@ -158,6 +162,8 @@ int main(int argc, char **argv)
     si.bm.io_top   = 0; // will be adjusted by SETUP
     si.bm.node_id  = CONFIG.node_id;
     si.bm.n_nodes  = CONFIG.n_nodes;
+    for(unsigned int i = 0; i < 8; i++)
+        si.bm.uuid[i]  = CONFIG.uuid[i];
 
     // Add SETUP
     sprintf(file, "%s/img/%s_setup", argv[1], CONFIG.mach);
@@ -231,7 +237,7 @@ int main(int argc, char **argv)
         printf(" done.\n");
     }
 
-    // Adding ARCH specificities
+    // Adding MACH specificities
     printf("\n  Adding specific boot features of \"%s\":", CONFIG.mach);
     if(!(add_machine_secrets(fd_img, image_size, CONFIG.mach, CONFIG.mmod))) {
         fprintf(stderr, "Error: specific features error!\n");
@@ -418,6 +424,18 @@ bool parse_config(FILE * cfg_file, Configuration * cfg)
             cfg->n_nodes = -1; // dynamic
     }
 
+    // UUID
+    if(fgets(line, 256, cfg_file) == line) {
+        token = strtok(line, "=");
+        if(!strcmp(token, "UUID") && (token = strtok(NULL, "\n"))) {
+            unsigned int buf[16];
+            unsigned int i, j;
+            for(i = j = 0; (i < 16) && (sscanf(&token[j], "%2x", &buf[i]) == 1); i++, j+=2);
+            for(i = j = 0; i < 8; i++, j+=2)
+                cfg->uuid[i] = buf[j] ^ buf[j+1];
+        }
+    }
+
     return true;
 }
 
@@ -441,7 +459,10 @@ template<typename T> bool add_boot_map(int fd, System_Info * si)
     if(!put_number(fd, si->bm.node_id))
         return false;
     if(!put_number(fd, si->bm.n_nodes))
-          return false;
+        return false;
+    for(unsigned int i = 0; i < 8; i++)
+        if(!put_number(fd, si->bm.uuid[i]))
+            return false;
 
     if(!put_number(fd, static_cast<T>(si->bm.img_size)))
         return false;

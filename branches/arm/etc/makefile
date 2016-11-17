@@ -43,6 +43,9 @@ eposmkbi.conf:	FORCE
 		@echo "MEM_TOP=$(MEM_TOP)" >> $@
 		@echo "BOOT_LENGTH_MIN=$(BOOT_LENGTH_MIN)" >> $@
 		@echo "BOOT_LENGTH_MAX=$(BOOT_LENGTH_MAX)" >> $@
+		@echo "NODE_ID=$(NODE_ID)" >> $@
+		@echo "N_NODES=$(N_NODES)" >> $@
+		@echo "UUID=$(UUID)" >> $@
 
 clean: $(APP)/$(APPLICATION)_traits.h
 		sed -e 's/^#define MODE.*$$/#define MODE xxx/' -i $(INCLUDE)/system/config.h

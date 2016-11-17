@@ -26,6 +26,7 @@ public:
         PAddr io_top;                     // I/O Memory top address
         short node_id;                    // Local node id in SAN (-1 => RARP)
         short n_nodes;                    // Number of nodes in SAN (-1 => dynamic)
+        unsigned char uuid[8];            // EPOS image Universally Unique Identifier
         Size img_size;                    // Boot image size (in bytes)
         int setup_offset;                 // Image offsets (-1 => not present)
         int init_offset;

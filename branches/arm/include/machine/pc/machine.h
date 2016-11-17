@@ -13,6 +13,7 @@
 #include "memory_map.h"
 #include "ic.h"
 #include <display.h>
+#include <system.h>
 
 __BEGIN_SYS
 
@@ -66,6 +67,8 @@ public:
         	while(ready[j]);          // wait for CPU[0] signal
         }
     }
+
+    static const unsigned char * id() { return System::info()->bm.uuid; }
 
 private:
     static void pre_init(System_Info * si) {

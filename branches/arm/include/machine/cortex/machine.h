@@ -37,6 +37,8 @@ public:
     static void smp_barrier() {};
     static void smp_init(unsigned int) {};
 
+    static const unsigned char * id() { return Machine_Model::id(); }
+
 private:
     static void pre_init(System_Info * si) {
         Machine_Model::pre_init();

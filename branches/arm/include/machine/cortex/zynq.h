@@ -6,6 +6,7 @@
 #include <tsc.h>
 #include <cpu.h>
 #include <rtc.h>
+#include <system.h>
 
 __BEGIN_SYS
 
@@ -180,6 +181,8 @@ protected:
         TSC::Time_Stamp end = TSC::time_stamp() + time * (TSC::frequency() / 1000000);
         while(end > TSC::time_stamp());
     }
+
+    static const unsigned char * id() { return System::info()->bm.uuid; } // TODO: System_Info is not populated in this machine
 
     static unsigned int cpu_id() {
         int id;

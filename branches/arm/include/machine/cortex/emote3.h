@@ -37,6 +37,11 @@ public:
         IOC_BASE        = 0x400d4000,
     };
 
+    // Unique IEEE Address at the flash Info Page
+    enum {
+        IEEE_ADDR       = 0x00280028,
+    };
+
     // I2C Master offsets
     enum {
         I2CM_SA         = 0x00,
@@ -1014,6 +1019,8 @@ protected:
         TSC::Time_Stamp end = TSC::time_stamp() + time * (TSC::frequency() / 1000000);
         while(end > TSC::time_stamp());
     }
+
+    static const unsigned char * id() { return reinterpret_cast<const unsigned char *>(IEEE_ADDR); }
 
 // GPTM
     static void power_user_timer(unsigned int unit, const Power_Mode & mode) {

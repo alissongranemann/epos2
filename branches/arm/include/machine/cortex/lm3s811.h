@@ -6,6 +6,7 @@
 #include <cpu.h>
 #include <tsc.h>
 #include <rtc.h>
+#include <system.h>
 
 __BEGIN_SYS
 
@@ -396,6 +397,8 @@ protected:
         tsc(GPTMCTL) &= ~TAEN;
         tsc(GPTMICR) |= TATO_INT;
     }
+
+    static const unsigned char * id() { return System::info()->bm.uuid; } // TODO: System_Info is not populated in this machine
 
 // Device enabling
     static void enable_uart(unsigned int unit) {
