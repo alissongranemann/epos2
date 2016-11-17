@@ -41,6 +41,10 @@ int main()
     cout << "sizeof(Microsecond) = " << sizeof(RTC_Common::Microsecond) << endl;
     cout << "sizeof(CC2538RF::Timer::Time_Stamp) = " << sizeof(CC2538RF::Timer::Time_Stamp) << endl;
 
+    cout << "Machine::id() =";
+    for(unsigned int i = 0; i < 8; i++)
+        cout << " " << hex << Machine::id()[i];
+    cout << endl;
     cout << "TSTP::here() = " << TSTP::here() << endl;
     Region dst(Coordinates(50, 50, 50), 10, 0, 20000000);
 

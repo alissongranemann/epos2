@@ -17,43 +17,46 @@ CC2538::CC2538(unsigned int unit): _unit(unit), _rx_cur_consume(0), _rx_cur_prod
         _rx_bufs[i] = new (SYSTEM) Buffer(0, 0);
 
     // Set Address
+    const unsigned char * id = Machine::id();
+    _address[0] = id[4] ^ id[5];
+    _address[1] = id[6] ^ id[7];
     ffsm(SHORT_ADDR0) = _address[0];
     ffsm(SHORT_ADDR1) = _address[1];
-    _address[0] = ffsm(SHORT_ADDR0);
-    _address[1] = ffsm(SHORT_ADDR1);
 
-    // TODO: Define what will be used for each MAC
-    //xreg(FRMFILT0) |= FRAME_FILTER_EN; // Enable frame filtering
-    xreg(FRMFILT0) &= ~FRAME_FILTER_EN; // Disable frame filtering
     xreg(FRMFILT1) &= ~ACCEPT_FT2_ACK; // ACK frames are handled only when expected
-
-    //xreg(SRCMATCH) |= SRC_MATCH_EN; // Enable automatic source address matching
-    xreg(SRCMATCH) &= ~SRC_MATCH_EN; // Disable automatic source address matching
-
     xreg(FRMCTRL0) |= AUTO_CRC; // Enable auto-CRC
+
+    if(ieee802_15_4_mac) {
+        xreg(FRMFILT0) |= FRAME_FILTER_EN; // Enable frame filtering
+        xreg(SRCMATCH) |= SRC_MATCH_EN; // Enable automatic source address matching
+        xreg(FRMCTRL0) |= AUTO_ACK; // Enable auto ACK
+        xreg(FRMCTRL1) |= SET_RXENMASK_ON_TX; // Enter receive mode after ISTXON
+    } else {
+        xreg(FRMFILT0) &= ~FRAME_FILTER_EN; // Disable frame filtering
+        xreg(SRCMATCH) &= ~SRC_MATCH_EN; // Disable automatic source address matching
+        xreg(FRMCTRL1) &= ~SET_RXENMASK_ON_TX; // Do not enter receive mode after ISTXON
+    }
 
     channel(13);
 
-    xreg(FRMCTRL0) |= AUTO_ACK; // Enable auto ACK
-
     reset(); // Reset statistics
 
-    xreg(FRMCTRL1) &= ~SET_RXENMASK_ON_TX; // Do not enter receive mode after ISTXON
-
     // Enable useful device interrupts
-    // WARNING: do not enable INT_TXDONE, because CC2538RF::tx_done() handles it
-    // WARNING: do not enable INT_RXPKTDONE, because CC2538RF::rx_done() handles it
+    // INT_TXDONE is polled by CC2538RF::tx_done()
+    // INT_RXPKTDONE is polled by CC2538RF::rx_done()
     xreg(RFIRQM0) = INT_FIFOP;
     xreg(RFIRQM1) = 0;
     xreg(RFERRM) = 0;
 
-    // Enable debug signals
-    GPIO p_tx('C',4,GPIO::OUT,GPIO::FLOATING);
-    GPIO p_rx('C',6,GPIO::OUT,GPIO::FLOATING);
-    xreg(RFC_OBS_CTRL0) = SIGNAL_TX_ACTIVE;
-    xreg(RFC_OBS_CTRL1) = SIGNAL_RX_ACTIVE;
-    cctest(CCTEST_OBSSEL4) = OBSSEL_SIG0_EN;
-    cctest(CCTEST_OBSSEL6) = OBSSEL_SIG1_EN;
+    if(Traits<CC2538>::gpio_debug) {
+        // Enable debug signals to GPIO
+        GPIO p_tx('C',4,GPIO::OUT,GPIO::FLOATING); // Configure GPIO pin C4
+        GPIO p_rx('C',6,GPIO::OUT,GPIO::FLOATING); // Configure GPIO pin C6
+        xreg(RFC_OBS_CTRL0) = SIGNAL_TX_ACTIVE; // Signal 0 is TX_ACTIVE
+        xreg(RFC_OBS_CTRL1) = SIGNAL_RX_ACTIVE; // Signal 1 is RX_ACTIVE
+        cctest(CCTEST_OBSSEL4) = OBSSEL_SIG0_EN; // Route signal 0 to GPIO pin C4
+        cctest(CCTEST_OBSSEL6) = OBSSEL_SIG1_EN; // Route signal 1 to GPIO pin C4
+    }
 
     MAC::constructor_epilogue(); // Device is configured, let the MAC use it
 }
@@ -78,6 +81,7 @@ void CC2538::init(unsigned int unit)
     // Enable interrupts for device
     IC::enable(IC::INT_NIC0_RX);
 }
+
 
 void CC2538::Timer::init()
 {

@@ -5,6 +5,7 @@
 
 #include <tstp.h>
 #include <utility/math.h>
+#include <utility/string.h>
 
 __BEGIN_SYS
 
@@ -35,12 +36,16 @@ TSTP::Locator::~Locator()
     TSTP::_nic->detach(this, 0);
 }
 
-// TODO
-#if 0
-TSTP::Coordinates TSTP::Locator::here() { return TSTP::sink(); }
-#else
-TSTP::Coordinates TSTP::Locator::here() { return Coordinates(50,50,50); }
-#endif
+// TODO: we need a better way to define static locations
+TSTP::Coordinates TSTP::Locator::here()
+{
+    if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xca\x0e\x16\x06", 8))
+        return TSTP::sink();
+    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xee\x0e\x16\x06", 8))
+        return Coordinaties(50,50,50);
+    else 
+        return Coordinates(-1, -1, -1);
+}
 
 // TSTP::Timekeeper
 // Class attributes

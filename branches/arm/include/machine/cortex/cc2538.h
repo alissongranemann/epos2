@@ -676,6 +676,8 @@ class CC2538: public IF<EQUAL<Traits<Network>::NETWORKS::Get<Traits<NIC>::NICS::
 private:
     typedef IF<EQUAL<Traits<Network>::NETWORKS::Get<Traits<NIC>::NICS::Find<CC2538>::Result>::Result, _SYS::TSTP>::Result, TSTP_MAC<CC2538RF>, IEEE802_15_4_MAC<CC2538RF>>::Result MAC;
 
+    static const bool ieee802_15_4_mac = EQUAL<MAC, IEEE802_15_4_MAC<CC2538RF>>::Result;
+
     // Transmit and Receive Ring sizes
     static const unsigned int UNITS = Traits<CC2538>::UNITS;
     static const unsigned int RX_BUFS = Traits<CC2538>::RECEIVE_BUFFERS;

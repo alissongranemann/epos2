@@ -103,6 +103,7 @@ template<> struct Traits<CC2538>: public Traits<NIC>
 {
     static const unsigned int UNITS = NICS::Count<CC2538>::Result;
     static const unsigned int RECEIVE_BUFFERS = 8; // per unit
+    static const bool gpio_debug = true;
 };
 
 __END_SYS
