@@ -1,1 +1,0 @@
-../src/component/alarm_test.cc
