@@ -62,8 +62,22 @@ public:
     void operator()() { _handler->v(); }
 
 private:
-    _SYS::Handle<_SYS::Semaphore> * _handler; // Semaphore here is Handle<Semaphore>
+    _SYS::Handle<_SYS::Semaphore> * _handler;
 };
+
+// EXPORT(Thread_Handler);
+class Thread_Handler: public _SYS::Handler
+{
+public:
+    Thread_Handler(_SYS::Handle<_SYS::Thread> * h) : _handler(h) {}
+    ~Thread_Handler() {}
+
+    void operator()() { _handler->resume(); }
+
+private:
+    _SYS::Handle<_SYS::Thread> * _handler;
+};
+
 
 EXPORT(System);
 EXPORT(Application);
