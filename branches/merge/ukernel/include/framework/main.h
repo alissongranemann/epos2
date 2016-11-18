@@ -78,6 +78,19 @@ private:
     _SYS::Handle<_SYS::Thread> * _handler;
 };
 
+// EXPORT(Condition_Handler);
+class Condition_Handler: public _SYS::Handler
+{
+public:
+    Condition_Handler(_SYS::Handle<_SYS::Condition> * h) : _handler(h) {}
+    ~Condition_Handler() {}
+
+    void operator()() { _handler->signal(); }
+
+private:
+    _SYS::Handle<_SYS::Condition> * _handler;
+};
+
 
 EXPORT(System);
 EXPORT(Application);
