@@ -201,9 +201,8 @@ void TSTP::update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf)
         if(list)
             for(Responsives::Element * el = list->head(); el; el = el->next()) {
                 Responsive * responsive = el->object();
-                if(interest->region().contains(responsive->origin(), now())) {
+                if(interest->region().contains(responsive->origin(), now()))
                     notify(responsive, buf);
-                }
             }
     } break;
     case RESPONSE: {

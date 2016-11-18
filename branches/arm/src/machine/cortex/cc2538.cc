@@ -113,8 +113,6 @@ void CC2538::reset()
 
 void CC2538::handle_int()
 {
-    char rssi = xreg(RSSI); // TODO: get the RSSI appended by hardware at the end of the frame when filtering is enabled
-
     db<CC2538>(TRC) << "CC2538::handle_int()" << endl;
 
     Reg32 irqrf0 = sfr(RFIRQF0);
@@ -141,8 +139,9 @@ void CC2538::handle_int()
             _rx_cur_produce = (idx + 1) % RX_BUFS;
 
             if(buf) {
-                buf->rssi = rssi;
                 buf->size(CC2538RF::copy_from_nic(buf->frame()));
+                // When AUTO_CRC is on, the radio automatically puts the RSSI on the second-to-last byte
+                buf->rssi = buf->frame()->data<char>()[buf->size() - 2];
                 if(MAC::pre_notify(buf)) {
                     db<CC2538>(TRC) << "CC2538::handle_int:receive(b=" << buf << ") => " << *buf << endl;
                     bool notified = notify(reinterpret_cast<IEEE802_15_4::Header *>(buf->frame())->type(), buf);

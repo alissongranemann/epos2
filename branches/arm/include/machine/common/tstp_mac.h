@@ -110,10 +110,10 @@ protected:
                     el = next;
                 }
 
+                db<TSTP_MAC<Radio>>(INF) << "TSTP_MAC::pre_notify: Microframe received: " << *mf << " at " << Radio::Timer::count2us(buf->sfd_time_stamp) << endl;
+
                 // Forge a TSTP identifier to make the radio notify listeners
                 mf->id(TSTP << 8);
-
-                db<TSTP_MAC<Radio>>(INF) << "TSTP_MAC::pre_notify: Microframe received: " << *mf << " at " << buf->sfd_time_stamp << endl;
 
                 return true;
             }
@@ -130,7 +130,7 @@ protected:
             buf->relevant = true;
             buf->trusted = false;
 
-            db<TSTP_MAC<Radio>>(INF) << "TSTP_MAC::pre_notify: Frame received: " << buf->frame() << " at " << buf->sfd_time_stamp << endl;
+            db<TSTP_MAC<Radio>>(INF) << "TSTP_MAC::pre_notify: Frame received: " << buf->frame() << " at " << Radio::Timer::count2us(buf->sfd_time_stamp) << endl;
 
             return true;
         }
@@ -167,7 +167,7 @@ protected:
 public:
     // Assemble TX Buffer Metainformation
     void marshal(Buffer * buf, const Address & src, const Address & dst, const Type & type) {
-        buf->id = Random::random() & 0xfff;// TODO
+        buf->id = Random::random() & 0x0fff;// TODO
         buf->is_microframe = false;
         buf->trusted = false;
         buf->is_new = true;
@@ -214,7 +214,7 @@ private:
 
         if(_tx_pending) { // Transition: [TX pending]
             // State: Backoff CCA (Backoff part)
-            new (&_mf) Microframe(_tx_pending->downlink, _tx_pending->id, N_MICROFRAMES - 1, _tx_pending->my_distance);
+            new (&_mf) Microframe((!_tx_pending->destined_to_me) && _tx_pending->downlink, _tx_pending->id, N_MICROFRAMES - 1, _tx_pending->my_distance);
             Radio::power(Power_Mode::LIGHT);
             Radio::copy_to_nic(&_mf, sizeof(Microframe));
 

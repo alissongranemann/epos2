@@ -33,7 +33,7 @@ public:
     typedef CPU::Reg16 Frame_ID;
     typedef CPU::Reg32 Hint;
     typedef NIC_Common::CRC16 CRC;
-    typedef unsigned short MF_Count;
+    typedef CPU::Reg16 MF_Count;
 
     // Packet Types
     typedef unsigned char Type;
@@ -100,21 +100,21 @@ public:
         Microframe() {}
 
         Microframe(bool all_listen, const Frame_ID & id, const MF_Count & count, const Hint & hint = 0)
-        : _al_count_idh(((id & 0xf00) >> 8) | ((count & 0x7ff) << 4) | (static_cast<unsigned int>(all_listen) << 15)), _idl(id & 0xff), _hint(hint) {}
+        : _al_count_idh(((id & 0x0f00) >> 8) | ((count & 0x07ff) << 4) | (static_cast<unsigned int>(all_listen) << 15)), _idl(id & 0x00ff), _hint(hint) {}
 
-        MF_Count count() const { return (_al_count_idh & (0x7ff << 4)) >> 4; }
+        MF_Count count() const { return (_al_count_idh & (0x07ff << 4)) >> 4; }
+
         MF_Count dec_count() {
             MF_Count c = count();
-            _al_count_idh &= ~(0x7ff << 4);
-            _al_count_idh |= (c-1) << 4;
+            _al_count_idh = (_al_count_idh & ~(0x07ff << 4)) | ((c-1) << 4);
             return c;
         }
 
-        Frame_ID id() const { return ((_al_count_idh & 0xf) << 8) + _idl; }
-        void id(Frame_ID id) {
-            _al_count_idh &= 0xfff0;
-            _al_count_idh |= (id & 0xf00) >> 8;
-            _idl = id & 0xff;
+        Frame_ID id() const { return ((_al_count_idh & 0x000f) << 8) + _idl; }
+
+        void id(const Frame_ID & id) {
+            _al_count_idh = (_al_count_idh & 0xfff0) | ((id & 0x0f00) >> 8);
+            _idl = id & 0x00ff;
         }
 
         void all_listen(bool all_listen) {
@@ -123,6 +123,7 @@ public:
             else
                 _al_count_idh &= ~(1 << 15);
         }
+
         bool all_listen() const { return _al_count_idh & (1 << 15); }
 
         Hint hint() const { return _hint; }
@@ -730,7 +731,7 @@ public:
 
     private:
         void send(const Time & expiry) {
-            if(_time >= _t0 && _time <= _t1) {
+            if((_time >= _t0) && (_time <= _t1)) {
                 assert(expiry > now());
                 db<TSTP>(TRC) << "TSTP::Responsive::send(x=" << expiry << ")" << endl;
                 Buffer * buf = alloc(_size);
@@ -877,8 +878,7 @@ private:
     }
 
     static Buffer * alloc(unsigned int size) {
-        assert((!Traits<TSTP>::enabled || EQUAL<NIC::Buffer, Buffer>::Result));
-        return reinterpret_cast<Buffer*>(_nic->alloc(NIC::Address::BROADCAST, NIC::TSTP, 0, 0, size));
+        return _nic->alloc(NIC::Address::BROADCAST, NIC::TSTP, 0, 0, size);
     }
 
     static Coordinates absolute(const Coordinates & coordinates) { return coordinates; }
