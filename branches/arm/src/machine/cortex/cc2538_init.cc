@@ -55,7 +55,7 @@ CC2538::CC2538(unsigned int unit): _unit(unit), _rx_cur_consume(0), _rx_cur_prod
         xreg(RFC_OBS_CTRL0) = SIGNAL_TX_ACTIVE; // Signal 0 is TX_ACTIVE
         xreg(RFC_OBS_CTRL1) = SIGNAL_RX_ACTIVE; // Signal 1 is RX_ACTIVE
         cctest(CCTEST_OBSSEL4) = OBSSEL_SIG0_EN; // Route signal 0 to GPIO pin C4
-        cctest(CCTEST_OBSSEL6) = OBSSEL_SIG1_EN; // Route signal 1 to GPIO pin C4
+        cctest(CCTEST_OBSSEL6) = OBSSEL_SIG1_EN; // Route signal 1 to GPIO pin C6
     }
 
     MAC::constructor_epilogue(); // Device is configured, let the MAC use it

@@ -64,6 +64,7 @@ TSTP::Coordinates TSTP::Locator::here()
 void TSTP::Timekeeper::update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf)
 {
     db<TSTP>(TRC) << "TSTP::Timekeeper::update(obs=" << obs << ",buf=" << buf << ")" << endl;
+
     if(!buf->is_microframe) {
         buf->deadline = TSTP::destination(buf).t1;
 
@@ -71,8 +72,13 @@ void TSTP::Timekeeper::update(NIC::Observed * obs, NIC::Protocol prot, Buffer * 
             (buf->my_distance > buf->sender_distance) :
             (TSTP::here() - TSTP::sink() > buf->frame()->data<Header>()->last_hop() - TSTP::sink());
 
-        if(peer_closer_to_sink)
-            NIC::Timer::adjust(buf->frame()->data<Header>()->last_hop_time() - (NIC::Timer::sfd() + NIC::Timer::us2count(IEEE802_15_4::SHR_SIZE * 1000000 / IEEE802_15_4::BYTE_RATE)));
+        if(peer_closer_to_sink) {
+            NIC::Timer::Offset adj = buf->frame()->data<Header>()->last_hop_time() - (NIC::Timer::sfd() + NIC::Timer::us2count(IEEE802_15_4::SHR_SIZE * 1000000 / IEEE802_15_4::BYTE_RATE));
+
+            db<TSTP>(INF) << "TSTP::Timekeeper::update: adjusting timer by " << adj << endl;
+
+            NIC::Timer::adjust(adj);
+        }
     }
 }
 

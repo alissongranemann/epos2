@@ -342,8 +342,26 @@ public:
     public:
         Timer() {}
 
-        static Time_Stamp read() { return read((OVERFLOW_COUNTER * MSEL_MTMOVFSEL) | (TIMER_COUNTER * MSEL_MTMSEL)) + _offset; }
-        static Time_Stamp sfd() { return read(TIMER_CAPTURE * MSEL_MTMSEL) + _offset; }
+        static Time_Stamp read() { return read_raw() + _offset; }
+
+        static Time_Stamp sfd() {
+            mactimer(MTMSEL) = (OVERFLOW_CAPTURE * MSEL_MTMOVFSEL) | (TIMER_CAPTURE * MSEL_MTMSEL);
+
+            Time_Stamp ts;
+
+            ts = static_cast<Time_Stamp>(_overflow_count) << 40;
+            ts += mactimer(MTM0); // M0 must be read first
+            ts += mactimer(MTM1) << 8;
+            ts += static_cast<Time_Stamp>(mactimer(MTMOVF0)) << 16;
+            ts += static_cast<Time_Stamp>(mactimer(MTMOVF1)) << 24;
+            ts += static_cast<Time_Stamp>(mactimer(MTMOVF2)) << 32;
+
+            // This check is not enough only if sfd() is called more than 9.5 hours after the last frame arrival
+            if(read_raw() <= ts)
+                ts -= (1ll << 40);
+
+            return ts + _offset;
+        }
 
         static void adjust(const Offset & o) { _offset += o; }
 
@@ -398,17 +416,22 @@ public:
     private:
         static void int_enable(const Reg32 & interrupt) { mactimer(MTIRQM) |= interrupt; }
 
-        static Time_Stamp read(unsigned int sel) {
-            mactimer(MTMSEL) = sel;
+        static Time_Stamp read_raw() {
+            mactimer(MTMSEL) = (OVERFLOW_COUNTER * MSEL_MTMOVFSEL) | (TIMER_COUNTER * MSEL_MTMSEL);
             Time_Stamp oc, ts;
-            do {
-                ts = (oc = _overflow_count) << 40ll;
-                ts += mactimer(MTM0); // M0 must be read first
-                ts += mactimer(MTM1) << 8;
-                ts += static_cast<long long>(mactimer(MTMOVF0)) << 16ll;
-                ts += static_cast<long long>(mactimer(MTMOVF1)) << 24ll;
-                ts += static_cast<long long>(mactimer(MTMOVF2)) << 32ll;
-            } while(_overflow_count != oc);
+
+            ts = (oc = _overflow_count) << 40;
+            ts += mactimer(MTM0); // M0 must be read first
+            ts += mactimer(MTM1) << 8;
+            ts += static_cast<Time_Stamp>(mactimer(MTMOVF0)) << 16;
+            ts += static_cast<Time_Stamp>(mactimer(MTMOVF1)) << 24;
+            ts += static_cast<Time_Stamp>(mactimer(MTMOVF2)) << 32;
+
+            // The 40-bit counter overflows every 9.5 hours,
+            // so we assume at most one happened inside this method
+            if(_overflow_count != oc)
+                oc += 1ll << 40;
+
             return ts;
         }
 
@@ -419,7 +442,7 @@ public:
             if(ints & INT_OVERFLOW_PER)
                 _overflow_count++;
 
-            if(_handler && (_int_request_time <= read((OVERFLOW_COUNTER * MSEL_MTMOVFSEL) | (TIMER_COUNTER * MSEL_MTMSEL)))) {
+            if(_handler && (_int_request_time <= read_raw())) {
                 int_disable();
                 IC::Interrupt_Handler h = _handler;
                 _handler = 0;

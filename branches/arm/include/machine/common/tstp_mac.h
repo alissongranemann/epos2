@@ -32,6 +32,7 @@ public:
     typedef typename Radio::Timer::Time_Stamp Time_Stamp;
 
     static const unsigned int MTU = Frame::MTU;
+    static const bool sniffer = false; // For debugging
 
 private:
 
@@ -94,7 +95,7 @@ protected:
                 buf->downlink = mf->all_listen();
                 buf->is_new = false;
                 buf->is_microframe = true;
-                buf->relevant = mf->all_listen();
+                buf->relevant = sniffer || mf->all_listen();
                 buf->trusted = false;
                 buf->sender_distance = mf->hint();
 
@@ -112,6 +113,8 @@ protected:
                 // Forge a TSTP identifier to make the radio notify listeners
                 mf->id(TSTP << 8);
 
+                db<TSTP_MAC<Radio>>(INF) << "TSTP_MAC::pre_notify: Microframe received: " << *mf << " at " << buf->sfd_time_stamp << endl;
+
                 return true;
             }
             return false;
@@ -126,6 +129,8 @@ protected:
             buf->is_microframe = false;
             buf->relevant = true;
             buf->trusted = false;
+
+            db<TSTP_MAC<Radio>>(INF) << "TSTP_MAC::pre_notify: Frame received: " << buf->frame() << " at " << buf->sfd_time_stamp << endl;
 
             return true;
         }
@@ -171,7 +176,8 @@ public:
     unsigned int unmarshal(Buffer * buf, Address * src, Address * dst, Type * type, void * data, unsigned int size) { /*TODO*/ return 0; }
 
     int send(Buffer * buf) {
-        _tx_schedule.insert(buf->link());
+        if(!sniffer)
+            _tx_schedule.insert(buf->link());
         return buf->size();
     }
 
@@ -249,7 +255,6 @@ private:
         if(Traits<EPOS::S::TSTP>::hysterically_debugged)
             db<TSTP_MAC<Radio>>(TRC) << "TSTP_MAC::rx_mf(id=" << id << ")" << endl;
 
-        //FIXME: no need to set both flags
         _in_rx_mf = true;
         _in_rx_data = false;
         Radio::power(Power_Mode::FULL);
@@ -264,7 +269,6 @@ private:
         if(Traits<EPOS::S::TSTP>::hysterically_debugged)
             db<TSTP_MAC<Radio>>(TRC) << "TSTP_MAC::rx_data(id=" << id << ")" << endl;
 
-        //FIXME: no need to set both flags
         _in_rx_data = true;
         _in_rx_mf = false;
         Radio::power(Power_Mode::FULL);
@@ -290,7 +294,8 @@ private:
             Radio::copy_to_nic(&_mf, sizeof(Microframe));
             Timer::interrupt(_mf_time, tx_mf);
         } else {
-            _tx_pending->frame()->data<Header>()->last_hop_time(_mf_time + Timer::us2count(TX_DELAY)); // TODO: shouldn't TURNAROUND_TIME be added too?
+            // The precise time when this frame is actually sent by the physical layer
+            _tx_pending->frame()->data<Header>()->last_hop_time(_mf_time + Timer::us2count(TX_DELAY + Tu));
             Radio::copy_to_nic(_tx_pending->frame(), _tx_pending->size());
             Timer::interrupt(_mf_time, tx_data);
         }
