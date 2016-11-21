@@ -84,6 +84,12 @@ template<> struct Traits<Serial_Display>: public Traits<void>
     static const int TAB_SIZE = 8;
 };
 
+template<> struct Traits<Xor_Cipher>: public Traits<void>
+{
+    static const bool enabled = true;
+    static const unsigned int KEY_SIZE = 16;
+};
+
 __END_SYS
 
 #include __ARCH_TRAITS_H

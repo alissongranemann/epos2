@@ -20,10 +20,10 @@ template<> struct Traits<Build>
     enum {LIBRARY, BUILTIN, KERNEL};
     static const unsigned int MODE = LIBRARY;
 
-    enum {IA32, AVR8, ARMv7};
+    enum {IA32, ARMv7};
     static const unsigned int ARCHITECTURE = ARMv7;
 
-    enum {PC, ATmega, Cortex};
+    enum {PC, Cortex};
     static const unsigned int MACHINE = Cortex;
 
     enum {Legacy_PC, eMote3, LM3S811, Zynq};
@@ -82,6 +82,12 @@ template<> struct Traits<Serial_Display>: public Traits<void>
     static const int COLUMNS = 80;
     static const int LINES = 24;
     static const int TAB_SIZE = 8;
+};
+
+template<> struct Traits<Xor_Cipher>: public Traits<void>
+{
+    static const bool enabled = true;
+    static const unsigned int KEY_SIZE = 16;
 };
 
 __END_SYS

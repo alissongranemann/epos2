@@ -99,6 +99,8 @@ class Serial_Display;
 class Keyboard;
 class Serial_Keyboard;
 class Scratchpad;
+class Cipher;
+class Xor_Cipher;
 class GPIO;
 class I2C;
 class ADC;
@@ -153,6 +155,8 @@ class Clock;
 class Chronometer;
 class Alarm;
 class Delay;
+
+class Diffie_Hellman;
 
 class Network;
 

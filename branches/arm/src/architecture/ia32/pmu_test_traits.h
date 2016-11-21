@@ -26,7 +26,7 @@ template<> struct Traits<Build>
     enum {PC, Cortex};
     static const unsigned int MACHINE = PC;
 
-    enum {Legacy_PC, eMote3, LM3S811};
+    enum {Legacy_PC, eMote3, LM3S811, Zynq};
     static const unsigned int MODEL = Legacy_PC;
 
     static const unsigned int CPUS = 1;
@@ -82,6 +82,12 @@ template<> struct Traits<Serial_Display>: public Traits<void>
     static const int COLUMNS = 80;
     static const int LINES = 24;
     static const int TAB_SIZE = 8;
+};
+
+template<> struct Traits<Xor_Cipher>: public Traits<void>
+{
+    static const bool enabled = true;
+    static const unsigned int KEY_SIZE = 16;
 };
 
 __END_SYS
