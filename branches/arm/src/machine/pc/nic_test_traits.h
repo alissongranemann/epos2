@@ -83,7 +83,7 @@ template<> struct Traits<Serial_Display>: public Traits<void>
     static const int TAB_SIZE = 8;
 };
 
-template<> struct Traits<Xor_Cipher>: public Traits<void>
+template<> template <unsigned int S> struct Traits<Software_AES<S>>: public Traits<void>
 {
     static const bool enabled = true;
     static const unsigned int KEY_SIZE = 16;

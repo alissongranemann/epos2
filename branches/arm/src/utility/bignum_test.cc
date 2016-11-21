@@ -9,8 +9,8 @@
 
 using namespace EPOS;
 
-const int ITERATIONS = 125000;
-const int SIZE = 16;
+const unsigned int ITERATIONS = 125000;
+const unsigned int SIZE = 16;
 
 OStream cout;
 

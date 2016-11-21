@@ -95,7 +95,7 @@ template<> struct Traits<Serial_Keyboard>: public Traits<void>
     static const bool enabled = false;
 };
 
-template<> struct Traits<Xor_Cipher>: public Traits<void>
+template<> template <unsigned int S> struct Traits<Software_AES<S>>: public Traits<void>
 {
     static const bool enabled = true;
     static const unsigned int KEY_SIZE = 16;

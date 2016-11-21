@@ -6,7 +6,7 @@ __BEGIN_SYS
 
 // Class attributes
 //TODO: base point is dependent of SECRET_SIZE
-const char Diffie_Hellman::_default_base_point_x[SECRET_SIZE] =
+const unsigned char Diffie_Hellman::_default_base_point_x[SECRET_SIZE] =
 {
     '\x86', '\x5B', '\x2C', '\xA5',
     '\x7C', '\x60', '\x28', '\x0C',
@@ -14,7 +14,7 @@ const char Diffie_Hellman::_default_base_point_x[SECRET_SIZE] =
     '\x52', '\xF7', '\x1F', '\x16'
 };
 
-const char Diffie_Hellman::_default_base_point_y[SECRET_SIZE] =
+const unsigned char Diffie_Hellman::_default_base_point_y[SECRET_SIZE] =
 {
     '\x83', '\x7A', '\xED', '\xDD',
     '\x92', '\xA2', '\x2D', '\xC0',

@@ -100,7 +100,8 @@ class Keyboard;
 class Serial_Keyboard;
 class Scratchpad;
 class Cipher;
-class Xor_Cipher;
+template<unsigned int KEY_SIZE>
+class Software_AES;
 class GPIO;
 class I2C;
 class ADC;
@@ -157,6 +158,7 @@ class Alarm;
 class Delay;
 
 class Diffie_Hellman;
+class Poly1305;
 
 class Network;
 

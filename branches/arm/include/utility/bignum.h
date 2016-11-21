@@ -10,9 +10,10 @@ __BEGIN_UTIL
 // This class implements a prime finite field (Fp or GF(p))
 // It basically consists of (possibly) big numbers between 0 and a prime modulo, with + - * / operators
 // Primarily meant to be used primarily by asymmetric cryptography (e.g. Diffie-Hellman)
-template<unsigned int SIZE = 16>
+template<unsigned int SIZE>
 class Bignum
 {
+    friend class _SYS::Poly1305;
 public:
     typedef unsigned int Digit;
     typedef unsigned long long Double_Digit;
@@ -37,7 +38,7 @@ public:
     Bignum(unsigned int n = 0) __attribute__((noinline)) {
         *this = n;
     }
-    Bignum(const char * bytes, unsigned int len) {
+    Bignum(const unsigned char * bytes, unsigned int len) {
         for(unsigned int i = 0, j = 0; i < DIGITS; i++) {
             _data[i] = 0;
             for(unsigned int k = 0; k < sizeof(Digit) && j < len; k++, j++)

@@ -75,8 +75,8 @@ private:
 	Private_Key _private;
 	Elliptic_Curve_Point _base_point;
 	Elliptic_Curve_Point _public;
-	static const char _default_base_point_x[SECRET_SIZE];
-	static const char _default_base_point_y[SECRET_SIZE];
+	static const unsigned char _default_base_point_x[SECRET_SIZE];
+	static const unsigned char _default_base_point_y[SECRET_SIZE];
 };
 
 __END_SYS
