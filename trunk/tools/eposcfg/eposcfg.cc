@@ -172,7 +172,6 @@ int main(int argc, char **argv)
         printf("%s\n", str_cfg_values[idx]);
     else {
         fprintf(stderr, "ERROR! Configuration \"%s\" not supported!\n", argv[1]);
-        printf("%d\n", idx);
         return 1;
     }
 
