@@ -10,9 +10,6 @@ void ARMv7_A_PMU::init()
 {
     db<Init, PMU>(TRC) << "PMU::init()" << endl;
 
-    // Enable user-mode access to the performance counter
-    pmuserenr(PMUSERENR_EN);
-
     // Set global enable, reset all counters including cycle counter, and
     // export the events
     pmcr(pmcr() | PMCR_E | PMCR_P | PMCR_C | PMCR_X);

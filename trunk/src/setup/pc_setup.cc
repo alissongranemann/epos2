@@ -153,7 +153,7 @@ private:
 //========================================================================
 PC_Setup::PC_Setup(char * boot_image)
 {
-    // Get boot imaged previosly loaded and relocated
+    // Get boot imaged previously loaded and relocated
     bi = reinterpret_cast<char *>(boot_image);
 
     si = reinterpret_cast<System_Info *>(bi);

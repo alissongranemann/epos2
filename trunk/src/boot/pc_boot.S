@@ -373,7 +373,7 @@ kf_emptyt:      test    al,#2           ; input buffer full?
 kf_delay:	ret
 
 ;========================================================================
-; SETUP_TRAMPOLIE
+; SETUP_TRAMPOLINE
 ;
 ; Desc: copy the SMP trampoline code to a page-aligned address
 ;========================================================================

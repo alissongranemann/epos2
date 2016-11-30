@@ -13,10 +13,11 @@ class ARMv7_A_PMU: public PMU_Common
 private:
     typedef CPU::Reg32 Reg32;
 
-    static const unsigned int CHANNELS = 6;
     static const unsigned int EVENTS = 96;
 
 public:
+    static const unsigned int CHANNELS = 6;
+
     // Useful bits in the PMCR register
     enum {                      // Description                          Type    Value after reset
         PMCR_E = 1 << 0,        // Enable all counters                  r/w
@@ -24,11 +25,6 @@ public:
         PMCR_C = 1 << 2,        // Cycle counter reset                  r/w
         PMCR_D = 1 << 3,        // Enable cycle counter prescale (1/64) r/w
         PMCR_X = 1 << 4,        // Export events                        r/w
-    };
-
-    // Useful bits in the PMUSERENR register
-    enum {                      // Description                          Type    Value after reset
-        PMUSERENR_EN = 1 << 0,  // User mode access enable              r/w     0
     };
 
     // Useful bits in the PMCNTENSET register
@@ -114,7 +110,7 @@ public:
         assert((static_cast<unsigned int>(channel) < CHANNELS) && (static_cast<unsigned int>(event) < EVENTS));
         db<PMU>(TRC) << "PMU::config(c=" << channel << ",e=" << event << ",f=" << flags << ")" << endl;
         pmselr(channel);
-        pmxevtyper(event);
+        pmxevtyper(_events[event]);
         start(channel);
     }
 
@@ -168,9 +164,6 @@ private:
 
     static void pmxevcntr(Reg32 reg) { ASM("mcr p15, 0, %0, c9, c13, 2\n\t" : : "r"(reg)); }
     static Reg32 pmxevcntr() { Reg32 reg; ASM("mrc p15, 0, %0, c9, c13, 2\n\t" : "=r"(reg) : ); return reg; }
-
-    static void pmuserenr(Reg32 reg) { ASM("mcr p15, 0, %0, c9, c14, 0\n\t" : : "r"(reg)); }
-    static Reg32 pmuserenr() { Reg32 reg; ASM("mrc p15, 0, %0, c9, c14, 0\n\t" : "=r"(reg) : ); return reg; }
 
 private:
     static const Reg32 _events[EVENTS];

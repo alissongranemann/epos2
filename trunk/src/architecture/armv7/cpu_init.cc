@@ -3,6 +3,7 @@
 #include <cpu.h>
 #include <tsc.h>
 #include <mmu.h>
+#include <pmu.h>
 #include <system.h>
 #include <system/info.h>
 
@@ -18,6 +19,12 @@ void CPU::init()
         MMU::init();
     else
         db<Init, MMU>(WRN) << "MMU is disabled!" << endl;
+
+    // Initialize the PMU
+#ifdef __mmod_zynq__
+    if(Traits<PMU>::enabled)
+        PMU::init();
+#endif
 
     if(Traits<TSC>::enabled)
         TSC::init();
