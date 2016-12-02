@@ -1,5 +1,3 @@
-// EPOS TI CC2538 IEEE 802.15.4 NIC Mediator Test Program
-
 #include <smart_data.h>
 #include <utility/ostream.h>
 #include <nic.h>
@@ -10,11 +8,42 @@ using namespace EPOS;
 
 OStream cout;
 
+unsigned int seed;
+
+class Serial_Sensor: public Keyboard
+{
+public:
+    static const unsigned int UNIT = TSTP::Unit::Acceleration;
+    static const unsigned int NUM = TSTP::Unit::I32;
+    static const int ERROR = 0; // Unknown
+
+    static const bool INTERRUPT = true;
+    static const bool POLLING = false;
+
+public:
+    Serial_Sensor() {}
+
+    static void sense(unsigned int dev, Smart_Data<Serial_Sensor> * data) {
+        data->_value = seed++;
+    }
+
+    static void actuate(unsigned int dev, Smart_Data<Serial_Sensor> * data, void * command) {}
+};
+
+typedef Smart_Data<Serial_Sensor> Serial;
+
+Coordinates c1, c2, c3;
+
 int main()
 {
     cout << "TSTP MAC test" << endl;
     cout << "Configuration: " << endl;
 
+    c1 = Coordinates(0, 100, 0);
+    c2 = Coordinates(100, 100, 0);
+    c3 = Coordinates(100, 0, 0);
+
+    cout << c1 << " " << c2 << " " << c3 << endl;
     /*
     cout << "INT_HANDLING_DELAY = " << TSTP_MAC<CC2538RF>::INT_HANDLING_DELAY << endl;
     cout << "TX_DELAY = " << TSTP_MAC<CC2538RF>::TX_DELAY << endl;
@@ -51,25 +80,113 @@ int main()
     if(TSTP::here() == TSTP::sink()) {
         cout << "Sink" << endl;
 
-        Region dst(Coordinates(10, 0, 0), 0, 0, 20000000);
-        Acceleration a0(dst, 3000000, 1000000);
+        const unsigned char id1[] = "\x00\x4b\x12\x00\xec\x82\x0d\x06";
+        //const unsigned char id2[] = "\x00\x4b\x12\x00\xae\x82\x0d\x06";
+        const unsigned char id2[] = "\x00\x4b\x12\x00\xca\x0e\x16\x06";
+        //const unsigned char id3[] = "\x00\x4b\x12\x00\x67\x83\x0d\x06";
+        const unsigned char id3[] = "\x00\x4b\x12\x00\xee\x0e\x16\x06";
+        TSTP::Security::add_peer(id1, sizeof(id1), Region(c1, 0, TSTP::now(), -1));
+        TSTP::Security::add_peer(id2, sizeof(id2), Region(c2, 0, TSTP::now(), -1));
+        TSTP::Security::add_peer(id3, sizeof(id3), Region(c3, 0, TSTP::now(), -1));
 
-        while(a0 != 'a') {
-            cout << "a0 = " << a0 << endl;
-            Delay(500000);
+        //while(true)
+        //    Thread::self()->suspend();
+
+        Delay(4 * 10 * 1000 * 1000);
+
+        while(true) {
+            while(true)
+            {
+                const unsigned int PERIOD = 4 * TSTP_MAC<CC2538RF>::PERIOD +  3 * 2 * TSTP_MAC<CC2538RF>::PERIOD;
+
+                cout << "Sending Interest 1" << endl;
+                Region dst1(c1, 0, TSTP::now(), TSTP::now() + 10 * PERIOD);
+                Serial a1(dst1, 3 * PERIOD, PERIOD);
+
+                cout << "Sending Interest 2" << endl;
+                Region dst2(c2, 0, TSTP::now(), TSTP::now() + 10 * PERIOD);
+                Serial a2(dst2, 3 * PERIOD, PERIOD);
+
+                cout << "Sending Interest 3" << endl;
+                Region dst3(c3, 0, TSTP::now(), TSTP::now() + 10 * PERIOD);
+                Serial a3(dst3, 3 * PERIOD, PERIOD);
+
+                Delay(3 * PERIOD);
+
+                while(dst1.contains(dst1.center, TSTP::now())) {
+                    Delay(1 * PERIOD);
+                    cout << "a1 = " << a1 << endl;
+                    cout << "a2 = " << a2 << endl;
+                    cout << "a3 = " << a3 << endl;
+                }
+
+                {
+                    Delay(3 * PERIOD);
+                }
+            }
+            /*
+            {
+                cout << "Sending Interest 1" << endl;
+
+                Region dst(Coordinates(0, 100, 0), 0, TSTP::now(), TSTP::now() + 10000000);
+                Serial a0(dst, 3000000, 1000000);
+
+                Delay(1000000);
+
+                while(dst.contains(dst.center, TSTP::now())) {
+                    Delay(300000);
+                    cout << "a0 = " << static_cast<char>(a0) << endl;
+                }
+            }
+            {
+                cout << "Sending Interest 2" << endl;
+
+                Region dst(Coordinates(100, 100, 0), 0, TSTP::now(), TSTP::now() + 10000000);
+                Serial a0(dst, 3000000, 1000000);
+
+                Delay(1000000);
+
+                while(dst.contains(dst.center, TSTP::now())) {
+                    Delay(500000);
+                    cout << "a0 = " << static_cast<char>(a0) << endl;
+                }
+            }
+            {
+                cout << "Sending Interest 3" << endl;
+
+                Region dst(Coordinates(100, 0, 0), 0, TSTP::now(), TSTP::now() + 10000000);
+                Serial a0(dst, 3000000, 1000000);
+
+                Delay(1000000);
+
+                while(dst.contains(dst.center, TSTP::now())) {
+                    Delay(500000);
+                    cout << "a0 = " << static_cast<char>(a0) << endl;
+                }
+            }
+            */
         }
-
-        while(true);
     } else {
         cout << "Sensor" << endl;
 
-        Acceleration a0(0, 2000000, Acceleration::ADVERTISED);
+        while(Traits<TSTP_MAC<void>>::sniffer)
+            Thread::self()->suspend();
 
+        if(TSTP::here() == c1)
+            seed = 1000000;
+        else if(TSTP::here() == c2)
+            seed = 2000000;
+        else if(TSTP::here() == c3)
+            seed = 3000000;
+
+        Serial a0(0, 250000, Serial::ADVERTISED);
+
+        unsigned int n = 0;
         while(true) {
-            cout << "a0 = " << a0 << endl;
-            Delay(500000);
+            //cout << "a0 = " << a0 << endl;
+            Delay(10000000);
+            cout << "Ping " << n++ << endl;
         }
-        while(true);
     }
 
     return 0;

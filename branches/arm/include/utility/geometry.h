@@ -19,7 +19,7 @@ public:
 
     Point(const T & xi = 0, const T & yi = 0): x(xi), y(yi) {}
 
-    Distance operator-(const Point<T, 2> & p) const {
+    Distance operator-(const Point & p) const {
         // Care for unsigned T
         Larger_T xx = p.x > x ? p.x - x : x - p.x;
         Larger_T yy = p.y > y ? p.y - y : y - p.y;
@@ -61,7 +61,7 @@ public:
     bool operator!=(const Point & p) const { return !(*this == p); }
 
     friend OStream & operator<<(OStream & os, const Point & c) {
-        os << "(" << Print_Type(c.x) << "," << Print_Type(c.y) << "," << static_cast<Print_Type>(c.z) << ")";
+        os << "(" << static_cast<Print_Type>(c.x) << "," << static_cast<Print_Type>(c.y) << "," << static_cast<Print_Type>(c.z) << ")";
         return os;
     }
 
@@ -71,22 +71,24 @@ public:
 template<typename T>
 struct Sphere
 {
+private:
+    typedef typename IF<EQUAL<char, T>::Result, int, T>::Result Print_Type;
+
+public:
     typedef Point<T, 3> Center;
-    typedef typename Point<T, 3>::Distance Distance;
-    typedef typename Point<T, 3>::Distance Radius;
 
     Sphere() {}
-    Sphere(const Center & c, const Radius & r = 0): center(c), radius(r) { }
+    Sphere(const Center & c, const T & r = 0): center(c), radius(r) { }
 
     bool contains(const Center & c) const { return (center - c) <= radius; }
 
     friend OStream & operator<<(OStream & os, const Sphere & s) {
-        os << "{" << "c=" << s.center << ",r=" << s.radius << "}";
+        os << "{" << "c=" << s.center << ",r=" << static_cast<Print_Type>(s.radius) << "}";
         return os;
     }
 
     Center center;
-    Radius radius;
+    T radius;
 };
 
 __END_UTIL

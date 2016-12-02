@@ -106,7 +106,7 @@ public:
                 Transducer::sense(_device, this); // read sensor
                 _time = TSTP::now();
             } else // Other data sources must have called update() timely
-                db<Smart_Data>(WRN) << "Smart_Data::get(this=" << this << ",exp=" << _expiry << ",val=" << _value << ") => expired!" << endl;
+                db<Smart_Data>(WRN) << "Smart_Data::get(this=" << this << ",exp=" <<_time +  _expiry << ",val=" << _value << ") => expired!" << endl;
         return _value;
     }
 
@@ -160,7 +160,7 @@ private:
             _value = response->value<Value>();
             _error = response->error();
             _coordinates = response->origin();
-            _time = buffer->origin_time;
+            _time = response->time();
             db<Smart_Data>(INF) << "Smart_Data:update[R]:this=" << this << " => " << *this << endl;
         }
         case TSTP::COMMAND: {

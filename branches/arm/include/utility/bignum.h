@@ -89,42 +89,51 @@ public:
     void operator*=(const Bignum & b) __attribute__((noinline)) { // _data = (_data * b._data) % _mod
         if(b == 1) return;
 
-        db<Bignum>(TRC) << "Bignum::operator*=(this=" << *this << ",other=" << b << ",mod=[";
-        for(unsigned int i = 0; i < DIGITS - 1; i++)
-            db<Bignum>(TRC) << _mod.data[i] << ",";
-        db<Bignum>(TRC) << _mod.data[DIGITS - 1] << "]) => ";
+        if(Traits<Bignum>::hysterically_debugged) {
+            db<Bignum>(TRC) << "Bignum::operator*=(this=" << *this << ",other=" << b << ",mod=[";
+            for(unsigned int i = 0; i < DIGITS - 1; i++)
+                db<Bignum>(TRC) << _mod.data[i] << ",";
+            db<Bignum>(TRC) << _mod.data[DIGITS - 1] << "]) => ";
+        }
 
         Digit mult_result[2 * DIGITS];
         simple_mult(mult_result, _data, b._data, DIGITS);
         barrett_reduction(_data, mult_result, DIGITS);
 
-        db<Bignum>(TRC) << *this << endl;
+        if(Traits<Bignum>::hysterically_debugged)
+            db<Bignum>(TRC) << *this << endl;
     }
 
     void operator+=(const Bignum &b)__attribute__((noinline)) { // _data = (_data + b._data) % _mod
-        db<Bignum>(TRC) << "Bignum::operator+=(this=" << *this << ",other=" << b << ",mod=[";
-        for(unsigned int i = 0; i < DIGITS - 1; i++)
-            db<Bignum>(TRC) << _mod.data[i] << ",";
-        db<Bignum>(TRC) << _mod.data[DIGITS - 1] << "]) => ";
+        if(Traits<Bignum>::hysterically_debugged) {
+            db<Bignum>(TRC) << "Bignum::operator+=(this=" << *this << ",other=" << b << ",mod=[";
+            for(unsigned int i = 0; i < DIGITS - 1; i++)
+                db<Bignum>(TRC) << _mod.data[i] << ",";
+            db<Bignum>(TRC) << _mod.data[DIGITS - 1] << "]) => ";
+        }
 
         if(simple_add(_data, _data, b._data, DIGITS))
             simple_sub(_data, _data, _mod.data, DIGITS);
         if(cmp(_data, _mod.data, DIGITS) >= 0)
             simple_sub(_data, _data, _mod.data, DIGITS);
 
-        db<Bignum>(TRC) << *this << endl;
+        if(Traits<Bignum>::hysterically_debugged)
+            db<Bignum>(TRC) << *this << endl;
     }
 
     void operator-=(const Bignum &b)__attribute__((noinline)) { // _data = (_data - b._data) % _mod
-        db<Bignum>(TRC) << "Bignum::operator-=(this=" << *this << ",other=" << b << ",mod=[";
-        for(unsigned int i = 0; i < DIGITS - 1; i++)
-            db<Bignum>(TRC) << _mod.data[i] << ",";
-        db<Bignum>(TRC) << _mod.data[DIGITS - 1] << "]) => ";
+        if(Traits<Bignum>::hysterically_debugged) {
+            db<Bignum>(TRC) << "Bignum::operator-=(this=" << *this << ",other=" << b << ",mod=[";
+            for(unsigned int i = 0; i < DIGITS - 1; i++)
+                db<Bignum>(TRC) << _mod.data[i] << ",";
+            db<Bignum>(TRC) << _mod.data[DIGITS - 1] << "]) => ";
+        }
 
         if(simple_sub(_data, _data, b._data, DIGITS))
             simple_add(_data, _data, _mod.data, DIGITS);
 
-        db<Bignum>(TRC) << *this << endl;
+        if(Traits<Bignum>::hysterically_debugged)
+            db<Bignum>(TRC) << *this << endl;
     }
 
     // Shift left (actually shift right, because of little endianness)
@@ -132,7 +141,7 @@ public:
     // - Returns carry bit
     bool multiply_by_two(bool carry = 0) __attribute__((noinline))
     {
-        if(!carry) {
+        if(Traits<Bignum>::hysterically_debugged && !carry) {
             db<Bignum>(TRC) << "Bignum::multiply_by_two(this=" << *this << ",mod=[";
             for(unsigned int i = 0; i < DIGITS - 1; i++)
                 db<Bignum>(TRC) << _mod.data[i] << ",";
@@ -147,7 +156,7 @@ public:
             carry = next_carry;
         }
 
-        if(!carry)
+        if(Traits<Bignum>::hysterically_debugged && !carry)
             db<Bignum>(TRC) << *this << endl;
 
         return carry;
@@ -158,7 +167,7 @@ public:
     // - Returns carry bit
     bool divide_by_two(bool carry = 0) __attribute__((noinline))
     {
-        if(!carry) {
+        if(Traits<Bignum>::hysterically_debugged && !carry) {
             db<Bignum>(TRC) << "Bignum::divide_by_two(this=" << *this << ",mod=[";
             for(unsigned int i = 0; i < DIGITS - 1; i++)
                 db<Bignum>(TRC) << _mod.data[i] << ",";
@@ -173,7 +182,7 @@ public:
             carry = next_carry;
         }
 
-        if(!carry)
+        if(Traits<Bignum>::hysterically_debugged && !carry)
             db<Bignum>(TRC) << *this << endl;
 
         return carry;

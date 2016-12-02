@@ -27,7 +27,11 @@ CC2538::CC2538(unsigned int unit): _unit(unit), _rx_cur_consume(0), _rx_cur_prod
     xreg(FRMCTRL0) |= AUTO_CRC; // Enable auto-CRC
 
     if(ieee802_15_4_mac) {
-        xreg(FRMFILT0) |= FRAME_FILTER_EN; // Enable frame filtering
+        // Configure frame filtering by hardware
+        if(CC2538RF::promiscuous)
+            xreg(FRMFILT0) &= ~FRAME_FILTER_EN;
+        else
+            xreg(FRMFILT0) |= FRAME_FILTER_EN;
         xreg(SRCMATCH) |= SRC_MATCH_EN; // Enable automatic source address matching
         xreg(FRMCTRL0) |= AUTO_ACK; // Enable auto ACK
         xreg(FRMCTRL1) |= SET_RXENMASK_ON_TX; // Enter receive mode after ISTXON
@@ -39,15 +43,6 @@ CC2538::CC2538(unsigned int unit): _unit(unit), _rx_cur_consume(0), _rx_cur_prod
 
     channel(13);
 
-    reset(); // Reset statistics
-
-    // Enable useful device interrupts
-    // INT_TXDONE is polled by CC2538RF::tx_done()
-    // INT_RXPKTDONE is polled by CC2538RF::rx_done()
-    xreg(RFIRQM0) = INT_FIFOP;
-    xreg(RFIRQM1) = 0;
-    xreg(RFERRM) = 0;
-
     if(Traits<CC2538>::gpio_debug) {
         // Enable debug signals to GPIO
         GPIO p_tx('C',4,GPIO::OUT,GPIO::FLOATING); // Configure GPIO pin C4
@@ -57,6 +52,22 @@ CC2538::CC2538(unsigned int unit): _unit(unit), _rx_cur_consume(0), _rx_cur_prod
         cctest(CCTEST_OBSSEL4) = OBSSEL_SIG0_EN; // Route signal 0 to GPIO pin C4
         cctest(CCTEST_OBSSEL6) = OBSSEL_SIG1_EN; // Route signal 1 to GPIO pin C6
     }
+
+    reset(); // Reset statistics
+
+    // Clear interrupts
+    sfr(RFIRQF0) = 0;
+    sfr(RFIRQF1) = 0;
+
+    // Clear error flags
+    sfr(RFERRF) = 0;
+
+    // Enable useful device interrupts
+    // INT_TXDONE is polled by CC2538RF::tx_done()
+    // INT_RXPKTDONE is polled by CC2538RF::rx_done()
+    xreg(RFIRQM0) = INT_FIFOP;
+    xreg(RFIRQM1) = 0;
+    xreg(RFERRM) = 0;
 
     MAC::constructor_epilogue(); // Device is configured, let the MAC use it
 }

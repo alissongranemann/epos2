@@ -44,6 +44,15 @@ public:
         CONTROL   = 3
     };
 
+    // Control packet subtypes
+    typedef unsigned char Subtype;
+    enum {
+        DH_REQUEST   = 0,
+        DH_RESPONSE  = 1,
+        AUTH_REQUEST = 2,
+        AUTH_GRANTED = 3
+    };
+
     // Scale for local network's geographic coordinates
     enum Scale {
         CMx50_8  = 0,
@@ -65,6 +74,7 @@ public:
         typedef char Number;
 
         _Coordinates(Number x = 0, Number y = 0, Number z = 0): Point<Number, 3>(x, y, z) {}
+        _Coordinates(const Point<Number, 3> & p): Point<Number, 3>(p) {}
     } __attribute__((packed));
     typedef _Coordinates<SCALE> Coordinates;
 
@@ -74,15 +84,20 @@ public:
     {
         typedef typename _Coordinates<S>::Number Number;
         typedef Sphere<Number> Base;
+        typedef typename Base::Center Center;
 
-        _Region(const Coordinates & c, const Number & r, const Time & _t0, const Time & _t1): Base(c, r), t0(_t0), t1(_t1) {}
+        _Region(const Center & c, const Number & r, const Time & _t0, const Time & _t1)
+        : Base(c, r), t0(_t0), t1(_t1) {}
 
-        bool contains(const Coordinates & c, const Time & t) const { return ((t >= t0) && (t <= t1)) && Base::contains(c); }
+        bool contains(const Center & c, const Time & t) const {
+            return ((t >= t0) && (t <= t1)) && Base::contains(c);
+        }
 
         friend Debug & operator<<(Debug & db, const _Region & r) {
             db << "{" << reinterpret_cast<const Base &>(r) << ",t0=" << r.t0 << ",t1=" << r.t1 << "}";
             return db;
         }
+
         friend OStream & operator<<(OStream & db, const _Region & r) {
             db << "{" << reinterpret_cast<const Base &>(r) << ",t0=" << r.t0 << ",t1=" << r.t1 << "}";
             return db;
@@ -202,7 +217,7 @@ public:
     class _Frame: public Header
     {
     public:
-        static const unsigned int MTU = 100;
+        static const unsigned int MTU = TSTP_Common::MTU;
         typedef unsigned char Data[MTU];
 
     public:
@@ -414,6 +429,7 @@ struct TSTP_Common::_Coordinates<TSTP_Common::CM_16>: public Point<short, 3>
     typedef short Number;
 
     _Coordinates(Number x = 0, Number y = 0, Number z = 0): Point<Number, 3>(x, y, z) {}
+    _Coordinates(const Point<Number, 3> & p): Point<Number, 3>(p) {}
 } __attribute__((packed));
 
 template<>
@@ -422,6 +438,7 @@ struct TSTP_Common::_Coordinates<TSTP_Common::CMx25_16>: public Point<short, 3>
     typedef short Number;
 
     _Coordinates(Number x = 0, Number y = 0, Number z = 0): Point<Number, 3>(x, y, z) {}
+    _Coordinates(const Point<Number, 3> & p): Point<Number, 3>(p) {}
 } __attribute__((packed));
 
 template<>
@@ -430,6 +447,7 @@ struct TSTP_Common::_Coordinates<TSTP_Common::CM_32>: public Point<long, 3>
     typedef long Number;
 
     _Coordinates(Number x = 0, Number y = 0, Number z = 0): Point<Number, 3>(x, y, z) {}
+    _Coordinates(const Point<Number, 3> & p): Point<Number, 3>(p) {}
 } __attribute__((packed));
 
 template<>
@@ -478,7 +496,13 @@ __END_SYS
 #include <utility/observer.h>
 #include <utility/buffer.h>
 #include <utility/hash.h>
+#include <utility/string.h>
+#include <utility/array.h>
 #include <network.h>
+#include <diffie_hellman.h>
+#include <cipher.h>
+#include <thread.h>
+#include <poly1305.h>
 
 __BEGIN_SYS
 
@@ -486,7 +510,7 @@ class TSTP: public TSTP_Common, private NIC::Observer
 {
     template<typename> friend class Smart_Data;
 
-public:    
+public:
     typedef NIC::Buffer Buffer;
 
     // Packet
@@ -637,36 +661,122 @@ public:
         Data _data;
     } __attribute__((packed));
 
-    // Control Message
+    // Control Message extended Header
     class Control: public Header
     {
-    private:
-        typedef unsigned char Data[MTU - sizeof(Region) - sizeof(Unit)];
+    protected:
+        Control(const Subtype & st, bool tr = false, unsigned char c = 0, const Time & ot = 0, const Coordinates & o = 0, const Coordinates & l = 0, const Version & v = V0)
+        : Header(CONTROL, tr, c, ot, o, l, v), _subtype(st) {}
 
     public:
-        Control(const Unit & unit, const Region & region)
-        : Header(CONTROL, 0, 0, now(), here(), here()), _region(region), _unit(unit) {}
-
-        const Region & region() const { return _region; }
-        const Unit & unit() const { return _unit; }
-
-        template<typename T>
-        T * command() { return reinterpret_cast<T *>(&_data); }
-
-        template<typename T>
-        T * data() { return reinterpret_cast<T *>(&_data); }
+        const Subtype & subtype() const { return _subtype; }
 
         friend Debug & operator<<(Debug & db, const Control & m) {
-            db << reinterpret_cast<const Header &>(m) << ",u=" << m._unit << ",reg=" << m._region;
+            db << reinterpret_cast<const Header &>(m) << ",st=" << m._subtype;
             return db;
         }
 
-    protected:
-        Region _region;
-        Unit _unit;
-        Data _data;
+    private:
+        Subtype _subtype;
     } __attribute__((packed));
 
+    // Security types
+    typedef _UTIL::Array<unsigned char, 16> Node_ID;
+    typedef _UTIL::Array<unsigned char, 16> Auth;
+    typedef _UTIL::Array<unsigned char, 16> OTP;
+    typedef Diffie_Hellman::Public_Key Public_Key;
+
+    // Diffie-Hellman Request Security Bootstrap Control Message
+    class DH_Request: public Control
+    {
+    public:
+        DH_Request(const Coordinates & dst, const Public_Key & k)
+        : Control(DH_REQUEST, 0, 0, now(), here(), here()), _destination(dst), _public_key(k) { }
+
+        Coordinates destination() { return _destination; }
+        void destination(const Coordinates  & d) { _destination = d; }
+
+        Public_Key key() { return _public_key; }
+        void key(const Public_Key & k) { _public_key = k; }
+
+        friend Debug & operator<<(Debug & db, const DH_Request & m) {
+            db << reinterpret_cast<const Control &>(m) << ",d=" << m._destination << ",k=" << m._public_key;
+            return db;
+        }
+
+    private:
+        Coordinates _destination;
+        Public_Key _public_key;
+    //} __attribute__((packed)); // TODO
+    };
+
+    // Diffie-Hellman Response Security Bootstrap Control Message
+    class DH_Response: public Control
+    {
+    public:
+        DH_Response(const Public_Key & k)
+        : Control(DH_RESPONSE, 0, 0, now(), here(), here()), _public_key(k) { }
+
+        Public_Key key() { return _public_key; }
+        void key(const Public_Key & k) { _public_key = k; }
+
+        friend Debug & operator<<(Debug & db, const DH_Response & m) {
+            db << reinterpret_cast<const Control &>(m) << ",k=" << m._public_key;
+            return db;
+        }
+
+    private:
+        Public_Key _public_key;
+    //} __attribute__((packed)); // TODO
+    };
+
+    // Authentication Request Security Bootstrap Control Message
+    class Auth_Request: public Control
+    {
+    public:
+        Auth_Request(const Auth & a, const OTP & o)
+        : Control(AUTH_REQUEST, 0, 0, now(), here(), here()), _auth(a), _otp(o) { }
+
+        const Auth & auth() const { return _auth; }
+        void auth(const Auth & a) { _auth = a; }
+
+        const OTP & otp() const { return _otp; }
+        void otp(const OTP & o) { _otp = o; }
+
+        friend Debug & operator<<(Debug & db, const Auth_Request & m) {
+            db << reinterpret_cast<const Control &>(m) << ",a=" << m._auth << ",o=" << m._otp;
+            return db;
+        }
+
+    private:
+        Auth _auth;
+        OTP _otp;
+    //} __attribute__((packed)); // TODO
+    };
+
+    // Athentication Granted Security Bootstrap Control Message
+    class Auth_Granted: public Control
+    {
+    public:
+        Auth_Granted(const Coordinates & dst, const Auth & a)
+        : Control(AUTH_GRANTED, 0, 0, now(), here(), here()), _destination(dst), _auth(a) { }
+
+        Coordinates destination() { return _destination; }
+        void destination(const Coordinates  & d) { _destination = d; }
+
+        const Auth & auth() const { return _auth; }
+        void auth(const Auth & a) { _auth = a; }
+
+        friend Debug & operator<<(Debug & db, const Auth_Granted & m) {
+            db << reinterpret_cast<const Control &>(m) << ",d=" << m._destination << ",a=" << m._auth;
+            return db;
+        }
+
+    private:
+        Coordinates _destination;
+        Auth _auth; // TODO
+    // } __attribute__((packed)); // TODO
+    };
 
     // TSTP Smart Data bindings
     // Interested (binder between Interest messages and Smart Data)
@@ -758,37 +868,46 @@ public:
     public:
         Locator() {
             db<TSTP>(TRC) << "TSTP::Locator()" << endl;
-            TSTP::_nic->attach(this, NIC::TSTP);
         }
         ~Locator();
 
-        static Coordinates here();// { return Coordinates(50,50,50); } // TODO
+        static Coordinates here() { return _here; }
 
-        static void bootstrap();
+        void bootstrap();
 
         static void marshal(Buffer * buf);
 
         void update(NIC::Observed * obs, NIC::Protocol prot, NIC::Buffer * buf);
+
+    private:
+        static Coordinates _here;
     };
 
 
     // TSTP Timekeeper
     class Timekeeper: private NIC::Observer
     {
+        typedef NIC::Timer::Time_Stamp Time_Stamp;
+
     public:
         Timekeeper() {
             db<TSTP>(TRC) << "TSTP::Timekeeper()" << endl;
-            TSTP::_nic->attach(this, NIC::TSTP);
         }
         ~Timekeeper();
 
         static Time now() { return NIC::Timer::read() * 1000000ll / NIC::Timer::frequency(); }
 
-        static void bootstrap();
+        void bootstrap();
 
         static void marshal(Buffer * buf);
 
         void update(NIC::Observed * obs, NIC::Protocol prot, NIC::Buffer * buf);
+
+    private:
+        static Time_Stamp _t0;
+        static Time_Stamp _t1;
+        static Time_Stamp _t2;
+        static Time_Stamp _t3;
     };
 
 
@@ -802,11 +921,10 @@ public:
     public:
         Router() {
             db<TSTP>(TRC) << "TSTP::Router()" << endl;
-            TSTP::_nic->attach(this, NIC::TSTP);
         }
         ~Router();
 
-        static void bootstrap();
+        void bootstrap();
 
         static void marshal(Buffer * buf);
 
@@ -814,6 +932,7 @@ public:
 
     private:
         static void offset(Buffer * buf) {
+            // TODO
             //long long dist = abs(buf->my_distance - (buf->sender_distance - RADIO_RANGE));
             //long long betha = (CCA_TX_GAP * RADIO_RADIUS * 1000000) / (dist * CCA_TX_GAP);
             buf->offset = abs(buf->my_distance - (buf->sender_distance - RADIO_RANGE));
@@ -824,18 +943,229 @@ public:
     // TSTP Security
     class Security: private NIC::Observer
     {
+        friend class TSTP;
+
+        static const unsigned int KEY_MANAGER_PERIOD = 10 * 1000 * 1000;
+        static const unsigned long long KEY_EXPIRY = -1;//100 * KEY_MANAGER_PERIOD;
+
+    public:
+        typedef Diffie_Hellman::Shared_Key Master_Secret;
+
+    private:
+        class Peer;
+        typedef Simple_List<Peer> Peers;
+        class Peer
+        {
+        public:
+            Peer(const Node_ID & id, const Region & v)
+               : _id(id), _valid(v), _el(this) {
+               Security::_cipher.encrypt(_id, _id, _auth);
+            }
+
+            void valid(const Region & r) { _valid = r; }
+            const Region & valid() const { return _valid; }
+
+            bool valid_deploy(const Coordinates & where, const Time & when) {
+                return _valid.contains(where, when);
+            }
+
+            bool valid_request(const Auth & auth, const Coordinates & where, const Time & when) {
+                return !memcmp(auth, _auth, sizeof(Auth)) && _valid.contains(where, when);
+            }
+
+            Peers::Element * link() { return &_el; }
+
+            const Master_Secret & master_secret() const { return _master_secret; }
+            void master_secret(const Master_Secret & ms) { _master_secret = ms; }
+
+            const Auth & auth() const { return _auth; }
+            const Node_ID & id() const { return _id; }
+
+            friend Debug & operator<<(Debug & db, const Peer & p) {
+                db << "{id=" << p._id << ",au=" << p._auth << ",v=" << p._valid << ",ms=" << p._master_secret << ",el=" << &p._el << "}";
+                return db;
+            }
+
+        private:
+            Node_ID _id;
+            Auth _auth;
+            Region _valid;
+            Master_Secret _master_secret;
+            Peers::Element _el;
+        };
+
+        struct Pending_Key;
+        typedef Simple_List<Pending_Key> Pending_Keys;
+        class Pending_Key
+        {
+        public:
+            Pending_Key(const Public_Key & pk) : _master_secret_calculated(false), _creation(TSTP::now()), _public_key(pk), _el(this) {}
+
+            bool expired() { return TSTP::now() - _creation > KEY_EXPIRY; }
+
+            const Master_Secret & master_secret() {
+                if(_master_secret_calculated)
+                    return _master_secret;
+                _master_secret = Security::_dh.shared_key(_public_key);
+                _master_secret_calculated = true;
+                db<TSTP>(INF) << "TSTP::Security::Pending_Key: Master Secret set: " << _master_secret << endl;
+                return _master_secret;
+            }
+
+            Pending_Keys::Element * link() { return &_el; };
+
+            friend Debug & operator<<(Debug & db, const Pending_Key & p) {
+                db << "{msc=" << p._master_secret_calculated << ",c=" << p._creation << ",pk=" << p._public_key << ",ms=" << p._master_secret << ",el=" << &p._el << "}";
+                return db;
+            }
+
+        private:
+            bool _master_secret_calculated;
+            Time _creation;
+            Public_Key _public_key;
+            Master_Secret _master_secret;
+            Pending_Keys::Element _el;
+        };
+
     public:
         Security() {
             db<TSTP>(TRC) << "TSTP::Security()" << endl;
-            TSTP::_nic->attach(this, NIC::TSTP);
+
+            // FIXME: hardcoded Machine ID size of 8
+            // should be something like: Node_ID(Machine::id(), sizeof(Machine::ID));
+            new (&_id) Node_ID(Machine::id(), 8);
+
+            assert(Cipher::KEY_SIZE == sizeof(Node_ID));
+            _cipher.encrypt(_id, _id, _auth);
         }
         ~Security();
 
-        static void bootstrap();
+        static void add_peer(const unsigned char * peer_id, unsigned int id_len, const Region & valid_region) {
+            Node_ID id(peer_id, id_len);
+            Peer * peer = new Peer(id, valid_region);
+            while(CPU::tsl(_peers_lock));
+            _pending_peers.insert(peer->link());
+            _peers_lock = false;
+            if(!_key_manager)
+                _key_manager = new Thread(&key_manager);
+        }
+
+        void bootstrap();
 
         static void marshal(Buffer * buf);
 
         void update(NIC::Observed * obs, NIC::Protocol prot, NIC::Buffer * buf);
+
+    private:
+        static void encrypt(const unsigned char * msg, const Peer * peer, unsigned char * out) {
+            OTP key = otp(peer->master_secret(), peer->id());
+            _cipher.encrypt(msg, key, out);
+        }
+
+        static void decrypt(const unsigned char * msg, const Peer * peer, unsigned char * out) {
+            OTP key = otp(peer->master_secret(), peer->id());
+            _cipher.decrypt(msg, key, out);
+        }
+
+        static OTP otp(const Master_Secret & master_secret, const Node_ID & id) {
+            const unsigned char * ms = reinterpret_cast<const unsigned char *>(&master_secret);
+
+            // mi = ms ^ _id
+            static const unsigned int MI_SIZE = sizeof(Node_ID) > sizeof(Master_Secret) ? sizeof(Node_ID) : sizeof(Master_Secret);
+            unsigned char mi[MI_SIZE];
+            unsigned int i;
+            for(i = 0; (i < sizeof(Node_ID)) && (i < sizeof(Master_Secret)); i++)
+                mi[i] = id[i] ^ ms[i];
+            for(; i < sizeof(Node_ID); i++)
+                mi[i] = id[i];
+            for(; i < sizeof(Master_Secret); i++)
+                mi[i] = ms[i];
+
+            unsigned char nonce[16]; // TODO: This should be the truncated time. Set to 0 for now to avoid errors
+            for(i = 0; i < 16; i++)
+                nonce[i] = 0;
+
+            OTP out;
+            Poly1305(id, ms).stamp(out, nonce, mi, MI_SIZE);
+            return out;
+        }
+
+        static int key_manager() {
+
+            Peers::Element * last_dh_request = 0;
+
+            while(true) {
+                Alarm::delay(KEY_MANAGER_PERIOD);
+
+                db<TSTP>(TRC) << "TSTP::Security::key_manager()" << endl;
+                //CPU::int_disable();
+                //while(CPU::tsl(_peers_lock));
+
+                // Cleanup expired pending keys
+                Pending_Keys::Element * next_key;
+                for(Pending_Keys::Element * el = _pending_keys.head(); el; el = next_key) {
+                    next_key = el->next();
+                    Pending_Key * p = el->object();
+                    if(p->expired()) {
+                        _pending_keys.remove(el);
+                        delete p;
+                        db<TSTP>(INF) << "TSTP::Security::key_manager(): removed pending key" << endl;
+                    }
+                }
+
+                // Cleanup expired established keys
+                Peers::Element * next;
+                for(Peers::Element * el = _trusted_peers.head(); el; el = next) {
+                    next = el->next();
+                    Peer * p = el->object();
+                    if(!p->valid().contains(p->valid().center, TSTP::now())) {
+                        _trusted_peers.remove(el);
+                        _pending_peers.insert(el);
+                        db<TSTP>(INF) << "TSTP::Security::key_manager(): removed trusted peer" << endl;
+                    }
+                }
+
+                // Send DH Request to at most one peer
+                Peers::Element * el;
+                if(last_dh_request && last_dh_request->next())
+                    el = last_dh_request->next();
+                else
+                    el = _pending_peers.head();
+
+                last_dh_request = 0;
+
+                for(; el; el = el->next()) {
+                    Peer * p = el->object();
+                    if(p->valid().contains(p->valid().center, TSTP::now())) {
+                        last_dh_request = el;
+                        Buffer * buf = alloc(sizeof(DH_Request));
+                        new (buf->frame()->data<DH_Request>()) DH_Request(p->valid().center, _dh.public_key());
+                        TSTP::marshal(buf);
+                        _dh_requests_open++;
+                        TSTP::_nic->send(buf);
+                        db<TSTP>(INF) << "TSTP::Security::key_manager(): Sent DH_Request: "  << *buf->frame()->data<DH_Request>() << endl;
+                        break;
+                    }
+                }
+
+                //_peers_lock = false;
+                //CPU::int_enable();
+            }
+
+            return 0;
+        }
+
+    private:
+        static Cipher _cipher;
+        static Node_ID _id;
+        static Auth _auth;
+        static Diffie_Hellman _dh;
+        static Pending_Keys _pending_keys;
+        static Peers _pending_peers;
+        static Peers _trusted_peers;
+        static volatile bool _peers_lock;
+        static Thread * _key_manager;
+        static unsigned int _dh_requests_open;
     };
 
 
@@ -860,13 +1190,33 @@ private:
         switch(buf->frame()->data<Frame>()->type()) {
             case INTEREST:
                 return buf->frame()->data<Interest>()->region();
-            default:
             case RESPONSE:
                 return Region(sink(), 0, buf->frame()->data<Response>()->time(), buf->frame()->data<Response>()->expiry());
             case COMMAND:
                 return buf->frame()->data<Command>()->region();
             case CONTROL:
-                return buf->frame()->data<Control>()->region();
+                switch(buf->frame()->data<Control>()->subtype()) {
+                    default:
+                    case DH_RESPONSE:
+                    case AUTH_REQUEST: {
+                        Time origin = buf->frame()->data<Header>()->time();
+                        Time deadline = origin + min(static_cast<unsigned long long>(Security::KEY_MANAGER_PERIOD), Security::KEY_EXPIRY) / 2;
+                        return Region(sink(), 0, origin, deadline);
+                    }
+                    case DH_REQUEST: {
+                        Time origin = buf->frame()->data<Header>()->time();
+                        Time deadline = origin + min(static_cast<unsigned long long>(Security::KEY_MANAGER_PERIOD), Security::KEY_EXPIRY) / 2;
+                        return Region(buf->frame()->data<DH_Request>()->destination(), 0, origin, deadline);
+                    }
+                    case AUTH_GRANTED: {
+                        Time origin = buf->frame()->data<Header>()->time();
+                        Time deadline = origin + min(static_cast<unsigned long long>(Security::KEY_MANAGER_PERIOD), Security::KEY_EXPIRY) / 2;
+                        return Region(buf->frame()->data<Auth_Granted>()->destination(), 0, origin, deadline);
+                    }
+                }
+            default:
+                db<TSTP>(ERR) << "TSTP::destination(): ERROR: unrecognized frame type " << buf->frame()->data<Frame>()->type() << endl;
+                return Region(TSTP::here(), 0, TSTP::now() - 2, TSTP::now() - 1);
         }
     }
 

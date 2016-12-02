@@ -337,6 +337,7 @@ public:
     using Engine::INT_USB0;
     using Engine::INT_NIC0_RX;
     using Engine::INT_NIC0_TX;
+    using Engine::INT_NIC0_ERR;
     using Engine::INT_NIC0_TIMER;
     using Engine::INT_RESCHEDULER;
 

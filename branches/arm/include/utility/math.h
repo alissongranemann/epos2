@@ -43,25 +43,24 @@ inline T logf(T num, float base = E, float epsilon = 1e-12)
 }
 
 template <typename T>
-inline T sqrt(const T & x)
+inline T sqrt(T x)
 {
-    T xhi = x;
-    T xlo = 0;
-    T guess = x/2;
+    T res = 0;
 
-    while(guess * guess != x) {
-        if(guess * guess > x)
-            xhi = guess;
-        else
-            xlo = guess;
+    // "one" starts at the highest power of four <= than the argument.
+    T one = static_cast<T>(1) << (sizeof(T) * 8 - 2);
+    while(one > x)
+        one >>= 2;
 
-        float new_guess = (xhi + xlo) / 2;
-        if(new_guess == guess)
-            break; // not getting closer
-        guess = new_guess;
+    while(one != 0) {
+        if(x >= res + one) {
+            x -= (res + one);
+            res += 2 * one;
+        }
+        res >>= 1;
+        one >>= 2;
     }
-
-    return guess;
+    return res;
 }
 
 template <typename T>
@@ -112,15 +111,14 @@ const T & max(const T & x, const T & y)
 template <typename T>
 T abs(const T & x)
 {
-    if(x > 0) return x;
-    return -x;
+    return (x > 0) ? x : -x;
 }
 
 template <typename T>
 T largest(const T array[], int size)
 {
     T result = array[0];
-    for(int i = 1; i <  size; i++)
+    for(int i = 1; i < size; i++)
         if(array[i] > result)
           result = array[i];
     return result;
@@ -130,7 +128,7 @@ template <typename T>
 T smallest(const T array[], int size)
 {
     T result = array[0];
-    for(int i = 1; i <  size; i++)
+    for(int i = 1; i < size; i++)
         if(array[i] < result)
           result = array[i];
     return result;

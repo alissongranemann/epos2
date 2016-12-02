@@ -141,6 +141,7 @@ void CC2538::handle_int()
             if(buf) {
                 buf->size(CC2538RF::copy_from_nic(buf->frame()));
                 // When AUTO_CRC is on, the radio automatically puts the RSSI on the second-to-last byte
+                assert(xreg(FRMCTRL0) & AUTO_CRC);
                 buf->rssi = buf->frame()->data<char>()[buf->size() - 2];
                 if(MAC::pre_notify(buf)) {
                     db<CC2538>(TRC) << "CC2538::handle_int:receive(b=" << buf << ") => " << *buf << endl;

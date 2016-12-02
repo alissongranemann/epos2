@@ -168,20 +168,21 @@ public:
             // TSTP Metadata
             struct
             {
-                char _r[sizeof rssi];               // Received Signal Strength Indicator. Should be accessed as .rssi
-                unsigned long long sfd_time_stamp;  // Start-of-frame reception time stamp
-                unsigned int id;                    // Message identifier
-                unsigned long long offset;          // MAC contention offset
-                bool destined_to_me;                // Whether this node is the final destination for this message
-                bool downlink;                      // Message direction (downlink == from sink to sensor)
-                unsigned long long deadline;        // Time until when this message must arrive at the final destination
-                unsigned long long origin_time;     // Time when this message was created at the source node
-                unsigned long long my_distance;     // This node's distance to the message's final destination
-                unsigned long long sender_distance; // Last hop's distance to the message's final destination
-                bool is_new;                        // Whether this message was just created by this node
-                bool is_microframe;                 // Whether this message is a Microframe
-                bool relevant;                      // Whether any component is interested in this message
-                bool trusted;                       // If true, this message was successfully verified by the Security Manager
+                // TODO: remove unnecessary long longs
+                char _r[sizeof rssi];              // Received Signal Strength Indicator. Should be accessed as .rssi
+                unsigned long long sfd_time_stamp; // Start-of-frame reception time stamp
+                unsigned int id;                   // Message identifier
+                unsigned long long offset;         // MAC contention offset
+                bool destined_to_me;               // Whether this node is the final destination for this message
+                bool downlink;                     // Message direction (downlink == from sink to sensor)
+                unsigned long long deadline;       // Time until when this message must arrive at the final destination
+                unsigned int my_distance;          // This node's distance to the message's final destination
+                unsigned int sender_distance;      // Last hop's distance to the message's final destination
+                bool is_new;                       // Whether this message was just created by this node
+                bool is_microframe;                // Whether this message is a Microframe
+                bool relevant;                     // Whether any component is interested in this message
+                bool trusted;                      // If true, this message was successfully verified by the Security Manager
+                bool freed;                        // If true, the MAC will not free this buffer
             };
         };
     };

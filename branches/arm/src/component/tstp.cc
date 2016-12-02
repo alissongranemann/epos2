@@ -11,6 +11,7 @@ __BEGIN_SYS
 
 // TSTP::Locator
 // Class attributes
+TSTP::Coordinates TSTP::Locator::_here;
 
 // Methods
 void TSTP::Locator::update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf)
@@ -19,15 +20,19 @@ void TSTP::Locator::update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf
     if(buf->is_microframe) {
         if(!buf->downlink)
             buf->my_distance = here() - TSTP::sink();
-    } else
-        buf->my_distance = here() - TSTP::destination(buf).center;
+    } else {
+        Coordinates dst = TSTP::destination(buf).center;
+        buf->my_distance = here() - dst;
+        buf->downlink = dst != TSTP::sink(); // This would fit better in the Router, but Timekeeper uses this info
+    }
 }
 
 void TSTP::Locator::marshal(Buffer * buf)
 {
     db<TSTP>(TRC) << "TSTP::Locator::marshal(buf=" << buf << ")" << endl;
-    buf->my_distance = here() - TSTP::destination(buf).center;
-    buf->sender_distance = buf->my_distance;
+    Coordinates dst = TSTP::destination(buf).center;
+    buf->my_distance = here() - dst;
+    buf->downlink = dst != TSTP::sink(); // This would fit better in the Router, but Timekeeper uses this info
 }
 
 TSTP::Locator::~Locator()
@@ -36,29 +41,12 @@ TSTP::Locator::~Locator()
     TSTP::_nic->detach(this, 0);
 }
 
-// TODO: we need a better way to define static locations
-TSTP::Coordinates TSTP::Locator::here()
-{
-    if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x1a\x84\x0d\x06", 8))
-        return TSTP::sink();
-    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xec\x82\x0d\x06", 8))
-        return Coordinates( 0,10, 0);
-    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xae\x82\x0d\x06", 8))
-        return Coordinates(10,10, 0);
-    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x67\x83\x0d\x06", 8))
-        return Coordinates(10, 0, 0);
-
-    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xca\x0e\x16\x06", 8))
-        return TSTP::sink();
-    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xee\x0e\x16\x06", 8))
-        return Coordinates(50,50,50);
-
-    else
-        return Coordinates(-1, -1, -1);
-}
-
 // TSTP::Timekeeper
 // Class attributes
+TSTP::Timekeeper::Time_Stamp TSTP::Timekeeper::_t0;
+TSTP::Timekeeper::Time_Stamp TSTP::Timekeeper::_t1;
+TSTP::Timekeeper::Time_Stamp TSTP::Timekeeper::_t2;
+TSTP::Timekeeper::Time_Stamp TSTP::Timekeeper::_t3;
 
 // Methods
 void TSTP::Timekeeper::update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf)
@@ -69,11 +57,14 @@ void TSTP::Timekeeper::update(NIC::Observed * obs, NIC::Protocol prot, Buffer * 
         buf->deadline = TSTP::destination(buf).t1;
 
         bool peer_closer_to_sink = buf->downlink ?
-            (buf->my_distance > buf->sender_distance) :
-            (TSTP::here() - TSTP::sink() > buf->frame()->data<Header>()->last_hop() - TSTP::sink());
+            (TSTP::here() - TSTP::sink() > buf->frame()->data<Header>()->last_hop() - TSTP::sink()) :
+            (buf->my_distance > buf->sender_distance);
 
         if(peer_closer_to_sink) {
-            NIC::Timer::Offset adj = buf->frame()->data<Header>()->last_hop_time() - (NIC::Timer::sfd() + NIC::Timer::us2count(IEEE802_15_4::SHR_SIZE * 1000000 / IEEE802_15_4::BYTE_RATE));
+            _t0 = buf->sfd_time_stamp;
+            _t1 = buf->frame()->data<Header>()->last_hop_time();
+
+            NIC::Timer::Offset adj = buf->frame()->data<Header>()->last_hop_time() - (buf->sfd_time_stamp + NIC::Timer::us2count(IEEE802_15_4::SHR_SIZE * 1000000 / IEEE802_15_4::BYTE_RATE));
 
             db<TSTP>(INF) << "TSTP::Timekeeper::update: adjusting timer by " << adj << endl;
 
@@ -106,8 +97,9 @@ void TSTP::Router::update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf)
     } else if(!buf->is_microframe) {
         Region dst = TSTP::destination(buf);
         buf->destined_to_me = dst.contains(TSTP::here(), dst.t0);
-        if(buf->my_distance < buf->sender_distance) {
-            // Forward the message
+        if(buf->destined_to_me || (buf->my_distance < buf->sender_distance)) {
+
+            // Forward or ACK the message
 
             Buffer * send_buf = TSTP::alloc(buf->size());
 
@@ -115,11 +107,11 @@ void TSTP::Router::update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf)
             memcpy(send_buf->frame(), buf->frame(), buf->size());
 
             // Copy Buffer Metainformation
+            send_buf->size(buf->size());
             send_buf->id = buf->id;
             send_buf->destined_to_me = buf->destined_to_me;
             send_buf->downlink = buf->downlink;
             send_buf->deadline = buf->deadline;
-            send_buf->origin_time = buf->origin_time;
             send_buf->my_distance = buf->my_distance;
             send_buf->sender_distance = buf->sender_distance;
             send_buf->is_new = false;
@@ -127,6 +119,10 @@ void TSTP::Router::update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf)
 
             // Calculate offset
             offset(send_buf);
+
+            // Adjust Last Hop location
+            send_buf->frame()->data<Header>()->last_hop(TSTP::here());
+            send_buf->sender_distance = send_buf->my_distance;
 
             TSTP::_nic->send(send_buf);
         }
@@ -151,11 +147,186 @@ TSTP::Router::~Router()
 
 // TSTP::Security
 // Class attributes
+Cipher TSTP::Security::_cipher;
+TSTP::Node_ID TSTP::Security::_id;
+TSTP::Auth TSTP::Security::_auth;
+Diffie_Hellman TSTP::Security::_dh;
+TSTP::Security::Pending_Keys TSTP::Security::_pending_keys;
+TSTP::Security::Peers TSTP::Security::_pending_peers;
+TSTP::Security::Peers TSTP::Security::_trusted_peers;
+volatile bool TSTP::Security::_peers_lock;
+Thread * TSTP::Security::_key_manager;
+unsigned int TSTP::Security::_dh_requests_open;
 
 // Methods
 void TSTP::Security::update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf)
 {
     db<TSTP>(TRC) << "TSTP::Security::update(obs=" << obs << ",buf=" << buf << ")" << endl;
+    if(!buf->is_microframe && buf->destined_to_me) {
+
+        switch(buf->frame()->data<Header>()->type()) {
+
+            case CONTROL: {
+                db<TSTP>(TRC) << "TSTP::Security::update(): Control message received" << endl;
+                switch(buf->frame()->data<Control>()->subtype()) {
+
+                    case DH_REQUEST: {
+                        if(TSTP::here() != TSTP::sink()) {
+                            DH_Request * dh_req = buf->frame()->data<DH_Request>();
+                            db<TSTP>(INF) << "TSTP::Security::update(): DH_Request message received: " << *dh_req << endl;
+
+                            //while(CPU::tsl(_peers_lock));
+                            //CPU::int_disable();
+                            bool valid_peer = false;
+                            for(Peers::Element * el = _pending_peers.head(); el; el = el->next())
+                                if(el->object()->valid_deploy(dh_req->origin(), TSTP::now())) {
+                                    valid_peer = true;
+                                    break;
+                                }
+                            //_peers_lock = false;
+                            //CPU::int_enable();
+
+                            if(valid_peer) {
+                                db<TSTP>(TRC) << "TSTP::Security::update(): Sending DH_Response" << endl;
+                                // Respond to Diffie-Hellman request
+                                Buffer * resp = TSTP::alloc(sizeof(DH_Response));
+                                new (resp->frame()) DH_Response(_dh.public_key());
+                                TSTP::marshal(resp);
+                                TSTP::_nic->send(resp);
+
+                                // Calculate Master Secret
+                                Pending_Key * pk = new (SYSTEM) Pending_Key(buf->frame()->data<DH_Request>()->key());
+                                Master_Secret ms = pk->master_secret();
+                                //while(CPU::tsl(_peers_lock));
+                                //CPU::int_disable();
+                                _pending_keys.insert(pk->link());
+                                //_peers_lock = false;
+                                //CPU::int_enable();
+
+                                db<TSTP>(TRC) << "TSTP::Security::update(): Sending Auth_Request" << endl;
+                                // Send Authentication Request
+                                resp = TSTP::alloc(sizeof(Auth_Request));
+                                new (resp->frame()) Auth_Request(_auth, otp(ms, _id));
+                                TSTP::marshal(resp);
+                                TSTP::_nic->send(resp);
+                                db<TSTP>(TRC) << "Sent" << endl;
+                            }
+                        }
+                    } break;
+
+                    case DH_RESPONSE: {
+                        if(_dh_requests_open) {
+                            DH_Response * dh_resp = buf->frame()->data<DH_Response>();
+                            db<TSTP>(INF) << "TSTP::Security::update(): DH_Response message received: " << *dh_resp << endl;
+
+                            //while(CPU::tsl(_peers_lock));
+                            //CPU::int_disable();
+                            bool valid_peer = false;
+                            for(Peers::Element * el = _pending_peers.head(); el; el = el->next())
+                                if(el->object()->valid_deploy(dh_resp->origin(), TSTP::now())) {
+                                    valid_peer = true;
+                                    db<TSTP>(TRC) << "Valid peer found: " << *el->object() << endl;
+                                    break;
+                                }
+                            //_peers_lock = false;
+                            //CPU::int_enable();
+
+                            if(valid_peer) {
+                                _dh_requests_open--;
+                                Pending_Key * pk = new (SYSTEM) Pending_Key(buf->frame()->data<DH_Response>()->key());
+                                //while(CPU::tsl(_peers_lock));
+                                //CPU::int_disable();
+                                _pending_keys.insert(pk->link());
+                                //_peers_lock = false;
+                                //CPU::int_enable();
+                                db<TSTP>(INF) << "TSTP::Security::update(): Inserting new Pending Key: " << *pk << endl;
+                            }
+                        }
+                    } break;
+
+                    case AUTH_REQUEST: {
+
+                        Auth_Request * auth_req = buf->frame()->data<Auth_Request>();
+                        db<TSTP>(INF) << "TSTP::Security::update(): Auth_Request message received: " << *auth_req << endl;
+
+                        //while(CPU::tsl(_peers_lock));
+                        //CPU::int_disable();
+                        Peer * auth_peer = 0;
+                        for(Peers::Element * el = _pending_peers.head(); el; el = el->next()) {
+                            Peer * peer = el->object();
+
+                            if(peer->valid_request(auth_req->auth(), auth_req->origin(), TSTP::now())) {
+                                for(Pending_Keys::Element * pk_el = _pending_keys.head(); pk_el; pk_el = pk_el->next()) {
+                                    Pending_Key * pk = pk_el->object();
+                                    if(otp(pk->master_secret(), peer->id()) == auth_req->otp()) {
+                                        peer->master_secret(pk->master_secret());
+                                        _pending_peers.remove(el);
+                                        _trusted_peers.insert(el);
+                                        auth_peer = peer;
+
+                                        _pending_keys.remove(pk_el);
+                                        delete pk_el->object();
+
+                                        break;
+                                    }
+                                }
+                                if(auth_peer)
+                                    break;
+                            }
+                        }
+                        //_peers_lock = false;
+                        //CPU::int_enable();
+
+                        if(auth_peer) {
+                            Auth encrypted_auth;
+                            encrypt(auth_peer->auth(), auth_peer, encrypted_auth);
+
+                            Buffer * resp = TSTP::alloc(sizeof(Auth_Granted));
+                            new (resp->frame()) Auth_Granted(auth_req->origin(), encrypted_auth);
+                            TSTP::marshal(resp);
+                            db<TSTP>(INF) << "TSTP::Security: Sending Auth_Granted message " << resp->frame()->data<Auth_Granted>() << endl;
+                            TSTP::_nic->send(resp);
+                        } else
+                            db<TSTP>(WRN) << "TSTP::Security::update(): No peer found" << endl;
+                    } break;
+
+                    case AUTH_GRANTED: {
+
+                        if(TSTP::here() != TSTP::sink()) {
+                            Auth_Granted * auth_grant = buf->frame()->data<Auth_Granted>();
+                            db<TSTP>(INF) << "TSTP::Security::update(): Auth_Granted message received: " << *auth_grant << endl;
+                            //while(CPU::tsl(_peers_lock));
+                            //CPU::int_disable();
+                            bool auth_peer = false;
+                            for(Peers::Element * el = _pending_peers.head(); el; el = el->next()) {
+                                Peer * peer = el->object();
+                                for(Pending_Keys::Element * pk_el = _pending_keys.head(); pk_el; pk_el = pk_el->next()) {
+                                    Pending_Key * pk = pk_el->object();
+                                    Auth decrypted_auth;
+                                    OTP key = otp(pk->master_secret(), peer->id());
+                                    _cipher.decrypt(auth_grant->auth(), key, decrypted_auth);
+                                    if(decrypted_auth == _auth) {
+                                        _pending_peers.remove(el);
+                                        _trusted_peers.insert(el);
+                                        auth_peer = true;
+
+                                        _pending_keys.remove(pk_el);
+                                        delete pk_el->object();
+
+                                        break;
+                                    }
+                                }
+                                if(auth_peer)
+                                    break;
+                            }
+                            //_peers_lock = false;
+                            //CPU::int_enable();
+                        }
+                    } break;
+                }
+            }
+        }
+    }
 }
 
 void TSTP::Security::marshal(Buffer * buf)
@@ -167,6 +338,8 @@ TSTP::Security::~Security()
 {
     db<TSTP>(TRC) << "TSTP::~Security()" << endl;
     TSTP::_nic->detach(this, 0);
+    if(_key_manager)
+        delete _key_manager;
 }
 
 
@@ -190,6 +363,12 @@ void TSTP::update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf)
 
     if(buf->is_microframe)
         return;
+
+    if(!buf->destined_to_me) {
+        //buf->freed = true; // TODO
+        //_nic->free(buf);
+        return;
+    }
 
     Packet * packet = buf->frame()->data<Packet>();
     switch(packet->type()) {
@@ -229,10 +408,25 @@ void TSTP::update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf)
                     notify(responsive, buf);
             }
     } break;
-    case CONTROL: break;
+    case CONTROL:
+        switch(buf->frame()->data<Control>()->subtype()) {
+            case DH_REQUEST:
+                db<TSTP>(INF) << "TSTP::update: DH_Request: " << *buf->frame()->data<DH_Request>() << endl;
+                break;
+            case DH_RESPONSE:
+                db<TSTP>(INF) << "TSTP::update: DH_Response: " << *buf->frame()->data<DH_Response>() << endl;
+                break;
+            case AUTH_REQUEST:
+                db<TSTP>(INF) << "TSTP::update: Auth_Request: " << *buf->frame()->data<Auth_Request>() << endl;
+                break;
+            case AUTH_GRANTED:
+                db<TSTP>(INF) << "TSTP::update: Auth_Granted: " << *buf->frame()->data<Auth_Granted>() << endl;
+                break;
+        }
     }
 
-    _nic->free(buf);
+    //buf->freed = true; // TODO
+    //_nic->free(buf);
 }
 
 __END_SYS

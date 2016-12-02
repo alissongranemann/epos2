@@ -59,11 +59,13 @@ public:
         FREQCTRL    = 0x03C,   // RF carrier frequency (f = 11 + 5 (k – 11), with k [11, 26])  ro      0x0000000b
         FSMSTAT1    = 0x04C,   // Radio status register                                        ro      0x00000000
         FIFOPCTRL   = 0x050,
+        FSMCTRL     = 0x054,
         RXFIRST     = 0x068,
         RXFIFOCNT   = 0x06C,   // Number of bytes in RX FIFO                                   ro      0x00000000
         TXFIFOCNT   = 0x070,   // Number of bytes in TX FIFO                                   ro      0x00000000
         RXFIRST_PTR = 0x074,
         RXLAST_PTR  = 0x078,
+        RXP1_PTR    = 0x07C,
         RFIRQM0     = 0x08c,
         RFIRQM1     = 0x090,
         RFERRM      = 0x094,
@@ -175,6 +177,7 @@ public:
     // Radio commands
     enum {
         STXON       = 0xd9,
+        SFLUSHRX    = 0xdd,
         SFLUSHTX    = 0xde,
         ISSTART     = 0xe1,
         ISRXON      = 0xe3,
@@ -209,6 +212,12 @@ public:
         SRC_MATCH_EN   = 1 << 0,
     };
 
+    // Useful bits in XREG_FSMCTRL
+    enum {
+        SLOTTED_ACK    = 1 << 1,
+        RX2RX_TIME_OFF = 1 << 0,
+    };
+
     // Useful bits in XREG_FRMCTRL0
     enum {
         APPEND_DATA_MODE = 1 << 7,
@@ -218,6 +227,7 @@ public:
         RX_MODE          = 1 << 2,
         TX_MODE          = 1 << 0,
     };
+
     enum RX_MODES {
         RX_MODE_NORMAL = 0,
         RX_MODE_OUTPUT_TO_IOC,
@@ -496,6 +506,7 @@ public:
         // Disable interrupts
         xreg(RFIRQM0) = 0;
         xreg(RFIRQM1) = 0;
+        xreg(RFERRM) = 0;
 
         // Change recommended in the user guide (CCACTRL0 register description)
         xreg(CCACTRL0) = 0xf8;
@@ -510,6 +521,9 @@ public:
         sfr(RFST) = ISFLUSHTX;
         sfr(RFST) = ISFLUSHRX;
 
+        // Disable receiver deafness for 192us after frame reception
+        xreg(FSMCTRL) &= ~RX2RX_TIME_OFF;
+
         // Reset result of source matching (value undefined on reset)
         ffsm(SRCRESINDEX) = 0;
 
@@ -521,12 +535,6 @@ public:
 
         // Disable counting of MAC overflows
         xreg(CSPT) = 0xff;
-
-        // Configure frame filtering by hardware
-        if(promiscuous)
-            xreg(FRMFILT0) &= ~FRAME_FILTER_EN;
-        else
-            xreg(FRMFILT0) |= FRAME_FILTER_EN;
 
         // Clear interrupts
         sfr(RFIRQF0) = 0;
@@ -544,11 +552,9 @@ public:
     // FIXME: methods changed to static because of TSTP_MAC
     static bool cca(const Microsecond & time) {
         Timer::Time_Stamp end = Timer::read() + Timer::us2count(time);
-        while(!(xreg(RSSISTAT) & RSSI_VALID))
-            if(Timer::read() >= end)
-                return false;
+        while(!(xreg(RSSISTAT) & RSSI_VALID));
         bool channel_free;
-        while((channel_free = xreg(FSMSTAT1) & CCA) && (Timer::read() < end));
+        while((channel_free = xreg(FSMSTAT1) & CCA) && (Timer::read() <= end));
         return channel_free;
     }
 
@@ -632,9 +638,11 @@ public:
     // FIXME: methods changed to static because of TSTP_MAC
     static unsigned int copy_from_nic(void * frame) {
         char * f = reinterpret_cast<char *>(frame);
-        unsigned int sz = sfr(RFDATA);  // First byte is the length of MAC frame
+        unsigned int first = xreg(RXP1_PTR);
+        volatile unsigned int * rxfifo = reinterpret_cast<volatile unsigned int*>(RXFIFO);
+        unsigned int sz = rxfifo[first]; // First byte is the length of MAC frame
         for(unsigned int i = 0; i < sz; ++i)
-            f[i] = sfr(RFDATA);
+            f[i] = rxfifo[first + i + 1];
         drop();
         return sz;
     }
@@ -644,13 +652,15 @@ public:
 
     bool filter() {
         bool valid_frame = false;
-        if(xreg(RXFIFOCNT) > 1 + sizeof(IEEE802_15_4::CRC)) {
-            volatile unsigned int * rxfifo = reinterpret_cast<volatile unsigned int*>(RXFIFO);
-            unsigned char mac_frame_size = rxfifo[0];
+        unsigned int first = xreg(RXP1_PTR);
+        unsigned int last = xreg(RXLAST_PTR);
+        volatile unsigned int * rxfifo = reinterpret_cast<volatile unsigned int*>(RXFIFO);
+        if(last - first > 1 + sizeof(IEEE802_15_4::CRC)) {
+            unsigned char mac_frame_size = rxfifo[first];
             // On RX, last two bytes in the frame are replaced by info like CRC result
             // (obs: mac frame is preceded by one byte containing the frame length,
             // so total RXFIFO data size is 1 + mac_frame_size)
-            valid_frame = (mac_frame_size <= 127) && (rxfifo[mac_frame_size] & AUTO_CRC_OK);
+            valid_frame = (first + mac_frame_size < last) && (rxfifo[first + mac_frame_size] & AUTO_CRC_OK);
         }
         if(!valid_frame)
             drop();
@@ -660,13 +670,19 @@ public:
 
     static void power(const Power_Mode & mode) {
          switch(mode) {
+
+             // TODO: Switching RX_MODEs seems to prevent the radio from receiving anything after a while!
+
          case FULL: // Able to receive and transmit
              power_ieee802_15_4(FULL);
-             xreg(FRMCTRL0) = (xreg(FRMCTRL0) & ~(3 * RX_MODE)) | (RX_MODE_NORMAL * RX_MODE);
+             xreg(RFIRQF0) &= ~INT_FIFOP;
+             xreg(RFIRQM0) |= INT_FIFOP;
+             //xreg(FRMCTRL0) = (xreg(FRMCTRL0) & ~(3 * RX_MODE)) | (RX_MODE_NORMAL * RX_MODE);
              break;
          case LIGHT: // Able to sense channel and transmit
              power_ieee802_15_4(LIGHT);
-             xreg(FRMCTRL0) = (xreg(FRMCTRL0) & ~(3 * RX_MODE)) | (RX_MODE_NO_SYMBOL_SEARCH * RX_MODE);
+             xreg(RFIRQM0) &= ~INT_FIFOP;
+             //xreg(FRMCTRL0) = (xreg(FRMCTRL0) & ~(3 * RX_MODE)) | (RX_MODE_NO_SYMBOL_SEARCH * RX_MODE);
              break;
          case SLEEP: // Receiver off
              sfr(RFST) = ISRFOFF;
