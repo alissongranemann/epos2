@@ -184,6 +184,8 @@ public:
     static void run() { static_invoke(FPGA_RUN); }
     static void report() { static_invoke(FPGA_REPORT); }
     static void print_configuration() { static_invoke(FPGA_PRINT_CONFIGURATION); }
+    static void monitor_start() { static_invoke(FPGA_MONITOR_START); }
+    static void monitor_stop() { static_invoke(FPGA_MONITOR_STOP); }
 
     // UART
     void rts_down() { invoke(UART_RTS_DOWN); }

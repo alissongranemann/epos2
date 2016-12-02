@@ -3,6 +3,7 @@
 #include <machine/pc/machine.h>
 #include <machine/pc/ic.h>
 #include <machine/pc/fpga.h>
+#include <utility/assert_aux.h>
 
 __BEGIN_SYS
 
@@ -218,6 +219,8 @@ void XAP1052::wait_for_transaction()
 
 void XAP1052::report()
 {
+    stop_write_dma_transactions();
+
     _print_dma_buffer(_dma_write_buffer);
     _print_dma_buffer(_dma_read_buffer);
     print_configuration();
@@ -235,6 +238,13 @@ void XAP1052::report()
             db<void>(WRN) << "Error on DMA write. write_buffer[" << iter << "] = " << *iter << " Expected: "  << reinterpret_cast<void *>(WRITE_DMA_TLP_PATTERN) << endl;
         }
     }
+}
+
+
+void XAP1052::stop_write_dma_transactions()
+{
+    write(DDMACR, DDMACR_FLAGS | DDMACR_STOP_WRITE);
+    _delay();
 }
 
 
@@ -291,6 +301,21 @@ void XAP1052::print_configuration()
     print_bmd_registers();
 }
 
+void XAP1052::monitor_start()
+{
+    txmon_reset();
+    assert_equals(txmon_reseted(), true);
+    assert_equals(txmon_rc(), 0u);
+
+    txmon_ref(BMD_64_TX_CON_STATE);
+
+    txmon_set();
+}
+
+void XAP1052::monitor_stop()
+{
+    db<void>(WRN) << "Tx state: " << txmon_ref() << " reached " << txmon_rc() << " times." << endl;
+}
 
 void XAP1052::print_bmd_registers()
 {

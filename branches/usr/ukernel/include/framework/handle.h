@@ -203,6 +203,8 @@ public:
     static void run() { _Stub::run(); }
     static void report() { _Stub::report(); }
     static void print_configuration() { _Stub::print_configuration(); }
+    static void monitor_start() { _Stub::monitor_start(); }
+    static void monitor_stop() { _Stub::monitor_stop(); }
 
     // UART
     void rts_down() { _stub->rts_down(); }

@@ -161,6 +161,7 @@ template<> struct Traits<PC_Scratchpad>: public Traits<PC_Common>
 template<> struct Traits<PC_FPGA>: public Traits<PC_Common>
 {
     static const bool enabled = Factors::fpga_enabled;
+    static const bool monitor_enabled = Factors::fpga_monitor_enabled;
     static const unsigned int DMA_OPERATION = Factors::dma_operation;
     static const unsigned int DMA_BUFFER_SIZE = Factors::dma_buffer_size;
     static const unsigned int WRITE_DMA_TLP_SIZE = Factors::write_dma_tlp_size;

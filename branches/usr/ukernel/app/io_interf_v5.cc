@@ -17,6 +17,7 @@ static const bool IO_INTERF_INTERRUPTS = _SYS::Traits<Application>::IO_INTERF_IN
 /// Factors
 /* DMA - related */
 static const bool FPGA_ENABLED = _SYS::Traits<_SYS::FPGA>::enabled;
+static const bool FPGA_MONITOR_ENABLED = _SYS::Traits<_SYS::FPGA>::monitor_enabled;
 static const unsigned int DMA_OPERATION = _SYS::Traits<_SYS::FPGA>::DMA_OPERATION;
 static const unsigned int DMA_BUFFER_SIZE = _SYS::Traits<_SYS::FPGA>::DMA_BUFFER_SIZE;
 static const unsigned int WRITE_DMA_TLP_SIZE = _SYS::Traits<_SYS::FPGA>::WRITE_DMA_TLP_SIZE;
@@ -196,6 +197,7 @@ int main()
     print_factors();
 
     if (FPGA_ENABLED) FPGA::print_configuration();
+    if (FPGA_MONITOR_ENABLED) FPGA::monitor_start();
 
     Random::seed(1);
 
@@ -216,6 +218,8 @@ int main()
     if (FPGA_ENABLED) FPGA::report();
 
     report();
+
+    if (FPGA_MONITOR_ENABLED) FPGA::monitor_stop();
 
     db<Domain_1>(WRN) << "# Guest OS 1 (Domain 1) finishing..." << endl;
     db<Domain_1>(WRN) << "Bye!" << endl;

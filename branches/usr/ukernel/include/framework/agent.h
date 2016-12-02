@@ -1176,6 +1176,12 @@ void Agent::handle_fpga()
     case FPGA_PRINT_CONFIGURATION: {
         Adapter<FPGA>::print_configuration();
     } break;
+    case FPGA_MONITOR_START: {
+        Adapter<FPGA>::monitor_start();
+    } break;
+    case FPGA_MONITOR_STOP: {
+        Adapter<FPGA>::monitor_stop();
+    } break;
     default: {
         db<Framework>(WRN) << "Undefined method for FPGA agent. Method = " << method() << endl;
         res = UNDEFINED;

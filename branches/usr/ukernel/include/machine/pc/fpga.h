@@ -28,7 +28,7 @@ protected:
     static const bool USE_INTERRUPTS = Traits<FPGA>::USE_INTERRUPTS;
     static const unsigned int WRITE_DMA_TLP_SIZE = Traits<FPGA>::WRITE_DMA_TLP_SIZE;
     static const unsigned int WRITE_DMA_TLP_COUNT = Traits<FPGA>::WRITE_DMA_TLP_COUNT;
-    static const unsigned int WRITE_DMA_TLP_PATTERN = 0xdeadbeef;
+    static const unsigned int WRITE_DMA_TLP_PATTERN = 0x00000000;
     static const unsigned int READ_DMA_TLP_SIZE = 0x20;
     static const unsigned int READ_DMA_TLP_COUNT = 0x20;
     static const unsigned int READ_DMA_TLP_PATTERN = 0xfeedbeef;
@@ -39,30 +39,32 @@ protected:
 
     // PCI ID
     static const unsigned int PCI_VENDOR_ID = 0x10ee;
-    static const unsigned int PCI_DEVICE_ID = 0x6024;
+    static const unsigned int PCI_DEVICE_ID = 0xfada;
     static const unsigned int PCI_REG_CTRL = 0;
 
 public:
     // Offsets from base I/O address (PCI region 0)
     enum {
-        DCSR       = 0x00,
-        DDMACR     = 0x04,
-        WDMATLPA   = 0x08,
-        WDMATLPS   = 0x0c,
-        WDMATLPC   = 0x10,
-        WDMATLPP   = 0x14,
-        RDMATLPP   = 0x18,
-        RDMATLPA   = 0x1c,
-        RDMATLPS   = 0x20,
-        RDMATLPC   = 0x24,
-        WDMAPERF   = 0x28,
-        RDMAPERF   = 0x2c,
-        RDMASTAT   = 0x30,
-        NRDCOMP    = 0x34,
-        RCOMPDSIZW = 0x38,
-        DLWSTAT    = 0x3c,
-        DLTRSSTAT  = 0x40,
-        DMISCCONT  = 0x44
+        DCSR        = 0x00,
+        DDMACR      = 0x04,
+        WDMATLPA    = 0x08,
+        WDMATLPS    = 0x0c,
+        WDMATLPC    = 0x10,
+        WDMATLPP    = 0x14,
+        RDMATLPP    = 0x18,
+        RDMATLPA    = 0x1c,
+        RDMATLPS    = 0x20,
+        RDMATLPC    = 0x24,
+        WDMAPERF    = 0x28,
+        RDMAPERF    = 0x2c,
+        RDMASTAT    = 0x30,
+        NRDCOMP     = 0x34,
+        RCOMPDSIZW  = 0x38,
+        DLWSTAT     = 0x3c,
+        DLTRSSTAT   = 0x40,
+        DMISCCONT   = 0x44,
+        FAKE_DDMACR = 0x50,
+        TXMONCR     = 0x54
     };
 
     // OR-masks for setting bits of the DDMACR register
@@ -105,6 +107,88 @@ public:
 
     static void print_configuration();
 
+    static void monitor_start();
+
+    static void monitor_stop();
+
+private:
+    /*! XAPP1052 was extended to implemented a TX Monitor logic:
+     *  whenever TX engine state equals to the one specified by TXMON_REF,
+     *  if TXMON_RESET == 0, set TXMON_REACHABLE = 1.
+     *  It also increments TXMON_RC "Reached Count" indicating how many times
+     *  the TXMON_REF state was reached.
+     *  TXMON_RC starts on 0x00 and it is only incremented if it is less than
+     *  0xff; otherwise it remains 0xff.
+     *  TXMON_RC is only incremented if the previous state of TX engine was not
+     *  equal to TXMON_REF and the current state of TX is equal to TXMON_REF,
+     *  i.e.: staying in the TXMON_REF state will not cause TXMON_RC to be
+     *  incremented.
+     *  Setting the TXMON_RESET bit will cause TXMON_REACHABLE to become false
+     *  (zero) and TXMON_RC to become zero (0x00).
+     *
+     * TX Monitor logic is accessed by the Tx Monitor Control Register: TXMONCR,
+     * a 32-bit register.
+     * */
+    enum {
+        // AND-masks
+        TXMON_REF_MASK          = 0xff000000, // Bit[31:24] (R/W)       {Byte 3}
+        TXMON_RC_MASK           = 0x00ff0000, // Bit[23:16] (RO)        {Byte 2}
+        TXMON_REACHABLE_MASK    = 0x00008000, // Bit[15] (RO)           {Byte 1}
+        TXMON_RESET_MASK        = 0x00000001, // Bit[0] (R/W)           {Byte 0}
+
+        // SHIFTS
+        TXMON_REF_SHIFT         = 24,
+        TXMON_RC_SHIFT          = 16,
+        TXMON_REACHABLE_SHIFT   = 15
+    };
+
+
+    /*! INTERNAL:
+     * Tx state-machine states */
+    enum {
+        BMD_64_TX_CON_STATE    = 0b00000011,
+        BMD_64_TX_RST_STATE    = 0b00000001,
+        BMD_64_TX_CPLD_QW1     = 0b00000010,
+        BMD_64_TX_CPLD_WIT     = 0b00000100,
+        BMD_64_TX_MWR_QW1      = 0b00001000,
+        BMD_64_TX_MWR64_QW1    = 0b00010000,
+        BMD_64_TX_MWR_QWN      = 0b00100000,
+        BMD_64_TX_MRD_QW1      = 0b01000000,
+        BMD_64_TX_MRD_QWN      = 0b10000000
+    };
+
+private:
+    static Reg8 txmon_ref() {
+        return (read(TXMONCR) & TXMON_REF_MASK) >> TXMON_REF_SHIFT;
+    }
+
+    static void txmon_ref(Reg8 state) {
+        Reg32 aux = read(TXMONCR) & ~TXMON_REF_MASK;
+        write(TXMONCR, aux | (state << TXMON_REF_SHIFT));
+    }
+
+    static bool txmon_reachable() {
+        return (read(TXMONCR) & TXMON_REACHABLE_MASK) >> TXMON_REACHABLE_SHIFT;
+    }
+
+    static void txmon_reset() {
+        // Tx monitor resets whenever TXMON_RESET = 1
+        write(TXMONCR, read(TXMONCR) | (TXMON_RESET_MASK));
+    }
+
+    static void txmon_set() {
+        write(TXMONCR, read(TXMONCR) & (~TXMON_RESET_MASK));
+    }
+
+    static bool txmon_reseted() {
+        return read(TXMONCR) & TXMON_RESET_MASK;
+    }
+
+    static unsigned int txmon_rc() {
+        return (read(TXMONCR) & TXMON_RC_MASK) >> TXMON_RC_SHIFT;
+    }
+
+    static void stop_write_dma_transactions();
 
 protected:
     static Reg32 read(unsigned long offset) {
@@ -159,6 +243,10 @@ public:
     static void report() { Engine::report(); }
 
     static void print_configuration() { Engine::print_configuration(); }
+
+    static void monitor_start() { Engine::monitor_start(); }
+
+    static void monitor_stop() { Engine::monitor_stop(); }
 
 private:
     static void int_handler(const IC::Interrupt_Id & interrupt);

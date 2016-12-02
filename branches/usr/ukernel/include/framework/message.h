@@ -127,6 +127,8 @@ public:
         FPGA_RUN = COMPONENT,
         FPGA_REPORT,
         FPGA_PRINT_CONFIGURATION,
+        FPGA_MONITOR_START,
+        FPGA_MONITOR_STOP,
 
         UART_RTS_DOWN = COMPONENT,
         UART_RTS_UP,

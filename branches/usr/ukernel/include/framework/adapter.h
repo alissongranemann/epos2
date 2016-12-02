@@ -166,6 +166,8 @@ public:
     static void run() { static_enter(); Component::run(); static_leave(); }
     static void report() { static_enter(); Component::report(); static_leave(); }
     static void print_configuration() { static_enter(); Component::print_configuration(); static_leave(); }
+    static void monitor_start() { static_enter(); Component::monitor_start(); static_leave(); }
+    static void monitor_stop() { static_enter(); Component::monitor_stop(); static_leave(); }
 
 };
 
