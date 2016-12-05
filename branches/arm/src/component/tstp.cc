@@ -57,8 +57,8 @@ TSTP::Locator::~Locator()
 // Class attributes
 TSTP::Timekeeper::Time_Stamp TSTP::Timekeeper::_t0;
 TSTP::Timekeeper::Time_Stamp TSTP::Timekeeper::_t1;
-TSTP::Timekeeper::Time_Stamp TSTP::Timekeeper::_t2;
-TSTP::Timekeeper::Time_Stamp TSTP::Timekeeper::_t3;
+TSTP::Timekeeper::Frequency TSTP::Timekeeper::_frequency;
+TSTP::Coordinates TSTP::Timekeeper::_peer;
 
 // Methods
 void TSTP::Timekeeper::update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf)
@@ -68,19 +68,42 @@ void TSTP::Timekeeper::update(NIC::Observed * obs, NIC::Protocol prot, Buffer * 
     if(!buf->is_microframe) {
         buf->deadline = TSTP::destination(buf).t1;
 
-        bool peer_closer_to_sink = buf->downlink ?
-            (TSTP::here() - TSTP::sink() > buf->frame()->data<Header>()->last_hop() - TSTP::sink()) :
-            (buf->my_distance > buf->sender_distance);
+        if(_t1 == 0) { // No peer
+            bool peer_closer_to_sink = buf->downlink ?
+                (TSTP::here() - TSTP::sink() > buf->frame()->data<Header>()->last_hop() - TSTP::sink()) :
+                (buf->my_distance > buf->sender_distance);
 
-        if(peer_closer_to_sink) {
-            _t0 = buf->sfd_time_stamp;
-            _t1 = buf->frame()->data<Header>()->last_hop_time();
+            if(peer_closer_to_sink) {
+                Time_Stamp t0 = buf->frame()->data<Header>()->last_hop_time();
+                Time_Stamp t1 = buf->sfd_time_stamp;
 
-            NIC::Timer::Offset adj = buf->frame()->data<Header>()->last_hop_time() - (buf->sfd_time_stamp + NIC::Timer::us2count(IEEE802_15_4::SHR_SIZE * 1000000 / IEEE802_15_4::BYTE_RATE));
+                Offset adj = adjust(t0, t1);
 
-            db<TSTP>(INF) << "TSTP::Timekeeper::update: adjusting timer by " << adj << endl;
+                _t0 = t0;
+                _t1 = t1 + adj;
+
+                NIC::Timer::adjust(adj);
+
+                db<TSTP>(TRC) << "TSTP::Timekeeper::update: adjusted timer offset by " << adj << endl;
+
+                _peer = buf->frame()->data<Header>()->last_hop();
+            }
+        } else if(_peer == buf->frame()->data<Header>()->last_hop()) { // Message from peer
+            Time_Stamp t0_new = buf->frame()->data<Header>()->last_hop_time();
+            Time_Stamp t1_new = buf->sfd_time_stamp;
+
+            Offset adj = adjust(t0_new, t1_new);
 
             NIC::Timer::adjust(adj);
+
+            db<TSTP>(TRC) << "TSTP::Timekeeper::update: adjusted timer offset by " << adj << endl;
+
+            _frequency = NIC::Timer::frequency() + NIC::Timer::frequency() * static_cast<Frequency>((t1_new - t0_new) - (_t1 - _t0)) / static_cast<Frequency>(t0_new - _t0);
+
+            db<TSTP>(TRC) << "TSTP::Timekeeper::update: adjusted timer frequency to " << _frequency << endl;
+
+            _t0 = t0_new;
+            _t1 = t1_new;
         }
     }
 }

@@ -931,14 +931,19 @@ public:
     class Timekeeper: private NIC::Observer
     {
         typedef NIC::Timer::Time_Stamp Time_Stamp;
+        typedef NIC::Timer::Offset Offset;
+        typedef Offset Frequency;
 
     public:
         Timekeeper() {
             db<TSTP>(TRC) << "TSTP::Timekeeper()" << endl;
+            _t0 = 0;
+            _t1 = 0;
+            _frequency = NIC::Timer::frequency();
         }
         ~Timekeeper();
 
-        static Time now() { return NIC::Timer::read() * 1000000ll / NIC::Timer::frequency(); }
+        static Time now() { return NIC::Timer::read() * 1000000ll / _frequency; }
 
         void bootstrap();
 
@@ -947,10 +952,14 @@ public:
         void update(NIC::Observed * obs, NIC::Protocol prot, NIC::Buffer * buf);
 
     private:
+        Offset adjust(const Time_Stamp & t0, const Time_Stamp & t1) {
+            return t0 + NIC::Timer::us2count(IEEE802_15_4::SHR_SIZE * 1000000 / IEEE802_15_4::BYTE_RATE) - t1;
+        }
+
         static Time_Stamp _t0;
         static Time_Stamp _t1;
-        static Time_Stamp _t2;
-        static Time_Stamp _t3;
+        static Frequency _frequency;
+        static Coordinates _peer;
     };
 
 
@@ -988,7 +997,7 @@ public:
     {
         friend class TSTP;
 
-        static const unsigned int KEY_MANAGER_PERIOD = 10 * 1000 * 1000;
+        static const unsigned int KEY_MANAGER_PERIOD = 3 * 1000 * 1000;
         static const unsigned long long KEY_EXPIRY = -1;//100 * KEY_MANAGER_PERIOD;
 
     public:

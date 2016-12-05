@@ -341,13 +341,13 @@ public:
         friend class CC2538;
         friend class IC;
     private:
-        const static unsigned long long CLOCK = 32 * 1000 * 1000; // 32MHz
+        const static unsigned int CLOCK = 32 * 1000 * 1000; // 32MHz
 
     public:
         typedef unsigned long long Time_Stamp;
         typedef long long Offset;
 
-        static unsigned long long frequency() { return CLOCK; }
+        static unsigned int frequency() { return CLOCK; }
 
     public:
         Timer() {}
@@ -672,17 +672,18 @@ public:
          switch(mode) {
 
              // TODO: Switching RX_MODEs seems to prevent the radio from receiving anything after a while!
+             // The cause of this error is under investigation
 
          case FULL: // Able to receive and transmit
              power_ieee802_15_4(FULL);
              xreg(RFIRQF0) &= ~INT_FIFOP;
              xreg(RFIRQM0) |= INT_FIFOP;
-             //xreg(FRMCTRL0) = (xreg(FRMCTRL0) & ~(3 * RX_MODE)) | (RX_MODE_NORMAL * RX_MODE);
+             xreg(FRMCTRL0) = (xreg(FRMCTRL0) & ~(3 * RX_MODE)) | (RX_MODE_NORMAL * RX_MODE);
              break;
          case LIGHT: // Able to sense channel and transmit
              power_ieee802_15_4(LIGHT);
              xreg(RFIRQM0) &= ~INT_FIFOP;
-             //xreg(FRMCTRL0) = (xreg(FRMCTRL0) & ~(3 * RX_MODE)) | (RX_MODE_NO_SYMBOL_SEARCH * RX_MODE);
+             xreg(FRMCTRL0) = (xreg(FRMCTRL0) & ~(3 * RX_MODE)) | (RX_MODE_NO_SYMBOL_SEARCH * RX_MODE);
              break;
          case SLEEP: // Receiver off
              sfr(RFST) = ISRFOFF;
