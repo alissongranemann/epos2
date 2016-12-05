@@ -197,6 +197,9 @@ public:
         Time last_hop_time() const { return _last_hop_time; }
         void last_hop_time(const Time & t) { _last_hop_time = t; }
 
+        unsigned char confidence() const { return _confidence; }
+        void confidence(unsigned char c) { _confidence = c; }
+
         friend Debug & operator<<(Debug & db, const _Header & h) {
             db << "{v=" << h.version() - V0 << ",t=" << ((h.type() == INTEREST) ? 'I' :  (h.type() == RESPONSE) ? 'R' : (h.type() == COMMAND) ? 'C' : 'P') << ",tr=" << h.time_request() << ",s=" << h.scale() << ",ot=" << h._time << ",o=" << h._origin << ",lt=" << h._last_hop_time << ",l=" << h._last_hop << "}";
             return db;
@@ -862,12 +865,26 @@ public:
     };
 
 
+    class Router;
+
     // TSTP Locator
     class Locator: private NIC::Observer
     {
+        friend class TSTP::Router;
+
+        typedef char RSSI;
+
+        struct Peer {
+            Coordinates coordinates;
+            Percent confidence;
+            RSSI rssi;
+        };
+
     public:
         Locator() {
             db<TSTP>(TRC) << "TSTP::Locator()" << endl;
+            _n_peers = 0;
+            _confidence = 0;
         }
         ~Locator();
 
@@ -880,7 +897,33 @@ public:
         void update(NIC::Observed * obs, NIC::Protocol prot, NIC::Buffer * buf);
 
     private:
+        void add_peer(Coordinates coord, Percent conf, RSSI r) {
+            unsigned int idx = -1u;
+
+            if(_n_peers < 3)
+                idx = _n_peers++;
+            else
+                for(unsigned int i = 0; i < _n_peers; i++)
+                    if((_peers[i].confidence <= conf) && ((idx == -1u) || (conf >= _peers[i].confidence)))
+                        idx = i;
+
+            if(idx != -1u) {
+                _peers[idx].coordinates = coord;
+                _peers[idx].confidence = conf;
+                _peers[idx].rssi = r;
+
+                if(_n_peers == 3) {
+                    _here = _here.trilaterate(_peers[0].coordinates, _peers[0].rssi + 128, _peers[1].coordinates, _peers[1].rssi + 128, _peers[2].coordinates, _peers[2].rssi + 128);
+                    _confidence = (_peers[0].confidence + _peers[1].confidence + _peers[2].confidence) * 80 / 100 / 3;
+                }
+            }
+        }
+
+    private:
         static Coordinates _here;
+        static unsigned int _n_peers;
+        static Percent _confidence;
+        static Peer _peers[3];
     };
 
 

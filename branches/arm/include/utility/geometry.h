@@ -57,6 +57,39 @@ public:
         return sqrt(xx*xx + yy*yy + zz*zz);
     }
 
+    // TODO: 3D trilateration
+    static Point trilaterate(const Point & p1, const Distance & d1,  const Point & p2, const Distance & d2, const Point & p3, const Distance & d3) {
+        Larger_T a[2][3];
+
+        a[0][0] = 2 * (-p1.x + p3.x);
+        a[0][1] = 2 * (-p1.y + p3.y);
+        a[0][2] = 1 * ((d1 * d1 - (p1.x * p1.x + p1.y * p1.y)) - (d3 * d3 - (p3.x * p3.x + p3.y * p3.y)));
+
+        a[1][0] = 2 * (-p2.x + p3.x);
+        a[1][1] = 2 * (-p2.y + p3.y);
+        a[1][2] = 1 * ((d2 * d2 - (p2.x * p2.x + p2.y * p2.y))-(d3 * d3 - (p3.x * p3.x + p3.y * p3.y)));
+
+        if (a[0][0] != 0) {
+            a[1][1] -= a[0][1] * a[1][0] / a[0][0];
+            a[1][2] -= a[0][2] * a[1][0] / a[0][0];
+            a[1][0] = 0;
+        }
+
+        T x, y;
+
+        if(a[1][1] == 0)
+            y = 0;
+        else
+            y = a[1][2] / a[1][1];
+
+        if(a[0][0] == 0)
+            x = 0;
+        else
+            x = (a[0][2]-(y * a[0][1])) / a[0][0];
+
+        return Point(x, y, 0);
+    }
+
     bool operator==(const Point & p) const { return (x == p.x) && (y == p.y) && (z == p.z); }
     bool operator!=(const Point & p) const { return !(*this == p); }
 

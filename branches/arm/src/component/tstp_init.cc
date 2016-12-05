@@ -16,6 +16,8 @@ void TSTP::Locator::bootstrap()
 {
     db<TSTP>(TRC) << "TSTP::Locator::bootstrap()" << endl;
 
+    _confidence = 100;
+
     // TODO: we need a better way to define static locations
     if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x1a\x84\x0d\x06", 8))
         _here = TSTP::sink();
@@ -32,9 +34,13 @@ void TSTP::Locator::bootstrap()
         _here = Coordinates(100, 0, 0);
 
     else
-        _here = Coordinates(-1, -1, -1);
+        _confidence = 0;
 
     TSTP::_nic->attach(this, NIC::TSTP);
+
+    // Wait for spatial localization
+    while(_confidence < 80)
+        Thread::self()->yield();
 }
 
 void TSTP::Timekeeper::bootstrap()

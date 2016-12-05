@@ -12,15 +12,26 @@ __BEGIN_SYS
 // TSTP::Locator
 // Class attributes
 TSTP::Coordinates TSTP::Locator::_here;
+unsigned int TSTP::Locator::_n_peers;
+Percent TSTP::Locator::_confidence;
+TSTP::Locator::Peer TSTP::Locator::_peers[3];
 
 // Methods
 void TSTP::Locator::update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf)
 {
     db<TSTP>(TRC) << "TSTP::Locator::update(obs=" << obs << ",buf=" << buf << ")" << endl;
     if(buf->is_microframe) {
-        if(!buf->downlink)
+        if(_confidence < 80)
+            buf->relevant = true;
+        else if(!buf->downlink)
             buf->my_distance = here() - TSTP::sink();
     } else {
+        if(_confidence < 100) {
+            Header * h = buf->frame()->data<Header>();
+            if(h->confidence() > 80)
+                add_peer(h->origin(), h->confidence(), buf->rssi);
+        }
+
         Coordinates dst = TSTP::destination(buf).center;
         buf->my_distance = here() - dst;
         buf->downlink = dst != TSTP::sink(); // This would fit better in the Router, but Timekeeper uses this info
@@ -33,6 +44,7 @@ void TSTP::Locator::marshal(Buffer * buf)
     Coordinates dst = TSTP::destination(buf).center;
     buf->my_distance = here() - dst;
     buf->downlink = dst != TSTP::sink(); // This would fit better in the Router, but Timekeeper uses this info
+    buf->frame()->data<Header>()->confidence(_confidence);
 }
 
 TSTP::Locator::~Locator()
@@ -123,6 +135,8 @@ void TSTP::Router::update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf)
             // Adjust Last Hop location
             send_buf->frame()->data<Header>()->last_hop(TSTP::here());
             send_buf->sender_distance = send_buf->my_distance;
+
+            send_buf->frame()->data<Header>()->confidence(TSTP::Locator::_confidence);
 
             TSTP::_nic->send(send_buf);
         }
