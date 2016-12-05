@@ -295,7 +295,7 @@ void TSTP::Security::update(NIC::Observed * obs, NIC::Protocol prot, Buffer * bu
                             if(peer->valid_request(auth_req->auth(), auth_req->origin(), TSTP::now())) {
                                 for(Pending_Keys::Element * pk_el = _pending_keys.head(); pk_el; pk_el = pk_el->next()) {
                                     Pending_Key * pk = pk_el->object();
-                                    if(otp(pk->master_secret(), peer->id()) == auth_req->otp()) {
+                                    if(verify(pk->master_secret(), peer->id(), auth_req->otp())) {
                                         peer->master_secret(pk->master_secret());
                                         _pending_peers.remove(el);
                                         _trusted_peers.insert(el);

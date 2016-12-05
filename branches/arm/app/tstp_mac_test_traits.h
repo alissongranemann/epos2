@@ -127,7 +127,7 @@ template<> struct Traits<System>: public Traits<void>
 
     enum {FOREVER = 0, SECOND = 1, MINUTE = 60, HOUR = 3600, DAY = 86400, WEEK = 604800, MONTH = 2592000, YEAR = 31536000};
     static const unsigned long LIFE_SPAN = 1 * YEAR; // in seconds
-    static const unsigned int DUTY_CYCLE = 100000; // in ppm
+    static const unsigned int DUTY_CYCLE = 10000; // in ppm
 
     static const bool reboot = false;
 

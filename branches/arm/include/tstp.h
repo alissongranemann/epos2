@@ -997,7 +997,7 @@ public:
     {
         friend class TSTP;
 
-        static const unsigned int KEY_MANAGER_PERIOD = 3 * 1000 * 1000;
+        static const unsigned int KEY_MANAGER_PERIOD = 10 * 1000 * 1000;
         static const unsigned long long KEY_EXPIRY = -1;//100 * KEY_MANAGER_PERIOD;
 
     public:
@@ -1095,9 +1095,9 @@ public:
         static void add_peer(const unsigned char * peer_id, unsigned int id_len, const Region & valid_region) {
             Node_ID id(peer_id, id_len);
             Peer * peer = new Peer(id, valid_region);
-            while(CPU::tsl(_peers_lock));
+            //while(CPU::tsl(_peers_lock));
             _pending_peers.insert(peer->link());
-            _peers_lock = false;
+            //_peers_lock = false;
             if(!_key_manager)
                 _key_manager = new Thread(&key_manager);
         }
@@ -1133,13 +1133,54 @@ public:
             for(; i < sizeof(Master_Secret); i++)
                 mi[i] = ms[i];
 
-            unsigned char nonce[16]; // TODO: This should be the truncated time. Set to 0 for now to avoid errors
-            for(i = 0; i < 16; i++)
-                nonce[i] = 0;
+            Time t = TSTP::now() / (KEY_EXPIRY / 2);
+
+            unsigned char nonce[16];
+            memset(nonce, 0, 16);
+            memcpy(nonce, &t, min(sizeof(Time), 16lu));
 
             OTP out;
             Poly1305(id, ms).stamp(out, nonce, mi, MI_SIZE);
             return out;
+        }
+
+        static bool verify(const Master_Secret & master_secret, const Node_ID & id, const OTP & otp) {
+            const unsigned char * ms = reinterpret_cast<const unsigned char *>(&master_secret);
+
+            // mi = ms ^ _id
+            static const unsigned int MI_SIZE = sizeof(Node_ID) > sizeof(Master_Secret) ? sizeof(Node_ID) : sizeof(Master_Secret);
+            unsigned char mi[MI_SIZE];
+            unsigned int i;
+            for(i = 0; (i < sizeof(Node_ID)) && (i < sizeof(Master_Secret)); i++)
+                mi[i] = id[i] ^ ms[i];
+            for(; i < sizeof(Node_ID); i++)
+                mi[i] = id[i];
+            for(; i < sizeof(Master_Secret); i++)
+                mi[i] = ms[i];
+
+            unsigned char nonce[16];
+            Time t = TSTP::now() / (KEY_EXPIRY / 2);
+
+            Poly1305 poly(id, ms);
+
+            memset(nonce, 0, 16);
+            memcpy(nonce, &t, min(sizeof(Time), 16lu));
+            if(poly.verify(otp, nonce, mi, MI_SIZE))
+                return true;
+
+            t--;
+            memset(nonce, 0, 16);
+            memcpy(nonce, &t, min(sizeof(Time), 16lu));
+            if(poly.verify(otp, nonce, mi, MI_SIZE))
+                return true;
+
+            t += 2;
+            memset(nonce, 0, 16);
+            memcpy(nonce, &t, min(sizeof(Time), 16lu));
+            if(poly.verify(otp, nonce, mi, MI_SIZE))
+                return true;
+
+            return false;
         }
 
         static int key_manager() {
