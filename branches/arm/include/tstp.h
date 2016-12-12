@@ -596,13 +596,14 @@ public:
         unsigned char _precision : 6;
         Time_Offset _expiry;
         Microsecond _period;
+        CRC _crc;
     } __attribute__((packed));
 
     // Response (Data) Message
     class Response: public Header
     {
     private:
-        typedef unsigned char Data[MTU - sizeof(Unit) - sizeof(Error) - sizeof(Time_Offset)];
+        typedef unsigned char Data[MTU - sizeof(Unit) - sizeof(Error) - sizeof(Time_Offset) - sizeof(CRC)];
 
     public:
         Response(const Unit & unit, const Error & error = 0, const Time & expiry = 0)
@@ -632,13 +633,14 @@ public:
         Error _error;
         Time_Offset _expiry;
         Data _data;
+        CRC _crc;
     } __attribute__((packed));
 
     // Command Message
     class Command: public Header
     {
     private:
-        typedef unsigned char Data[MTU - sizeof(Region) - sizeof(Unit)];
+        typedef unsigned char Data[MTU - sizeof(Region) - sizeof(Unit) - sizeof(CRC)];
 
     public:
         Command(const Unit & unit, const Region & region)
@@ -662,6 +664,7 @@ public:
         Region _region;
         Unit _unit;
         Data _data;
+        CRC _crc;
     } __attribute__((packed));
 
     // Control Message extended Header
@@ -710,6 +713,7 @@ public:
     private:
         Coordinates _destination;
         Public_Key _public_key;
+        CRC _crc;
     //} __attribute__((packed)); // TODO
     };
 
@@ -730,6 +734,7 @@ public:
 
     private:
         Public_Key _public_key;
+        CRC _crc;
     //} __attribute__((packed)); // TODO
     };
 
@@ -754,6 +759,7 @@ public:
     private:
         Auth _auth;
         OTP _otp;
+        CRC _crc;
     //} __attribute__((packed)); // TODO
     };
 
@@ -778,6 +784,7 @@ public:
     private:
         Coordinates _destination;
         Auth _auth; // TODO
+        CRC _crc;
     // } __attribute__((packed)); // TODO
     };
 
@@ -898,14 +905,29 @@ public:
 
     private:
         void add_peer(Coordinates coord, Percent conf, RSSI r) {
+            db<TSTP>(INF) << "TSTP::Locator::add_peer(c=" << coord << ",conf=" << conf << ",r=" << static_cast<int>(r) << ")" << endl;
+
             unsigned int idx = -1u;
 
-            if(_n_peers < 3)
-                idx = _n_peers++;
-            else
-                for(unsigned int i = 0; i < _n_peers; i++)
-                    if((_peers[i].confidence <= conf) && ((idx == -1u) || (conf >= _peers[i].confidence)))
+            for(unsigned int i = 0; i < _n_peers; i++) {
+                if(_peers[i].coordinates == coord) {
+                    if(_peers[i].confidence > conf)
+                       return;
+                    else {
                         idx = i;
+                        break;
+                    }
+                }
+            }
+
+            if(idx == -1u) {
+                if(_n_peers < 3)
+                    idx = _n_peers++;
+                else
+                    for(unsigned int i = 0; i < _n_peers; i++)
+                        if((_peers[i].confidence <= conf) && ((idx == -1u) || (conf >= _peers[i].confidence)))
+                            idx = i;
+            }
 
             if(idx != -1u) {
                 _peers[idx].coordinates = coord;
@@ -915,6 +937,7 @@ public:
                 if(_n_peers == 3) {
                     _here = _here.trilaterate(_peers[0].coordinates, _peers[0].rssi + 128, _peers[1].coordinates, _peers[1].rssi + 128, _peers[2].coordinates, _peers[2].rssi + 128);
                     _confidence = (_peers[0].confidence + _peers[1].confidence + _peers[2].confidence) * 80 / 100 / 3;
+                    db<TSTP>(INF) << "TSTP::Locator: Location updated: " << _here << ", confidence = " << _confidence << "%" << endl;
                 }
             }
         }
@@ -1087,6 +1110,8 @@ public:
             // should be something like: Node_ID(Machine::id(), sizeof(Machine::ID));
             new (&_id) Node_ID(Machine::id(), 8);
 
+            db<TSTP>(INF) << "Node ID: " << _id << endl;
+
             assert(Cipher::KEY_SIZE == sizeof(Node_ID));
             _cipher.encrypt(_id, _id, _auth);
         }
@@ -1094,12 +1119,12 @@ public:
 
         static void add_peer(const unsigned char * peer_id, unsigned int id_len, const Region & valid_region) {
             Node_ID id(peer_id, id_len);
-            Peer * peer = new Peer(id, valid_region);
+            Peer * peer = new (SYSTEM) Peer(id, valid_region);
             //while(CPU::tsl(_peers_lock));
             _pending_peers.insert(peer->link());
             //_peers_lock = false;
             if(!_key_manager)
-                _key_manager = new Thread(&key_manager);
+                _key_manager = new (SYSTEM) Thread(&key_manager);
         }
 
         void bootstrap();

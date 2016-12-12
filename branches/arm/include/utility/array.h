@@ -48,12 +48,12 @@ public:
     }
 
     T & operator[](const size_t i) { return _data[i]; }
-    const unsigned char & operator[](const size_t i) const { return _data[i]; }
+    const T & operator[](const size_t i) const { return _data[i]; }
     operator const T*() const { return _data; }
     operator T*() { return _data; }
 
     template <typename U>
-    bool operator==(const U & u) const { return (SIZE == sizeof(U)) && (!memcmp(&u, _data, sizeof(U))); }
+    bool operator==(const U & u) const { return (SIZE == sizeof(U)) && (!memcmp(&u, _data, SIZE)); }
     template <typename U>
     bool operator!=(const U & u) const { return !(*this == u); }
 

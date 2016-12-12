@@ -33,6 +33,10 @@ void TSTP::Locator::bootstrap()
     else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xee\x0e\x16\x06", 8))
         _here = Coordinates(100, 0, 0);
 
+    // Sniffer
+    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x6e\x82\x0d\x06", 8))
+    //    _here = Coordinates(120, 120, 0);
+
     else
         _confidence = 0;
 
@@ -49,7 +53,6 @@ void TSTP::Timekeeper::bootstrap()
 
     TSTP::_nic->attach(this, NIC::TSTP);
 
-    //if(!Traits<TSTP_MAC<void>>::sniffer && (TSTP::here() != TSTP::sink())) { // TODO
     if(TSTP::here() != TSTP::sink()) {
         // Wait for time synchronization
         while(!_t1)
@@ -69,9 +72,8 @@ void TSTP::Security::bootstrap()
 
     TSTP::_nic->attach(this, NIC::TSTP);
 
-    //if(!Traits<TSTP_MAC<void>>::sniffer && (TSTP::here() != TSTP::sink())) { // TODO
     if(TSTP::here() != TSTP::sink()) {
-        Peer * peer = new Peer(_id, Region(TSTP::sink(), 0, 0, -1));
+        Peer * peer = new (SYSTEM) Peer(_id, Region(TSTP::sink(), 0, 0, -1));
         _pending_peers.insert(peer->link());
 
         // Wait for key establishment

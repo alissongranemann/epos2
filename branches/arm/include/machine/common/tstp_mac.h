@@ -23,6 +23,18 @@ class TSTP_MAC: public TSTP_Common, public TSTP_Common::Observed, public Radio
 {
     typedef IEEE802_15_4 Phy_Layer;
 
+    enum State {
+        UPDATE_TX_SCHEDULE = 0,
+        SLEEP_S            = 1,
+        RX_MF              = 2,
+        SLEEP_DATA         = 3,
+        RX_DATA            = 4,
+        BACKOFF            = 5,
+        CCA                = 6,
+        TX_MF              = 7,
+        TX_DATA            = 8,
+    };
+
 public:
     using TSTP_Common::Address;
     using TSTP_Common::Header;
@@ -31,11 +43,11 @@ public:
     typedef typename Radio::Timer::Time_Stamp Time_Stamp;
 
     static const unsigned int MTU = Frame::MTU;
-    //static const bool sniffer = Traits<TSTP_MAC<Radio>>::sniffer;//false; // For debugging
-    static const bool sniffer = false; // For debugging
 
 private:
 public: //TODO: for debugging
+
+    static const bool promiscuous = Traits<NIC>::promiscuous;
 
     static const unsigned int INT_HANDLING_DELAY = 9; // Time delay between scheduled tx_mf interrupt and actual Radio TX
     static const unsigned int TX_DELAY = INT_HANDLING_DELAY + Radio::RX_TO_TX_DELAY;
@@ -84,8 +96,9 @@ protected:
         if(_in_rx_mf) { // State: RX MF (part 2/3)
             if(buf->size() == sizeof(Microframe)) {
 
-                Radio::power(Power_Mode::SLEEP);
                 Timer::int_disable();
+
+                Radio::power(Power_Mode::SLEEP);
                 buf->sfd_time_stamp = Timer::sfd();
 
                 _in_rx_mf = false;
@@ -108,6 +121,8 @@ protected:
 
                         Time_Stamp data_time = buf->sfd_time_stamp + Timer::us2count(TIME_BETWEEN_MICROFRAMES) + mf->count() * Timer::us2count(TIME_BETWEEN_MICROFRAMES + MICROFRAME_TIME) - Timer::us2count(DATA_LISTEN_MARGIN);
 
+                        //kout << SLEEP_DATA ;
+                        // State: Sleep until Data
                         Timer::interrupt(data_time + Timer::us2count(DATA_SKIP_TIME), update_tx_schedule);
 
                         return false;
@@ -119,7 +134,7 @@ protected:
                 buf->downlink = mf->all_listen();
                 buf->is_new = false;
                 buf->is_microframe = true;
-                buf->relevant = sniffer || mf->all_listen();
+                buf->relevant = promiscuous || mf->all_listen();
                 buf->trusted = false;
                 buf->sender_distance = mf->hint();
 
@@ -129,15 +144,12 @@ protected:
                 return true;
             }
             return false;
-        } else { // State: RX Data (part 2/3)
-
-            assert(_in_rx_data);
+        } else if(_in_rx_data) { // State: RX Data (part 2/3)
 
             if(buf->size() == sizeof(Microframe))
                 return false;
 
             Radio::power(Power_Mode::SLEEP);
-            Timer::int_disable();
 
             // Initialize Buffer Metainformation
             buf->sfd_time_stamp = Timer::sfd();
@@ -150,12 +162,9 @@ protected:
 
             db<TSTP_MAC<Radio>>(TRC) << "TSTP_MAC::pre_notify: Frame received: " << buf->frame() << " at " << Radio::Timer::count2us(buf->sfd_time_stamp) << endl;
 
-            // Schedule next operation, so that the state machine won't get lost if the updates take too long
-            update_tx_schedule(0);
-            _reschedulable = true;
-
             return true;
-        }
+        } else
+            return false;
     }
 
     bool post_notify(Buffer * buf) {
@@ -165,6 +174,8 @@ protected:
         if(buf->is_microframe) { // State: RX MF (part 3/3)
             Microframe * mf = buf->frame()->data<Microframe>();
             Time_Stamp data_time = buf->sfd_time_stamp + Timer::us2count(TIME_BETWEEN_MICROFRAMES) + mf->count() * Timer::us2count(TIME_BETWEEN_MICROFRAMES + MICROFRAME_TIME) - Timer::us2count(DATA_LISTEN_MARGIN);
+
+            //kout << SLEEP_DATA;
 
             if(buf->relevant) { // Transition: [Relevant MF]
                 _receiving_data_id = buf->id;
@@ -213,46 +224,23 @@ public:
         // Components calculate the offset in microseconds according to their own metrics.
         // We finish the calculation here to keep SLEEP_PERIOD, G, and Timestamps
         // encapsulated by the MAC, and MAC::marshal() happens before the other components' marshal methods
-        buf->offset = Timer::us2count(((buf->offset * SLEEP_PERIOD) / (G*RADIO_RANGE)) * G);
-
-        if(buf->offset < Timer::us2count(CCA_TIME))
+        if(buf->destined_to_me)
             buf->offset = Timer::us2count(CCA_TIME);
-        else if(buf->offset > Timer::us2count(SLEEP_PERIOD - CCA_TIME))
-            buf->offset = Timer::us2count(SLEEP_PERIOD - CCA_TIME);
+        else {
+            buf->offset = Timer::us2count(((buf->offset * SLEEP_PERIOD) / (G*RADIO_RANGE)) * G);
+
+            if(buf->offset < Timer::us2count(2*CCA_TIME))
+                buf->offset = Timer::us2count(2*CCA_TIME);
+            else if(buf->offset > Timer::us2count(SLEEP_PERIOD - CCA_TIME))
+                buf->offset = Timer::us2count(SLEEP_PERIOD - CCA_TIME);
+        }
 
         _tx_schedule.insert(buf->link());
-
-        // Forwarding from a message that was just received. Reschedule next operation.
-        if(!buf->is_new && _reschedulable)
-            reschedule(buf);
 
         return buf->size();
     }
 
 private:
-    // Schedule buffer for immediate transmission
-    static void reschedule(Buffer * buf) {
-        if(!sniffer) {
-            Timer::int_disable();
-
-            Time_Stamp now_ts = Timer::read();
-
-            assert(_reschedulable);
-            _reschedulable = false;
-
-            _tx_pending = buf;
-            new (&_mf) Microframe((!buf->destined_to_me) && buf->downlink, buf->id, N_MICROFRAMES - 1, buf->my_distance);
-            Radio::power(Power_Mode::LIGHT);
-            Radio::copy_to_nic(&_mf, sizeof(Microframe));
-
-            // ACKs are sent right away (offset = 0)
-            if(buf->destined_to_me)
-                cca(0);
-            else
-                Timer::interrupt(now_ts + buf->offset, cca);
-        }
-    }
-
     // State Machine
 
     static void update_tx_schedule(const IC::Interrupt_Id & id) {
@@ -263,6 +251,8 @@ private:
         Radio::power(Power_Mode::SLEEP);
         _in_rx_data = false;
         _in_rx_mf = false;
+
+        //kout << UPDATE_TX_SCHEDULE ;
 
         _tx_pending = 0;
 
@@ -278,7 +268,7 @@ private:
                 _tx_schedule.remove(el);
                 delete b;
             } else if((!_tx_pending) || ((!_tx_pending->destined_to_me) && ((b->destined_to_me) || (_tx_pending->deadline > b->deadline))))
-                if(!sniffer)
+                if(!promiscuous)
                     _tx_pending = b;
             el = next;
         }
@@ -290,23 +280,20 @@ private:
             Radio::power(Power_Mode::LIGHT);
             Radio::copy_to_nic(&_mf, sizeof(Microframe));
 
-            // ACKs are sent right away (offset = 0)
-            if(_tx_pending->destined_to_me)
-                cca(0);
-            else
-                Timer::interrupt(now_ts + _tx_pending->offset, cca);
+            //kout << BACKOFF ;
+            Timer::interrupt(now_ts + _tx_pending->offset, cca);
         } else { // Transition: [No TX pending]
             // State: Sleep S
+            //kout << SLEEP_S ;
             Timer::interrupt(now_ts + Timer::us2count(SLEEP_PERIOD), rx_mf);
         }
     }
 
     // State: Backoff CCA (CCA part)
     static void cca(const IC::Interrupt_Id & id) {
+        //kout << CCA ;
         if(Traits<TSTP_MAC>::hysterically_debugged)
             db<TSTP_MAC<Radio>>(TRC) << "TSTP_MAC::cca(id=" << id << ")" << endl;
-
-        _reschedulable = false;
 
         assert(N_MICROFRAMES > 1);
 
@@ -321,29 +308,30 @@ private:
                 // Prioritize retransmissions of this buffer by a random ammount to avoid permanent collision with another node
                 if(_tx_pending->offset > 2 * Timer::us2count(CCA_TIME))
                     _tx_pending->offset -= Random::random() % (2 * Timer::us2count(CCA_TIME));
+                //kout << TX_MF ;
                 while(!Radio::tx_done());
                 Radio::copy_to_nic(&_mf, sizeof(Microframe));
                 Timer::interrupt(_mf_time, tx_mf);
             } else { // Transition: [Channel busy]
                 // Prioritize retransmissions of this buffer by a random ammount to avoid permanent collision with another node
                 if(_tx_pending->offset > 2 * Timer::us2count(CCA_TIME))
-                    _tx_pending->offset -= Random::random() % (2 * Timer::us2count(CCA_TIME));
+                    _tx_pending->offset -= Random::random() % (2u * Timer::us2count(CCA_TIME));
                 rx_mf(0);
             }
         } else { // Transition: [Channel busy]
             // Prioritize retransmissions of this buffer by a random ammount to avoid permanent collision with another node
             if(_tx_pending->offset > 2 * Timer::us2count(CCA_TIME))
-                _tx_pending->offset -= Random::random() % (2 * Timer::us2count(CCA_TIME));
+                _tx_pending->offset -= Random::random() % (2u * Timer::us2count(CCA_TIME));
             rx_mf(0);
         }
     }
 
     // State: RX MF (part 1/3)
     static void rx_mf(const IC::Interrupt_Id & id) {
+        //kout << RX_MF ;
         if(Traits<TSTP_MAC>::hysterically_debugged)
             db<TSTP_MAC<Radio>>(TRC) << "TSTP_MAC::rx_mf(id=" << id << ")" << endl;
 
-        _reschedulable = false;
         _in_rx_mf = true;
 
         // If timeout is reached, Transition: [No MF]
@@ -355,6 +343,7 @@ private:
 
     // State: RX Data (part 1/3)
     static void rx_data(const IC::Interrupt_Id & id) {
+        //kout << RX_DATA ;
         if(Traits<TSTP_MAC>::hysterically_debugged)
             db<TSTP_MAC<Radio>>(TRC) << "TSTP_MAC::rx_data(id=" << id << ")" << endl;
 
@@ -392,6 +381,7 @@ private:
     }
 
     static void tx_data(const IC::Interrupt_Id & id) {
+        //kout << TX_DATA;
         if(Traits<TSTP_MAC>::hysterically_debugged)
             db<TSTP_MAC<Radio>>(TRC) << "TSTP_MAC::tx_data(id=" << id << ")" << endl;
 
@@ -408,6 +398,7 @@ private:
 
         // State: Sleep S
         Radio::power(Power_Mode::SLEEP);
+        //kout << SLEEP_S;
         Timer::interrupt(_mf_time + Timer::us2count(SLEEP_PERIOD), rx_mf);
     }
 
@@ -421,7 +412,6 @@ private:
     static Buffer * _tx_pending;
     static bool _in_rx_mf;
     static bool _in_rx_data;
-    static volatile bool _reschedulable;
 };
 
 // The compiler makes sure that template static variables are only defined once
@@ -450,9 +440,6 @@ bool TSTP_MAC<Radio>::_in_rx_mf;
 
 template<typename Radio>
 bool TSTP_MAC<Radio>::_in_rx_data;
-
-template<typename Radio>
-volatile bool TSTP_MAC<Radio>::_reschedulable;
 
 __END_SYS
 

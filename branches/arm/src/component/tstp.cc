@@ -87,6 +87,9 @@ void TSTP::Timekeeper::update(NIC::Observed * obs, NIC::Protocol prot, Buffer * 
                 db<TSTP>(TRC) << "TSTP::Timekeeper::update: adjusted timer offset by " << adj << endl;
 
                 _peer = buf->frame()->data<Header>()->last_hop();
+
+                db<TSTP>(INF) << "TSTP::Timekeeper::update: synchronizing with " << _peer << endl;
+                db<TSTP>(INF) << "now() = " << now() << endl;
             }
         } else if(_peer == buf->frame()->data<Header>()->last_hop()) { // Message from peer
             Time_Stamp t0_new = buf->frame()->data<Header>()->last_hop_time();
@@ -101,6 +104,7 @@ void TSTP::Timekeeper::update(NIC::Observed * obs, NIC::Protocol prot, Buffer * 
             _frequency = NIC::Timer::frequency() + NIC::Timer::frequency() * static_cast<Frequency>((t1_new - t0_new) - (_t1 - _t0)) / static_cast<Frequency>(t0_new - _t0);
 
             db<TSTP>(TRC) << "TSTP::Timekeeper::update: adjusted timer frequency to " << _frequency << endl;
+            db<TSTP>(TRC) << "now() = " << now() << endl;
 
             _t0 = t0_new;
             _t1 = t1_new;
@@ -199,6 +203,7 @@ unsigned int TSTP::Security::_dh_requests_open;
 void TSTP::Security::update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf)
 {
     db<TSTP>(TRC) << "TSTP::Security::update(obs=" << obs << ",buf=" << buf << ")" << endl;
+
     if(!buf->is_microframe && buf->destined_to_me) {
 
         switch(buf->frame()->data<Header>()->type()) {
@@ -360,7 +365,52 @@ void TSTP::Security::update(NIC::Observed * obs, NIC::Protocol prot, Buffer * bu
                             //CPU::int_enable();
                         }
                     } break;
+
+                    default: break;
                 }
+            }
+
+            default: break;
+        }
+    }
+
+    // TODO
+    if(Traits<NIC>::promiscuous && Traits<TSTP>::debugged && !buf->is_microframe) {
+        Packet * packet = buf->frame()->data<Packet>();
+        switch(packet->type()) {
+        case INTEREST: {
+            assert(buf->size() == sizeof(Interest));
+            Interest * interest = reinterpret_cast<Interest *>(packet);
+            db<TSTP>(INF) << "TSTP::update:interest=" << interest << " => " << *interest << endl;
+        } break;
+        case RESPONSE: {
+            assert(buf->size() == sizeof(Response));
+            Response * response = reinterpret_cast<Response *>(packet);
+            db<TSTP>(INF) << "TSTP::update:response=" << response << " => " << *response << endl;
+        } break;
+        case COMMAND: {
+            assert(buf->size() == sizeof(Command));
+            Command * command = reinterpret_cast<Command *>(packet);
+            db<TSTP>(INF) << "TSTP::update:command=" << command << " => " << *command << endl;
+        } break;
+        case CONTROL:
+            switch(buf->frame()->data<Control>()->subtype()) {
+                case DH_REQUEST:
+                    assert(buf->size() == sizeof(DH_Request));
+                    db<TSTP>(INF) << "TSTP::update: DH_Request: " << *buf->frame()->data<DH_Request>() << endl;
+                    break;
+                case DH_RESPONSE:
+                    assert(buf->size() == sizeof(DH_Response));
+                    db<TSTP>(INF) << "TSTP::update: DH_Response: " << *buf->frame()->data<DH_Response>() << endl;
+                    break;
+                case AUTH_REQUEST:
+                    assert(buf->size() == sizeof(Auth_Request));
+                    db<TSTP>(INF) << "TSTP::update: Auth_Request: " << *buf->frame()->data<Auth_Request>() << endl;
+                    break;
+                case AUTH_GRANTED:
+                    assert(buf->size() == sizeof(Auth_Granted));
+                    db<TSTP>(INF) << "TSTP::update: Auth_Granted: " << *buf->frame()->data<Auth_Granted>() << endl;
+                    break;
             }
         }
     }

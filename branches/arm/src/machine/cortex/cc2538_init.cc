@@ -45,12 +45,12 @@ CC2538::CC2538(unsigned int unit): _unit(unit), _rx_cur_consume(0), _rx_cur_prod
 
     if(Traits<CC2538>::gpio_debug) {
         // Enable debug signals to GPIO
-        GPIO p_tx('C',4,GPIO::OUT,GPIO::FLOATING); // Configure GPIO pin C4
-        GPIO p_rx('C',6,GPIO::OUT,GPIO::FLOATING); // Configure GPIO pin C6
+        GPIO p_tx('C',3,GPIO::OUT,GPIO::FLOATING); // Configure GPIO pin C3
+        GPIO p_rx('C',5,GPIO::OUT,GPIO::FLOATING); // Configure GPIO pin C5
         xreg(RFC_OBS_CTRL0) = SIGNAL_TX_ACTIVE; // Signal 0 is TX_ACTIVE
         xreg(RFC_OBS_CTRL1) = SIGNAL_RX_ACTIVE; // Signal 1 is RX_ACTIVE
-        cctest(CCTEST_OBSSEL4) = OBSSEL_SIG0_EN; // Route signal 0 to GPIO pin C4
-        cctest(CCTEST_OBSSEL6) = OBSSEL_SIG1_EN; // Route signal 1 to GPIO pin C6
+        cctest(CCTEST_OBSSEL3) = OBSSEL_SIG0_EN; // Route signal 0 to GPIO pin C3
+        cctest(CCTEST_OBSSEL5) = OBSSEL_SIG1_EN; // Route signal 1 to GPIO pin C5
     }
 
     reset(); // Reset statistics
@@ -67,7 +67,8 @@ CC2538::CC2538(unsigned int unit): _unit(unit), _rx_cur_consume(0), _rx_cur_prod
     // INT_RXPKTDONE is polled by CC2538RF::rx_done()
     xreg(RFIRQM0) = INT_FIFOP;
     xreg(RFIRQM1) = 0;
-    xreg(RFERRM) = 0;
+    xreg(RFERRM) = 4 | 8 | 1; // TODO
+
 
     MAC::constructor_epilogue(); // Device is configured, let the MAC use it
 }
@@ -85,12 +86,15 @@ void CC2538::init(unsigned int unit)
     // Register the device
     _devices[unit].device = dev;
     _devices[unit].interrupt = IC::INT_NIC0_RX;
+    _devices[unit].error_interrupt = IC::INT_NIC0_ERR;
 
     // Install interrupt handler
     IC::int_vector(_devices[unit].interrupt, &int_handler);
+    IC::int_vector(_devices[unit].error_interrupt, &int_handler);
 
     // Enable interrupts for device
     IC::enable(IC::INT_NIC0_RX);
+    IC::enable(IC::INT_NIC0_ERR);
 }
 
 

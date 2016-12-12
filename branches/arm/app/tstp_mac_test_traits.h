@@ -10,7 +10,7 @@ template<typename T>
 struct Traits
 {
     static const bool enabled = true;
-    static const bool debugged = false;
+    static const bool debugged = true;
     static const bool hysterically_debugged = false;
     typedef TLIST<> ASPECTS;
 };
@@ -39,8 +39,8 @@ template<> struct Traits<Debug>
 {
     static const bool error   = true;
     static const bool warning = true;
-    static const bool info    = true;
-    static const bool trace   = true;
+    static const bool info    = false;
+    static const bool trace   = false;
 };
 
 template<> struct Traits<Lists>: public Traits<void>
@@ -127,7 +127,7 @@ template<> struct Traits<System>: public Traits<void>
 
     enum {FOREVER = 0, SECOND = 1, MINUTE = 60, HOUR = 3600, DAY = 86400, WEEK = 604800, MONTH = 2592000, YEAR = 31536000};
     static const unsigned long LIFE_SPAN = 1 * YEAR; // in seconds
-    static const unsigned int DUTY_CYCLE = 10000; // in ppm
+    static const unsigned int DUTY_CYCLE = 100000; // in ppm
 
     static const bool reboot = false;
 
@@ -200,7 +200,7 @@ template<> struct Traits<ELP>: public Traits<Network>
 
 template<> struct Traits<TSTP>: public Traits<Network>
 {
-    //static const bool debugged = true;
+    static const bool debugged = Traits<Network>::debugged || Traits<NIC>::promiscuous;
     static const bool enabled = NETWORKS::Count<TSTP>::Result;
 };
 
@@ -208,10 +208,8 @@ template<typename S>
 class TSTP_MAC;
 template<> template <typename S> struct Traits<TSTP_MAC<S>>: public Traits<TSTP>
 {
-    //static const bool debugged = true;
+    static const bool debugged = Traits<NIC>::promiscuous;
     //static const bool hysterically_debugged = true;
-    //static const bool sniffer = debugged;
-    static const bool sniffer = false;
 };
 
 template<> template <typename S> struct Traits<Smart_Data<S>>: public Traits<Network>

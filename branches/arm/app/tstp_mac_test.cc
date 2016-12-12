@@ -77,6 +77,9 @@ int main()
 
     cout << "TSTP::here() = " << TSTP::here() << endl;
 
+    while(Traits<NIC>::promiscuous)
+        Thread::self()->suspend();
+
     if(TSTP::here() == TSTP::sink()) {
         cout << "Sink" << endl;
 
@@ -88,9 +91,6 @@ int main()
         TSTP::Security::add_peer(id1, sizeof(id1), Region(c1, 0, TSTP::now(), -1));
         TSTP::Security::add_peer(id2, sizeof(id2), Region(c2, 0, TSTP::now(), -1));
         TSTP::Security::add_peer(id3, sizeof(id3), Region(c3, 0, TSTP::now(), -1));
-
-        //while(true)
-        //    Thread::self()->suspend();
 
         Delay(4 * 10 * 1000 * 1000);
 
@@ -111,6 +111,8 @@ int main()
                 Region dst3(c3, 0, TSTP::now(), TSTP::now() + 10 * PERIOD);
                 Serial a3(dst3, 3 * PERIOD, PERIOD);
 
+                cout << "now = " << TSTP::now() << endl;
+
                 Delay(3 * PERIOD);
 
                 while(dst1.contains(dst1.center, TSTP::now())) {
@@ -124,53 +126,9 @@ int main()
                     Delay(3 * PERIOD);
                 }
             }
-            /*
-            {
-                cout << "Sending Interest 1" << endl;
-
-                Region dst(Coordinates(0, 100, 0), 0, TSTP::now(), TSTP::now() + 10000000);
-                Serial a0(dst, 3000000, 1000000);
-
-                Delay(1000000);
-
-                while(dst.contains(dst.center, TSTP::now())) {
-                    Delay(300000);
-                    cout << "a0 = " << static_cast<char>(a0) << endl;
-                }
-            }
-            {
-                cout << "Sending Interest 2" << endl;
-
-                Region dst(Coordinates(100, 100, 0), 0, TSTP::now(), TSTP::now() + 10000000);
-                Serial a0(dst, 3000000, 1000000);
-
-                Delay(1000000);
-
-                while(dst.contains(dst.center, TSTP::now())) {
-                    Delay(500000);
-                    cout << "a0 = " << static_cast<char>(a0) << endl;
-                }
-            }
-            {
-                cout << "Sending Interest 3" << endl;
-
-                Region dst(Coordinates(100, 0, 0), 0, TSTP::now(), TSTP::now() + 10000000);
-                Serial a0(dst, 3000000, 1000000);
-
-                Delay(1000000);
-
-                while(dst.contains(dst.center, TSTP::now())) {
-                    Delay(500000);
-                    cout << "a0 = " << static_cast<char>(a0) << endl;
-                }
-            }
-            */
         }
     } else {
         cout << "Sensor" << endl;
-
-        while(Traits<TSTP_MAC<void>>::sniffer)
-            Thread::self()->suspend();
 
         if(TSTP::here() == c1)
             seed = 1000000;
@@ -183,7 +141,6 @@ int main()
 
         unsigned int n = 0;
         while(true) {
-            //cout << "a0 = " << a0 << endl;
             Delay(10000000);
             cout << "Ping " << n++ << endl;
         }

@@ -14,9 +14,9 @@ __BEGIN_SYS
 // Class attributes
 volatile CC2538RF::Reg32 CC2538RF::Timer::_overflow_count;
 volatile CC2538RF::Reg32 CC2538RF::Timer::_ints;
-CC2538RF::Timer::Time_Stamp CC2538RF::Timer::_int_request_time;
-CC2538RF::Timer::Offset CC2538RF::Timer::_offset;
-IC::Interrupt_Handler CC2538RF::Timer::_handler;
+volatile CC2538RF::Timer::Time_Stamp CC2538RF::Timer::_int_request_time;
+volatile CC2538RF::Timer::Offset CC2538RF::Timer::_offset;
+volatile IC::Interrupt_Handler CC2538RF::Timer::_handler;
 bool CC2538RF::Timer::_overflow_match;
 bool CC2538RF::Timer::_msb_match;
 
@@ -125,7 +125,9 @@ void CC2538::handle_int()
     db<CC2538>(INF) << "CC2538::handle_int:RFIRQF1=" << hex << irqrf1 << endl;
     db<CC2538>(INF) << "CC2538::handle_int:RFERRF=" << hex << errf << endl;
 
-    if(irqrf0 & INT_FIFOP) { // Frame received
+                                       // TODO
+    if((irqrf0 & INT_FIFOP) && (!(errf & ~0x42))) { // Frame received
+        //kout << 'h';
         db<CC2538>(TRC) << "CC2538::handle_int:receive()" << endl;
         if(CC2538RF::filter()) {
             Buffer * buf = 0;
@@ -142,8 +144,10 @@ void CC2538::handle_int()
                 buf->size(CC2538RF::copy_from_nic(buf->frame()));
                 // When AUTO_CRC is on, the radio automatically puts the RSSI on the second-to-last byte
                 assert(xreg(FRMCTRL0) & AUTO_CRC);
+                assert(buf->size() >= 2);
                 buf->rssi = buf->frame()->data<char>()[buf->size() - 2];
                 if(MAC::pre_notify(buf)) {
+                    IC::enable(IC::INT_NIC0_TIMER); // Make sure radio and MAC timer don't preempt one another
                     db<CC2538>(TRC) << "CC2538::handle_int:receive(b=" << buf << ") => " << *buf << endl;
                     bool notified = notify(reinterpret_cast<IEEE802_15_4::Header *>(buf->frame())->type(), buf);
                     if(!MAC::post_notify(buf) && !notified)
@@ -152,10 +156,23 @@ void CC2538::handle_int()
                     db<CC2538>(TRC) << "CC2538::handle_int: frame dropped by MAC"  << endl;
                     buf->size(0);
                     buf->unlock();
+                    IC::enable(IC::INT_NIC0_TIMER); // Make sure radio and MAC timer don't preempt one another
                 }
-            } else
+            } else {
                 CC2538RF::drop();
+                IC::enable(IC::INT_NIC0_TIMER); // Make sure radio and MAC timer don't preempt one another
+            }
+        } else {
+            IC::enable(IC::INT_NIC0_TIMER); // Make sure radio and MAC timer don't preempt one another
         }
+        //kout << 'H';
+    } else {
+        power(Power_Mode::SLEEP);
+        CC2538RF::drop(); // Error
+        IC::enable(IC::INT_NIC0_TIMER);
+        db<CC2538>(ERR) << "CC2538::handle_int:RFIRQF0=" << hex << irqrf0 << endl;
+        db<CC2538>(ERR) << "CC2538::handle_int:RFIRQF1=" << hex << irqrf1 << endl;
+        db<CC2538>(ERR) << "CC2538::handle_int:RFERRF=" << hex << errf << endl;
     }
 }
 
