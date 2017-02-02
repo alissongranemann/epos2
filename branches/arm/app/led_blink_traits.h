@@ -10,7 +10,7 @@ template<typename T>
 struct Traits
 {
     static const bool enabled = true;
-    static const bool debugged = false;
+    static const bool debugged = true;
     static const bool hysterically_debugged = false;
     typedef TLIST<> ASPECTS;
 };
@@ -23,15 +23,11 @@ template<> struct Traits<Build>
     enum {IA32, ARMv7};
     static const unsigned int ARCHITECTURE = ARMv7;
 
-    enum {PC, Cortex_M, Cortex_A};
-    static const unsigned int MACHINE = Cortex_M;
+    enum {PC, Cortex};
+    static const unsigned int MACHINE = Cortex;
 
-    enum {Legacy, eMote3, LM3S811};
+    enum {Legacy_PC, eMote3, LM3S811, Zynq};
     static const unsigned int MODEL = eMote3;
-
-    static const unsigned int ID_SIZE = 2;
-    // Default value initialized at init_system.cc. The application can overwrite it.
-    static const char ID[ID_SIZE];
 
     static const unsigned int CPUS = 1;
     static const unsigned int NODES = 1; // > 1 => NETWORKING
@@ -61,48 +57,12 @@ template<> struct Traits<Heaps>: public Traits<void>
 {
     static const bool debugged = hysterically_debugged;
 };
-template <> struct Traits<Bignum> : public Traits<void>
+
+template<> struct Traits<Observers>: public Traits<void>
 {
-    // You can edit these values
-    typedef unsigned int digit;
-    typedef unsigned long long double_digit;
-    static const unsigned int word = 4;
-
-    // You shouldn't edit these
-    static const unsigned int sz_digit = sizeof(digit);
-    static const unsigned int sz_word = sz_digit * word;
-    static const unsigned int double_word = 2 * word;
-    static const unsigned int bits_in_digit = sz_digit * 8;
-};
-
-template <> struct Traits<AES> : public Traits<void>
-{
-    // The number of columns comprising a state in AES. This is a constant in AES. Value=4
-    static const unsigned int Nb = 4;
-    // The number of 32 bit words in a key.
-    static const unsigned int Nk = 4;
-    // The number of rounds in AES _Cipher.
-    static const unsigned int Nr = 10;
-    // Key length in bytes [128 bit]
-    static const unsigned int KEYLEN = 16;
-};
-
-template <> struct Traits<Diffie_Hellman> : public Traits<void>
-{
-    // Don't edit these, unless you really know what you're doing
-    static const unsigned int SECRET_SIZE = Traits<Bignum>::sz_word;
-    static const unsigned int PUBLIC_KEY_SIZE = Traits<Bignum>::sz_word * 2;
-};
-
-template <> struct Traits<Secure_NIC> : public Traits<void>
-{
-    static const int PROTOCOL_ID = 46;
-    static const unsigned long long TIME_WINDOW = 100000000U; // In Microseconds
-    static const bool ALLOW_MULTIPLE_NODES_WITH_SAME_ID = true;
-
-    static const unsigned int MAX_PEERS = 8;
-    static const bool USE_FLASH = false;
-    static const unsigned int FLASH_ADDRESS = 0x50000;
+    // Some observed objects are created before initializing the Display
+    // Enabling debug may cause trouble in some Machines
+    static const bool debugged = false;
 };
 
 // System Parts (mostly to fine control debugging)
@@ -123,21 +83,33 @@ template<> struct Traits<Init>: public Traits<void>
 template<> struct Traits<Serial_Display>: public Traits<void>
 {
     static const bool enabled = true;
+    enum {UART, USB};
+    static const int ENGINE = USB;
     static const int COLUMNS = 80;
     static const int LINES = 24;
     static const int TAB_SIZE = 8;
+};
+
+template<> struct Traits<Serial_Keyboard>: public Traits<void>
+{
+    static const bool enabled = true;
+};
+
+template<> template <unsigned int S> struct Traits<Software_AES<S>>: public Traits<void>
+{
+    static const bool enabled = true;
+    static const unsigned int KEY_SIZE = 16;
 };
 
 __END_SYS
 
 #include __ARCH_TRAITS_H
 #include __MACH_TRAITS_H
-#include __MACH_CONFIG_H
 
 __BEGIN_SYS
 
 
-// Abstractions
+// Components
 template<> struct Traits<Application>: public Traits<void>
 {
     static const unsigned int STACK_SIZE = Traits<Machine>::STACK_SIZE;
@@ -155,6 +127,7 @@ template<> struct Traits<System>: public Traits<void>
 
     enum {FOREVER = 0, SECOND = 1, MINUTE = 60, HOUR = 3600, DAY = 86400, WEEK = 604800, MONTH = 2592000, YEAR = 31536000};
     static const unsigned long LIFE_SPAN = 1 * HOUR; // in seconds
+    static const unsigned int DUTY_CYCLE = 10000; // in ppm
 
     static const bool reboot = true;
 
@@ -214,27 +187,31 @@ template<> struct Traits<Network>: public Traits<void>
     static const unsigned int RETRIES = 3;
     static const unsigned int TIMEOUT = 10; // s
 
-    // This list is positional, with one network for each NIC in traits<NIC>::NICS
-    typedef LIST<IP> NETWORKS;
+    // This list is positional, with one network for each NIC in Traits<NIC>::NICS
+    typedef LIST<ELP> NETWORKS;
 };
 
-template<> struct Traits<Modbus_ASCII>: public Traits<void>
+template<> struct Traits<ELP>: public Traits<Network>
 {
-    static const unsigned int PROTOCOL_ID = 83;
-    static const unsigned int MSG_LEN = 96;
+    static const bool enabled = NETWORKS::Count<ELP>::Result;
+
+    static const bool acknowledged = true;
 };
 
-template<> struct Traits<TSTP>: public Traits<void>
+template<> struct Traits<TSTP>: public Traits<Network>
 {
-    static const bool enabled = false;//(Traits<Build>::NODES > 1);
+    static const bool enabled = NETWORKS::Count<TSTP>::Result;
+};
 
-    static const unsigned int PROTOCOL_ID = 84;
-    static const unsigned int MAX_INTERESTS = 8;
-    static const unsigned int MAX_SENSORS = 8;
+template<> template <typename S> struct Traits<Smart_Data<S>>: public Traits<Network>
+{
+    static const bool enabled = NETWORKS::Count<TSTP>::Result;
 };
 
 template<> struct Traits<IP>: public Traits<Network>
 {
+    static const bool enabled = NETWORKS::Count<IP>::Result;
+
     enum {STATIC, MAC, INFO, RARP, DHCP};
 
     struct Default_Config {
