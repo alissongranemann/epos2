@@ -110,7 +110,10 @@ public:
         return _value;
     }
 
-    const Coordinates & location() const { return TSTP::absolute(_coordinates); }
+    Coordinates location() const { return TSTP::absolute(_coordinates); }
+    const Error & error() const { return _error; }
+    const Time & time() const { return _time; }
+    const Unit & unit() const { return _unit; }
 
     friend Debug & operator<<(Debug & db, const Smart_Data & d) {
         db << "{";
@@ -179,14 +182,14 @@ private:
     }
 
     void update(typename Transducer::Observed * obs) {
-        Transducer::sense(_device, this);
         _time = TSTP::now();
+        Transducer::sense(_device, this);
         db<Smart_Data>(TRC) << "Smart_Data::update(this=" << this << ",exp=" << _expiry << ") => " << _value << endl;
         db<Smart_Data>(TRC) << "Smart_Data::update:responsive=" << _responsive << " => " << *reinterpret_cast<TSTP::Response *>(_responsive) << endl;
         if(_responsive) {
             _responsive->value(_value);
             _responsive->time(_time);
-            _responsive->respond(_expiry);
+            _responsive->respond(_time + _expiry);
         }
     }
 

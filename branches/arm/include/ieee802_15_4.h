@@ -9,6 +9,7 @@
 #include <utility/list.h>
 #include <utility/observer.h>
 #include <utility/buffer.h>
+#include <utility/random.h>
 
 __BEGIN_SYS
 
@@ -145,10 +146,10 @@ public:
         Header() {}
 
         Header(const Type & type)
-        : _frame_control(type), _sequence_number(0), _dst_pan_id(PAN_ID_BROADCAST) {};
+        : _frame_control(type), _sequence_number(Random::random()), _dst_pan_id(PAN_ID_BROADCAST) {};
 
         Header(const Type & type, const Address & src, const Address & dst)
-        : _frame_control(type), _sequence_number(0), _dst_pan_id(PAN_ID_BROADCAST), _dst(dst), _src(src) { ack_request(dst != broadcast()); }
+        : _frame_control(type), _sequence_number(Random::random()), _dst_pan_id(PAN_ID_BROADCAST), _dst(dst), _src(src) { ack_request(dst != broadcast()); }
 
         const Address & src() const { return _src; }
         const Address & dst() const { return _dst; }

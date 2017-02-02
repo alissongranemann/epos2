@@ -85,6 +85,19 @@ template<> struct Traits<USB>: public Traits<Machine_Common>
     static const bool enabled = Traits<Serial_Display>::enabled && (Traits<Serial_Display>::ENGINE == Traits<Serial_Display>::USB);
 };
 
+template<> struct Traits<Watchdog>: public Traits<Machine_Common>
+{
+    static const bool enabled = true;
+
+    enum {
+        MS_1_9,    // 1.9ms
+        MS_15_625, // 15.625ms
+        S_0_25,    // 0.25s
+        S_1,       // 1s
+    };
+    static const int PERIOD = S_1;
+};
+
 template<> struct Traits<Scratchpad>: public Traits<Machine_Common>
 {
     static const bool enabled = false;
@@ -103,7 +116,7 @@ template<> struct Traits<CC2538>: public Traits<NIC>
 {
     static const unsigned int UNITS = NICS::Count<CC2538>::Result;
     static const unsigned int RECEIVE_BUFFERS = 16; // per unit
-    static const bool gpio_debug = true;
+    static const bool gpio_debug = false;
 };
 
 __END_SYS

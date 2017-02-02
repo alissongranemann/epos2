@@ -35,7 +35,7 @@ public:
     }
 
     T x, y;
-};
+}__attribute__((packed));
 
 template<typename T>
 struct Point<T, 3>
@@ -99,7 +99,7 @@ public:
     }
 
     T x, y, z;
-};
+}__attribute__((packed));
 
 template<typename T>
 struct Sphere
@@ -109,9 +109,10 @@ private:
 
 public:
     typedef Point<T, 3> Center;
+    typedef typename Center::Distance Radius;
 
     Sphere() {}
-    Sphere(const Center & c, const T & r = 0): center(c), radius(r) { }
+    Sphere(const Center & c, const Radius & r = 0): center(c), radius(r) { }
 
     bool contains(const Center & c) const { return (center - c) <= radius; }
 
@@ -121,7 +122,7 @@ public:
     }
 
     Center center;
-    T radius;
-};
+    Radius radius;
+}__attribute__((packed));
 
 __END_UTIL

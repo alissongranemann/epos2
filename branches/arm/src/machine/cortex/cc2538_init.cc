@@ -34,7 +34,7 @@ CC2538::CC2538(unsigned int unit): _unit(unit), _rx_cur_consume(0), _rx_cur_prod
             xreg(FRMFILT0) |= FRAME_FILTER_EN;
         xreg(SRCMATCH) |= SRC_MATCH_EN; // Enable automatic source address matching
         xreg(FRMCTRL0) |= AUTO_ACK; // Enable auto ACK
-        xreg(FRMCTRL1) |= SET_RXENMASK_ON_TX; // Enter receive mode after ISTXON
+        xreg(RXMASKSET) = RXENABLE_STXON; // Enter receive mode after ISTXON
     } else {
         xreg(FRMFILT0) &= ~FRAME_FILTER_EN; // Disable frame filtering
         xreg(SRCMATCH) &= ~SRC_MATCH_EN; // Disable automatic source address matching
@@ -77,6 +77,9 @@ CC2538::CC2538(unsigned int unit): _unit(unit), _rx_cur_consume(0), _rx_cur_prod
 void CC2538::init(unsigned int unit)
 {
     db<Init, CC2538>(TRC) << "Radio::init(unit=" << unit << ")" << endl;
+
+    // Enable clock to RF module
+    power_ieee802_15_4(FULL);
 
     Timer::init();
 

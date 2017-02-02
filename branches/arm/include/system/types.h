@@ -100,6 +100,7 @@ class Keyboard;
 class Serial_Keyboard;
 class Scratchpad;
 class Cipher;
+class Watchdog;
 template<unsigned int KEY_SIZE>
 class Software_AES;
 class GPIO;

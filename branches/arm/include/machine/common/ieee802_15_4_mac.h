@@ -76,7 +76,7 @@ public:
         if(do_ack) {
             if(sent) {
                 Radio::power(Power_Mode::FULL);
-                ack_ok = Radio::wait_for_ack(ACK_TIMEOUT);
+                ack_ok = Radio::wait_for_ack(ACK_TIMEOUT, buf->frame()->sequence_number());
             }
 
             for(unsigned int i = 0; !ack_ok && (i < CSMA_CA_RETRIES); i++) {
@@ -85,7 +85,7 @@ public:
                 ack_ok = sent = backoff_and_send();
                 if(sent) {
                     Radio::power(Power_Mode::FULL);
-                    ack_ok = Radio::wait_for_ack(ACK_TIMEOUT);
+                    ack_ok = Radio::wait_for_ack(ACK_TIMEOUT, buf->frame()->sequence_number());
                 }
             }
 
@@ -116,7 +116,8 @@ private:
             if(time < CSMA_CA_UNIT_BACKOFF_PERIOD)
                 time = CSMA_CA_UNIT_BACKOFF_PERIOD;
 
-            if(Radio::cca(time) && Radio::transmit())
+            Radio::backoff(time);
+            if(Radio::cca(CSMA_CA_UNIT_BACKOFF_PERIOD) && Radio::transmit())
                 break; // Success
 
             if(exp < CSMA_CA_MAX_BACKOFF_EXPONENT) {

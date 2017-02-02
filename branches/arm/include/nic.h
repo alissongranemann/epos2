@@ -183,6 +183,7 @@ public:
                 bool relevant;                     // Whether any component is interested in this message
                 bool trusted;                      // If true, this message was successfully verified by the Security Manager
                 bool freed;                        // If true, the MAC will not free this buffer
+                unsigned int attempts;             // Number times the MAC tried to transmit this buffer
             };
         };
     };

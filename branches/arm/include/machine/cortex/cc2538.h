@@ -11,7 +11,7 @@
 __BEGIN_SYS
 
 // TI CC2538 IEEE 802.15.4 RF Transceiver
-class CC2538RF: private Machine_Model
+class CC2538RF: protected Machine_Model
 {
 protected:
     typedef CPU::Reg8 Reg8;
@@ -297,6 +297,17 @@ public:
         INT_TXACKDONE  = 1 << 0,
     };
 
+    // RFERRF Interrupts
+    enum {
+        INT_STROBEERR = 1 << 6,
+        INT_TXUNDERF  = 1 << 5,
+        INT_TXOVERF   = 1 << 4,
+        INT_RXUNDERF  = 1 << 3,
+        INT_RXOVERF   = 1 << 2,
+        INT_RXABO     = 1 << 1,
+        INT_NLOCK     = 1 << 0,
+    };
+
     // Useful bits in MTCTRL
     enum {                  //Offset   Description                                                             Type    Value after reset
         MTCTRL_LATCH_MODE = 1 << 3, // 0: Reading MTM0 with MTMSEL.MTMSEL = 000 latches the high               RW      0
@@ -380,10 +391,9 @@ public:
             ts += static_cast<Time_Stamp>(mactimer(MTMOVF2)) << 32;
 
             // This check is not enough only if sfd() is called more than 9.5 hours after the last frame arrival
-            if(read_raw() <= ts)
+            if(read_raw() <= ts) // implicit CPU::int_enable()
                 ts -= (1ll << 40);
             ts += _offset;
-            CPU::int_enable();
 
             return ts;
         }
@@ -391,11 +401,12 @@ public:
         static void adjust(const Offset & o) { _offset += o; }
 
         static void interrupt(const Time_Stamp & when, const IC::Interrupt_Handler & h) {
-            //mactimer(MTCTRL) &= ~MTCTRL_RUN; // Stop counting
 
-            // Mask interrupts
-            //mactimer(MTIRQM) = 0;
             CPU::int_disable();
+
+            // Clear any pending compare interrupts
+            mactimer(MTIRQF) = mactimer(MTIRQF) & INT_OVERFLOW_PER;
+            _ints = _ints & INT_OVERFLOW_PER;
 
             Time_Stamp ts = when - _offset;
 
@@ -409,36 +420,8 @@ public:
             _handler = h;
             _int_request_time = ts;
 
-            // Clear any pending compare interrupts
-            mactimer(MTIRQF) = mactimer(MTIRQF) & INT_OVERFLOW_PER;
-            _ints = _ints & INT_OVERFLOW_PER;
-
-            mactimer(MTCSPCFG) = 1;
-
-            int_enable(INT_COMPARE1 | INT_OVERFLOW_PER);
+            int_enable(INT_OVERFLOW_COMPARE1 | INT_COMPARE1);
             CPU::int_enable();
-
-            //mactimer(MTCTRL) |= MTCTRL_RUN; // Start counting
-            /*
-            _overflow_match = false;
-            _msb_match = false;
-
-            Time_Stamp now = read();
-            assert(when > now);
-            if((when >> 40ll) > (now >> 40ll))
-                int_enable(INT_OVERFLOW_PER);
-            else {
-                _overflow_match = true;
-                if((when >> 16ll) > (now >> 16ll))
-                    int_enable(INT_OVERFLOW_COMPARE1 | INT_OVERFLOW_PER);
-                else {
-                    _msb_match = true;
-                    // This will also be executed if when <= now,
-                    // and interrupt will occur on the next turn of the 16 LSBs
-                    int_enable(INT_COMPARE1 | INT_OVERFLOW_PER);
-                }
-            }
-            */
         }
 
         static void int_disable() {
@@ -464,17 +447,18 @@ public:
             ts += static_cast<Time_Stamp>(mactimer(MTMOVF1)) << 24;
             ts += static_cast<Time_Stamp>(mactimer(MTMOVF2)) << 32;
 
+            CPU::int_enable();
+
             // The 40-bit counter overflows every 9.5 hours,
             // so we assume at most one happened inside this method
             if(_overflow_count != oc)
                 ts += 1ll << 40;
 
-            CPU::int_enable();
-
             return ts;
         }
 
         static void int_handler(const IC::Interrupt_Id & interrupt) {
+            CPU::int_disable();
             Reg32 ints = _ints;
             _ints &= ~ints;
 
@@ -482,35 +466,15 @@ public:
                 _overflow_count++;
 
             IC::Interrupt_Handler h;
-            if((ints & INT_COMPARE1) && (_int_request_time <= read_raw()) && (h = _handler)) {
-                _handler = 0;
-                mactimer(MTIRQM) = INT_OVERFLOW_PER;
-                //kout << 't';
+            if((ints & INT_COMPARE1) && (h = _handler) && (_int_request_time <= read_raw())) {
+                int_disable();
+                CPU::int_enable();
                 h(interrupt);
-                //kout << 'T';
+                IC::enable(IC::INT_NIC0_RX); // Make sure radio and MAC timer don't preempt one another
+            } else {
+                IC::enable(IC::INT_NIC0_RX); // Make sure radio and MAC timer don't preempt one another
+                CPU::int_enable();
             }
-            IC::enable(IC::INT_NIC0_RX); // Make sure radio and MAC timer don't preempt one another
-
-            /*
-            if(ints & INT_OVERFLOW_PER) {
-                _overflow_count++;
-                if(_handler && !_overflow_match && ((_int_request_time >> 40ll) <= _overflow_count)) {
-                    _overflow_match = true;
-                    int_enable(INT_OVERFLOW_COMPARE1);
-                }
-            }
-            if(_handler) {
-                if((ints & INT_OVERFLOW_COMPARE1) && _overflow_match && !_msb_match) {
-                    _msb_match = true;
-                    mactimer(MTIRQM) = (INT_COMPARE1 | INT_OVERFLOW_PER);
-                } else if((ints & INT_COMPARE1) && _msb_match) {
-                    int_disable();
-                    IC::Interrupt_Handler h = _handler;
-                    _handler = 0;
-                    h(interrupt);
-                }
-            }
-            */
         }
 
         static void eoi(const IC::Interrupt_Id & interrupt) {
@@ -533,9 +497,6 @@ public:
 
 public:
     CC2538RF() {
-        // Enable clock to RF module
-        power_ieee802_15_4(FULL);
-
         sfr(RFST) = ISSTOP;
         sfr(RFST) = ISRFOFF;
 
@@ -586,12 +547,17 @@ public:
     }
 
     // FIXME: methods changed to static because of TSTP_MAC
+    static void backoff(const Microsecond & time) {
+        Timer::Time_Stamp end = Timer::read() + Timer::us2count(time);
+        while(Timer::read() <= end);
+    }
+
+    // FIXME: methods changed to static because of TSTP_MAC
     static bool cca(const Microsecond & time) {
         Timer::Time_Stamp end = Timer::read() + Timer::us2count(time);
         while(!(xreg(RSSISTAT) & RSSI_VALID));
-        bool channel_free;
-        while((channel_free = xreg(FSMSTAT1) & CCA) && (Timer::read() <= end));
-        return channel_free;
+        while(Timer::read() <= end);
+        return xreg(FSMSTAT1) & CCA;
     }
 
     // FIXME: methods changed to static because of TSTP_MAC
@@ -607,7 +573,7 @@ public:
         return (xreg(FSMSTAT1) & SAMPLED_CCA);
     }
 
-    bool wait_for_ack(const Microsecond & timeout) {
+    bool wait_for_ack(const Microsecond & timeout, Reg8 sequence_number) {
         // Disable and clear FIFOP int. We'll poll the interrupt flag
         xreg(RFIRQM0) &= ~INT_FIFOP;
         sfr(RFIRQF0) &= ~INT_FIFOP;
@@ -624,13 +590,20 @@ public:
 
         // Wait for either ACK or timeout
         bool acked = false;
-        for(Timer::Time_Stamp end = Timer::read() + Timer::us2count(timeout); (Timer::read() < end) && !(acked = sfr(RFIRQF0) & INT_FIFOP););
+        for(Timer::Time_Stamp end = Timer::read() + Timer::us2count(timeout); (Timer::read() < end);) {
+            if(sfr(RFIRQF0) & INT_FIFOP) {
+                unsigned int first = xreg(RXP1_PTR);
+                volatile unsigned int * rxfifo = reinterpret_cast<volatile unsigned int*>(RXFIFO);
+                if(rxfifo[first + 3] == sequence_number) {
+                    acked = true;
+                    break;
+                }
+                drop();
+                sfr(RFIRQF0) &= ~INT_FIFOP;
+            }
+        }
 
         // Restore radio configuration
-        if(acked) {
-            drop();
-            sfr(RFIRQF0) &= ~INT_FIFOP;
-        }
         xreg(FRMFILT1) = saved_filter_settings;
         if(promiscuous)
             xreg(FRMFILT0) &= ~FRAME_FILTER_EN;
@@ -726,10 +699,6 @@ public:
 
     static void power(const Power_Mode & mode) {
          switch(mode) {
-
-             // TODO: Switching RX_MODEs seems to prevent the radio from receiving anything after a while!
-             // The cause of this error is under investigation
-
          case FULL: // Able to receive and transmit
              power_ieee802_15_4(FULL);
              xreg(FRMCTRL0) = (xreg(FRMCTRL0) & ~(3 * RX_MODE)) | (RX_MODE_NORMAL * RX_MODE);

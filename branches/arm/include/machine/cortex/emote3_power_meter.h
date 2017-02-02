@@ -2,7 +2,7 @@
 #define __emote3_power_meter_h
 
 #include <adc.h>
-#include "emote3_gptm.h"
+#include <machine.h>
 
 __BEGIN_SYS
 
@@ -42,7 +42,7 @@ public:
 
             i_avg += i[j];
 
-            eMote3_GPTM::delay(1000000/SAMP_FREQ);
+            Machine::delay(1000000/SAMP_FREQ);
         }
 
         i_avg /= N;

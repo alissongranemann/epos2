@@ -127,6 +127,7 @@ namespace EPOS {
 #define __GPIO_H                __HEADER_MACH(gpio)
 #define __ADC_H                 __HEADER_MACH(adc)
 #define __SPI_H                 __HEADER_MACH(spi)
+#define __WATCHDOG_H            __HEADER_MACH(watchdog)
 #endif
 
 #ifdef __mmod_zynq__

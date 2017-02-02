@@ -125,8 +125,7 @@ void CC2538::handle_int()
     db<CC2538>(INF) << "CC2538::handle_int:RFIRQF1=" << hex << irqrf1 << endl;
     db<CC2538>(INF) << "CC2538::handle_int:RFERRF=" << hex << errf << endl;
 
-                                       // TODO
-    if((irqrf0 & INT_FIFOP) && (!(errf & ~0x42))) { // Frame received
+    if(irqrf0 & INT_FIFOP) { // Frame received
         //kout << 'h';
         db<CC2538>(TRC) << "CC2538::handle_int:receive()" << endl;
         if(CC2538RF::filter()) {
@@ -145,13 +144,14 @@ void CC2538::handle_int()
                 // When AUTO_CRC is on, the radio automatically puts the RSSI on the second-to-last byte
                 assert(xreg(FRMCTRL0) & AUTO_CRC);
                 assert(buf->size() >= 2);
-                buf->rssi = buf->frame()->data<char>()[buf->size() - 2];
+                buf->rssi = reinterpret_cast<char *>(buf->frame())[buf->size() - 2];
+
                 if(MAC::pre_notify(buf)) {
-                    IC::enable(IC::INT_NIC0_TIMER); // Make sure radio and MAC timer don't preempt one another
                     db<CC2538>(TRC) << "CC2538::handle_int:receive(b=" << buf << ") => " << *buf << endl;
                     bool notified = notify(reinterpret_cast<IEEE802_15_4::Header *>(buf->frame())->type(), buf);
                     if(!MAC::post_notify(buf) && !notified)
                         buf->unlock(); // No one was waiting for this frame, so make it available for receive()
+                    IC::enable(IC::INT_NIC0_TIMER); // Make sure radio and MAC timer don't preempt one another
                 } else {
                     db<CC2538>(TRC) << "CC2538::handle_int: frame dropped by MAC"  << endl;
                     buf->size(0);
@@ -166,13 +166,24 @@ void CC2538::handle_int()
             IC::enable(IC::INT_NIC0_TIMER); // Make sure radio and MAC timer don't preempt one another
         }
         //kout << 'H';
-    } else {
-        power(Power_Mode::SLEEP);
+    } else if (errf & (INT_RXUNDERF || INT_RXOVERF)) {
         CC2538RF::drop(); // Error
         IC::enable(IC::INT_NIC0_TIMER);
         db<CC2538>(ERR) << "CC2538::handle_int:RFIRQF0=" << hex << irqrf0 << endl;
         db<CC2538>(ERR) << "CC2538::handle_int:RFIRQF1=" << hex << irqrf1 << endl;
         db<CC2538>(ERR) << "CC2538::handle_int:RFERRF=" << hex << errf << endl;
+    } else {
+        if (errf & (INT_TXUNDERF || INT_TXOVERF)) {
+            // Clear TXFIFO
+            sfr(RFST) = ISFLUSHTX;
+            while(xreg(TXFIFOCNT) != 0);
+            IC::enable(IC::INT_NIC0_TIMER);
+            db<CC2538>(ERR) << "CC2538::handle_int:RFIRQF0=" << hex << irqrf0 << endl;
+            db<CC2538>(ERR) << "CC2538::handle_int:RFIRQF1=" << hex << irqrf1 << endl;
+            db<CC2538>(ERR) << "CC2538::handle_int:RFERRF=" << hex << errf << endl;
+        } else {
+            IC::enable(IC::INT_NIC0_TIMER);
+        }
     }
 }
 
