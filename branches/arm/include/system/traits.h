@@ -90,6 +90,11 @@ template<> template <unsigned int S> struct Traits<Software_AES<S>>: public Trai
     static const unsigned int KEY_SIZE = 16;
 };
 
+template<> struct Traits<Smart_Plug>: public Traits<void>
+{
+    static const bool enabled = false;
+};
+
 __END_SYS
 
 #include __ARCH_TRAITS_H

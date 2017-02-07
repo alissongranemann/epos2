@@ -120,7 +120,7 @@ void CC2538::handle_int()
     Reg32 errf = sfr(RFERRF);
     sfr(RFIRQF0) = irqrf0 & INT_RXPKTDONE; //INT_RXPKTDONE is polled by rx_done()
     sfr(RFIRQF1) = irqrf1 & INT_TXDONE; //INT_TXDONE is polled by tx_done()
-    sfr(RFERRF) = 0;
+    sfr(RFERRF) = errf & (INT_TXUNDERF | INT_TXOVERF);
     db<CC2538>(INF) << "CC2538::handle_int:RFIRQF0=" << hex << irqrf0 << endl;
     db<CC2538>(INF) << "CC2538::handle_int:RFIRQF1=" << hex << irqrf1 << endl;
     db<CC2538>(INF) << "CC2538::handle_int:RFERRF=" << hex << errf << endl;
@@ -148,10 +148,10 @@ void CC2538::handle_int()
 
                 if(MAC::pre_notify(buf)) {
                     db<CC2538>(TRC) << "CC2538::handle_int:receive(b=" << buf << ") => " << *buf << endl;
+                    IC::enable(IC::INT_NIC0_TIMER); // Make sure radio and MAC timer don't preempt one another
                     bool notified = notify(reinterpret_cast<IEEE802_15_4::Header *>(buf->frame())->type(), buf);
                     if(!MAC::post_notify(buf) && !notified)
                         buf->unlock(); // No one was waiting for this frame, so make it available for receive()
-                    IC::enable(IC::INT_NIC0_TIMER); // Make sure radio and MAC timer don't preempt one another
                 } else {
                     db<CC2538>(TRC) << "CC2538::handle_int: frame dropped by MAC"  << endl;
                     buf->size(0);
@@ -166,24 +166,14 @@ void CC2538::handle_int()
             IC::enable(IC::INT_NIC0_TIMER); // Make sure radio and MAC timer don't preempt one another
         }
         //kout << 'H';
-    } else if (errf & (INT_RXUNDERF || INT_RXOVERF)) {
+    } else if (errf & (INT_RXUNDERF | INT_RXOVERF)) {
         CC2538RF::drop(); // Error
         IC::enable(IC::INT_NIC0_TIMER);
         db<CC2538>(ERR) << "CC2538::handle_int:RFIRQF0=" << hex << irqrf0 << endl;
         db<CC2538>(ERR) << "CC2538::handle_int:RFIRQF1=" << hex << irqrf1 << endl;
         db<CC2538>(ERR) << "CC2538::handle_int:RFERRF=" << hex << errf << endl;
     } else {
-        if (errf & (INT_TXUNDERF || INT_TXOVERF)) {
-            // Clear TXFIFO
-            sfr(RFST) = ISFLUSHTX;
-            while(xreg(TXFIFOCNT) != 0);
-            IC::enable(IC::INT_NIC0_TIMER);
-            db<CC2538>(ERR) << "CC2538::handle_int:RFIRQF0=" << hex << irqrf0 << endl;
-            db<CC2538>(ERR) << "CC2538::handle_int:RFIRQF1=" << hex << irqrf1 << endl;
-            db<CC2538>(ERR) << "CC2538::handle_int:RFERRF=" << hex << errf << endl;
-        } else {
-            IC::enable(IC::INT_NIC0_TIMER);
-        }
+        IC::enable(IC::INT_NIC0_TIMER);
     }
 }
 

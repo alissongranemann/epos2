@@ -69,9 +69,18 @@ public:
 
     // Geographic Coordinates
     template<Scale S>
-    struct _Coordinates: public Point<char, 3>
+    struct _Coordinates: public Point<
+                         typename IF<S == CMx50_8, char,
+                         typename IF<S == CM_16, short,
+                         typename IF<S == CMx25_16, short,
+                         typename IF<S == CM_32, int, void
+                         >::Result>::Result>::Result>::Result, 3>
     {
-        typedef char Number;
+        typedef typename IF<S == CMx50_8, char,
+                typename IF<S == CM_16, short,
+                typename IF<S == CMx25_16, short,
+                typename IF<S == CM_32, int, void
+                    >::Result>::Result>::Result>::Result Number;
 
         _Coordinates(Number x = 0, Number y = 0, Number z = 0): Point<Number, 3>(x, y, z) {}
         _Coordinates(const Point<Number, 3> & p): Point<Number, 3>(p) {}
@@ -83,23 +92,23 @@ public:
     struct _Region: public Sphere<typename _Coordinates<S>::Number>
     {
         typedef typename _Coordinates<S>::Number Number;
-        typedef Sphere<Number> Base;
-        typedef typename Base::Center Center;
+        typedef Sphere<Number> Space;
+        typedef typename Space::Center Center;
 
         _Region(const Center & c, const Number & r, const Time & _t0, const Time & _t1)
-        : Base(c, r), t0(_t0), t1(_t1) {}
+        : Space(c, r), t0(_t0), t1(_t1) {}
 
         bool contains(const Center & c, const Time & t) const {
-            return ((t >= t0) && (t <= t1)) && Base::contains(c);
+            return ((t >= t0) && (t <= t1)) && Space::contains(c);
         }
 
         friend Debug & operator<<(Debug & db, const _Region & r) {
-            db << "{" << reinterpret_cast<const Base &>(r) << ",t0=" << r.t0 << ",t1=" << r.t1 << "}";
+            db << "{" << reinterpret_cast<const Space &>(r) << ",t0=" << r.t0 << ",t1=" << r.t1 << "}";
             return db;
         }
 
         friend OStream & operator<<(OStream & db, const _Region & r) {
-            db << "{" << reinterpret_cast<const Base &>(r) << ",t0=" << r.t0 << ",t1=" << r.t1 << "}";
+            db << "{" << reinterpret_cast<const Space &>(r) << ",t0=" << r.t0 << ",t1=" << r.t1 << "}";
             return db;
         }
 
@@ -145,7 +154,11 @@ public:
         void hint(const Hint & h) { _hint = h; }
 
         friend Debug & operator<<(Debug & db, const Microframe & m) {
-            db << "{al=" << m.all_listen() << ",c=" << m.count() << ",id=" << m.id() << ",h=" << m._hint << ",crc=" << m._crc << "}";
+            db << "{al=" << m.all_listen() << ",c=" << m.count() << ",id=" << m.id() << ",h=" << m.hint() << ",crc=" << m._crc << "}";
+            return db;
+        }
+        friend OStream & operator<<(OStream & db, const Microframe & m) {
+            db << "{al=" << m.all_listen() << ",c=" << m.count() << ",id=" << m.id() << ",h=" << m.hint() << ",crc=" << m._crc << "}";
             return db;
         }
 
@@ -201,7 +214,11 @@ public:
         void confidence(unsigned char c) { _confidence = c; }
 
         friend Debug & operator<<(Debug & db, const _Header & h) {
-            db << "{v=" << h.version() - V0 << ",t=" << ((h.type() == INTEREST) ? 'I' :  (h.type() == RESPONSE) ? 'R' : (h.type() == COMMAND) ? 'C' : 'P') << ",tr=" << h.time_request() << ",s=" << h.scale() << ",ot=" << h._time << ",o=" << h._origin << ",lt=" << h._last_hop_time << ",l=" << h._last_hop << "}";
+            db << "{v=" << h.version() - V0 << ",t=" << ((h.type() == INTEREST) ? 'I' :  (h.type() == RESPONSE) ? 'R' : (h.type() == COMMAND) ? 'C' : 'T') << ",tr=" << h.time_request() << ",s=" << h.scale() << ",ot=" << h._time << ",o=" << h._origin << ",lt=" << h._last_hop_time << ",l=" << h._last_hop << "}";
+            return db;
+        }
+        friend OStream & operator<<(OStream & db, const _Header & h) {
+            db << "{v=" << h.version() - V0 << ",t=" << ((h.type() == INTEREST) ? 'I' :  (h.type() == RESPONSE) ? 'R' : (h.type() == COMMAND) ? 'C' : 'T') << ",tr=" << h.time_request() << ",s=" << h.scale() << ",ot=" << h._time << ",o=" << h._origin << ",lt=" << h._last_hop_time << ",l=" << h._last_hop << "}";
             return db;
         }
 
@@ -312,7 +329,7 @@ public:
              Electric_Current        = Current,
              Temperature             = 1 << 31 | DIR << 27 | (4 + 0) << 24 | (4 + 0) << 21 | (4 + 0) << 18 | (4 + 0) << 15 | (4 + 0) << 12 | (4 + 0) << 9  | (4 + 1) << 6  | (4 + 0) << 3  | (4 + 0),
              Amount_of_Substance     = 1 << 31 | DIR << 27 | (4 + 0) << 24 | (4 + 0) << 21 | (4 + 0) << 18 | (4 + 0) << 15 | (4 + 0) << 12 | (4 + 0) << 9  | (4 + 0) << 6  | (4 + 1) << 3  | (4 + 0),
-             Liminous_Intensity      = 1 << 31 | DIR << 27 | (4 + 0) << 24 | (4 + 0) << 21 | (4 + 0) << 18 | (4 + 0) << 15 | (4 + 0) << 12 | (4 + 0) << 9  | (4 + 0) << 6  | (4 + 0) << 3  | (4 + 1),
+             Luminous_Intensity      = 1 << 31 | DIR << 27 | (4 + 0) << 24 | (4 + 0) << 21 | (4 + 0) << 18 | (4 + 0) << 15 | (4 + 0) << 12 | (4 + 0) << 9  | (4 + 0) << 6  | (4 + 0) << 3  | (4 + 1),
              Area                    = 1 << 31 | DIR << 27 | (4 + 0) << 24 | (4 + 0) << 21 | (4 + 2) << 18 | (4 + 0) << 15 | (4 + 0) << 12 | (4 + 0) << 9  | (4 + 0) << 6  | (4 + 0) << 3  | (4 + 0),
              Volume                  = 1 << 31 | DIR << 27 | (4 + 0) << 24 | (4 + 0) << 21 | (4 + 3) << 18 | (4 + 0) << 15 | (4 + 0) << 12 | (4 + 0) << 9  | (4 + 0) << 6  | (4 + 0) << 3  | (4 + 0),
              Speed                   = 1 << 31 | DIR << 27 | (4 + 0) << 24 | (4 + 0) << 21 | (4 + 1) << 18 | (4 + 0) << 15 | (4 - 1) << 12 | (4 + 0) << 9  | (4 + 0) << 6  | (4 + 0) << 3  | (4 + 0),
@@ -412,81 +429,22 @@ public:
     template<int NUM>
     class Value
     {
+        typedef typename IF<NUM == TSTP_Common::Unit::I64, long long int, 
+                typename IF<NUM == TSTP_Common::Unit::F32, float,
+                typename IF<NUM == TSTP_Common::Unit::D64, double, long int
+                    >::Result>::Result>::Result Number;
     public:
-        Value(long int v): _value(v) {}
+        Value(Number v): _value(v) {}
 
-        operator long int() { return _value; }
+        operator Number() { return _value; }
 
     private:
-        long int _value;
+        Number _value;
     };
 
     // Precision or Error in SI values, expressed as 10^Error
     typedef char Precision;
     typedef char Error;
-};
-
-template<>
-struct TSTP_Common::_Coordinates<TSTP_Common::CM_16>: public Point<short, 3>
-{
-    typedef short Number;
-
-    _Coordinates(Number x = 0, Number y = 0, Number z = 0): Point<Number, 3>(x, y, z) {}
-    _Coordinates(const Point<Number, 3> & p): Point<Number, 3>(p) {}
-} __attribute__((packed));
-
-template<>
-struct TSTP_Common::_Coordinates<TSTP_Common::CMx25_16>: public Point<short, 3>
-{
-    typedef short Number;
-
-    _Coordinates(Number x = 0, Number y = 0, Number z = 0): Point<Number, 3>(x, y, z) {}
-    _Coordinates(const Point<Number, 3> & p): Point<Number, 3>(p) {}
-} __attribute__((packed));
-
-template<>
-struct TSTP_Common::_Coordinates<TSTP_Common::CM_32>: public Point<long, 3>
-{
-    typedef long Number;
-
-    _Coordinates(Number x = 0, Number y = 0, Number z = 0): Point<Number, 3>(x, y, z) {}
-    _Coordinates(const Point<Number, 3> & p): Point<Number, 3>(p) {}
-} __attribute__((packed));
-
-template<>
-class TSTP_Common::Value<TSTP_Common::Unit::I64>
-{
-public:
-    Value(long long int v): _value(v) {}
-
-    operator long long int() { return _value; }
-
-public:
-    long long int _value;
-};
-
-template<>
-class TSTP_Common::Value<TSTP_Common::Unit::F32>
-{
-public:
-    Value(float v): _value(v) {}
-
-    operator float() { return _value; }
-
-private:
-    float _value;
-};
-
-template<>
-class TSTP_Common::Value<TSTP_Common::Unit::D64>
-{
-public:
-    Value(double v): _value(v) {}
-
-    operator double() { return _value; }
-
-private:
-    double _value;
 };
 
 __END_SYS
@@ -696,11 +654,11 @@ public:
     class DH_Request: public Control
     {
     public:
-        DH_Request(const Coordinates & dst, const Public_Key & k)
+        DH_Request(const Region::Space & dst, const Public_Key & k)
         : Control(DH_REQUEST, 0, 0, now(), here(), here()), _destination(dst), _public_key(k) { }
 
-        Coordinates destination() { return _destination; }
-        void destination(const Coordinates  & d) { _destination = d; }
+        const Region::Space & destination() { return _destination; }
+        void destination(const Region::Space & d) { _destination = d; }
 
         Public_Key key() { return _public_key; }
         void key(const Public_Key & k) { _public_key = k; }
@@ -709,9 +667,13 @@ public:
             db << reinterpret_cast<const Control &>(m) << ",d=" << m._destination << ",k=" << m._public_key;
             return db;
         }
+        friend OStream & operator<<(OStream & db, const DH_Request & m) {
+            db << reinterpret_cast<const Control &>(m) << ",d=" << m._destination << ",k=" << m._public_key;
+            return db;
+        }
 
     private:
-        Coordinates _destination;
+        Region::Space _destination;
         Public_Key _public_key;
         CRC _crc;
     //} __attribute__((packed)); // TODO
@@ -767,10 +729,10 @@ public:
     class Auth_Granted: public Control
     {
     public:
-        Auth_Granted(const Coordinates & dst, const Auth & a)
+        Auth_Granted(const Region::Space & dst, const Auth & a)
         : Control(AUTH_GRANTED, 0, 0, now(), here(), here()), _destination(dst), _auth(a) { }
 
-        Coordinates destination() { return _destination; }
+        const Region::Space & destination() { return _destination; }
         void destination(const Coordinates  & d) { _destination = d; }
 
         const Auth & auth() const { return _auth; }
@@ -782,7 +744,7 @@ public:
         }
 
     private:
-        Coordinates _destination;
+        Region::Space _destination;
         Auth _auth; // TODO
         CRC _crc;
     // } __attribute__((packed)); // TODO
@@ -807,7 +769,7 @@ public:
         }
 
         void advertise() { send(); }
-        void revoke() { _mode = DELETE; send(); }
+        void revoke() { }//_mode = DELETE; send(); } // TODO
 
     private:
         void send() {
@@ -1021,7 +983,7 @@ public:
         friend class TSTP;
 
         static const unsigned int KEY_MANAGER_PERIOD = 10 * 1000 * 1000;
-        static const unsigned long long KEY_EXPIRY = -1;//100 * KEY_MANAGER_PERIOD;
+        static const unsigned long long KEY_EXPIRY = 1 * 60 * 1000 * 1000;
 
     public:
         typedef Diffie_Hellman::Shared_Key Master_Secret;
@@ -1033,7 +995,7 @@ public:
         {
         public:
             Peer(const Node_ID & id, const Region & v)
-               : _id(id), _valid(v), _el(this) {
+               : _id(id), _valid(v), _el(this), _auth_time(0) {
                Security::_cipher.encrypt(_id, _id, _auth);
             }
 
@@ -1048,10 +1010,15 @@ public:
                 return !memcmp(auth, _auth, sizeof(Auth)) && _valid.contains(where, when);
             }
 
+            const Time & authentication_time() { return _auth_time; }
+
             Peers::Element * link() { return &_el; }
 
             const Master_Secret & master_secret() const { return _master_secret; }
-            void master_secret(const Master_Secret & ms) { _master_secret = ms; }
+            void master_secret(const Master_Secret & ms) {
+                _master_secret = ms;
+                _auth_time = TSTP::now();
+            }
 
             const Auth & auth() const { return _auth; }
             const Node_ID & id() const { return _id; }
@@ -1067,6 +1034,7 @@ public:
             Region _valid;
             Master_Secret _master_secret;
             Peers::Element _el;
+            Time _auth_time;
         };
 
         struct Pending_Key;
@@ -1216,7 +1184,7 @@ public:
                 Alarm::delay(KEY_MANAGER_PERIOD);
 
                 db<TSTP>(TRC) << "TSTP::Security::key_manager()" << endl;
-                //CPU::int_disable();
+                CPU::int_disable();
                 //while(CPU::tsl(_peers_lock));
 
                 // Cleanup expired pending keys
@@ -1231,15 +1199,35 @@ public:
                     }
                 }
 
-                // Cleanup expired established keys
+                // Cleanup expired peers
                 Peers::Element * next;
                 for(Peers::Element * el = _trusted_peers.head(); el; el = next) {
                     next = el->next();
                     Peer * p = el->object();
-                    if(!p->valid().contains(p->valid().center, TSTP::now())) {
+                    if(!p->valid_deploy(p->valid().center, TSTP::now())) {
+                        _trusted_peers.remove(el);
+                        delete p;
+                        db<TSTP>(INF) << "TSTP::Security::key_manager(): permanently removed trusted peer" << endl;
+                    }
+                }
+                for(Peers::Element * el = _pending_peers.head(); el; el = next) {
+                    next = el->next();
+                    Peer * p = el->object();
+                    if(!p->valid_deploy(p->valid().center, TSTP::now())) {
+                        _pending_peers.remove(el);
+                        delete p;
+                        db<TSTP>(INF) << "TSTP::Security::key_manager(): permanently removed pending peer" << endl;
+                    }
+                }
+
+                // Cleanup expired established keys
+                for(Peers::Element * el = _trusted_peers.head(); el; el = next) {
+                    next = el->next();
+                    Peer * p = el->object();
+                    if(TSTP::now() - p->authentication_time() > KEY_EXPIRY) {
                         _trusted_peers.remove(el);
                         _pending_peers.insert(el);
-                        db<TSTP>(INF) << "TSTP::Security::key_manager(): removed trusted peer" << endl;
+                        db<TSTP>(INF) << "TSTP::Security::key_manager(): trusted peer's key expired" << endl;
                     }
                 }
 
@@ -1254,10 +1242,10 @@ public:
 
                 for(; el; el = el->next()) {
                     Peer * p = el->object();
-                    if(p->valid().contains(p->valid().center, TSTP::now())) {
+                    if(p->valid_deploy(p->valid().center, TSTP::now())) {
                         last_dh_request = el;
                         Buffer * buf = alloc(sizeof(DH_Request));
-                        new (buf->frame()->data<DH_Request>()) DH_Request(p->valid().center, _dh.public_key());
+                        new (buf->frame()->data<DH_Request>()) DH_Request(Region::Space(p->valid().center, p->valid().radius), _dh.public_key());
                         TSTP::marshal(buf);
                         _dh_requests_open++;
                         TSTP::_nic->send(buf);
@@ -1267,7 +1255,7 @@ public:
                 }
 
                 //_peers_lock = false;
-                //CPU::int_enable();
+                CPU::int_enable();
             }
 
             return 0;
@@ -1324,12 +1312,12 @@ private:
                     case DH_REQUEST: {
                         Time origin = buf->frame()->data<Header>()->time();
                         Time deadline = origin + min(static_cast<unsigned long long>(Security::KEY_MANAGER_PERIOD), Security::KEY_EXPIRY) / 2;
-                        return Region(buf->frame()->data<DH_Request>()->destination(), 0, origin, deadline);
+                        return Region(buf->frame()->data<DH_Request>()->destination().center, buf->frame()->data<DH_Request>()->destination().radius, origin, deadline);
                     }
                     case AUTH_GRANTED: {
                         Time origin = buf->frame()->data<Header>()->time();
                         Time deadline = origin + min(static_cast<unsigned long long>(Security::KEY_MANAGER_PERIOD), Security::KEY_EXPIRY) / 2;
-                        return Region(buf->frame()->data<Auth_Granted>()->destination(), 0, origin, deadline);
+                        return Region(buf->frame()->data<Auth_Granted>()->destination().center, buf->frame()->data<Auth_Granted>()->destination().radius, origin, deadline);
                     }
                 }
             default:
@@ -1346,7 +1334,7 @@ private:
     }
 
     static Buffer * alloc(unsigned int size) {
-        return _nic->alloc(NIC::Address::BROADCAST, NIC::TSTP, 0, 0, size);
+        return _nic->alloc(NIC::Address::BROADCAST, NIC::TSTP, 0, 0, size - sizeof(Header));
     }
 
     static Coordinates absolute(const Coordinates & coordinates) { return coordinates; }

@@ -93,6 +93,7 @@ class Timer;
 class RTC;
 class UART;
 class USB;
+class Smart_Plug;
 class EEPROM;
 class Display;
 class Serial_Display;

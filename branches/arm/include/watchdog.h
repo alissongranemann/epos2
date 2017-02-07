@@ -21,7 +21,11 @@ __END_SYS
 #include __WATCHDOG_H
 #else
 __BEGIN_SYS
-class Watchdog: public Dummy {};
+class Watchdog {
+public:
+    static void enable() {}
+    static void kick() {}
+};
 __END_SYS
 #endif
 

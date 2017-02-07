@@ -106,17 +106,18 @@ template<> struct Traits<Scratchpad>: public Traits<Machine_Common>
 template<> struct Traits<NIC>: public Traits<Machine_Common>
 {
     static const bool enabled = (Traits<Build>::NODES > 1);
-    static const bool promiscuous = false;
 
     typedef LIST<CC2538> NICS;
     static const unsigned int UNITS = NICS::Length;
+    static const bool promiscuous = false;
 };
 
 template<> struct Traits<CC2538>: public Traits<NIC>
 {
     static const unsigned int UNITS = NICS::Count<CC2538>::Result;
-    static const unsigned int RECEIVE_BUFFERS = 16; // per unit
+    static const unsigned int RECEIVE_BUFFERS = 20; // per unit
     static const bool gpio_debug = false;
+    static const bool reset_backdoor = false;
 };
 
 __END_SYS

@@ -13,6 +13,20 @@ __BEGIN_SYS
 // TI CC2538 IEEE 802.15.4 RF Transceiver
 class CC2538RF: protected Machine_Model
 {
+public:
+    struct Reset_Backdoor_Message {
+
+        Reset_Backdoor_Message(unsigned char * id) : _header_code(0xbe), _footer_code(0xef) {
+            memcpy(_id, id, 8);
+        }
+
+    private:
+        unsigned char _header_code;
+        unsigned char _id[8];
+        unsigned char _footer_code;
+        unsigned short _crc;
+    }__attribute__((packed));
+
 protected:
     typedef CPU::Reg8 Reg8;
     typedef CPU::Reg16 Reg16;
@@ -466,7 +480,9 @@ public:
                 _overflow_count++;
 
             IC::Interrupt_Handler h;
+                                                          // TODO: implicit CPU::int_enable()
             if((ints & INT_COMPARE1) && (h = _handler) && (_int_request_time <= read_raw())) {
+                //kout << 't';
                 int_disable();
                 CPU::int_enable();
                 h(interrupt);
@@ -630,10 +646,13 @@ public:
 
     // FIXME: methods changed to static because of TSTP_MAC
     static bool tx_done() {
-        bool ret = (sfr(RFIRQF1) & INT_TXDONE);
-        if(ret)
+        bool tx_ok = (sfr(RFIRQF1) & INT_TXDONE);
+        if(tx_ok)
             sfr(RFIRQF1) &= ~INT_TXDONE;
-        return ret;
+        bool tx_error = (sfr(RFERRF) & (INT_TXUNDERF | INT_TXOVERF));
+        if(tx_error)
+            sfr(RFERRF) &= ~(INT_TXUNDERF | INT_TXOVERF);
+        return tx_ok || tx_error;
     }
 
     // FIXME: methods changed to static because of TSTP_MAC
@@ -684,8 +703,8 @@ public:
         unsigned int first = xreg(RXP1_PTR);
         unsigned int last = xreg(RXLAST_PTR);
         volatile unsigned int * rxfifo = reinterpret_cast<volatile unsigned int*>(RXFIFO);
+        unsigned char mac_frame_size = rxfifo[first];
         if(last - first > 1 + sizeof(IEEE802_15_4::CRC)) {
-            unsigned char mac_frame_size = rxfifo[first];
             // On RX, last two bytes in the frame are replaced by info like CRC result
             // (obs: mac frame is preceded by one byte containing the frame length,
             // so total RXFIFO data size is 1 + mac_frame_size)
@@ -693,6 +712,16 @@ public:
         }
         if(!valid_frame)
             drop();
+
+        else if(Traits<CC2538>::reset_backdoor && (mac_frame_size == sizeof(Reset_Backdoor_Message) + sizeof(IEEE802_15_4::Header))) {
+            if((rxfifo[first + sizeof(IEEE802_15_4::Header) + 1] == 0xbe) && (rxfifo[first + sizeof(IEEE802_15_4::Header) + 10] == 0xef)) {
+                unsigned char id[8];
+                for(unsigned int i = 0; i < 8u; i++)
+                    id[i] = rxfifo[first + sizeof(IEEE802_15_4::Header) + 2 + i];
+                if(!memcmp(id, Machine::id(), 8))
+                    Machine::reboot();
+            }
+        }
 
         return valid_frame;
     }

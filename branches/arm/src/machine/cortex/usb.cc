@@ -23,7 +23,7 @@ void USB::disable()
 
 char USB::get()
 {
-    lock();
+    //lock();
     input();
     while(!(reg(CSOL) & CSOL_OUTPKTRDY));
     unsigned int sz = (reg(CNTH) << 8) | reg(CNT0_CNTL);
@@ -31,13 +31,13 @@ char USB::get()
     if(sz == 1) {
         reg(CSOL) &= ~CSOL_OUTPKTRDY;
     }
-    unlock();
+    //unlock();
     return ret;
 }
 
 unsigned int USB::get(char * out, unsigned int max_size)
 {
-    lock();
+    //lock();
     input();
     while(!(reg(CSOL) & CSOL_OUTPKTRDY));
     unsigned int i;
@@ -46,7 +46,7 @@ unsigned int USB::get(char * out, unsigned int max_size)
         out[i] = reg(F4);
     if(i>=sz)
         reg(CSOL) &= ~CSOL_OUTPKTRDY;
-    unlock();
+    //unlock();
     return i;
 }
 
@@ -59,14 +59,14 @@ void USB::put(char c)
             return;
     }
 
-    lock();
+    //lock();
     output();
     reg(F3) = c;
     flush();
     // It looks like the update of the CSIL_INPKTRDY bit takes a while to
     // take effect, so we're better off just delaying and not even checking it.
     for(volatile int i = 0; i < 0xff; i++);
-    unlock();
+    //unlock();
 }
 
 void USB::put(const char * c, unsigned int size)
@@ -78,7 +78,7 @@ void USB::put(const char * c, unsigned int size)
             return;
     }
 
-    lock();
+    //lock();
     output();
     for(unsigned int i = 0; (i < _max_packet_ep3) and (i < size); i++)
         reg(F3) = c[i];
@@ -86,7 +86,7 @@ void USB::put(const char * c, unsigned int size)
     // It looks like the update of the CSIL_INPKTRDY bit takes a while to
     // take effect, so we're better off just delaying and not even checking it.
     for(volatile int i = 0; i < 0xff; i++);
-    unlock();
+    //unlock();
 }
 
 bool USB::handle_ep0(const USB_2_0::Request::Device_Request & data)

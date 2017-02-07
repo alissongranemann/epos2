@@ -5,6 +5,7 @@
 #define __cortex_adc_h_
 
 #include <adc.h>
+#include <machine.h>
 
 __BEGIN_SYS
 
@@ -74,7 +75,7 @@ public:
     }
 
 private:
-    volatile Reg32 & reg(unsigned int o) { return reinterpret_cast<volatile Reg32*>(ADC_BASE)[o / sizeof(Reg32)]; }
+    volatile CPU::Reg32 & reg(unsigned int o) { return reinterpret_cast<volatile CPU::Reg32*>(ADC_BASE)[o / sizeof(CPU::Reg32)]; }
 
     Channel _channel;
     Reference _reference;

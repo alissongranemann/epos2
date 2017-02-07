@@ -88,6 +88,7 @@ namespace EPOS {
 #define __MODEL_H       __HEADER_MACH(MMOD)
 #define __IC_H          __HEADER_MACH(ic)
 #define __TIMER_H       __HEADER_MACH(timer)
+#define __TRANSDUCER_H  __HEADER_MACH(transducer)
 
 #ifdef __mmod_legacy_pc__
 #define __TSC_H         __HEADER_ARCH(tsc)
@@ -128,6 +129,7 @@ namespace EPOS {
 #define __ADC_H                 __HEADER_MACH(adc)
 #define __SPI_H                 __HEADER_MACH(spi)
 #define __WATCHDOG_H            __HEADER_MACH(watchdog)
+#define __SMART_PLUG_H          __HEADER_MACH(smart_plug)
 #endif
 
 #ifdef __mmod_zynq__

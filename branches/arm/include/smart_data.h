@@ -101,14 +101,20 @@ public:
     }
 
     operator Value() {
-        if(TSTP::now() > (_time + _expiry))
+        if(expired())
             if(_device != REMOTE) { // Local data source
                 Transducer::sense(_device, this); // read sensor
                 _time = TSTP::now();
-            } else // Other data sources must have called update() timely
+            } else {
+                // Other data sources must have called update() timely
                 db<Smart_Data>(WRN) << "Smart_Data::get(this=" << this << ",exp=" <<_time +  _expiry << ",val=" << _value << ") => expired!" << endl;
+                //if(_interested)
+                //    _interested->advertise();
+            }
         return _value;
     }
+
+    bool expired() const { return TSTP::now() > (_time + _expiry); }
 
     Coordinates location() const { return TSTP::absolute(_coordinates); }
     const Error & error() const { return _error; }

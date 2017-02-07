@@ -41,14 +41,19 @@ CC2538::CC2538(unsigned int unit): _unit(unit), _rx_cur_consume(0), _rx_cur_prod
         xreg(FRMCTRL1) &= ~SET_RXENMASK_ON_TX; // Do not enter receive mode after ISTXON
     }
 
-    channel(13);
+    channel(26);
 
     if(Traits<CC2538>::gpio_debug) {
         // Enable debug signals to GPIO
         GPIO p_tx('C',3,GPIO::OUT,GPIO::FLOATING); // Configure GPIO pin C3
         GPIO p_rx('C',5,GPIO::OUT,GPIO::FLOATING); // Configure GPIO pin C5
-        xreg(RFC_OBS_CTRL0) = SIGNAL_TX_ACTIVE; // Signal 0 is TX_ACTIVE
-        xreg(RFC_OBS_CTRL1) = SIGNAL_RX_ACTIVE; // Signal 1 is RX_ACTIVE
+        if(Traits<CC2538>::promiscuous) {
+            xreg(RFC_OBS_CTRL0) = SIGNAL_RX_ACTIVE; // Signal 0 is RX_ACTIVE
+            xreg(RFC_OBS_CTRL1) = SIGNAL_TX_ACTIVE; // Signal 1 is TX_ACTIVE
+        } else {
+            xreg(RFC_OBS_CTRL0) = SIGNAL_TX_ACTIVE; // Signal 0 is TX_ACTIVE
+            xreg(RFC_OBS_CTRL1) = SIGNAL_RX_ACTIVE; // Signal 1 is RX_ACTIVE
+        }
         cctest(CCTEST_OBSSEL3) = OBSSEL_SIG0_EN; // Route signal 0 to GPIO pin C3
         cctest(CCTEST_OBSSEL5) = OBSSEL_SIG1_EN; // Route signal 1 to GPIO pin C5
     }
@@ -63,11 +68,11 @@ CC2538::CC2538(unsigned int unit): _unit(unit), _rx_cur_consume(0), _rx_cur_prod
     sfr(RFERRF) = 0;
 
     // Enable useful device interrupts
-    // INT_TXDONE is polled by CC2538RF::tx_done()
+    // INT_TXDONE, INT_TXUNDERF, and INT_TXOVERF are polled by CC2538RF::tx_done()
     // INT_RXPKTDONE is polled by CC2538RF::rx_done()
     xreg(RFIRQM0) = INT_FIFOP;
     xreg(RFIRQM1) = 0;
-    xreg(RFERRM) = 4 | 8 | 1; // TODO
+    xreg(RFERRM) = (INT_RXUNDERF | INT_RXOVERF);
 
 
     MAC::constructor_epilogue(); // Device is configured, let the MAC use it

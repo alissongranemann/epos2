@@ -24,7 +24,7 @@ private:
     };
 
     // WDCTL register offsets
-    enum { 
+    enum {
       //Name  Offset     Description                                                           Type Reset Value
         CLR = 1 << 4, // Clear timer                                                             RW 0
                       // When 0xA followed by 0x5 is written to these bits, the timer is
