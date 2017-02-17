@@ -8,9 +8,9 @@
 
 __BEGIN_SYS
 
-CC2538::CC2538(unsigned int unit): _unit(unit), _rx_cur_consume(0), _rx_cur_produce(0)
+CC2538::CC2538(unsigned int unit): MAC(unit), _unit(unit), _rx_cur_consume(0), _rx_cur_produce(0)
 {
-    db<CC2538>(TRC) << "CC2538(unit=" << unit << ")" << endl;
+    db<CC2538>(TRC) << "CC2538(unit=" << unit << ") => " << this << endl;
 
     // Initialize RX buffer pool
     for(unsigned int i = 0; i < RX_BUFS; i++)
@@ -81,7 +81,7 @@ CC2538::CC2538(unsigned int unit): _unit(unit), _rx_cur_consume(0), _rx_cur_prod
 
 void CC2538::init(unsigned int unit)
 {
-    db<Init, CC2538>(TRC) << "Radio::init(unit=" << unit << ")" << endl;
+    db<Init, CC2538>(TRC) << "CC2538::init(unit=" << unit << ")" << endl;
 
     // Enable clock to RF module
     power_ieee802_15_4(FULL);
@@ -109,6 +109,7 @@ void CC2538::init(unsigned int unit)
 void CC2538::Timer::init()
 {
     db<Init, CC2538>(TRC) << "Radio::Timer::init()" << endl;
+    _frequency = CLOCK;
     mactimer(MTCTRL) &= ~MTCTRL_RUN; // Stop counting
     mactimer(MTIRQM) = 0; // Mask interrupts
     mactimer(MTIRQF) = 0; // Clear interrupts

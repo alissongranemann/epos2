@@ -10,7 +10,7 @@ inline static void call_init()
     typedef typename Traits<Type>::NICS::template Get<unit>::Result NIC;
     static const unsigned int OFFSET = Traits<Type>::NICS::template Find<NIC>::Result;
 
-    if(Traits<NIC>::enabled)
+    if(Traits<NIC>::enabled && (unit < Traits<Network>::NETWORKS::Length))
         NIC::init(unit - OFFSET);
 
     call_init<Type, unit + 1>();

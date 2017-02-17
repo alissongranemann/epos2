@@ -12,6 +12,7 @@ __BEGIN_SYS
 
 class GPIO: public GPIO_Common, private Machine_Model
 {
+    friend class PWM;
 private:
     static const bool supports_power_up = Machine_Model::supports_gpio_power_up;
 

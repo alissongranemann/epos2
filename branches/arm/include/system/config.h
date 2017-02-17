@@ -130,6 +130,8 @@ namespace EPOS {
 #define __SPI_H                 __HEADER_MACH(spi)
 #define __WATCHDOG_H            __HEADER_MACH(watchdog)
 #define __SMART_PLUG_H          __HEADER_MACH(smart_plug)
+#define __HYDRO_BOARD_H         __HEADER_MACH(hydro_board)
+#define __PWM_H                 __HEADER_MACH(pwm)
 #endif
 
 #ifdef __mmod_zynq__

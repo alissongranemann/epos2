@@ -7,7 +7,10 @@
 
 #include <keyboard.h>
 #include <smart_plug.h>
+#include <hydro_board.h>
 #include <gpio.h>
+#include <tstp.h>
+#include <tsc.h>
 
 __BEGIN_SYS
 
@@ -42,6 +45,78 @@ public:
 
 #ifdef __mmod_emote3__
 
+class Water_Level_Sensor: public Hydro_Board
+{
+public:
+    static const unsigned int UNIT = TSTP::Unit::Length;
+    static const unsigned int NUM = TSTP::Unit::I32;
+    static const int ERROR = 0; // Unknown
+
+    static const bool INTERRUPT = false;
+    static const bool POLLING = true;
+
+public:
+    static void sense(unsigned int dev, Smart_Data<Water_Level_Sensor> * data) {
+        data->_value = level(dev);
+    }
+
+    static void actuate(unsigned int dev, Smart_Data<Water_Level_Sensor> * data, void * command) {}
+};
+
+class Water_Turbidity_Sensor: public Hydro_Board
+{
+public:
+    static const unsigned int UNIT = TSTP::Unit::Length;
+    static const unsigned int NUM = TSTP::Unit::I32;
+    static const int ERROR = 0; // Unknown
+
+    static const bool INTERRUPT = false;
+    static const bool POLLING = true;
+
+public:
+    static void sense(unsigned int dev, Smart_Data<Water_Turbidity_Sensor> * data) {
+        data->_value = turbidity(dev);
+    }
+
+    static void actuate(unsigned int dev, Smart_Data<Water_Turbidity_Sensor> * data, void * command) {}
+};
+
+class Water_Flow_Sensor: public Hydro_Board
+{
+public:
+    static const unsigned int UNIT = (TSTP::Unit::SI) | (TSTP::Unit::DIR) | ((4 + 3) * TSTP::Unit::M) | ((4 - 1) * TSTP::Unit::S); // m^3/s
+    static const unsigned int NUM = TSTP::Unit::I32;
+    static const int ERROR = 0; // Unknown
+
+    static const bool INTERRUPT = false;
+    static const bool POLLING = true;
+
+public:
+    static void sense(unsigned int dev, Smart_Data<Water_Flow_Sensor> * data) {
+        data->_value = water_flow();
+    }
+
+    static void actuate(unsigned int dev, Smart_Data<Water_Flow_Sensor> * data, void * command) {}
+};
+
+class Pluviometer: public Hydro_Board
+{
+public:
+    static const unsigned int UNIT = TSTP::Unit::DIV | TSTP::Unit::Length; // TODO: we want mm, or mm/m^2
+    static const unsigned int NUM = TSTP::Unit::I32;
+    static const int ERROR = 0; // Unknown
+
+    static const bool INTERRUPT = false;
+    static const bool POLLING = true;
+
+public:
+    static void sense(unsigned int dev, Smart_Data<Pluviometer> * data) {
+        data->_value = rain();
+    }
+
+    static void actuate(unsigned int dev, Smart_Data<Pluviometer> * data, void * command) {}
+};
+
 class Current_Sensor: public Smart_Plug
 {
 public:
@@ -56,13 +131,13 @@ public:
     typedef Smart_Plug::Observed Observed;
 
 public:
-    Current_Sensor() {}
-
     static void sense(unsigned int dev, Smart_Data<Current_Sensor> * data) {
         data->_value = current(dev);
     }
 
-    static void actuate(unsigned int dev, Smart_Data<Current_Sensor> * data, void * command) {}
+    static void actuate(unsigned int dev, Smart_Data<Current_Sensor> * data, void * command) {
+        act(dev, 0); // TODO
+    }
 };
 
 class ADC_Sensor // TODO
@@ -134,6 +209,7 @@ private:
 private:
     static Observed _observed;
 };
+
 class GPIO_Sensor // TODO
 {
 public:
@@ -179,6 +255,10 @@ typedef Smart_Data<Current_Sensor> Current;
 typedef Smart_Data<ADC_Sensor> Luminous_Intensity;
 typedef Smart_Data<Temperature_Sensor> Temperature;
 typedef Smart_Data<GPIO_Sensor> Presence;
+typedef Smart_Data<Water_Flow_Sensor> Water_Flow;
+typedef Smart_Data<Water_Level_Sensor> Water_Level;
+typedef Smart_Data<Water_Turbidity_Sensor> Water_Turbidity;
+typedef Smart_Data<Pluviometer> Rain;
 
 #endif
 

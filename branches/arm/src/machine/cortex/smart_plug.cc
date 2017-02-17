@@ -1,5 +1,7 @@
 // EPOS Cortex Smart Plug Mediator Implementation
 
+#include <system/config.h>
+
 #ifdef __SMART_PLUG_H
 
 #include <machine/cortex/smart_plug.h>
@@ -8,7 +10,9 @@ __BEGIN_SYS
 
 // Class attributes
 Smart_Plug::Observed Smart_Plug::_observed;
-Smart_Plug::Engine * Smart_Plug::_dev[2];
+Power_Meter * Smart_Plug::_power_meter[2];
+Smart_Plug::Actuator0 * Smart_Plug::_actuator0;
+Smart_Plug::Actuator1 * Smart_Plug::_actuator1;
 
 // Methods
 

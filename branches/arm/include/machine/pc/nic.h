@@ -25,13 +25,22 @@ public:
     typedef Data_Observer<Buffer, Protocol> Observer;
     typedef Data_Observed<Buffer, Protocol> Observed;
 
+private:
+    NIC(Device * dev) { _dev = dev; }
+
 public:
     template<unsigned int UNIT = 0>
     NIC(unsigned int u = UNIT) {
         _dev = reinterpret_cast<Device *>(NICS::Get<UNIT>::Result::get(u));
         db<NIC>(TRC) << "NIC::NIC(u=" << UNIT << ",d=" << _dev << ") => " << this << endl;
     }
-    ~NIC() { _dev = 0; }
+
+    template<unsigned int UNIT>
+    static NIC nic() {
+        typedef typename Traits<NIC>::NICS::template Get<UNIT>::Result NIC_Type;
+        static const unsigned int OFFSET = Traits<NIC>::NICS::template Find<NIC_Type>::Result;
+        return NIC(reinterpret_cast<Device *>(NICS::Get<UNIT>::Result::get(UNIT - OFFSET))); // An error at this line might mean that the number of NETWORKS in Traits<Network> mismatches the number of NICS in Traits<NIC>
+    }
 
     int send(const Address & dst, const Protocol & prot, const void * data, unsigned int size) { return _dev->send(dst, prot, data, size); }
     int receive(Address * src, Protocol * prot, void * data, unsigned int size) { return _dev->receive(src, prot, data, size); }

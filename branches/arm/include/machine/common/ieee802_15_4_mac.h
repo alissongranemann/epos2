@@ -10,7 +10,7 @@
 __BEGIN_SYS
 
 template<typename Radio>
-class IEEE802_15_4_MAC: public IEEE802_15_4, public IEEE802_15_4::Observed, public Radio
+class IEEE802_15_4_MAC: public IEEE802_15_4, public Radio
 {
 private:
     static const unsigned int CSMA_CA_MIN_BACKOFF_EXPONENT = 3;
@@ -32,7 +32,7 @@ public:
     typedef _UTIL::Buffer<NIC, Frame, void, NIC_Common::Metadata> Buffer;
 
 protected:
-    IEEE802_15_4_MAC() {}
+    IEEE802_15_4_MAC(unsigned int unit) {}
 
     // Called after the Radio's constructor
     void constructor_epilogue() {

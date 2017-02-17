@@ -16,39 +16,45 @@ void TSTP::Locator::bootstrap()
 {
     db<TSTP>(TRC) << "TSTP::Locator::bootstrap()" << endl;
 
-    _confidence = 100;
+    _confidence = 0;
 
-    _here = TSTP::sink();
+    //_confidence = 100;
 
+    //if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x1a\x84\x0d\x06", 8)) // Router 1
+        //_here = Coordinates(-6000,4500,0);
+    //else
+        //_here = TSTP::sink();
+
+    /*
     // TODO: we need a better way to define static locations
 
     // LISHA Testbed
-    //if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xee\x0e\x16\x06", 8))
-    //    _here = TSTP::sink();
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x7f\x0e\x16\x06", 8)) // Dummy 0
-    //    _here = Coordinates(10,5,0);
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x69\x0e\x16\x06", 8)) // Dummy 1
-    //    _here = Coordinates(10,10,0);
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xca\x0e\x16\x06", 8)) // Dummy 2
-    //    _here = Coordinates(5,15,0);
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x67\x83\x0d\x06", 8)) // Dummy 3
-    //    _here = Coordinates(0,15,0);
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xec\x82\x0d\x06", 8)) // Dummy 4
-    //    _here = Coordinates(-5,10,0);
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x97\x0e\x16\x06", 8)) // Dummy 5
-    //    _here = Coordinates(-5,5,0);
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x11\x83\x0d\x06", 8)) // Outlet 0 (B0)
-    //    _here = Coordinates(460-730, -250-80, -15);
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x74\x82\x0d\x06", 8)) // Outlet 1 (B1)
-    //    _here = Coordinates(-5-730, -30-80, -15);
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x5e\x83\x0d\x06", 8)) // Lights 1 (A1)
-    //    _here = Coordinates(305-730, -170-80, 220);
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x0b\x0f\x16\x06", 8)) // Luminosity sensor
-    //    _here = Coordinates(10-730,-10-80, 0);
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x1a\x84\x0d\x06", 8)) // Router 1
-    //    _here = Coordinates(505-730,120-80,0);
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xb0\x0e\x16\x06", 8)) // Router 2
-    //    _here = Coordinates(505-730,20-80,10);
+    if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xee\x0e\x16\x06", 8))
+        _here = TSTP::sink();
+    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x7f\x0e\x16\x06", 8)) // Dummy 0
+        _here = Coordinates(10,5,0);
+    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x69\x0e\x16\x06", 8)) // Dummy 1
+        _here = Coordinates(10,10,0);
+    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xca\x0e\x16\x06", 8)) // Dummy 2
+        _here = Coordinates(5,15,0);
+    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x67\x83\x0d\x06", 8)) // Dummy 3
+        _here = Coordinates(0,15,0);
+    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xec\x82\x0d\x06", 8)) // Dummy 4
+        _here = Coordinates(-5,10,0);
+    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x97\x0e\x16\x06", 8)) // Dummy 5
+        _here = Coordinates(-5,5,0);
+    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x11\x83\x0d\x06", 8)) // Outlet 0 (B0)
+        _here = Coordinates(460-730, -250-80, -15);
+    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x74\x82\x0d\x06", 8)) // Outlet 1 (B1)
+        _here = Coordinates(-5-730, -30-80, -15);
+    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x5e\x83\x0d\x06", 8)) // Lights 1 (A1)
+        _here = Coordinates(305-730, -170-80, 220);
+    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x0b\x0f\x16\x06", 8)) // Luminosity sensor
+        _here = Coordinates(10-730,-10-80, 0);
+    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x1a\x84\x0d\x06", 8)) // Router 1
+        _here = Coordinates(505-730,120-80,0);
+    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xb0\x0e\x16\x06", 8)) // Router 2
+        _here = Coordinates(505-730,20-80,10);
 
 
 
@@ -138,8 +144,14 @@ void TSTP::Locator::bootstrap()
     //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x47\x83\x0d\x06", 8)) // Air Conditioner 1
     //    _here = Coordinates(150, -10, 220);
 
-    //else
+    else
         _confidence = 0;
+    */
+
+    if(Traits<Radio>::promiscuous) {
+        _here = Coordinates(12,12,12);
+        _confidence = 100;
+    }
 
     TSTP::_nic->attach(this, NIC::TSTP);
 
@@ -154,8 +166,7 @@ void TSTP::Timekeeper::bootstrap()
 
     TSTP::_nic->attach(this, NIC::TSTP);
 
-    if(TSTP::here() != TSTP::sink()) {
-    //if((TSTP::here() != TSTP::sink()) && (!Traits<NIC>::promiscuous)) { // TODO
+    if((TSTP::here() != TSTP::sink()) && (!Traits<Radio>::promiscuous)) { // TODO
         // Wait for time synchronization
         while(!_t1)
             Thread::self()->yield();
@@ -174,8 +185,7 @@ void TSTP::Security::bootstrap()
 
     TSTP::_nic->attach(this, NIC::TSTP);
 
-    if(TSTP::here() != TSTP::sink()) {
-    //if((TSTP::here() != TSTP::sink()) && (!Traits<NIC>::promiscuous)) { // TODO
+    if((TSTP::here() != TSTP::sink()) && (!Traits<Radio>::promiscuous)) { // TODO
         Peer * peer = new (SYSTEM) Peer(_id, Region(TSTP::sink(), 0, 0, -1));
         _pending_peers.insert(peer->link());
 
@@ -185,11 +195,12 @@ void TSTP::Security::bootstrap()
     }
 }
 
-void TSTP::init(unsigned int unit)
+template<unsigned int UNIT>
+void TSTP::init(const NIC & nic)
 {
-    db<Init, TSTP>(TRC) << "TSTP::init(u=" << unit << ")" << endl;
+    db<Init, TSTP>(TRC) << "TSTP::init(u=" << UNIT << ")" << endl;
 
-    _nic = new (SYSTEM) NIC(unit);
+    _nic = new (SYSTEM) NIC(nic);
     TSTP::Locator * locator = new (SYSTEM) TSTP::Locator;
     TSTP::Timekeeper * timekeeper = new (SYSTEM) TSTP::Timekeeper;
     TSTP::Router * router = new (SYSTEM) TSTP::Router;
@@ -203,6 +214,15 @@ void TSTP::init(unsigned int unit)
 
     _nic->attach(tstp, NIC::TSTP);
 }
+
+template void TSTP::init<0>(const NIC & nic);
+template void TSTP::init<1>(const NIC & nic);
+template void TSTP::init<2>(const NIC & nic);
+template void TSTP::init<3>(const NIC & nic);
+template void TSTP::init<4>(const NIC & nic);
+template void TSTP::init<5>(const NIC & nic);
+template void TSTP::init<6>(const NIC & nic);
+template void TSTP::init<7>(const NIC & nic);
 
 __END_SYS
 

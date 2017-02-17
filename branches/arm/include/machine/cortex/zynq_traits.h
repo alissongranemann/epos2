@@ -88,8 +88,14 @@ template<> struct Traits<NIC>: public Traits<Machine_Common>
 {
     static const bool enabled = (Traits<Build>::NODES > 1);
 
+    // NICS that don't have a network in Traits<Network>::NETWORKS will not be enabled
     typedef LIST<GEM> NICS;
     static const unsigned int UNITS = NICS::Length;
+    static const bool promiscuous = false;
+};
+
+template<> struct Traits<GEM>: public Traits<NIC>
+{
 };
 
 __END_SYS

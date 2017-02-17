@@ -87,8 +87,6 @@ template<> struct Traits<USB>: public Traits<Machine_Common>
 
 template<> struct Traits<Watchdog>: public Traits<Machine_Common>
 {
-    static const bool enabled = true;
-
     enum {
         MS_1_9,    // 1.9ms
         MS_15_625, // 15.625ms
@@ -96,6 +94,34 @@ template<> struct Traits<Watchdog>: public Traits<Machine_Common>
         S_1,       // 1s
     };
     static const int PERIOD = S_1;
+};
+
+template<> struct Traits<Smart_Plug>: public Traits<Machine_Common>
+{
+    static const bool enabled = false;
+
+    enum { DIMMER, SWITCH, DISABLED };
+    static const unsigned int P1_ACTUATOR = SWITCH;
+    static const unsigned int P2_ACTUATOR = DIMMER;
+    static const unsigned int PWM_TIMER_CHANNEL = 0;
+    static const unsigned int PWM_PERIOD = 100; // us
+
+    static const bool P1_power_meter_enabled = true;
+    static const bool P2_power_meter_enabled = true;
+};
+
+template<> struct Traits<Hydro_Board>: public Traits<Machine_Common>
+{
+    static const bool enabled = false;
+
+    static const unsigned int INTERRUPT_DEBOUNCE_TIME = 100000; // us
+
+    // Enable/disable individual relays / ADCs
+    static const bool P3_enabled = true;
+    static const bool P4_enabled = false;
+    static const bool P5_enabled = true;
+    static const bool P6_enabled = true;
+    static const bool P7_enabled = true;
 };
 
 template<> struct Traits<Scratchpad>: public Traits<Machine_Common>
@@ -107,7 +133,8 @@ template<> struct Traits<NIC>: public Traits<Machine_Common>
 {
     static const bool enabled = (Traits<Build>::NODES > 1);
 
-    typedef LIST<CC2538> NICS;
+    // NICS that don't have a network in Traits<Network>::NETWORKS will not be enabled
+    typedef LIST<CC2538, M95> NICS;
     static const unsigned int UNITS = NICS::Length;
     static const bool promiscuous = false;
 };
@@ -118,6 +145,25 @@ template<> struct Traits<CC2538>: public Traits<NIC>
     static const unsigned int RECEIVE_BUFFERS = 20; // per unit
     static const bool gpio_debug = false;
     static const bool reset_backdoor = false;
+};
+
+template<> struct Traits<M95>: public Traits<NIC>
+{
+    static const unsigned int UNITS = NICS::Count<M95>::Result;
+
+    enum {CLARO, TIM, OI};
+    static const unsigned int PROVIDER = CLARO;
+
+    static const unsigned int UART_UNIT = 1;
+    static const unsigned int UART_BAUD_RATE = 9600;
+    static const unsigned int UART_DATA_BITS = 8;
+    static const unsigned int UART_PARITY = 0;
+    static const unsigned int UART_STOP_BITS = 1;
+
+    static const char PWRKEY_PORT = 'C';
+    static const unsigned int PWRKEY_PIN = 4;
+    static const char STATUS_PORT = 'C';
+    static const unsigned int STATUS_PIN = 1;
 };
 
 __END_SYS

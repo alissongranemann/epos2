@@ -134,7 +134,7 @@ protected:
             reg(GPTMIMR) |= TATO_INT;
         else
             reg(GPTMIMR) &= ~TATO_INT;
-        
+
         enable();
     }
 
@@ -153,10 +153,11 @@ public:
         Count count = reg(GPTMTAILR);
         reg(GPTMCFG) = 4; // 4 -> 16-bit, only possible value for PWM
         reg(GPTMTAMR) = TCMR | TAMS | 2; // 2 -> Periodic, 1 -> One-shot
-        reg(GPTMTAPR) = count >> 16;
-        reg(GPTMTAMATCHR) = percent2count(duty_cycle, count);
-        reg(GPTMTAPMR) = reg(GPTMTAMATCHR) >> 16;
         reg(GPTMCTL) &= ~TBPWML; // never inverted
+        reg(GPTMTAPR) = count >> 16;
+        count = percent2count(duty_cycle, (count & 0x00ffffff));
+        reg(GPTMTAPMR) = count >> 16;
+        reg(GPTMTAMATCHR) = count;
         enable();
     }
 

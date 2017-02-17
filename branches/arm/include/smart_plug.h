@@ -19,10 +19,7 @@ __END_SYS
 #include __SMART_PLUG_H
 #else
 __BEGIN_SYS
-class Smart_Plug: public Dummy {
-public:
-    static void init() {}
-};
+class Smart_Plug: public Dummy {};
 __END_SYS
 #endif
 

@@ -2,6 +2,7 @@
 
 #include <machine/cortex/machine.h>
 #include <smart_plug.h>
+#include <hydro_board.h>
 
 __BEGIN_SYS
 
@@ -15,11 +16,17 @@ void Machine::init()
         IC::init();
     if(Traits<Timer>::enabled)
         Timer::init();
-    if(Traits<Smart_Plug>::enabled)
-        Smart_Plug::init();
 #ifdef __USB_H
     if(Traits<USB>::enabled)
         USB::init();
+#endif
+#ifdef __SMART_PLUG_H
+    if(Traits<Smart_Plug>::enabled)
+        Smart_Plug::init();
+#endif
+#ifdef __HYDRO_BOARD_H
+    if(Traits<Hydro_Board>::enabled)
+        Hydro_Board::init();
 #endif
 #ifdef __NIC_H
     if(Traits<NIC>::enabled)

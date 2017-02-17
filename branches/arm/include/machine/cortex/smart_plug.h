@@ -4,8 +4,11 @@
 #define __cortex_smart_plug_h
 
 #include <adc.h>
+#include <pwm.h>
+#include <gpio.h>
 #include <machine.h>
 #include <utility/observer.h>
+#include <smart_plug.h>
 
 __BEGIN_SYS
 
@@ -87,7 +90,35 @@ private:
     ADC _ref_chan;
 };
 
-class Smart_Plug
+template<bool dimmer = true>
+class Actuator {
+public:
+    Actuator(PWM * pwm) : _pwm(pwm) {}
+    Actuator(GPIO * gpio) {}
+
+    void act(const Percent & duty_cycle) {
+        _pwm->duty_cycle(duty_cycle);
+    }
+
+private:
+    PWM * _pwm;
+};
+
+template<>
+class Actuator<false> {
+public:
+    Actuator(PWM * pwm){}
+    Actuator(GPIO * gpio) : _gpio(gpio) {}
+
+    void act(bool on) {
+        _gpio->set(on);
+    }
+
+private:
+    GPIO * _gpio;
+};
+
+class Smart_Plug: public Smart_Plug_Common
 {
 private:
     friend class Machine;
@@ -97,12 +128,22 @@ public:
     typedef _UTIL::Observer Observer;
     typedef _UTIL::Observed Observed;
 
+    typedef Actuator<Traits<Smart_Plug>::P1_ACTUATOR == Traits<Smart_Plug>::DIMMER> Actuator0;
+    typedef Actuator<Traits<Smart_Plug>::P2_ACTUATOR == Traits<Smart_Plug>::DIMMER> Actuator1;
+
 public:
     Smart_Plug() {}
 
     static unsigned int current(unsigned int dev) {
-        assert((dev >= 0) && (dev <= 1));
-        return _dev[dev]->average();
+        assert(dev < 2);
+        return _power_meter[dev]->average();
+    }
+
+    static void act(unsigned int dev, unsigned int data) {
+        if(dev == 0)
+            _actuator0->act(data);
+        else if(dev == 1)
+            _actuator1->act(data);
     }
 
     static void attach(Observer * obs) { _observed.attach(obs); }
@@ -115,7 +156,9 @@ private:
 
 private:
     static Observed _observed;
-    static Engine * _dev[2];
+    static Power_Meter * _power_meter[2];
+    static Actuator0 * _actuator0;
+    static Actuator1 * _actuator1;
 };
 
 __END_SYS

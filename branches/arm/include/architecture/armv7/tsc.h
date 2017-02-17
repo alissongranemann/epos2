@@ -16,6 +16,10 @@ class TSC: private TSC_Common
 private:
     static const unsigned int CLOCK = Traits<CPU>::CLOCK / (Traits<Build>::MODEL == Traits<Build>::Zynq ? 2 : 1);
 
+public:
+    static const unsigned int FREQUENCY = CLOCK;
+
+private:
     enum {
         TSC_BASE =
             Traits<Build>::MODEL == Traits<Build>::eMote3  ? 0x40033000 /*TIMER3_BASE*/ :
@@ -44,7 +48,7 @@ public:
 public:
     TSC() {}
 
-    static Hertz frequency() { return CLOCK; }
+    static Hertz frequency() { return FREQUENCY; }
 
     static Time_Stamp time_stamp() {
 

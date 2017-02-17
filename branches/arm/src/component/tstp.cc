@@ -60,7 +60,6 @@ TSTP::Locator::~Locator()
 // Class attributes
 TSTP::Timekeeper::Time_Stamp TSTP::Timekeeper::_t0;
 TSTP::Timekeeper::Time_Stamp TSTP::Timekeeper::_t1;
-TSTP::Timekeeper::Frequency TSTP::Timekeeper::_frequency;
 TSTP::Coordinates TSTP::Timekeeper::_peer;
 
 // Methods
@@ -85,7 +84,7 @@ void TSTP::Timekeeper::update(NIC::Observed * obs, NIC::Protocol prot, Buffer * 
                 _t0 = t0;
                 _t1 = t1 + adj;
 
-                NIC::Timer::adjust(adj);
+                Radio::Timer::adjust(adj);
 
                 db<TSTP>(TRC) << "TSTP::Timekeeper::update: adjusted timer offset by " << adj << endl;
 
@@ -100,13 +99,14 @@ void TSTP::Timekeeper::update(NIC::Observed * obs, NIC::Protocol prot, Buffer * 
 
             Offset adj = adjust(t0_new, t1_new);
 
-            NIC::Timer::adjust(adj);
+            Radio::Timer::adjust(adj);
 
             db<TSTP>(TRC) << "TSTP::Timekeeper::update: adjusted timer offset by " << adj << endl;
 
-            _frequency = NIC::Timer::frequency() + NIC::Timer::frequency() * static_cast<Frequency>((t1_new - t0_new) - (_t1 - _t0)) / static_cast<Frequency>(t0_new - _t0);
+            // TODO (disabled at cc2538.h)
+            //Radio::Timer::adjust_frequency(-static_cast<int>(Radio::Timer::frequency()) * static_cast<int>((t1_new - t0_new) - (_t1 - _t0)) / static_cast<int>(t0_new - _t0));
 
-            db<TSTP>(TRC) << "TSTP::Timekeeper::update: adjusted timer frequency to " << _frequency << endl;
+            db<TSTP>(TRC) << "TSTP::Timekeeper::update: adjusted timer frequency to " << Radio::Timer::frequency() << endl;
             db<TSTP>(TRC) << "now() = " << now() << endl;
 
             _t0 = t0_new;
@@ -476,14 +476,16 @@ void TSTP::update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf)
     case RESPONSE: {
         Response * response = reinterpret_cast<Response *>(packet);
         db<TSTP>(INF) << "TSTP::update:response=" << response << " => " << *response << endl;
-        // Check region inclusion and notify interested observers
-        Interests::List * list = _interested[response->unit()];
-        if(list)
-            for(Interests::Element * el = list->head(); el; el = el->next()) {
-                Interested * interested = el->object();
-                if(interested->region().contains(response->origin(), response->time()))
-                    notify(interested, buf);
-            }
+        if(response->time() < now()) {
+            // Check region inclusion and notify interested observers
+            Interests::List * list = _interested[response->unit()];
+            if(list)
+                for(Interests::Element * el = list->head(); el; el = el->next()) {
+                    Interested * interested = el->object();
+                    if(interested->region().contains(response->origin(), response->time()))
+                        notify(interested, buf);
+                }
+        }
     } break;
     case COMMAND: {
         Command * command = reinterpret_cast<Command *>(packet);

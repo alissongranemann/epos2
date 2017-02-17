@@ -13,9 +13,10 @@ unsigned char GPIO::_mis[GPIO_PORTS];
 unsigned int GPIO::_irq_detect_ack[GPIO_PORTS];
 
 // Class methods
-void GPIO::handle_int(const IC::Interrupt_Id & i)
+void GPIO::handle_int(const IC::Interrupt_Id & id)
 {
-    unsigned int port = i - IC::INT_GPIOA;
+    /*
+    unsigned int port = id - IC::INT_GPIOA;
 
     unsigned int mis = _mis[port];
     _mis[port] = 0;
@@ -28,16 +29,36 @@ void GPIO::handle_int(const IC::Interrupt_Id & i)
         if(regular_interrupt || power_up_interrupt) {
             GPIO * dev = _devices[port][i];
             if(dev && dev->_handler)
-                dev->_handler(i);
+                dev->_handler(id);
         }
     }
+    */
 }
 
-void GPIO::eoi(const IC::Interrupt_Id & i)
+// FIXME: GPIO interrupt handling is done at eoi, because some devices generate interrupts faster than the processor can handle
+void GPIO::eoi(const IC::Interrupt_Id & id)
 {
-    unsigned int port = i - IC::INT_GPIOA;
+    /*
+    unsigned int port = id - IC::INT_GPIOA;
     _mis[port] |= gpio(port, MIS);
     _irq_detect_ack[port] |= gpio(port, IRQ_DETECT_ACK);
+    */
+
+    unsigned int port = id - IC::INT_GPIOA;
+    unsigned int mis = gpio(port, MIS);
+    _mis[port] = 0;
+    unsigned int irq_detect_ack = gpio(port, IRQ_DETECT_ACK);
+    _irq_detect_ack[port] = 0;
+
+    for(unsigned int i = 0; i < 8; ++i) {
+        bool regular_interrupt = mis & (1 << i);
+        bool power_up_interrupt = irq_detect_ack & ((1 << i) << (8 * port));
+        if(regular_interrupt || power_up_interrupt) {
+            GPIO * dev = _devices[port][i];
+            if(dev && dev->_handler)
+                dev->_handler(id);
+        }
+    }
 
     // Clear regular interrupts even if no handler is available
     gpio(port, ICR) = -1;

@@ -9,6 +9,7 @@
 #include <udp.h>
 #include <tcp.h>
 #include <tstp.h>
+#include <http.h> // Quectel HTTP implements the whole stack, so it can be used as a Network
 
 __BEGIN_SYS
 
@@ -18,7 +19,7 @@ inline static void call_init()
     typedef typename Traits<Network>::NETWORKS::template Get<unit>::Result NET;
 
     if(Traits<NET>::enabled)
-        NET::init(unit);
+        NET::template init<unit>(NIC::template nic<unit>());
 
     call_init<unit + 1>();
 };

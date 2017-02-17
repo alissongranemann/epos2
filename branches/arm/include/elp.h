@@ -14,7 +14,8 @@ class ELP
 public:
 
 private:
-    static void init(unsigned int unit) {}
+    template<unsigned int UNIT>
+    static void init(const NIC & nic) {}
 
 private:
 };

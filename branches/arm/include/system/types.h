@@ -94,6 +94,7 @@ class RTC;
 class UART;
 class USB;
 class Smart_Plug;
+class Hydro_Board;
 class EEPROM;
 class Display;
 class Serial_Display;
@@ -115,6 +116,7 @@ class PCNet32;
 class C905;
 class E100;
 class CC2538;
+class M95;
 class AT86RF;
 class GEM;
 class SPI;
@@ -175,6 +177,7 @@ class ICMP;
 class UDP;
 class TCP;
 class DHCP;
+class Quectel_HTTP;
 
 class IPC;
 

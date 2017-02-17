@@ -1062,11 +1062,20 @@ protected:
             //5. Set GPIO pins A1 and A0 to peripheral mode
             gpioa(AFSEL) |= (PIN0) + (PIN1);
         } else {
-           ioc(PC4_SEL) = UART1_TXD;
-           ioc(PC4_OVER) = OE;
-           ioc(PC3_OVER) = 0;
-           ioc(UARTRXD_UART1) = (2 << 3) + 3;
-           gpioc(AFSEL) |= (PIN3) + (PIN4);
+            if((Traits<M95>::UNITS == 0) || (Traits<M95>::UART_UNIT != 1)) {
+                ioc(PC4_SEL) = UART1_TXD;
+                ioc(PC4_OVER) = OE;
+                ioc(PC3_OVER) = 0;
+                ioc(UARTRXD_UART1) = (2 << 3) + 3;
+                gpioc(AFSEL) |= (PIN3) + (PIN4);
+            } else {
+                // The M95 GPRS board uses UART1 in non-standard pins
+                ioc(PD1_SEL) = UART1_TXD;
+                ioc(PD1_OVER) = OE;
+                ioc(PD0_OVER) = 0;
+                ioc(UARTRXD_UART1) = (3 << 3) + 0;
+                gpiod(AFSEL) |= (PIN0) + (PIN1);
+            }
         }
 
         return unit;
@@ -1157,6 +1166,8 @@ protected:
             case 'D': gpiod(AFSEL) |= pin_bit; break;
         }
     }
+
+    static void disable_pwm(unsigned int timer, char gpio_port, unsigned int gpio_pin) {}
 
     static void config_SSI(volatile Log_Addr * base, Reg32 clock, SSI_Frame_Format protocol, SSI_Mode mode, Reg32 bit_rate, Reg32 data_width) {
         Reg32 pre_div, max_bit_rate, value;

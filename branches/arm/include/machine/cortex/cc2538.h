@@ -384,12 +384,12 @@ public:
         typedef unsigned long long Time_Stamp;
         typedef long long Offset;
 
-        static unsigned int frequency() { return CLOCK; }
+        static unsigned int frequency() { return _frequency; }
 
     public:
         Timer() {}
 
-        static Time_Stamp read() { return read_raw() + _offset; }
+        static Time_Stamp read() { return read_raw() /** _frequency / CLOCK*/ + _offset; } // TODO
 
         static Time_Stamp sfd() {
             CPU::int_disable();
@@ -413,6 +413,9 @@ public:
         }
 
         static void adjust(const Offset & o) { _offset += o; }
+
+        // TODO
+        static void adjust_frequency(int frequency_offset) { _frequency += frequency_offset; }
 
         static void interrupt(const Time_Stamp & when, const IC::Interrupt_Handler & h) {
 
@@ -443,8 +446,8 @@ public:
             mactimer(MTIRQM) = INT_OVERFLOW_PER;
         }
 
-        static Time_Stamp us2count(const Microsecond & us) { return static_cast<Time_Stamp>(us) * CLOCK / 1000000; }
-        static Microsecond count2us(const Time_Stamp & ts) { return ts * 1000000ll / CLOCK; }
+        static Time_Stamp us2count(const Microsecond & us) { return static_cast<Time_Stamp>(us) * (frequency() / 1000000); } // TODO
+        static Microsecond count2us(const Time_Stamp & ts) { return ts / (frequency() / 1000000); } // TODO
 
     private:
         static void int_enable(const Reg32 & interrupt) { mactimer(MTIRQM) |= interrupt; }
@@ -502,6 +505,7 @@ public:
         static void init();
 
     private:
+        static volatile unsigned int _frequency; // TODO
         static volatile Offset _offset;
         static volatile IC::Interrupt_Handler _handler;
         static volatile Reg32 _overflow_count;
@@ -572,8 +576,9 @@ public:
     static bool cca(const Microsecond & time) {
         Timer::Time_Stamp end = Timer::read() + Timer::us2count(time);
         while(!(xreg(RSSISTAT) & RSSI_VALID));
-        while(Timer::read() <= end);
-        return xreg(FSMSTAT1) & CCA;
+        bool channel_free = xreg(FSMSTAT1) & CCA;
+        while((Timer::read() <= end) && (channel_free = channel_free && (xreg(FSMSTAT1) & CCA)));
+        return channel_free;
     }
 
     // FIXME: methods changed to static because of TSTP_MAC
@@ -767,12 +772,17 @@ protected:
 };
 
 // CC2538 IEEE 802.15.4 EPOSMote III NIC Mediator
-class CC2538: public IF<EQUAL<Traits<Network>::NETWORKS::Get<Traits<NIC>::NICS::Find<CC2538>::Result>::Result, TSTP>::Result, TSTP_MAC<CC2538RF>, IEEE802_15_4_MAC<CC2538RF>>::Result
+class CC2538: public IEEE802_15_4::NIC_Base<IEEE802_15_4, Traits<NIC>::NICS::Polymorphic>, public IF<EQUAL<Traits<Network>::NETWORKS::Get<Traits<NIC>::NICS::Find<CC2538>::Result>::Result, TSTP>::Result, TSTP_MAC<CC2538RF>, IEEE802_15_4_MAC<CC2538RF>>::Result
 {
     template <typename Type, int unit> friend void call_init();
 
 private:
     typedef IF<EQUAL<Traits<Network>::NETWORKS::Get<Traits<NIC>::NICS::Find<CC2538>::Result>::Result, _SYS::TSTP>::Result, TSTP_MAC<CC2538RF>, IEEE802_15_4_MAC<CC2538RF>>::Result MAC;
+
+    typedef MAC::Buffer Buffer;
+    typedef IEEE802_15_4::Statistics Statistics;
+    typedef IEEE802_15_4::Address Address;
+    typedef IEEE802_15_4::Protocol Protocol;
 
     static const bool ieee802_15_4_mac = EQUAL<MAC, IEEE802_15_4_MAC<CC2538RF>>::Result;
 

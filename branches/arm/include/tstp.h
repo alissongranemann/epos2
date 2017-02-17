@@ -321,20 +321,20 @@ public:
 
         // Typical SI Quantities
         enum Quantity {
-             //                        si      | mod       | sr            | rad           |  m            |  kg           |  s            |  A            |  K            |  mol          |  cd
-             Length                  = 1 << 31 | DIR << 27 | (4 + 0) << 24 | (4 + 0) << 21 | (4 + 1) << 18 | (4 + 0) << 15 | (4 + 0) << 12 | (4 + 0) << 9  | (4 + 0) << 6  | (4 + 0) << 3  | (4 + 0),
-             Mass                    = 1 << 31 | DIR << 27 | (4 + 0) << 24 | (4 + 0) << 21 | (4 + 0) << 18 | (4 + 1) << 15 | (4 + 0) << 12 | (4 + 0) << 9  | (4 + 0) << 6  | (4 + 0) << 3  | (4 + 0),
-             Time                    = 1 << 31 | DIR << 27 | (4 + 0) << 24 | (4 + 0) << 21 | (4 + 0) << 18 | (4 + 0) << 15 | (4 + 1) << 12 | (4 + 0) << 9  | (4 + 0) << 6  | (4 + 0) << 3  | (4 + 0),
-             Current                 = 1 << 31 | DIR << 27 | (4 + 0) << 24 | (4 + 0) << 21 | (4 + 0) << 18 | (4 + 0) << 15 | (4 + 0) << 12 | (4 + 1) << 9  | (4 + 0) << 6  | (4 + 0) << 3  | (4 + 0),
+             //                        si      | mod     | sr            | rad           |  m            |  kg           |  s            |  A            |  K            |  mol          |  cd
+             Length                  = 1 << 31 | 0 << 27 | (4 + 0) << 24 | (4 + 0) << 21 | (4 + 1) << 18 | (4 + 0) << 15 | (4 + 0) << 12 | (4 + 0) << 9  | (4 + 0) << 6  | (4 + 0) << 3  | (4 + 0),
+             Mass                    = 1 << 31 | 0 << 27 | (4 + 0) << 24 | (4 + 0) << 21 | (4 + 0) << 18 | (4 + 1) << 15 | (4 + 0) << 12 | (4 + 0) << 9  | (4 + 0) << 6  | (4 + 0) << 3  | (4 + 0),
+             Time                    = 1 << 31 | 0 << 27 | (4 + 0) << 24 | (4 + 0) << 21 | (4 + 0) << 18 | (4 + 0) << 15 | (4 + 1) << 12 | (4 + 0) << 9  | (4 + 0) << 6  | (4 + 0) << 3  | (4 + 0),
+             Current                 = 1 << 31 | 0 << 27 | (4 + 0) << 24 | (4 + 0) << 21 | (4 + 0) << 18 | (4 + 0) << 15 | (4 + 0) << 12 | (4 + 1) << 9  | (4 + 0) << 6  | (4 + 0) << 3  | (4 + 0),
              Electric_Current        = Current,
-             Temperature             = 1 << 31 | DIR << 27 | (4 + 0) << 24 | (4 + 0) << 21 | (4 + 0) << 18 | (4 + 0) << 15 | (4 + 0) << 12 | (4 + 0) << 9  | (4 + 1) << 6  | (4 + 0) << 3  | (4 + 0),
-             Amount_of_Substance     = 1 << 31 | DIR << 27 | (4 + 0) << 24 | (4 + 0) << 21 | (4 + 0) << 18 | (4 + 0) << 15 | (4 + 0) << 12 | (4 + 0) << 9  | (4 + 0) << 6  | (4 + 1) << 3  | (4 + 0),
-             Luminous_Intensity      = 1 << 31 | DIR << 27 | (4 + 0) << 24 | (4 + 0) << 21 | (4 + 0) << 18 | (4 + 0) << 15 | (4 + 0) << 12 | (4 + 0) << 9  | (4 + 0) << 6  | (4 + 0) << 3  | (4 + 1),
-             Area                    = 1 << 31 | DIR << 27 | (4 + 0) << 24 | (4 + 0) << 21 | (4 + 2) << 18 | (4 + 0) << 15 | (4 + 0) << 12 | (4 + 0) << 9  | (4 + 0) << 6  | (4 + 0) << 3  | (4 + 0),
-             Volume                  = 1 << 31 | DIR << 27 | (4 + 0) << 24 | (4 + 0) << 21 | (4 + 3) << 18 | (4 + 0) << 15 | (4 + 0) << 12 | (4 + 0) << 9  | (4 + 0) << 6  | (4 + 0) << 3  | (4 + 0),
-             Speed                   = 1 << 31 | DIR << 27 | (4 + 0) << 24 | (4 + 0) << 21 | (4 + 1) << 18 | (4 + 0) << 15 | (4 - 1) << 12 | (4 + 0) << 9  | (4 + 0) << 6  | (4 + 0) << 3  | (4 + 0),
+             Temperature             = 1 << 31 | 0 << 27 | (4 + 0) << 24 | (4 + 0) << 21 | (4 + 0) << 18 | (4 + 0) << 15 | (4 + 0) << 12 | (4 + 0) << 9  | (4 + 1) << 6  | (4 + 0) << 3  | (4 + 0),
+             Amount_of_Substance     = 1 << 31 | 0 << 27 | (4 + 0) << 24 | (4 + 0) << 21 | (4 + 0) << 18 | (4 + 0) << 15 | (4 + 0) << 12 | (4 + 0) << 9  | (4 + 0) << 6  | (4 + 1) << 3  | (4 + 0),
+             Luminous_Intensity      = 1 << 31 | 0 << 27 | (4 + 0) << 24 | (4 + 0) << 21 | (4 + 0) << 18 | (4 + 0) << 15 | (4 + 0) << 12 | (4 + 0) << 9  | (4 + 0) << 6  | (4 + 0) << 3  | (4 + 1),
+             Area                    = 1 << 31 | 0 << 27 | (4 + 0) << 24 | (4 + 0) << 21 | (4 + 2) << 18 | (4 + 0) << 15 | (4 + 0) << 12 | (4 + 0) << 9  | (4 + 0) << 6  | (4 + 0) << 3  | (4 + 0),
+             Volume                  = 1 << 31 | 0 << 27 | (4 + 0) << 24 | (4 + 0) << 21 | (4 + 3) << 18 | (4 + 0) << 15 | (4 + 0) << 12 | (4 + 0) << 9  | (4 + 0) << 6  | (4 + 0) << 3  | (4 + 0),
+             Speed                   = 1 << 31 | 0 << 27 | (4 + 0) << 24 | (4 + 0) << 21 | (4 + 1) << 18 | (4 + 0) << 15 | (4 - 1) << 12 | (4 + 0) << 9  | (4 + 0) << 6  | (4 + 0) << 3  | (4 + 0),
              Velocity                = Speed,
-             Acceleration            = 1 << 31 | DIR << 27 | (4 + 0) << 24 | (4 + 0) << 21 | (4 + 1) << 18 | (4 + 0) << 15 | (4 - 2) << 12 | (4 + 0) << 9  | (4 + 0) << 6  | (4 + 0) << 3  | (4 + 0)
+             Acceleration            = 1 << 31 | 0 << 27 | (4 + 0) << 24 | (4 + 0) << 21 | (4 + 1) << 18 | (4 + 0) << 15 | (4 - 2) << 12 | (4 + 0) << 9  | (4 + 0) << 6  | (4 + 0) << 3  | (4 + 0)
          };
 
         // SI Factors
@@ -429,7 +429,7 @@ public:
     template<int NUM>
     class Value
     {
-        typedef typename IF<NUM == TSTP_Common::Unit::I64, long long int, 
+        typedef typename IF<NUM == TSTP_Common::Unit::I64, long long int,
                 typename IF<NUM == TSTP_Common::Unit::F32, float,
                 typename IF<NUM == TSTP_Common::Unit::D64, double, long int
                     >::Result>::Result>::Result Number;
@@ -473,6 +473,7 @@ class TSTP: public TSTP_Common, private NIC::Observer
 
 public:
     typedef NIC::Buffer Buffer;
+    typedef IF<Traits<Network>::NETWORKS::Count<TSTP>::Result, Traits<NIC>::NICS::Get<Traits<Network>::NETWORKS::Find<TSTP>::Result>::Result, Traits<NIC>::NICS::Get<0>::Result>::Result Radio;
 
     // Packet
     static const unsigned int MTU = NIC::MTU - sizeof(Header);
@@ -915,20 +916,18 @@ public:
     // TSTP Timekeeper
     class Timekeeper: private NIC::Observer
     {
-        typedef NIC::Timer::Time_Stamp Time_Stamp;
-        typedef NIC::Timer::Offset Offset;
-        typedef Offset Frequency;
+        typedef Radio::Timer::Time_Stamp Time_Stamp;
+        typedef Radio::Timer::Offset Offset;
 
     public:
         Timekeeper() {
             db<TSTP>(TRC) << "TSTP::Timekeeper()" << endl;
             _t0 = 0;
             _t1 = 0;
-            _frequency = NIC::Timer::frequency();
         }
         ~Timekeeper();
 
-        static Time now() { return NIC::Timer::read() * 1000000ll / _frequency; }
+        static Time now() { return Radio::Timer::count2us(Radio::Timer::read()); }
 
         void bootstrap();
 
@@ -938,12 +937,11 @@ public:
 
     private:
         Offset adjust(const Time_Stamp & t0, const Time_Stamp & t1) {
-            return t0 + NIC::Timer::us2count(IEEE802_15_4::SHR_SIZE * 1000000 / IEEE802_15_4::BYTE_RATE) - t1;
+            return t0 + Radio::Timer::us2count(IEEE802_15_4::SHR_SIZE * 1000000 / IEEE802_15_4::BYTE_RATE) - t1;
         }
 
         static Time_Stamp _t0;
         static Time_Stamp _t1;
-        static Frequency _frequency;
         static Coordinates _peer;
     };
 
@@ -1284,12 +1282,14 @@ public:
     static Coordinates here() { return Locator::here(); }
     static Coordinates sink() { return Coordinates(0, 0, 0); }
     static Time now() { return Timekeeper::now(); }
+    static void adjust(const Time & t) { return Radio::Timer::adjust(Radio::Timer::us2count(t)); }
 
     static void attach(Observer * obs, void * subject) { _observed.attach(obs, int(subject)); }
     static void detach(Observer * obs, void * subject) { _observed.detach(obs, int(subject)); }
     static bool notify(void * subject, Buffer * buf) { return _observed.notify(int(subject), buf); }
 
-    static void init(unsigned int unit);
+    template<unsigned int UNIT>
+    static void init(const NIC & nic);
 
 private:
     static Region destination(Buffer * buf) {

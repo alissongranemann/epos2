@@ -16,6 +16,7 @@ volatile CC2538RF::Reg32 CC2538RF::Timer::_overflow_count;
 volatile CC2538RF::Reg32 CC2538RF::Timer::_ints;
 volatile CC2538RF::Timer::Time_Stamp CC2538RF::Timer::_int_request_time;
 volatile CC2538RF::Timer::Offset CC2538RF::Timer::_offset;
+volatile unsigned int CC2538RF::Timer::_frequency;
 volatile IC::Interrupt_Handler CC2538RF::Timer::_handler;
 bool CC2538RF::Timer::_overflow_match;
 bool CC2538RF::Timer::_msb_match;
@@ -31,16 +32,16 @@ CC2538::~CC2538()
     db<CC2538>(TRC) << "~CC2538(unit=" << _unit << ")" << endl;
 }
 
-int CC2538::send(const Address & dst, const Type & type, const void * data, unsigned int size)
+int CC2538::send(const Address & dst, const IEEE802_15_4::Type & type, const void * data, unsigned int size)
 {
     db<CC2538>(TRC) << "CC2538::send(s=" << address() << ",d=" << dst << ",p=" << hex << type << dec << ",d=" << data << ",s=" << size << ")" << endl;
 
-    Buffer * b = alloc(reinterpret_cast<NIC*>(this), dst, type, 0, 0, size);
+    Buffer * b = alloc(0, dst, type, 0, 0, size);
     memcpy(b->frame()->data<void>(), data, size);
     return send(b);
 }
 
-int CC2538::receive(Address * src, Type * type, void * data, unsigned int size)
+int CC2538::receive(Address * src, IEEE802_15_4::Type * type, void * data, unsigned int size)
 {
     db<CC2538>(TRC) << "CC2538::receive(s=" << *src << ",p=" << hex << *type << dec << ",d=" << data << ",s=" << size << ") => " << endl;
 
@@ -65,7 +66,7 @@ int CC2538::receive(Address * src, Type * type, void * data, unsigned int size)
     return ret;
 }
 
-CC2538::Buffer * CC2538::alloc(NIC * nic, const Address & dst, const Type & type, unsigned int once, unsigned int always, unsigned int payload)
+CC2538::Buffer * CC2538::alloc(NIC * nic, const Address & dst, const IEEE802_15_4::Type & type, unsigned int once, unsigned int always, unsigned int payload)
 {
     db<CC2538>(TRC) << "CC2538::alloc(s=" << address() << ",d=" << dst << ",p=" << hex << type << dec << ",on=" << once << ",al=" << always << ",ld=" << payload << ")" << endl;
 
@@ -121,9 +122,9 @@ void CC2538::handle_int()
     sfr(RFIRQF0) = irqrf0 & INT_RXPKTDONE; //INT_RXPKTDONE is polled by rx_done()
     sfr(RFIRQF1) = irqrf1 & INT_TXDONE; //INT_TXDONE is polled by tx_done()
     sfr(RFERRF) = errf & (INT_TXUNDERF | INT_TXOVERF);
-    db<CC2538>(INF) << "CC2538::handle_int:RFIRQF0=" << hex << irqrf0 << endl;
-    db<CC2538>(INF) << "CC2538::handle_int:RFIRQF1=" << hex << irqrf1 << endl;
-    db<CC2538>(INF) << "CC2538::handle_int:RFERRF=" << hex << errf << endl;
+    db<CC2538>(TRC) << "CC2538::handle_int:RFIRQF0=" << hex << irqrf0 << endl;
+    db<CC2538>(TRC) << "CC2538::handle_int:RFIRQF1=" << hex << irqrf1 << endl;
+    db<CC2538>(TRC) << "CC2538::handle_int:RFERRF=" << hex << errf << endl;
 
     if(irqrf0 & INT_FIFOP) { // Frame received
         //kout << 'h';
@@ -192,7 +193,7 @@ void CC2538::int_handler(const IC::Interrupt_Id & interrupt)
 
 // TSTP binding
 template<typename Radio>
-void TSTP_MAC<Radio>::free(Buffer * b) { b->nic()->free(b); }
+void TSTP_MAC<Radio>::free(Buffer * b) { CC2538::get(_unit)->free(b); }
 template void TSTP_MAC<CC2538RF>::free(Buffer * b);
 
 __END_SYS

@@ -1,7 +1,7 @@
 // EPOS PWM Mediator Common package
 
-#ifndef __i2c_h
-#define __i2c_h
+#ifndef __pwm_h
+#define __pwm_h
 
 #include <system/config.h>
 

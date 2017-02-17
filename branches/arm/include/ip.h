@@ -322,8 +322,8 @@ private:
 
 
 protected:
-    template<unsigned int UNIT = 0>
-    IP(unsigned int nic = UNIT);
+    template<typename Config>
+    IP(const NIC & nic, const Config & config);
 
 public:
     ~IP();
@@ -384,7 +384,8 @@ private:
 
     static bool notify(const Protocol & prot, Buffer * buf) { return _observed.notify(prot, buf); }
 
-    static void init(unsigned int unit);
+    template<unsigned int UNIT>
+    static void init(const NIC & nic);
 
 protected:
     NIC _nic;

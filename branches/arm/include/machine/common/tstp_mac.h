@@ -20,7 +20,7 @@
 __BEGIN_SYS
 
 template<typename Radio>
-class TSTP_MAC: public TSTP_Common, public TSTP_Common::Observed, public Radio
+class TSTP_MAC: public TSTP_Common, public Radio
 {
     typedef IEEE802_15_4 Phy_Layer;
 
@@ -73,16 +73,17 @@ public: //TODO: for debugging
     static const typename IF<(Tr * 1000000ull / CI <= Traits<System>::DUTY_CYCLE), unsigned int, void>::Result
         DUTY_CYCLE = Tr * 1000000ull / CI; // in ppm. This line failing means that TSTP_MAC is unable to provide a duty cycle smaller than or equal to Traits<System>::DUTY_CYCLE
 
-    static const unsigned int DATA_LISTEN_MARGIN = (TIME_BETWEEN_MICROFRAMES + MICROFRAME_TIME)* 2; // Subtract this amount when calculating time until data transmission
+    // TODO
+    static const unsigned int DATA_LISTEN_MARGIN = (TIME_BETWEEN_MICROFRAMES + MICROFRAME_TIME) * 5; // Subtract this amount when calculating time until data transmission
     static const unsigned int DATA_SKIP_TIME = DATA_LISTEN_MARGIN + 4500;
 
     static const unsigned int RX_DATA_TIMEOUT = DATA_SKIP_TIME + DATA_LISTEN_MARGIN;
 
-    static const unsigned int G = IEEE802_15_4::CCA_TX_GAP;// + RX_MF_TIMEOUT;
+    static const unsigned int G = Ti + IEEE802_15_4::CCA_TX_GAP;
     static const unsigned int CCA_TIME = G;
 
 protected:
-    TSTP_MAC() {}
+    TSTP_MAC(unsigned int unit) : _unit(unit) {}
 
     // Called after the Radio's constructor
     void constructor_epilogue() {
@@ -101,31 +102,34 @@ protected:
 
     // Filter and assemble RX Buffer Metainformation
     bool pre_notify(Buffer * buf) {
-        CPU::int_disable();
         if(Traits<TSTP_MAC>::hysterically_debugged)
             db<TSTP_MAC<Radio>>(TRC) << "pre_notify(buf=" << buf << ")" << endl;
 
         if(sniffer) {
+            static int last_id = 0;
+            static unsigned int last_hint = 0;
             buf->sfd_time_stamp = Timer::sfd();
             if(buf->size() == sizeof(Microframe)) {
                 Microframe * mf = buf->frame()->data<Microframe>();
-                Time_Stamp data_time = buf->sfd_time_stamp + Timer::us2count(TIME_BETWEEN_MICROFRAMES) + mf->count() * Timer::us2count(TIME_BETWEEN_MICROFRAMES + MICROFRAME_TIME) - Timer::us2count(DATA_LISTEN_MARGIN);
-                Radio::power(Power_Mode::SLEEP);
-                Timer::interrupt(data_time, sniff);
+                if((mf->id() != last_id) || (mf->hint() != last_hint)) {
+                    last_id = mf->id();
+                    last_hint = mf->hint();
+                    db<TSTP_MAC<Radio>>(ERR) << "[" << Radio::Timer::count2us(buf->sfd_time_stamp) << "]";
 
-                db<TSTP_MAC<Radio>>(ERR) << "[" << Radio::Timer::count2us(buf->sfd_time_stamp) << "]";
-
-                kout << *mf << endl; // Weird compilation error here if using db instead of kout
-                //db<TSTP_MAC<Radio>>(ERR) << *mf << endl; // Weird compilation error here if using db instead of kout
+                    kout << *mf << endl; // Weird compilation error here if using db instead of kout
+                    //db<TSTP_MAC<Radio>>(ERR) << *mf << endl; // Weird compilation error here if using db instead of kout
+                }
             } else {
+                last_id = 0;
+                last_hint = 0;
                 db<TSTP_MAC<Radio>>(ERR) << "[" << Radio::Timer::count2us(buf->sfd_time_stamp) << "]";
                 kout << *buf->frame()->data<Header>() << endl; // Weird compilation error here if using db instead of kout
                 //db<TSTP_MAC<Radio>>(ERR) << *buf->frame()->data<Header>() << endl; // Weird compilation error here if using db instead of kout
             }
-            CPU::int_enable();
             return false;
         }
 
+        CPU::int_disable();
         if(_in_rx_mf) { // State: RX MF (part 2/3)
                                                     // TODO: I don't know why, but some MFs with a huge count are getting here
             if((buf->size() == sizeof(Microframe)) && (buf->frame()->data<Microframe>()->count() < N_MICROFRAMES)) {
@@ -270,18 +274,26 @@ public:
         // Components calculate the offset in microseconds according to their own metrics.
         // We finish the calculation here to keep SLEEP_PERIOD, G, and Timestamps
         // encapsulated by the MAC, and MAC::marshal() happens before the other components' marshal methods
-        if(buf->destined_to_me)
-            buf->offset = Timer::us2count(CCA_TIME);
-        else {
-            buf->offset = Timer::us2count(((buf->offset * SLEEP_PERIOD) / (G*RADIO_RANGE)) * G);
+        buf->offset = Timer::us2count(((buf->offset * SLEEP_PERIOD) / (G*RADIO_RANGE)) * G);
 
-            if(buf->offset < Timer::us2count(2*CCA_TIME))
-                buf->offset = Timer::us2count(2*CCA_TIME);
-            else if(buf->offset > Timer::us2count(SLEEP_PERIOD - CCA_TIME))
-                buf->offset = Timer::us2count(SLEEP_PERIOD - CCA_TIME);
+        if(buf->offset < Timer::us2count(3*CCA_TIME))
+            buf->offset = Timer::us2count(3*CCA_TIME);
+        else if(buf->offset > Timer::us2count(SLEEP_PERIOD - CCA_TIME))
+            buf->offset = Timer::us2count(SLEEP_PERIOD - CCA_TIME);
+
+        // Clear scheduled messages with same ID
+        CPU::int_disable();
+        Buffer::Element * next;
+        for(Buffer::Element * el = _tx_schedule.head(); el; el = next) {
+            next = el->next();
+            Buffer * b = el->object();
+            if(b->id == buf->id) {
+                _tx_schedule.remove(el);
+                delete b;
+            }
         }
-
         _tx_schedule.insert(buf->link());
+        CPU::int_enable();
 
         return buf->size();
     }
@@ -290,6 +302,7 @@ private:
     // State Machine
 
     static void update_tx_schedule(const IC::Interrupt_Id & id) {
+        Timer::int_disable();
         //kout << UPDATE_TX_SCHEDULE;
         Watchdog::kick();
         if(Traits<TSTP_MAC>::hysterically_debugged)
@@ -327,22 +340,24 @@ private:
 
             Watchdog::kick();
             //kout << BACKOFF ;
-            unsigned long long offset;
-            offset = _tx_pending->offset;
-            if(_tx_pending->attempts > 0) {
-                unsigned int lim = pow(2u, _tx_pending->attempts);
-                if(_tx_pending->destined_to_me) {
-                    offset -= (Random::random() % lim) * Timer::us2count(CCA_TIME);
-                    if((offset < Timer::us2count(2*CCA_TIME)) || (offset > Timer::us2count(SLEEP_PERIOD - CCA_TIME)))
-                        offset = Timer::us2count(2*CCA_TIME);
-                } else {
-                    offset += (Random::random() % lim) * Timer::us2count(CCA_TIME);
-                    if((offset < Timer::us2count(2*CCA_TIME)) || (offset > Timer::us2count(SLEEP_PERIOD - CCA_TIME)))
-                        offset = Timer::us2count(SLEEP_PERIOD - CCA_TIME);
-                }
-            }
 
             _tx_pending->attempts++;
+            unsigned long long offset;
+            offset = _tx_pending->offset;
+            unsigned int lim = pow(2u, _tx_pending->attempts);
+            if(_tx_pending->destined_to_me) {
+                offset -= (Random::random() % lim) * Timer::us2count(CCA_TIME);
+                if((offset < Timer::us2count(2 * CCA_TIME)) || (offset > Timer::us2count(SLEEP_PERIOD - CCA_TIME))) {
+                    offset = Timer::us2count(2 * CCA_TIME);
+                    _tx_pending->attempts--;
+                }
+            } else {
+                offset += (Random::random() % lim) * Timer::us2count(CCA_TIME);
+                if((offset < Timer::us2count(3*CCA_TIME)) || (offset > Timer::us2count(SLEEP_PERIOD - CCA_TIME))) {
+                    offset = Timer::us2count(SLEEP_PERIOD - CCA_TIME);
+                    _tx_pending->attempts--;
+                }
+            }
 
             Timer::interrupt(now_ts + offset, cca);
         } else { // Transition: [No TX pending]
@@ -475,7 +490,7 @@ private:
         Timer::interrupt(_mf_time + Timer::us2count(SLEEP_PERIOD), rx_mf);
     }
 
-    static void free(Buffer * b);
+    void free(Buffer * b);
 
     static Microframe _mf;
     static Time_Stamp _mf_time;
@@ -485,6 +500,8 @@ private:
     static Buffer * _tx_pending;
     static bool _in_rx_mf;
     static bool _in_rx_data;
+
+    unsigned int _unit;
 };
 
 // The compiler makes sure that template static variables are only defined once

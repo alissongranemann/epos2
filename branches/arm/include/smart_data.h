@@ -70,8 +70,8 @@ public:
 
 public:
     // Local data source, possibly advertised to or commanded by the network
-    Smart_Data(unsigned int dev, const Microsecond & expiry, const Mode & mode = PRIVATE)
-    : _unit(UNIT), _value(0), _error(ERROR), _coordinates(TSTP::here()), _time(TSTP::now()), _expiry(expiry), _device(dev), _mode(mode), _thread(0), _interested(0), _responsive((mode & ADVERTISED) | (mode & COMMANDED) ? new Responsive(this, UNIT, ERROR, expiry) : 0) {
+    Smart_Data(unsigned int dev, const Microsecond & expiry, const Mode & mode = PRIVATE, bool accumulate = false)
+    : _unit(UNIT), _value(0), _error(ERROR), _coordinates(TSTP::here()), _time(TSTP::now()), _expiry(expiry), _device(dev), _mode(mode), _thread(0), _interested(0), _responsive((mode & ADVERTISED) | (mode & COMMANDED) ? new Responsive(this, UNIT, ERROR, expiry) : 0), _accumulate(accumulate) {
         db<Smart_Data>(TRC) << "Smart_Data(dev=" << dev << ",exp=" << expiry << ",mode=" << mode << ")" << endl;
         if(Transducer::POLLING)
             Transducer::sense(_device, this);
@@ -82,8 +82,8 @@ public:
         db<Smart_Data>(INF) << "Smart_Data(dev=" << dev << ",exp=" << expiry << ",mode=" << mode << ") => " << *this << endl;
     }
     // Remote, event-driven (period = 0) or time-triggered data source
-    Smart_Data(const Region & region, const Microsecond & expiry, const Microsecond & period = 0)
-    : _unit(UNIT), _value(0), _error(ERROR), _coordinates(0), _time(0), _expiry(expiry), _device(REMOTE), _mode(PRIVATE), _thread(0), _interested(new Interested(this, region, UNIT, TSTP::SINGLE, 0, expiry, period)), _responsive(0) {
+    Smart_Data(const Region & region, const Microsecond & expiry, const Microsecond & period = 0, bool accumulate = false)
+    : _unit(UNIT), _value(0), _error(ERROR), _coordinates(0), _time(0), _expiry(expiry), _device(REMOTE), _mode(PRIVATE), _thread(0), _interested(new Interested(this, region, UNIT, TSTP::SINGLE, 0, expiry, period)), _responsive(0), _accumulate(accumulate) {
         TSTP::attach(this, _interested);
     }
 
@@ -101,17 +101,21 @@ public:
     }
 
     operator Value() {
-        if(expired())
+        if(expired()) {
             if(_device != REMOTE) { // Local data source
                 Transducer::sense(_device, this); // read sensor
                 _time = TSTP::now();
             } else {
                 // Other data sources must have called update() timely
                 db<Smart_Data>(WRN) << "Smart_Data::get(this=" << this << ",exp=" <<_time +  _expiry << ",val=" << _value << ") => expired!" << endl;
-                //if(_interested)
-                //    _interested->advertise();
+                if(_interested)
+                    _interested->advertise();
             }
-        return _value;
+        }
+        Value ret = _value;
+        if(_accumulate)
+            _value = 0;
+        return ret;
     }
 
     bool expired() const { return TSTP::now() > (_time + _expiry); }
@@ -166,11 +170,16 @@ private:
         case TSTP::RESPONSE: {
             TSTP::Response * response = reinterpret_cast<TSTP::Response *>(packet);
             db<Smart_Data>(INF) << "Smart_Data:update[R]:msg=" << response << " => " << *response << endl;
-            _value = response->value<Value>();
-            _error = response->error();
-            _coordinates = response->origin();
-            _time = response->time();
-            db<Smart_Data>(INF) << "Smart_Data:update[R]:this=" << this << " => " << *this << endl;
+            if(response->time() > _time) {
+                if(_accumulate)
+                    _value += response->value<Value>();
+                else
+                    _value = response->value<Value>();
+                _error = response->error();
+                _coordinates = response->origin();
+                _time = response->time();
+                db<Smart_Data>(INF) << "Smart_Data:update[R]:this=" << this << " => " << *this << endl;
+            }
         }
         case TSTP::COMMAND: {
             if(_mode & COMMANDED) {
@@ -230,6 +239,7 @@ private:
     Periodic_Thread * _thread;
     Interested * _interested;
     Responsive * _responsive;
+    bool _accumulate;
 };
 
 __END_SYS
