@@ -34,7 +34,26 @@ public:
         I2C_MASTER_BASE = 0x40020000,
         I2C_SLAVE_BASE  = 0x40028000,
         SCR_BASE        = 0x400d2000,
+        FLASH_CTRL_BASE = 0x400d3000,
         IOC_BASE        = 0x400d4000,
+    };
+
+    // Hooks to functions implemented in ROM (documented in the ROM User Guide, swru3333)
+    enum {
+        ROM_API_BASE    = 0x00000048,
+    };
+
+    enum {
+        ROM_API_CRC32      = ROM_API_BASE + 0,
+        ROM_API_FLASH_SIZE = ROM_API_BASE + 4,
+        ROM_API_CHIP_ID    = ROM_API_BASE + 8,
+        ROM_API_PAGE_ERASE = ROM_API_BASE + 12,
+        ROM_API_PROG_FLASH = ROM_API_BASE + 16,
+        ROM_API_REBOOT     = ROM_API_BASE + 20,
+        ROM_API_MEMSET     = ROM_API_BASE + 24,
+        ROM_API_MEMCPY     = ROM_API_BASE + 28,
+        ROM_API_MEMCMP     = ROM_API_BASE + 32,
+        ROM_API_MEMMOV     = ROM_API_BASE + 36,
     };
 
     // Unique IEEE Address at the flash Info Page
@@ -1008,10 +1027,10 @@ protected:
     eMote3() {}
 
     static void reboot() {
-        Reg32 val = scs(AIRCR) & (~((-1u / VECTKEY) * VECTKEY));
-        val |= SYSRESREQ;
-        val |= 0x05fa * VECTKEY;
-        scs(AIRCR) = val;
+        // call ROM function to reboot
+        typedef void (* volatile Reboot) (void);
+        Reboot rom_function_reset = *reinterpret_cast<Reboot*>(ROM_API_REBOOT);
+        rom_function_reset();
     }
 
     static void delay(const RTC::Microsecond & time) {

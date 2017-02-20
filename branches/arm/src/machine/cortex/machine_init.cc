@@ -3,6 +3,7 @@
 #include <machine/cortex/machine.h>
 #include <smart_plug.h>
 #include <hydro_board.h>
+#include <persistent_storage.h>
 
 __BEGIN_SYS
 
@@ -19,6 +20,10 @@ void Machine::init()
 #ifdef __USB_H
     if(Traits<USB>::enabled)
         USB::init();
+#endif
+#ifdef __PERSISTENT_STORAGE_H
+    if(Traits<Persistent_Storage>::enabled)
+        Persistent_Storage::init();
 #endif
 #ifdef __SMART_PLUG_H
     if(Traits<Smart_Plug>::enabled)

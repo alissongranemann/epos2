@@ -101,6 +101,7 @@ class Serial_Display;
 class Keyboard;
 class Serial_Keyboard;
 class Scratchpad;
+class Persistent_Storage;
 class Cipher;
 class Watchdog;
 template<unsigned int KEY_SIZE>

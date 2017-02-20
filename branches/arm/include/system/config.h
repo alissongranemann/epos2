@@ -132,6 +132,7 @@ namespace EPOS {
 #define __SMART_PLUG_H          __HEADER_MACH(smart_plug)
 #define __HYDRO_BOARD_H         __HEADER_MACH(hydro_board)
 #define __PWM_H                 __HEADER_MACH(pwm)
+#define __PERSISTENT_STORAGE_H  __HEADER_MACH(persistent_storage)
 #endif
 
 #ifdef __mmod_zynq__

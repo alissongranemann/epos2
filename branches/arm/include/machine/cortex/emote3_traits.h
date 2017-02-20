@@ -18,8 +18,10 @@ template<> struct Traits<Machine>: public Traits<Machine_Common>
     static const unsigned int CPUS = Traits<Build>::CPUS;
 
     // Physical Memory
-    static const unsigned int MEM_BASE  = 0x20000004;
-    static const unsigned int MEM_TOP   = 0x20007ff7; // 32 KB (MAX for 32-bit is 0x70000000 / 1792 MB)
+    static const unsigned int MEM_BASE   = 0x20000004;
+    static const unsigned int MEM_TOP    = 0x20007ff7; // 32 KB (MAX for 32-bit is 0x70000000 / 1792 MB)
+    static const unsigned int FLASH_BASE = 0x00200000;
+    static const unsigned int FLASH_TOP  = 0x0027ffff; // 512 KB
 
     // Logical Memory Map
     static const unsigned int APP_LOW   = 0x20000004;
@@ -34,6 +36,9 @@ template<> struct Traits<Machine>: public Traits<Machine_Common>
     static const unsigned int SYS       = 0x00204000;
     static const unsigned int SYS_CODE  = 0x00204000; // Library mode only => APP + SYS
     static const unsigned int SYS_DATA  = 0x20000004; // Library mode only => APP + SYS
+
+    static const unsigned int FLASH_STORAGE_BASE = 0x00250000;
+    static const unsigned int FLASH_STORAGE_TOP  = 0x0027f7ff;
 
     // Default Sizes and Quantities
     static const unsigned int STACK_SIZE = 3 * 1024;
