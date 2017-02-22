@@ -66,7 +66,7 @@ public:
 class Water_Turbidity_Sensor: public Hydro_Board
 {
 public:
-    static const unsigned int UNIT = TSTP::Unit::Length;
+    static const unsigned int UNIT = TSTP::Unit::Amount_of_Substance; // TODO
     static const unsigned int NUM = TSTP::Unit::I32;
     static const int ERROR = 0; // Unknown
 

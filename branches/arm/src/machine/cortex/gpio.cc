@@ -46,9 +46,7 @@ void GPIO::eoi(const IC::Interrupt_Id & id)
 
     unsigned int port = id - IC::INT_GPIOA;
     unsigned int mis = gpio(port, MIS);
-    _mis[port] = 0;
     unsigned int irq_detect_ack = gpio(port, IRQ_DETECT_ACK);
-    _irq_detect_ack[port] = 0;
 
     for(unsigned int i = 0; i < 8; ++i) {
         bool regular_interrupt = mis & (1 << i);

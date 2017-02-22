@@ -4,12 +4,14 @@
 #include <machine.h>
 #include <smart_data.h>
 #include <transducer.h>
+#include <persistent_storage.h>
 #include <utility/ostream.h>
 
 using namespace EPOS;
 
-const RTC::Microsecond INTEREST_PERIOD = 10 * 60 * 1000000;
-const RTC::Microsecond INTEREST_EXPIRY = 2 * INTEREST_PERIOD;
+const RTC::Microsecond INTEREST_PERIOD = 5 * 60 * 1000000;
+const RTC::Microsecond INTEREST_EXPIRY = INTEREST_PERIOD;
+const RTC::Microsecond HTTP_SEND_PERIOD = 20 * 60 * 1000000;
 const char STATION_NAME[] = "f_99";
 
 class DB_Entry
@@ -26,6 +28,9 @@ class DB_Entry
         _station[3] = station_name[3];
     }
 
+        void rssi(char r) { _signal_level = r; }
+        void time(unsigned int ts) { _timestamp = ts; }
+
     private:
         char _station[4];
         char _zero;
@@ -36,9 +41,47 @@ class DB_Entry
         char _signal_level;
 }__attribute__((packed));
 
-int work()
+typedef Persistent_Ring_FIFO<DB_Entry> Storage;
+
+int http_send()
 {
-    unsigned int a = 0;
+    OStream cout;
+    DB_Entry e;
+
+    M95 * m95 = M95::get(0);
+
+    while(Periodic_Thread::wait_next()) {
+        cout << "http_send()" << endl;
+        CPU::int_disable();
+        if(Storage::pop(&e)) {
+            CPU::int_enable();
+            cout << "Turning GPRS on" << endl;
+            m95->on();
+            bool popped = true;
+            while(popped) {
+                cout << "Popped" << endl;
+                e.rssi(m95->rssi());
+                int ret = Quectel_HTTP::post("http://150.162.62.3/data/hydro/put.php", &e, sizeof(DB_Entry));
+                cout << "post = " << ret << endl;
+                if(ret <= 0) {
+                    CPU::int_disable();
+                    Storage::push(e);
+                    CPU::int_enable();
+                    break;
+                }
+                CPU::int_disable();
+                popped = Storage::pop(&e);
+                CPU::int_enable();
+            }
+            cout << "Turning GPRS off" << endl;
+            m95->off();
+        } else
+            CPU::int_enable();
+    }
+}
+
+int tstp_work()
+{
     OStream cout;
 
     M95 * m95 = M95::get(0);
@@ -57,23 +100,24 @@ int work()
 
     while(Periodic_Thread::wait_next()) {
 
-        TSTP::Time first = level.expired() ? -1ull : level.time();
-        if(!turbidity.expired() && (turbidity.time() < first))
-            first = turbidity.time();
-        if(!rain.expired() && (rain.time() < first))
-            first = rain.time();
+        DB_Entry e(STATION_NAME, 0, level, turbidity, rain, 0);
 
-        cout << "first = " << first << endl;
+        TSTP::Time last = level.time();
+        if(turbidity.time() > last)
+            last = turbidity.time();
+        if(rain.time() > last)
+            last = rain.time();
 
-        DB_Entry e(STATION_NAME, first / 1000000, level, turbidity, rain, m95->rssi());
+        cout << "last = " << last << endl;
+        cout << "level.time() = " << level.time() << endl;
+        cout << "turbidity.time() = " << turbidity.time() << endl;
+        cout << "rain.time() = " << rain.time() << endl;
 
-        if(first == -1ull)
-            continue;
+        e.time(last / 1000000);
 
-        m95->on();
-        int ret = Quectel_HTTP::post("http://150.162.62.3/data/hydro/put.php", &e, sizeof(DB_Entry));
-        cout << "Post = " << ret << endl;
-        m95->off();
+        CPU::int_disable();
+        Storage::push(e);
+        CPU::int_enable();
     }
 
     return 0;
@@ -81,8 +125,12 @@ int work()
 
 int main()
 {
-    Periodic_Thread * t = new Periodic_Thread(INTEREST_EXPIRY + INTEREST_EXPIRY / 100, work);
-    t->join();
+    Storage::clear();
+
+    Periodic_Thread * tstp_worker = new Periodic_Thread(INTEREST_EXPIRY, tstp_work);
+    Periodic_Thread * http_sender = new Periodic_Thread(HTTP_SEND_PERIOD, http_send);
+    tstp_worker->join();
+    http_sender->join();
 
     return 0;
 }

@@ -209,7 +209,7 @@ private:
     }
 
     static int updater(unsigned int dev, Time_Offset expiry, Smart_Data * data) {
-        while(1) {
+        do {
             Time t = TSTP::now();
 
             // TODO: The thread should be deleted or suspended when time is up
@@ -220,9 +220,8 @@ private:
                 data->_responsive->time(t);
                 data->_responsive->respond(t + expiry);
             }
+        } while(Periodic_Thread::wait_next());
 
-            Periodic_Thread::wait_next();
-        }
         return 0;
     }
 

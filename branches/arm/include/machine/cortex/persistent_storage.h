@@ -50,7 +50,7 @@ public:
         while(reg(FCTL) & BUSY);
 
         // Write the last bytes to make the remaining size multiple of sizeof(Word)
-        if(!(size % sizeof(Word))) {
+        if(size % sizeof(Word)) {
             unsigned int bytes = size % sizeof(Word);
             // Pad the remaining bytes with flash content
             Word w = read(dst + size - bytes);
@@ -153,7 +153,7 @@ public:
                 const Word * d = reinterpret_cast<const Word *>(data);
                 unsigned int b = bytes;
                 unsigned int addr = address;
-                while(b > sizeof(Word)) {
+                while(b >= sizeof(Word)) {
                     if(((*d) & (Engine::read(addr))) != (*d)) {
                         erase_needed = true;
                         break;
@@ -233,6 +233,105 @@ private:
     };
 
     static Metadata _metadata;
+};
+
+template<typename T, unsigned int N = Persistent_Storage::SIZE / (((sizeof(T) + sizeof(Persistent_Storage::Word) - 1) / sizeof(Persistent_Storage::Word)) * sizeof(Persistent_Storage::Word))>
+class Persistent_Ring_FIFO
+{
+private:
+    typedef Persistent_Storage::Address Address;
+
+    static const Address START_ADDR = 0;
+    static const Address END_ADDR = START_ADDR + sizeof(Address);
+    static const Address DATA_ADDR = END_ADDR + sizeof(Address);
+    static const Address EMPTY = 1 << (8 * sizeof(Address) - 1);
+
+public:
+    static const unsigned int SIZEOF_T = ((sizeof(T) + sizeof(Persistent_Storage::Word) - 1) / sizeof(Persistent_Storage::Word)) * sizeof(Persistent_Storage::Word);
+    static const unsigned int SIZE = N * SIZEOF_T < Persistent_Storage::SIZE / SIZEOF_T * SIZEOF_T ?
+        N * SIZEOF_T : Persistent_Storage::SIZE / SIZEOF_T * SIZEOF_T;
+
+    static void clear() {
+        Address start = DATA_ADDR;
+        Address end = DATA_ADDR | EMPTY;
+
+        Persistent_Storage::write(START_ADDR, &start, sizeof(Address));
+        Persistent_Storage::write(END_ADDR, &end, sizeof(Address));
+    }
+
+    static void push(const T & t) {
+        Address end = read_end();
+        if(end & EMPTY)
+            push_first(t, end);
+        else {
+            Address start = read_start();
+
+            Address new_end;
+            Address new_start = start;
+            if(end + SIZEOF_T > SIZE)
+                new_end = DATA_ADDR + SIZEOF_T;
+            else 
+                new_end = end + SIZEOF_T;
+
+            if(((end <= start) && (new_end > start)) ||
+                    ((new_end < end) && ((new_end > start) || (end <= start)))) {
+                if(start + SIZEOF_T > SIZE)
+                    new_start = DATA_ADDR + SIZEOF_T;
+                else 
+                    new_start += start + SIZEOF_T;
+            }
+
+            Persistent_Storage::write(new_end - SIZEOF_T, &t, SIZEOF_T);
+
+            if(new_start != start)
+                Persistent_Storage::write(START_ADDR, &new_start, sizeof(Address));
+
+            Persistent_Storage::write(END_ADDR, &new_end, sizeof(Address));
+        }
+    }
+
+    static bool pop(T * t) {
+        Address end = read_end();
+        if(end & EMPTY)
+            return false;
+
+        Address new_end = end;
+        Address new_start;
+
+        Address start = read_start();
+        if(start + SIZEOF_T > SIZE)
+            new_start = DATA_ADDR + SIZEOF_T;
+        else
+            new_start = start + SIZEOF_T;
+
+        if((start < end) && (new_start >= end) ||
+                ((new_start < start) && (end > start) || (new_start >= end))) {
+            new_end = end | EMPTY;
+        }
+
+        Persistent_Storage::read(start, t, sizeof(T));
+        if(new_end != end)
+            Persistent_Storage::write(END_ADDR, &new_end, sizeof(Address));
+
+        Persistent_Storage::write(START_ADDR, &new_start, sizeof(Address));
+
+        return true;
+    }
+
+private:
+    static Address read_start() { return Persistent_Storage::read(START_ADDR); }
+    static Address read_end() { return Persistent_Storage::read(END_ADDR); }
+
+    static void push_first(const T & t, Address end) {
+        end = end & ~EMPTY;
+        if(end + SIZEOF_T > SIZE)
+            end = DATA_ADDR + SIZEOF_T;
+        else
+            end += SIZEOF_T;
+
+        Persistent_Storage::write(end - SIZEOF_T, &t, SIZEOF_T);
+        Persistent_Storage::write(END_ADDR, &end, sizeof(Address));
+    }
 };
 
 __END_SYS

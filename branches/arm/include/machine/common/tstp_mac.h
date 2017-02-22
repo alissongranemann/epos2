@@ -90,7 +90,7 @@ protected:
         if(sniffer) {
             sniff(0);
         } else {
-            Watchdog::enable();
+            //Watchdog::enable();
             update_tx_schedule(0);
         }
     }

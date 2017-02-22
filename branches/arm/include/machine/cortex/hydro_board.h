@@ -17,7 +17,7 @@ class Hydro_Board: public Hydro_Board_Common
 private:
     friend class Machine;
 
-    static const TSC::Time_Stamp INTERRUPT_DEBOUNCE_TIME = Traits<Hydro_Board>::INTERRUPT_DEBOUNCE_TIME * TSC::FREQUENCY / 10000000;
+    static const TSC::Time_Stamp INTERRUPT_DEBOUNCE_TIME = Traits<Hydro_Board>::INTERRUPT_DEBOUNCE_TIME * (TSC::FREQUENCY / 1000000);
 
 public:
     typedef _UTIL::Observer Observer;

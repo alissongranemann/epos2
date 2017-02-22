@@ -20,6 +20,11 @@ void TSTP::Locator::bootstrap()
 
     //_confidence = 100;
 
+    //if(Traits<Hydro_Board>::enabled)
+    //    _here = Coordinates(-6000,4500,0);
+    //else
+    //    _here = TSTP::sink();
+
     //if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x1a\x84\x0d\x06", 8)) // Router 1
         //_here = Coordinates(-6000,4500,0);
     //else
