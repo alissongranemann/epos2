@@ -90,7 +90,7 @@ protected:
         if(sniffer) {
             sniff(0);
         } else {
-            //Watchdog::enable();
+            Watchdog::enable();
             update_tx_schedule(0);
         }
     }
@@ -108,7 +108,6 @@ protected:
         if(sniffer) {
             static int last_id = 0;
             static unsigned int last_hint = 0;
-            buf->sfd_time_stamp = Timer::sfd();
             if(buf->size() == sizeof(Microframe)) {
                 Microframe * mf = buf->frame()->data<Microframe>();
                 if((mf->id() != last_id) || (mf->hint() != last_hint)) {
@@ -137,7 +136,6 @@ protected:
                 Timer::int_disable();
 
                 Radio::power(Power_Mode::SLEEP);
-                buf->sfd_time_stamp = Timer::sfd();
 
                 _in_rx_mf = false;
 
@@ -196,7 +194,6 @@ protected:
             Radio::power(Power_Mode::SLEEP);
 
             // Initialize Buffer Metainformation
-            buf->sfd_time_stamp = Timer::sfd();
             buf->id = _receiving_data_id;
             buf->sender_distance = _receiving_data_hint;
             buf->is_new = false;
@@ -389,7 +386,7 @@ private:
                 Watchdog::kick();
                 while(!Radio::tx_done());
                 Radio::copy_to_nic(&_mf, sizeof(Microframe));
-                tx_mf();
+                tx_mf(0);
                 //Timer::interrupt(_mf_time, tx_mf);
             } else { // Transition: [Channel busy]
                 rx_mf(0);
@@ -433,7 +430,7 @@ private:
     }
 
     // State: TX MFs
-    static void tx_mf() {
+    static void tx_mf(const IC::Interrupt_Id & id) {
         if(Traits<TSTP_MAC>::hysterically_debugged)
             db<TSTP_MAC<Radio>>(TRC) << "TSTP_MAC::tx_mf()" << endl;
 
@@ -460,14 +457,13 @@ private:
                 Radio::copy_to_nic(_tx_pending->frame(), _tx_pending->size());
                 while(Timer::read() < _mf_time);
                 //Timer::interrupt(_mf_time, tx_data);
-                tx_data();
+                tx_data(0);
                 return;
             }
         }
     }
 
-    static void tx_data() {
-        Watchdog::kick();
+    static void tx_data(const IC::Interrupt_Id & id) {
         //kout << TX_DATA;
         if(Traits<TSTP_MAC>::hysterically_debugged)
             db<TSTP_MAC<Radio>>(TRC) << "TSTP_MAC::tx_data()" << endl;
@@ -475,10 +471,18 @@ private:
         if(!_tx_pending->destined_to_me) { // Transition: [Is not dest.]
             // State: TX Data
             Radio::transmit_no_cca();
+            Watchdog::kick();
             while(!Radio::tx_done());
 
             _mf_time = Timer::read();
+
+            // Keep Alive messages are never ACK'ed or forwarded
+            if((_tx_pending->frame()->data<Header>()->type() == CONTROL) && (_tx_pending->frame()->data<Control>()->subtype() == KEEP_ALIVE)) {
+                _tx_schedule.remove(_tx_pending);
+                delete _tx_pending;
+            }
         } else { // Transition: [Is dest.]
+            Watchdog::kick();
             _tx_schedule.remove(_tx_pending);
             delete _tx_pending;
         }

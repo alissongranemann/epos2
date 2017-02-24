@@ -21,7 +21,7 @@ void TSTP::Locator::update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf
 {
     db<TSTP>(TRC) << "TSTP::Locator::update(obs=" << obs << ",buf=" << buf << ")" << endl;
     if(buf->is_microframe) {
-        if(_confidence < 80)
+        if(!synchronized())
             buf->relevant = true;
         else if(!buf->downlink)
             buf->my_distance = here() - TSTP::sink();
@@ -35,6 +35,16 @@ void TSTP::Locator::update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf
         Coordinates dst = TSTP::destination(buf).center;
         buf->my_distance = here() - dst;
         buf->downlink = dst != TSTP::sink(); // This would fit better in the Router, but Timekeeper uses this info
+
+        // Respond to Keep Alive if sender is low on location confidence
+        if(synchronized()) {
+            Header * header = buf->frame()->data<Header>();
+            if(header->type() == CONTROL) {
+                Control * control = buf->frame()->data<Control>();
+                if((control->subtype() == KEEP_ALIVE) && (header->confidence() < 80))
+                    TSTP::keep_alive();
+            }
+        }
     }
 }
 
@@ -60,6 +70,7 @@ TSTP::Locator::~Locator()
 // Class attributes
 TSTP::Timekeeper::Time_Stamp TSTP::Timekeeper::_t0;
 TSTP::Timekeeper::Time_Stamp TSTP::Timekeeper::_t1;
+TSTP::Timekeeper::Time_Stamp TSTP::Timekeeper::_next_sync;
 TSTP::Coordinates TSTP::Timekeeper::_peer;
 
 // Methods
@@ -67,50 +78,75 @@ void TSTP::Timekeeper::update(NIC::Observed * obs, NIC::Protocol prot, Buffer * 
 {
     db<TSTP>(TRC) << "TSTP::Timekeeper::update(obs=" << obs << ",buf=" << buf << ")" << endl;
 
-    if(!buf->is_microframe) {
+    if(buf->is_microframe) {
+        if(!synchronized())
+            buf->relevant = true;
+    } else {
         buf->deadline = TSTP::destination(buf).t1;
 
-        if(_t1 == 0) { // No peer
-            bool peer_closer_to_sink = buf->downlink ?
-                (TSTP::here() - TSTP::sink() > buf->frame()->data<Header>()->last_hop() - TSTP::sink()) :
-                (buf->my_distance > buf->sender_distance);
+        Header * header = buf->frame()->data<Header>();
 
-            if(peer_closer_to_sink) {
-                Time_Stamp t0 = buf->frame()->data<Header>()->last_hop_time();
-                Time_Stamp t1 = buf->sfd_time_stamp;
+        if(header->time_request()) {
+            db<TSTP>(TRC) << "TSTP::Timekeeper::update: time_request received" << endl;
+            // Respond to Time Request if able
+            if(synchronized()) {
+                bool peer_closer_to_sink = buf->downlink ?
+                    (TSTP::here() - TSTP::sink() > header->last_hop() - TSTP::sink()) :
+                    (buf->my_distance > buf->sender_distance);
 
-                Offset adj = adjust(t0, t1);
+                if(!peer_closer_to_sink) {
+                    db<TSTP>(TRC) << "TSTP::Timekeeper::update: responding to time request" << endl;
+                    TSTP::keep_alive();
+                }
+            }
+        } else {
+            if(_t1 == 0) { // No peer
+                bool peer_closer_to_sink = buf->downlink ?
+                    (TSTP::here() - TSTP::sink() > header->last_hop() - TSTP::sink()) :
+                    (buf->my_distance > buf->sender_distance);
 
-                _t0 = t0;
-                _t1 = t1 + adj;
+                if(peer_closer_to_sink) {
+                    Time_Stamp t0 = header->last_hop_time() + Radio::Timer::us2count(IEEE802_15_4::SHR_SIZE * 1000000 / IEEE802_15_4::BYTE_RATE);
+                    Time_Stamp t1 = buf->sfd_time_stamp;
+
+                    Offset adj = t0 - t1;
+
+                    Radio::Timer::adjust(adj);
+
+                    _next_sync = now();
+
+                    _t0 = t0;
+                    _t1 = t1 + adj;
+
+                    _peer = header->last_hop();
+
+                    db<TSTP>(TRC) << "TSTP::Timekeeper::update: adjusted timer offset by " << adj << endl;
+
+                    db<TSTP>(INF) << "TSTP::Timekeeper::update: synchronizing with " << _peer << endl;
+                    db<TSTP>(INF) << "now() = " << now() << endl;
+                }
+            } else if(_peer == header->last_hop()) { // Message from peer
+                Time_Stamp t0_new = header->last_hop_time() + Radio::Timer::us2count(IEEE802_15_4::SHR_SIZE * 1000000 / IEEE802_15_4::BYTE_RATE);;
+                Time_Stamp t1_new = buf->sfd_time_stamp;
+
+                Offset adj = t0_new - t1_new;
 
                 Radio::Timer::adjust(adj);
+                //Radio::Timer::adjust_frequency(adj - (_t0 - _t1), t0_new - _t0); // TODO
 
-                db<TSTP>(TRC) << "TSTP::Timekeeper::update: adjusted timer offset by " << adj << endl;
+                _next_sync = now() + SYNC_PERIOD; // TODO
 
-                _peer = buf->frame()->data<Header>()->last_hop();
+                //static unsigned long long total_error;
+                //static unsigned int count;
+                //total_error += abs(adj * 1000000 / static_cast<long long>(t0_new - _t0));
+                //count++;
+                //kout << "adj = " << adj << endl;
+                //kout << "\tavg = " << total_error / count << "ppm" << endl;
+                //kout << "\t\tcount = " << count << endl;
 
-                db<TSTP>(INF) << "TSTP::Timekeeper::update: synchronizing with " << _peer << endl;
-                db<TSTP>(INF) << "now() = " << now() << endl;
+                _t0 = t0_new;
+                _t1 = t1_new;
             }
-        } else if(_peer == buf->frame()->data<Header>()->last_hop()) { // Message from peer
-            Time_Stamp t0_new = buf->frame()->data<Header>()->last_hop_time();
-            Time_Stamp t1_new = buf->sfd_time_stamp;
-
-            Offset adj = adjust(t0_new, t1_new);
-
-            Radio::Timer::adjust(adj);
-
-            db<TSTP>(TRC) << "TSTP::Timekeeper::update: adjusted timer offset by " << adj << endl;
-
-            // TODO (disabled at cc2538.h)
-            //Radio::Timer::adjust_frequency(-static_cast<int>(Radio::Timer::frequency()) * static_cast<int>((t1_new - t0_new) - (_t1 - _t0)) / static_cast<int>(t0_new - _t0));
-
-            db<TSTP>(TRC) << "TSTP::Timekeeper::update: adjusted timer frequency to " << Radio::Timer::frequency() << endl;
-            db<TSTP>(TRC) << "now() = " << now() << endl;
-
-            _t0 = t0_new;
-            _t1 = t1_new;
         }
     }
 }
@@ -119,6 +155,7 @@ void TSTP::Timekeeper::marshal(Buffer * buf)
 {
     db<TSTP>(TRC) << "TSTP::Timekeeper::marshal(buf=" << buf << ")" << endl;
     buf->deadline = TSTP::destination(buf).t1;
+    buf->frame()->data<Header>()->time_request(!synchronized());
 }
 
 TSTP::Timekeeper::~Timekeeper()
@@ -137,38 +174,44 @@ void TSTP::Router::update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf)
     if(buf->is_microframe && !buf->relevant) {
         buf->relevant = buf->my_distance < buf->sender_distance;
     } else if(!buf->is_microframe) {
-        Region dst = TSTP::destination(buf);
-        buf->destined_to_me = (buf->frame()->data<Header>()->origin() != TSTP::here()) && (dst.contains(TSTP::here(), dst.t0));
-        if(buf->destined_to_me || (buf->my_distance < buf->sender_distance)) {
+        Header * header = buf->frame()->data<Header>();
+        // Keep Alive messages are never forwarded
+        if(!((header->type() == CONTROL) && (buf->frame()->data<Control>()->subtype() == KEEP_ALIVE))) {
+            Region dst = TSTP::destination(buf);
+            buf->destined_to_me = ((header->origin() != TSTP::here()) && (dst.contains(TSTP::here(), dst.t0)));
+            if(buf->destined_to_me || (buf->my_distance < buf->sender_distance)) {
 
-            // Forward or ACK the message
+                // Forward or ACK the message
 
-            Buffer * send_buf = TSTP::alloc(buf->size());
+                Buffer * send_buf = TSTP::alloc(buf->size());
 
-            // Copy frame contents
-            memcpy(send_buf->frame(), buf->frame(), buf->size());
+                // Copy frame contents
+                memcpy(send_buf->frame(), buf->frame(), buf->size());
 
-            // Copy Buffer Metainformation
-            send_buf->size(buf->size());
-            send_buf->id = buf->id;
-            send_buf->destined_to_me = buf->destined_to_me;
-            send_buf->downlink = buf->downlink;
-            send_buf->deadline = buf->deadline;
-            send_buf->my_distance = buf->my_distance;
-            send_buf->sender_distance = buf->sender_distance;
-            send_buf->is_new = false;
-            send_buf->is_microframe = false;
+                // Copy Buffer Metainformation
+                send_buf->size(buf->size());
+                send_buf->id = buf->id;
+                send_buf->destined_to_me = buf->destined_to_me;
+                send_buf->downlink = buf->downlink;
+                send_buf->deadline = buf->deadline;
+                send_buf->my_distance = buf->my_distance;
+                send_buf->sender_distance = buf->sender_distance;
+                send_buf->is_new = false;
+                send_buf->is_microframe = false;
 
-            // Calculate offset
-            offset(send_buf);
+                // Calculate offset
+                offset(send_buf);
 
-            // Adjust Last Hop location
-            send_buf->frame()->data<Header>()->last_hop(TSTP::here());
-            send_buf->sender_distance = send_buf->my_distance;
+                // Adjust Last Hop location
+                Header * header = send_buf->frame()->data<Header>();
+                header->last_hop(TSTP::here());
+                send_buf->sender_distance = send_buf->my_distance;
 
-            send_buf->frame()->data<Header>()->confidence(TSTP::Locator::_confidence);
+                header->confidence(TSTP::Locator::_confidence);
+                header->time_request(!TSTP::Timekeeper::synchronized());
 
-            TSTP::_nic->send(send_buf);
+                TSTP::_nic->send(send_buf);
+            }
         }
     }
 }
@@ -512,6 +555,23 @@ void TSTP::update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf)
                 break;
             case AUTH_GRANTED:
                 db<TSTP>(INF) << "TSTP::update: Auth_Granted: " << *buf->frame()->data<Auth_Granted>() << endl;
+                break;
+            case REPORT: {
+                db<TSTP>(INF) << "TSTP::update: Report: " << *buf->frame()->data<Report>() << endl;
+                Report * report = reinterpret_cast<Report *>(packet);
+                if(report->time() < now()) {
+                    // Check region inclusion and advertise interested observers
+                    Interests::List * list = _interested[report->unit()];
+                    if(list)
+                        for(Interests::Element * el = list->head(); el; el = el->next()) {
+                            Interested * interested = el->object();
+                            if(interested->region().contains(report->origin(), report->time()))
+                                interested->advertise();
+                        }
+                }
+            } break;
+            case KEEP_ALIVE:
+                db<TSTP>(INF) << "TSTP::update: Keep_Alive: " << *buf->frame()->data<Keep_Alive>() << endl;
                 break;
             default:
                 db<TSTP>(WRN) << "TSTP::update: Unrecognized Control subtype: " << buf->frame()->data<Control>()->subtype() << endl;

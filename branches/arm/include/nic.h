@@ -162,15 +162,16 @@ public:
             // IEEE 802.15.4 Metadata
             struct
             {
-                int rssi;   // Received Signal Strength Indicator
+                int rssi;                          // Received Signal Strength Indicator
+                unsigned long long sfd_time_stamp; // Start-of-frame reception time stamp
             };
 
             // TSTP Metadata
             struct
             {
                 // TODO: remove unnecessary long longs
-                char _r[sizeof rssi];              // Received Signal Strength Indicator. Should be accessed as .rssi
-                unsigned long long sfd_time_stamp; // Start-of-frame reception time stamp
+                int _rssi;                          // Received Signal Strength Indicator
+                unsigned long long _sfd_time_stamp; // Start-of-frame reception time stamp
                 unsigned int id;                   // Message identifier
                 unsigned long long offset;         // MAC contention offset
                 bool destined_to_me;               // Whether this node is the final destination for this message

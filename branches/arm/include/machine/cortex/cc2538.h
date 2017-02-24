@@ -384,12 +384,12 @@ public:
         typedef unsigned long long Time_Stamp;
         typedef long long Offset;
 
-        static unsigned int frequency() { return _frequency; }
+        static unsigned int frequency() { return CLOCK; }
 
     public:
         Timer() {}
 
-        static Time_Stamp read() { return read_raw() /** _frequency / CLOCK*/ + _offset; } // TODO
+        static Time_Stamp read() { CPU::int_disable(); auto ret = read_raw(); CPU::int_enable(); return ret + _offset; }
 
         static Time_Stamp sfd() {
             CPU::int_disable();
@@ -405,9 +405,11 @@ public:
             ts += static_cast<Time_Stamp>(mactimer(MTMOVF2)) << 32;
 
             // This check is not enough only if sfd() is called more than 9.5 hours after the last frame arrival
-            if(read_raw() <= ts) // implicit CPU::int_enable()
+            if(read_raw() <= ts)
                 ts -= (1ll << 40);
+
             ts += _offset;
+            CPU::int_enable();
 
             return ts;
         }
@@ -415,7 +417,16 @@ public:
         static void adjust(const Offset & o) { _offset += o; }
 
         // TODO
-        static void adjust_frequency(int frequency_offset) { _frequency += frequency_offset; }
+        static void adjust_frequency(const Offset & time_diff, const Offset & period) {
+            Offset diff = ((time_diff << 16) / period);
+            _periodic_update += diff;
+
+            Offset diff_diff = ((diff << 16) / period);
+            _periodic_update_update += diff_diff;
+
+            Offset diff_diff_diff = ((diff_diff << 16) / period);
+            _periodic_update_update_update += diff_diff_diff;
+        }
 
         static void interrupt(const Time_Stamp & when, const IC::Interrupt_Handler & h) {
 
@@ -446,14 +457,14 @@ public:
             mactimer(MTIRQM) = INT_OVERFLOW_PER;
         }
 
-        static Time_Stamp us2count(const Microsecond & us) { return static_cast<Time_Stamp>(us) * (frequency() / 1000000); } // TODO
-        static Microsecond count2us(const Time_Stamp & ts) { return ts / (frequency() / 1000000); } // TODO
+        static Time_Stamp us2count(const Microsecond & us) { return static_cast<Time_Stamp>(us) * (CLOCK / 1000000); }
+        static Microsecond count2us(const Time_Stamp & ts) { return ts * 1000000 / CLOCK; }
 
     private:
         static void int_enable(const Reg32 & interrupt) { mactimer(MTIRQM) |= interrupt; }
 
         static Time_Stamp read_raw() {
-            CPU::int_disable();
+            assert(CPU::int_disabled());
             mactimer(MTMSEL) = (OVERFLOW_COUNTER * MSEL_MTMOVFSEL) | (TIMER_COUNTER * MSEL_MTMSEL);
             Time_Stamp oc, ts;
 
@@ -463,8 +474,6 @@ public:
             ts += static_cast<Time_Stamp>(mactimer(MTMOVF0)) << 16;
             ts += static_cast<Time_Stamp>(mactimer(MTMOVF1)) << 24;
             ts += static_cast<Time_Stamp>(mactimer(MTMOVF2)) << 32;
-
-            CPU::int_enable();
 
             // The 40-bit counter overflows every 9.5 hours,
             // so we assume at most one happened inside this method
@@ -478,6 +487,13 @@ public:
             CPU::int_disable();
             Reg32 ints = _ints;
             _ints &= ~ints;
+
+            // TODO
+            //if(ints & INT_PER) {
+            //    _offset += _periodic_update;
+            //    _periodic_update += _periodic_update_update;
+            //    _periodic_update_update += _periodic_update_update_update;
+            //}
 
             if(ints & INT_OVERFLOW_PER)
                 _overflow_count++;
@@ -505,8 +521,10 @@ public:
         static void init();
 
     private:
-        static volatile unsigned int _frequency; // TODO
         static volatile Offset _offset;
+        static volatile Offset _periodic_update;
+        static volatile Offset _periodic_update_update;
+        static volatile Offset _periodic_update_update_update;
         static volatile IC::Interrupt_Handler _handler;
         static volatile Reg32 _overflow_count;
         static volatile Reg32 _ints;

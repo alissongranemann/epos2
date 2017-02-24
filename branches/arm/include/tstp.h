@@ -50,7 +50,9 @@ public:
         DH_REQUEST   = 0,
         DH_RESPONSE  = 1,
         AUTH_REQUEST = 2,
-        AUTH_GRANTED = 3
+        AUTH_GRANTED = 3,
+        REPORT = 4,
+        KEEP_ALIVE = 5,
     };
 
     // Scale for local network's geographic coordinates
@@ -214,11 +216,11 @@ public:
         void confidence(unsigned char c) { _confidence = c; }
 
         friend Debug & operator<<(Debug & db, const _Header & h) {
-            db << "{v=" << h.version() - V0 << ",t=" << ((h.type() == INTEREST) ? 'I' :  (h.type() == RESPONSE) ? 'R' : (h.type() == COMMAND) ? 'C' : 'T') << ",tr=" << h.time_request() << ",s=" << h.scale() << ",ot=" << h._time << ",o=" << h._origin << ",lt=" << h._last_hop_time << ",l=" << h._last_hop << "}";
+            db << "{v=" << h.version() - V0 << ",t=" << ((h.type() == INTEREST) ? 'I' :  (h.type() == RESPONSE) ? 'R' : (h.type() == COMMAND) ? 'C' : 'T') << ",co=" << h._confidence << ",tr=" << h.time_request() << ",s=" << h.scale() << ",ot=" << h._time << ",o=" << h._origin << ",lt=" << h._last_hop_time << ",l=" << h._last_hop << "}";
             return db;
         }
         friend OStream & operator<<(OStream & db, const _Header & h) {
-            db << "{v=" << h.version() - V0 << ",t=" << ((h.type() == INTEREST) ? 'I' :  (h.type() == RESPONSE) ? 'R' : (h.type() == COMMAND) ? 'C' : 'T') << ",tr=" << h.time_request() << ",s=" << h.scale() << ",ot=" << h._time << ",o=" << h._origin << ",lt=" << h._last_hop_time << ",l=" << h._last_hop << "}";
+            db << "{v=" << h.version() - V0 << ",t=" << ((h.type() == INTEREST) ? 'I' :  (h.type() == RESPONSE) ? 'R' : (h.type() == COMMAND) ? 'C' : 'T') << ",co=" << h._confidence << ",tr=" << h.time_request() << ",s=" << h.scale() << ",ot=" << h._time << ",o=" << h._origin << ",lt=" << h._last_hop_time << ",l=" << h._last_hop << "}";
             return db;
         }
 
@@ -231,6 +233,25 @@ public:
         Coordinates _last_hop;
     } __attribute__((packed));
     typedef _Header<SCALE> Header;
+
+    // Control Message extended Header
+    class Control: public Header
+    {
+    protected:
+        Control(const Subtype & st, bool tr = false, unsigned char c = 0, const Time & ot = 0, const Coordinates & o = 0, const Coordinates & l = 0, const Version & v = V0)
+        : Header(CONTROL, tr, c, ot, o, l, v), _subtype(st) {}
+
+    public:
+        const Subtype & subtype() const { return _subtype; }
+
+        friend Debug & operator<<(Debug & db, const Control & m) {
+            db << reinterpret_cast<const Header &>(m) << ",st=" << m._subtype;
+            return db;
+        }
+
+    private:
+        Subtype _subtype;
+    } __attribute__((packed));
 
     // Frame
     template<Scale S>
@@ -463,6 +484,7 @@ __END_SYS
 #include <diffie_hellman.h>
 #include <cipher.h>
 #include <thread.h>
+#include <alarm.h>
 #include <poly1305.h>
 
 __BEGIN_SYS
@@ -626,25 +648,6 @@ public:
         CRC _crc;
     } __attribute__((packed));
 
-    // Control Message extended Header
-    class Control: public Header
-    {
-    protected:
-        Control(const Subtype & st, bool tr = false, unsigned char c = 0, const Time & ot = 0, const Coordinates & o = 0, const Coordinates & l = 0, const Version & v = V0)
-        : Header(CONTROL, tr, c, ot, o, l, v), _subtype(st) {}
-
-    public:
-        const Subtype & subtype() const { return _subtype; }
-
-        friend Debug & operator<<(Debug & db, const Control & m) {
-            db << reinterpret_cast<const Header &>(m) << ",st=" << m._subtype;
-            return db;
-        }
-
-    private:
-        Subtype _subtype;
-    } __attribute__((packed));
-
     // Security types
     typedef _UTIL::Array<unsigned char, 16> Node_ID;
     typedef _UTIL::Array<unsigned char, 16> Auth;
@@ -751,6 +754,44 @@ public:
     // } __attribute__((packed)); // TODO
     };
 
+    // Report Control Message
+    class Report: public Control
+    {
+    public:
+        Report(const Unit & unit, const Error & error = 0)
+        : Control(REPORT, 0, 0, now(), here(), here()), _unit(unit), _error(error) { }
+
+        const Unit & unit() const { return _unit; }
+        Error error() const { return _error; }
+
+        friend Debug & operator<<(Debug & db, const Report & r) {
+            db << reinterpret_cast<const Control &>(r) << ",u=" << r._unit << ",e=" << r._error;
+            return db;
+        }
+
+    private:
+        Unit _unit;
+        Error _error;
+        CRC _crc;
+    } __attribute__((packed));
+
+    // Keep Alive Control Message
+    class Keep_Alive: public Control
+    {
+    public:
+        Keep_Alive()
+        : Control(KEEP_ALIVE, 0, 0, now(), here(), here()) { }
+
+        friend Debug & operator<<(Debug & db, const Keep_Alive & k) {
+            db << reinterpret_cast<const Control &>(k);
+            return db;
+        }
+
+    private:
+        CRC _crc;
+    } __attribute__((packed));
+
+
     // TSTP Smart Data bindings
     // Interested (binder between Interest messages and Smart Data)
     class Interested: public Interest
@@ -777,7 +818,7 @@ public:
             db<TSTP>(TRC) << "TSTP::Interested::send() => " << reinterpret_cast<const Interest &>(*this) << endl;
             Buffer * buf = alloc(sizeof(Interest));
             memcpy(buf->frame()->data<Interest>(), this, sizeof(Interest));
-            TSTP::marshal(buf);
+            marshal(buf);
             _nic->send(buf);
         }
 
@@ -795,12 +836,12 @@ public:
             db<TSTP>(TRC) << "TSTP::Responsive(d=" << data << ",s=" << _size << ") => " << this << endl;
             db<TSTP>(INF) << "TSTP::Responsive() => " << reinterpret_cast<const Response &>(*this) << endl;
             _responsives.insert(&_link);
+            advertise();
         }
         ~Responsive() {
             db<TSTP>(TRC) << "TSTP::~Responsive(this=" << this << ")" << endl;
             _responsives.remove(&_link);
         }
-
 
         using Header::time;
         using Header::origin;
@@ -811,6 +852,14 @@ public:
         Time t1() const { return _t1; }
 
         void respond(const Time & expiry) { send(expiry); }
+        void advertise() {
+            db<TSTP>(TRC) << "TSTP::Responsive::advertise()" << endl;
+            Buffer * buf = alloc(sizeof(Report));
+            Report * report = new (buf->frame()->data<Report>()) Report(unit(), error());
+            marshal(buf);
+            db<TSTP>(INF) << "TSTP::Responsive::advertise:report=" << report << " => " << (*report) << endl;
+            _nic->send(buf);
+        }
 
     private:
         void send(const Time & expiry) {
@@ -821,7 +870,7 @@ public:
                 Response * response = buf->frame()->data<Response>();
                 memcpy(response, this, _size);
                 response->expiry(expiry);
-                TSTP::marshal(buf);
+                marshal(buf);
                 db<TSTP>(INF) << "TSTP::Responsive::send:response=" << response << " => " << (*response) << endl;
                 _nic->send(buf);
             }
@@ -855,12 +904,17 @@ public:
             db<TSTP>(TRC) << "TSTP::Locator()" << endl;
             _n_peers = 0;
             _confidence = 0;
+            do {
+                _here = Coordinates(Random::random(), Random::random(), Random::random());
+            } while(_here == TSTP::sink());
         }
         ~Locator();
 
         static Coordinates here() { return _here; }
 
         void bootstrap();
+
+        static bool synchronized() { return _confidence >= 80; }
 
         static void marshal(Buffer * buf);
 
@@ -898,9 +952,13 @@ public:
                 _peers[idx].rssi = r;
 
                 if(_n_peers == 3) {
-                    _here = _here.trilaterate(_peers[0].coordinates, _peers[0].rssi + 128, _peers[1].coordinates, _peers[1].rssi + 128, _peers[2].coordinates, _peers[2].rssi + 128);
-                    _confidence = (_peers[0].confidence + _peers[1].confidence + _peers[2].confidence) * 80 / 100 / 3;
-                    db<TSTP>(INF) << "TSTP::Locator: Location updated: " << _here << ", confidence = " << _confidence << "%" << endl;
+                    Coordinates new_here = _here.trilaterate(_peers[0].coordinates, _peers[0].rssi + 128, _peers[1].coordinates, _peers[1].rssi + 128, _peers[2].coordinates, _peers[2].rssi + 128);
+                    if(new_here != TSTP::sink()) {
+                        _here = new_here;
+                        _confidence = (_peers[0].confidence + _peers[1].confidence + _peers[2].confidence) * 80 / 100 / 3;
+                        db<TSTP>(INF) << "TSTP::Locator: Location updated: " << _here << ", confidence = " << _confidence << "%" << endl;
+                    } else
+                        db<TSTP>(INF) << "TSTP::Locator: Dropped trilateration that resulted in here == sink" << endl;
                 }
             }
         }
@@ -919,15 +977,25 @@ public:
         typedef Radio::Timer::Time_Stamp Time_Stamp;
         typedef Radio::Timer::Offset Offset;
 
+        static const unsigned int SYNC_PERIOD = 300000000; // TODO
+
     public:
         Timekeeper() {
             db<TSTP>(TRC) << "TSTP::Timekeeper()" << endl;
             _t0 = 0;
             _t1 = 0;
+            _next_sync = 0;
         }
         ~Timekeeper();
 
         static Time now() { return Radio::Timer::count2us(Radio::Timer::read()); }
+
+        static bool synchronized() {
+            bool ret = now() <= _next_sync;
+            if((!ret) && (now() > _next_sync + SYNC_PERIOD))
+                _t1 = 0; // Find a new peer
+            return ret;
+        }
 
         void bootstrap();
 
@@ -936,12 +1004,9 @@ public:
         void update(NIC::Observed * obs, NIC::Protocol prot, NIC::Buffer * buf);
 
     private:
-        Offset adjust(const Time_Stamp & t0, const Time_Stamp & t1) {
-            return t0 + Radio::Timer::us2count(IEEE802_15_4::SHR_SIZE * 1000000 / IEEE802_15_4::BYTE_RATE) - t1;
-        }
-
         static Time_Stamp _t0;
         static Time_Stamp _t1;
+        static Time_Stamp _next_sync;
         static Coordinates _peer;
     };
 
@@ -960,6 +1025,8 @@ public:
         ~Router();
 
         void bootstrap();
+
+        static bool synchronized() { return true; }
 
         static void marshal(Buffer * buf);
 
@@ -1094,6 +1161,8 @@ public:
         }
 
         void bootstrap();
+
+        static bool synchronized() { return true; }
 
         static void marshal(Buffer * buf);
 
@@ -1244,7 +1313,7 @@ public:
                         last_dh_request = el;
                         Buffer * buf = alloc(sizeof(DH_Request));
                         new (buf->frame()->data<DH_Request>()) DH_Request(Region::Space(p->valid().center, p->valid().radius), _dh.public_key());
-                        TSTP::marshal(buf);
+                        marshal(buf);
                         _dh_requests_open++;
                         TSTP::_nic->send(buf);
                         db<TSTP>(INF) << "TSTP::Security::key_manager(): Sent DH_Request: "  << *buf->frame()->data<DH_Request>() << endl;
@@ -1272,6 +1341,29 @@ public:
         static unsigned int _dh_requests_open;
     };
 
+    // TSTP Life Keeper explicitly asks for metadata whenever it's needed
+    class Life_Keeper
+    {
+        friend class TSTP;
+
+        static const unsigned int PERIOD = 10000000;
+
+        Life_Keeper(): _thread(&life_keeper) {}
+
+    private:
+        static int life_keeper() {
+            while(true) {
+                if(!(TSTP::Locator::synchronized() && TSTP::Timekeeper::synchronized() && TSTP::Router::synchronized() && TSTP::Security::synchronized())) {
+                    db<TSTP>(TRC) << "TSTP::Life_Keeper: sending keep alive message" << endl;
+                    TSTP::keep_alive();
+                }
+                Alarm::delay(PERIOD);
+            }
+            return 0;
+        }
+
+        Thread _thread;
+    };
 
 protected:
     TSTP();
@@ -1282,7 +1374,7 @@ public:
     static Coordinates here() { return Locator::here(); }
     static Coordinates sink() { return Coordinates(0, 0, 0); }
     static Time now() { return Timekeeper::now(); }
-    static void adjust(const Time & t) { return Radio::Timer::adjust(Radio::Timer::us2count(t)); }
+    static void adjust(const Time & t) { Radio::Timer::adjust(Radio::Timer::us2count(t)); }
 
     static void attach(Observer * obs, void * subject) { _observed.attach(obs, int(subject)); }
     static void detach(Observer * obs, void * subject) { _observed.detach(obs, int(subject)); }
@@ -1319,11 +1411,28 @@ private:
                         Time deadline = origin + min(static_cast<unsigned long long>(Security::KEY_MANAGER_PERIOD), Security::KEY_EXPIRY) / 2;
                         return Region(buf->frame()->data<Auth_Granted>()->destination().center, buf->frame()->data<Auth_Granted>()->destination().radius, origin, deadline);
                     }
+                    case REPORT: {
+                        return Region(sink(), 0, buf->frame()->data<Response>()->time(), -1/*TODO*/);
+                    }
+                    case KEEP_ALIVE: {
+                        Coordinates fake = here();
+                        return Region(Coordinates(fake.x + Random::random(), fake.y + Random::random(), fake.z + Random::random()), 0, 0, -1); // Should never be destined_to_me
+                    }
                 }
             default:
                 db<TSTP>(ERR) << "TSTP::destination(): ERROR: unrecognized frame type " << buf->frame()->data<Frame>()->type() << endl;
                 return Region(TSTP::here(), 0, TSTP::now() - 2, TSTP::now() - 1);
         }
+    }
+
+    static void keep_alive() {
+        db<TSTP>(TRC) << "TSTP::keep_alive()" << endl;
+        Buffer * buf = alloc(sizeof(Keep_Alive));
+        Keep_Alive * keep_alive = new (buf->frame()->data<Keep_Alive>()) Keep_Alive();
+        marshal(buf);
+        buf->deadline = now() + Life_Keeper::PERIOD;
+        db<TSTP>(INF) << "TSTP::keep_alive():keep_alive = " << keep_alive << " => " << (*keep_alive) << endl;
+        _nic->send(buf);
     }
 
     static void marshal(Buffer * buf) {

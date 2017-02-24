@@ -61,11 +61,9 @@ void USB::put(char c)
 
     //lock();
     output();
+    while(reg(CS0_CSIL) & CSIL_INPKTRDY);
     reg(F3) = c;
     flush();
-    // It looks like the update of the CSIL_INPKTRDY bit takes a while to
-    // take effect, so we're better off just delaying and not even checking it.
-    for(volatile int i = 0; i < 0xff; i++);
     //unlock();
 }
 
@@ -80,12 +78,10 @@ void USB::put(const char * c, unsigned int size)
 
     //lock();
     output();
+    while(reg(CS0_CSIL) & CSIL_INPKTRDY);
     for(unsigned int i = 0; (i < _max_packet_ep3) and (i < size); i++)
         reg(F3) = c[i];
     flush();
-    // It looks like the update of the CSIL_INPKTRDY bit takes a while to
-    // take effect, so we're better off just delaying and not even checking it.
-    for(volatile int i = 0; i < 0xff; i++);
     //unlock();
 }
 

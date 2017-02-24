@@ -16,7 +16,9 @@ volatile CC2538RF::Reg32 CC2538RF::Timer::_overflow_count;
 volatile CC2538RF::Reg32 CC2538RF::Timer::_ints;
 volatile CC2538RF::Timer::Time_Stamp CC2538RF::Timer::_int_request_time;
 volatile CC2538RF::Timer::Offset CC2538RF::Timer::_offset;
-volatile unsigned int CC2538RF::Timer::_frequency;
+volatile CC2538RF::Timer::Offset CC2538RF::Timer::_periodic_update;
+volatile CC2538RF::Timer::Offset CC2538RF::Timer::_periodic_update_update;
+volatile CC2538RF::Timer::Offset CC2538RF::Timer::_periodic_update_update_update;
 volatile IC::Interrupt_Handler CC2538RF::Timer::_handler;
 bool CC2538RF::Timer::_overflow_match;
 bool CC2538RF::Timer::_msb_match;
@@ -114,7 +116,7 @@ void CC2538::reset()
 
 void CC2538::handle_int()
 {
-    db<CC2538>(TRC) << "CC2538::handle_int()" << endl;
+    Timer::Time_Stamp sfd = Timer::sfd();
 
     Reg32 irqrf0 = sfr(RFIRQF0);
     Reg32 irqrf1 = sfr(RFIRQF1);
@@ -122,13 +124,18 @@ void CC2538::handle_int()
     sfr(RFIRQF0) = irqrf0 & INT_RXPKTDONE; //INT_RXPKTDONE is polled by rx_done()
     sfr(RFIRQF1) = irqrf1 & INT_TXDONE; //INT_TXDONE is polled by tx_done()
     sfr(RFERRF) = errf & (INT_TXUNDERF | INT_TXOVERF);
-    db<CC2538>(TRC) << "CC2538::handle_int:RFIRQF0=" << hex << irqrf0 << endl;
-    db<CC2538>(TRC) << "CC2538::handle_int:RFIRQF1=" << hex << irqrf1 << endl;
-    db<CC2538>(TRC) << "CC2538::handle_int:RFERRF=" << hex << errf << endl;
+    if(Traits<CC2538>::hysterically_debugged) {
+        db<CC2538>(TRC) << "CC2538::handle_int()" << endl;
+
+        db<CC2538>(TRC) << "CC2538::handle_int:RFIRQF0=" << hex << irqrf0 << endl;
+        db<CC2538>(TRC) << "CC2538::handle_int:RFIRQF1=" << hex << irqrf1 << endl;
+        db<CC2538>(TRC) << "CC2538::handle_int:RFERRF=" << hex << errf << endl;
+    }
 
     if(irqrf0 & INT_FIFOP) { // Frame received
         //kout << 'h';
-        db<CC2538>(TRC) << "CC2538::handle_int:receive()" << endl;
+        if(Traits<CC2538>::hysterically_debugged)
+            db<CC2538>(TRC) << "CC2538::handle_int:receive()" << endl;
         if(CC2538RF::filter()) {
             Buffer * buf = 0;
             unsigned int idx = _rx_cur_produce;
@@ -146,6 +153,7 @@ void CC2538::handle_int()
                 assert(xreg(FRMCTRL0) & AUTO_CRC);
                 assert(buf->size() >= 2);
                 buf->rssi = reinterpret_cast<char *>(buf->frame())[buf->size() - 2];
+                buf->sfd_time_stamp = sfd;
 
                 if(MAC::pre_notify(buf)) {
                     db<CC2538>(TRC) << "CC2538::handle_int:receive(b=" << buf << ") => " << *buf << endl;
@@ -170,9 +178,7 @@ void CC2538::handle_int()
     } else if (errf & (INT_RXUNDERF | INT_RXOVERF)) {
         CC2538RF::drop(); // Error
         IC::enable(IC::INT_NIC0_TIMER);
-        db<CC2538>(ERR) << "CC2538::handle_int:RFIRQF0=" << hex << irqrf0 << endl;
-        db<CC2538>(ERR) << "CC2538::handle_int:RFIRQF1=" << hex << irqrf1 << endl;
-        db<CC2538>(ERR) << "CC2538::handle_int:RFERRF=" << hex << errf << endl;
+        db<CC2538>(INF) << "CC2538::handle_int:RFERRF=" << hex << errf << endl;
     } else {
         IC::enable(IC::INT_NIC0_TIMER);
     }

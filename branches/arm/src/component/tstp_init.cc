@@ -16,22 +16,17 @@ void TSTP::Locator::bootstrap()
 {
     db<TSTP>(TRC) << "TSTP::Locator::bootstrap()" << endl;
 
-    _confidence = 0;
+    _confidence = 100;
 
-    //_confidence = 100;
-
-    //if(Traits<Hydro_Board>::enabled)
-    //    _here = Coordinates(-6000,4500,0);
-    //else
-    //    _here = TSTP::sink();
-
-    //if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x1a\x84\x0d\x06", 8)) // Router 1
-        //_here = Coordinates(-6000,4500,0);
-    //else
-        //_here = TSTP::sink();
-
-    /*
     // TODO: we need a better way to define static locations
+
+    // UFSC HU mesh
+    //if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xb3\x0e\x16\x06", 8)) // Sink
+    //    _here = TSTP::sink();
+    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xb0\x0e\x16\x06", 8)) // Water flow sensor 1
+    //    _here = Coordinates(50,0,0);
+    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x28\x0f\x16\x06", 8)) // Water flow sensor 2
+    //    _here = Coordinates(-6000,4500,0);
 
     // LISHA Testbed
     if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xee\x0e\x16\x06", 8))
@@ -56,56 +51,12 @@ void TSTP::Locator::bootstrap()
         _here = Coordinates(305-730, -170-80, 220);
     else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x0b\x0f\x16\x06", 8)) // Luminosity sensor
         _here = Coordinates(10-730,-10-80, 0);
-    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x1a\x84\x0d\x06", 8)) // Router 1
+    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x1a\x84\x0d\x06", 8)) // Router 1 (corridor)
         _here = Coordinates(505-730,120-80,0);
     else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xb0\x0e\x16\x06", 8)) // Router 2
         _here = Coordinates(505-730,20-80,10);
-
-
-
-    //if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x1a\x84\x0d\x06", 8))
-    //    _here = TSTP::sink();
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xec\x82\x0d\x06", 8))
-    //    _here = Coordinates(  0,100, 0);
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xae\x82\x0d\x06", 8))
-    //    _here = Coordinates(100,100, 0);
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x67\x83\x0d\x06", 8))
-    //    _here = Coordinates(100, 0, 0);
-
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x97\x0e\x16\x06", 8))
-    //    _here = TSTP::sink();
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x7f\x0e\x16\x06", 8))
-    //    _here = Coordinates(  0,100, 0);
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x7f\x0e\x16\x06", 8))
-    //    _here = Coordinates(100,10, 0);
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xca\x0e\x16\x06", 8))
-    //    _here = Coordinates(100,100, 0);
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xee\x0e\x16\x06", 8))
-    //    _here = Coordinates(100, 0, 0);
-
-    // Sniffer
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x6e\x82\x0d\x06", 8))
-    //    _here = Coordinates(120, 120, 0);
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x7f\x0e\x16\x06", 8))
-    //    _here = Coordinates(120,120, 0);
-
-    // LISHA Smart Room
-    //if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x0b\x0f\x16\x06", 8)) // Test Sink
-    //    _here = Coordinates(0, 0, 0);
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x11\x83\x0d\x06", 8)) // Outlet 0 (B0)
-    //    _here = Coordinates(460, -250, -15);
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x74\x82\x0d\x06", 8)) // Outlet 1 (B1)
-    //    _here = Coordinates(-5, -30, -15);
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x5e\x83\x0d\x06", 8)) // Lights 1 (A1)
-    //    _here = Coordinates(305, -170, 220);
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x69\x0e\x16\x06", 8)) // Sniffer
-    //    _here = Coordinates(120,120,0);
-    ////else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x97\x0e\x16\x06", 8)) // Presence sensor
-    ////    _here = Coordinates(10,-10, 0);
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xca\x0e\x16\x06", 8)) // Test GPIO sensor
-    //    _here = Coordinates(675,-100,80);
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xee\x0e\x16\x06", 8)) // Router
-    //    _here = Coordinates(505,120,70);
+    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xb7\x82\x0d\x06", 8)) // Router 3 (door)
+        _here = Coordinates(-270, -110, 160);
 
     // SSB
     //if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x0b\x0f\x16\x06", 8)) // Test Sink
@@ -151,7 +102,6 @@ void TSTP::Locator::bootstrap()
 
     else
         _confidence = 0;
-    */
 
     if(Traits<Radio>::promiscuous) {
         _here = Coordinates(12,12,12);
@@ -159,6 +109,10 @@ void TSTP::Locator::bootstrap()
     }
 
     TSTP::_nic->attach(this, NIC::TSTP);
+
+    // TODO: This should be in TSTP::init(), but only here we know if we are the sink
+    if(here() != sink())
+        new (SYSTEM) TSTP::Life_Keeper;
 
     // Wait for spatial localization
     while(_confidence < 80)
@@ -169,11 +123,14 @@ void TSTP::Timekeeper::bootstrap()
 {
     db<TSTP>(TRC) << "TSTP::Timekeeper::bootstrap()" << endl;
 
+    if(here() == sink())
+        _next_sync = -1ull; // Just so that the sink will always have synchronized() return true
+
     TSTP::_nic->attach(this, NIC::TSTP);
 
     if((TSTP::here() != TSTP::sink()) && (!Traits<Radio>::promiscuous)) { // TODO
         // Wait for time synchronization
-        while(!_t1)
+        while(!synchronized())
             Thread::self()->yield();
     }
 }

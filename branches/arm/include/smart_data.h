@@ -102,14 +102,12 @@ public:
 
     operator Value() {
         if(expired()) {
-            if(_device != REMOTE) { // Local data source
+            if((_device != REMOTE) && (Transducer::POLLING)) { // Local data source
                 Transducer::sense(_device, this); // read sensor
                 _time = TSTP::now();
             } else {
                 // Other data sources must have called update() timely
                 db<Smart_Data>(WRN) << "Smart_Data::get(this=" << this << ",exp=" <<_time +  _expiry << ",val=" << _value << ") => expired!" << endl;
-                if(_interested)
-                    _interested->advertise();
             }
         }
         Value ret = _value;

@@ -109,7 +109,9 @@ void CC2538::init(unsigned int unit)
 void CC2538::Timer::init()
 {
     db<Init, CC2538>(TRC) << "Radio::Timer::init()" << endl;
-    _frequency = CLOCK;
+    _periodic_update = 0;
+    _periodic_update_update = 0;
+    _periodic_update_update_update = 0;
     mactimer(MTCTRL) &= ~MTCTRL_RUN; // Stop counting
     mactimer(MTIRQM) = 0; // Mask interrupts
     mactimer(MTIRQF) = 0; // Clear interrupts
