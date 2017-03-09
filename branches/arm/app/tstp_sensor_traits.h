@@ -20,18 +20,19 @@ template<> struct Traits<Build>
     enum {LIBRARY, BUILTIN, KERNEL};
     static const unsigned int MODE = LIBRARY;
 
-    enum {ARMv7};
+    enum {IA32, ARMv7};
     static const unsigned int ARCHITECTURE = ARMv7;
 
-    enum {Cortex_M};
-    static const unsigned int MACHINE = Cortex_M;
+    enum {PC, Cortex};
+    static const unsigned int MACHINE = Cortex;
 
-    enum {eMote3, LM3S811};
+    enum {Legacy_PC, eMote3, LM3S811, Zynq};
     static const unsigned int MODEL = eMote3;
 
     static const unsigned int CPUS = 1;
     static const unsigned int NODES = 2; // > 1 => NETWORKING
 };
+
 
 // Utilities
 template<> struct Traits<Debug>
@@ -57,6 +58,13 @@ template<> struct Traits<Heaps>: public Traits<void>
     static const bool debugged = hysterically_debugged;
 };
 
+template<> struct Traits<Observers>: public Traits<void>
+{
+    // Some observed objects are created before initializing the Display
+    // Enabling debug may cause trouble in some Machines
+    static const bool debugged = false;
+};
+
 // System Parts (mostly to fine control debugging)
 template<> struct Traits<Boot>: public Traits<void>
 {
@@ -75,90 +83,31 @@ template<> struct Traits<Init>: public Traits<void>
 template<> struct Traits<Serial_Display>: public Traits<void>
 {
     static const bool enabled = true;
+    enum {UART, USB};
+    static const int ENGINE = USB;
     static const int COLUMNS = 80;
-    static const int LINES = 25;
+    static const int LINES = 24;
     static const int TAB_SIZE = 8;
 };
 
-template<> struct Traits<Network>: public Traits<void>
+template<> struct Traits<Serial_Keyboard>: public Traits<void>
 {
-    static const bool enabled = (Traits<Build>::NODES > 1);
-
-    static const unsigned int RETRIES = 3;
-    static const unsigned int TIMEOUT = 10; // s
-
-    // This list is positional, with one network for each NIC in traits<NIC>::NICS
-    typedef LIST<TSTP> NETWORKS;
+    static const bool enabled = true;
 };
 
-template<> struct Traits<TSTP>: public Traits<Network>
+template<> template <unsigned int S> struct Traits<Software_AES<S>>: public Traits<void>
 {
-    static const bool is_sink = true;
-
-    // MAC component selection. Possible values = {TSTP_MAC, One_Hop_MAC};
-    typedef TSTP_MAC MAC;
-    
-    // Time management component selection. Possible values = {PTS};
-    typedef PTS Time_Manager;
-
-    // Router component selection. Possible values = {SGGR};
-    typedef SGGR Router;
-
-    // Security component selection. Possible values = {TSTP_Security};
-    typedef TSTP_Security Security;
-
-
-    // Default configurations that apply to all MACs
-    template<typename MAC>
-    struct MAC_Config_App {
-        static const unsigned int RECEIVE_BUFFERS = 4;
-        static const unsigned int SEND_BUFFERS = 64 - RECEIVE_BUFFERS;
-    };
-    // Machine- and unit-dependent MAC configurations, definable in machine traits 
-    template<unsigned int unit = 0, typename MAC = Traits<TSTP>::MAC>
-    struct MAC_Config : public Traits<MAC> {};
-
-    // Default configurations that apply to all routers
-    template<typename ROUTER>
-    struct Router_Config_App {};
-    // Machine- and unit-dependent router configurations, definable in machine traits 
-    template<unsigned int unit = 0, typename ROUTER = Traits<TSTP>::Router>
-    struct Router_Config : public Traits<ROUTER> {};
-
-    // Default configurations that apply to all time managers
-    template<typename TIME_MANAGER>
-    struct Time_Config_App {};
-    // Machine- and unit-dependent time manager configurations, definable in machine traits 
-    template<unsigned int unit = 0, typename TIME_MANAGER = Traits<TSTP>::Time_Manager>
-    struct Time_Config : public Traits<TIME_MANAGER> {};
+    static const bool enabled = true;
+    static const unsigned int KEY_SIZE = 16;
 };
-
-// Default TSTP_MAC configurations that apply to all machines and units
-template<> struct Traits<TSTP>::MAC_Config_App<TSTP_MAC> : public Traits<TSTP>::MAC_Config_App<void> {
-    static const unsigned int PERIOD = 225000;
-};
-
-// Default SGGR configurations that apply to all machines and units
-template<> struct Traits<SGGR> : public Traits<TSTP>, public Traits<TSTP>::Router_Config_App<void> {
-    // Examples of addresses
-    struct Node_Address_0 { static const int X = 0;   static const int Y = 0;    static const int Z = 0; };
-    struct Node_Address_1 { static const int X = 120; static const int Y = -380; static const int Z = -48; };
-    struct Node_Address_2 { static const int X = 611; static const int Y = 0;    static const int Z = -148; };
-    struct Node_Address_3 { static const int X = 0;   static const int Y = -740; static const int Z = -148; };
-    struct Node_Address_4 { static const int X = 611; static const int Y = -545; static const int Z = 52; };
-
-    typedef IF<is_sink, Node_Address_0, Node_Address_1>::Result Address;
-};
-
-template<> struct Traits<PTS> : public Traits<TSTP>, public Traits<TSTP>::Time_Config_App<void> {};
 
 __END_SYS
 
 #include __ARCH_TRAITS_H
 #include __MACH_TRAITS_H
-#include __MACH_CONFIG_H
 
 __BEGIN_SYS
+
 
 // Abstractions
 template<> struct Traits<Application>: public Traits<void>
@@ -177,7 +126,8 @@ template<> struct Traits<System>: public Traits<void>
     static const bool multiheap = (mode != Traits<Build>::LIBRARY) || Traits<Scratchpad>::enabled;
 
     enum {FOREVER = 0, SECOND = 1, MINUTE = 60, HOUR = 3600, DAY = 86400, WEEK = 604800, MONTH = 2592000, YEAR = 31536000};
-    static const unsigned long LIFE_SPAN = 1 * HOUR; // in seconds
+    static const unsigned long LIFE_SPAN = 1 * YEAR; // in seconds
+    static const unsigned int DUTY_CYCLE = 10000; // in ppm
 
     static const bool reboot = true;
 
@@ -194,7 +144,7 @@ template<> struct Traits<Thread>: public Traits<void>
 {
     static const bool smp = Traits<System>::multicore;
 
-    typedef Scheduling_Criteria::RR Criterion;
+    typedef Scheduling_Criteria::RM Criterion;
     static const unsigned int QUANTUM = 10000; // us
 
     static const bool trace_idle = hysterically_debugged;
@@ -230,14 +180,39 @@ template<> struct Traits<Synchronizer>: public Traits<void>
     static const bool enabled = Traits<System>::multithread;
 };
 
-template<> struct Traits<Modbus_ASCII>: public Traits<void>
+template<> struct Traits<Network>: public Traits<void>
 {
-    static const unsigned int PROTOCOL_ID = 83;
-    static const unsigned int MSG_LEN = 96;
+    static const bool enabled = (Traits<Build>::NODES > 1);
+
+    static const unsigned int RETRIES = 3;
+    static const unsigned int TIMEOUT = 10; // s
+
+    // This list is positional, with one network for each NIC in Traits<NIC>::NICS
+    typedef LIST<TSTP> NETWORKS;
+};
+
+template<> struct Traits<ELP>: public Traits<Network>
+{
+    static const bool enabled = NETWORKS::Count<ELP>::Result;
+
+    static const bool acknowledged = true;
+};
+
+template<> struct Traits<TSTP>: public Traits<Network>
+{
+    static const bool enabled = NETWORKS::Count<TSTP>::Result;
+    static const bool sink = false;
+};
+
+template<> template <typename S> struct Traits<Smart_Data<S>>: public Traits<Network>
+{
+    static const bool enabled = NETWORKS::Count<TSTP>::Result;
 };
 
 template<> struct Traits<IP>: public Traits<Network>
 {
+    static const bool enabled = NETWORKS::Count<IP>::Result;
+
     enum {STATIC, MAC, INFO, RARP, DHCP};
 
     struct Default_Config {

@@ -12,13 +12,24 @@ TSTP::TSTP()
     db<TSTP>(TRC) << "TSTP::TSTP()" << endl;
 }
 
+// TODO: we need a better way to define static locations
 void TSTP::Locator::bootstrap()
 {
     db<TSTP>(TRC) << "TSTP::Locator::bootstrap()" << endl;
 
     _confidence = 100;
 
-    // TODO: we need a better way to define static locations
+    // This is used if your machine ID is unlisted below
+    if(Traits<TSTP>::sink)
+        _here = TSTP::sink();
+    else
+        _here = Coordinates(10,10,0); // Adjust this value to the coordinates of the sensor
+
+    // You can edit the values below to define coordinates based on the machine ID
+    if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x00\x00\x00\x00", 8)) // Adjust this value to the ID of the mote
+        _here = TSTP::sink();
+    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x00\x00\x00\x00", 8)) // Adjust this value to the ID of the mote
+        _here = Coordinates(10,10,0); // Adjust this value to the coordinates of the sensor
 
     // UFSC HU mesh
     //if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xb3\x0e\x16\x06", 8)) // Sink
@@ -29,34 +40,34 @@ void TSTP::Locator::bootstrap()
     //    _here = Coordinates(-6000,4500,0);
 
     // LISHA Testbed
-    if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xee\x0e\x16\x06", 8))
-        _here = TSTP::sink();
-    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x7f\x0e\x16\x06", 8)) // Dummy 0
-        _here = Coordinates(10,5,0);
-    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x69\x0e\x16\x06", 8)) // Dummy 1
-        _here = Coordinates(10,10,0);
-    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xca\x0e\x16\x06", 8)) // Dummy 2
-        _here = Coordinates(5,15,0);
-    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x67\x83\x0d\x06", 8)) // Dummy 3
-        _here = Coordinates(0,15,0);
-    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xec\x82\x0d\x06", 8)) // Dummy 4
-        _here = Coordinates(-5,10,0);
-    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x97\x0e\x16\x06", 8)) // Dummy 5
-        _here = Coordinates(-5,5,0);
-    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x11\x83\x0d\x06", 8)) // Outlet 0 (B0)
-        _here = Coordinates(460-730, -250-80, -15);
-    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x74\x82\x0d\x06", 8)) // Outlet 1 (B1)
-        _here = Coordinates(-5-730, -30-80, -15);
-    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x5e\x83\x0d\x06", 8)) // Lights 1 (A1)
-        _here = Coordinates(305-730, -170-80, 220);
-    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x0b\x0f\x16\x06", 8)) // Luminosity sensor
-        _here = Coordinates(10-730,-10-80, 0);
-    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x1a\x84\x0d\x06", 8)) // Router 1 (corridor)
-        _here = Coordinates(505-730,120-80,0);
-    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xb0\x0e\x16\x06", 8)) // Router 2
-        _here = Coordinates(505-730,20-80,10);
-    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xb7\x82\x0d\x06", 8)) // Router 3 (door)
-        _here = Coordinates(-270, -110, 160);
+    //if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xee\x0e\x16\x06", 8))
+    //    _here = TSTP::sink();
+    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x7f\x0e\x16\x06", 8)) // Dummy 0
+    //    _here = Coordinates(10,5,0);
+    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x69\x0e\x16\x06", 8)) // Dummy 1
+    //    _here = Coordinates(10,10,0);
+    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xca\x0e\x16\x06", 8)) // Dummy 2
+    //    _here = Coordinates(5,15,0);
+    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x67\x83\x0d\x06", 8)) // Dummy 3
+    //    _here = Coordinates(0,15,0);
+    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xec\x82\x0d\x06", 8)) // Dummy 4
+    //    _here = Coordinates(-5,10,0);
+    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x97\x0e\x16\x06", 8)) // Dummy 5
+    //    _here = Coordinates(-5,5,0);
+    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x11\x83\x0d\x06", 8)) // Outlet 0 (B0)
+    //    _here = Coordinates(460-730, -250-80, -15);
+    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x74\x82\x0d\x06", 8)) // Outlet 1 (B1)
+    //    _here = Coordinates(-5-730, -30-80, -15);
+    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x5e\x83\x0d\x06", 8)) // Lights 1 (A1)
+    //    _here = Coordinates(305-730, -170-80, 220);
+    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x0b\x0f\x16\x06", 8)) // Luminosity sensor
+    //    _here = Coordinates(10-730,-10-80, 0);
+    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x1a\x84\x0d\x06", 8)) // Router 1 (corridor)
+    //    _here = Coordinates(505-730,120-80,0);
+    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xb0\x0e\x16\x06", 8)) // Router 2
+    //    _here = Coordinates(505-730,20-80,10);
+    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xb7\x82\x0d\x06", 8)) // Router 3 (door)
+    //    _here = Coordinates(-270, -110, 160);
 
     // SSB
     //if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x0b\x0f\x16\x06", 8)) // Test Sink
@@ -100,8 +111,8 @@ void TSTP::Locator::bootstrap()
     //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x47\x83\x0d\x06", 8)) // Air Conditioner 1
     //    _here = Coordinates(150, -10, 220);
 
-    else
-        _confidence = 0;
+    //else
+    //    _confidence = 0;
 
     if(Traits<Radio>::promiscuous) {
         _here = Coordinates(12,12,12);

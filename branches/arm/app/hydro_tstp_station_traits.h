@@ -143,7 +143,6 @@ template<> struct Traits<Task>: public Traits<void>
 template<> struct Traits<Thread>: public Traits<void>
 {
     static const bool smp = Traits<System>::multicore;
-    static const bool debugged = false;
 
     typedef Scheduling_Criteria::RM Criterion;
     static const unsigned int QUANTUM = 10000; // us
@@ -201,22 +200,13 @@ template<> struct Traits<ELP>: public Traits<Network>
 
 template<> struct Traits<TSTP>: public Traits<Network>
 {
-    static const bool debugged = Traits<Network>::debugged || Traits<NIC>::promiscuous;
     static const bool enabled = NETWORKS::Count<TSTP>::Result;
-};
-
-template<typename S>
-class TSTP_MAC;
-template<> template <typename S> struct Traits<TSTP_MAC<S>>: public Traits<TSTP>
-{
-    //static const bool debugged = Traits<NIC>::promiscuous;
-    //static const bool hysterically_debugged = true;
+    static const bool sink = false;
 };
 
 template<> template <typename S> struct Traits<Smart_Data<S>>: public Traits<Network>
 {
     static const bool enabled = NETWORKS::Count<TSTP>::Result;
-    //static const bool debugged = true;
 };
 
 template<> struct Traits<IP>: public Traits<Network>

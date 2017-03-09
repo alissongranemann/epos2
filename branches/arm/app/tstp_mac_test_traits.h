@@ -202,6 +202,7 @@ template<> struct Traits<TSTP>: public Traits<Network>
 {
     static const bool debugged = Traits<Network>::debugged || Traits<NIC>::promiscuous;
     static const bool enabled = NETWORKS::Count<TSTP>::Result;
+    static const bool sink = false;
 };
 
 template<typename S>
