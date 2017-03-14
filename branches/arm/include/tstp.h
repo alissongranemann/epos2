@@ -53,6 +53,7 @@ public:
         AUTH_GRANTED = 3,
         REPORT = 4,
         KEEP_ALIVE = 5,
+        EPOCH = 6,
     };
 
     // Scale for local network's geographic coordinates
@@ -88,6 +89,7 @@ public:
         _Coordinates(const Point<Number, 3> & p): Point<Number, 3>(p) {}
     } __attribute__((packed));
     typedef _Coordinates<SCALE> Coordinates;
+    typedef _Coordinates<CM_32> Global_Coordinates;
 
     // Geographic Region in a time interval (not exactly Spacetime, but ...)
     template<Scale S>
@@ -122,55 +124,64 @@ public:
     // MAC Preamble Microframe
     class Microframe
     {
+        // Format
+        // Bit 0            1      12   24     56    72
+        //     +------------+-------+----+------+-----+
+        //     | all listen | count | id | hint | crc |
+        //     +------------+-------+----+------+-----+
+        // Bits       1        11     12    32    16
     public:
         Microframe() {}
 
         Microframe(bool all_listen, const Frame_ID & id, const MF_Count & count, const Hint & hint = 0)
-        : _al_count_idh(((id & 0x0f00) >> 8) | ((count & 0x07ff) << 4) | (static_cast<unsigned int>(all_listen) << 15)), _idl(id & 0x00ff), _hint(hint) {}
+        : _al_count_id_hintl(htolel(all_listen | ((count & 0x07ff) << 1) | ((id & 0x0fff) << 12) | ((hint & 0x0ff) << 24))), _hinth_crcl(htolel((hint & 0xffffff00) >> 8)), _crch(0) {}
 
-        MF_Count count() const { return (_al_count_idh & (0x07ff << 4)) >> 4; }
+        MF_Count count() const { return (letohl(_al_count_id_hintl) & 0x0ffe) >> 1; }
 
         MF_Count dec_count() {
             MF_Count c = count();
-            _al_count_idh = (_al_count_idh & ~(0x07ff << 4)) | ((c-1) << 4);
+            count(c - 1);
             return c;
         }
 
-        Frame_ID id() const { return ((_al_count_idh & 0x000f) << 8) + _idl; }
+        void count(const MF_Count & c) {
+            _al_count_id_hintl = htolel((letohl(_al_count_id_hintl) & ~0x0ffe) | (c << 1));
+        }
+
+        Frame_ID id() const { return ((letohl(_al_count_id_hintl) & 0x00fff000) >> 12); }
 
         void id(const Frame_ID & id) {
-            _al_count_idh = (_al_count_idh & 0xfff0) | ((id & 0x0f00) >> 8);
-            _idl = id & 0x00ff;
+            _al_count_id_hintl = htolel((letohl(_al_count_id_hintl) & ~0x00fff000) | ((id & 0x00000fff) << 12));
         }
 
         void all_listen(bool all_listen) {
             if(all_listen)
-                _al_count_idh |= (1 << 15);
+                _al_count_id_hintl = htolel((letohl(_al_count_id_hintl) | 0x01));
             else
-                _al_count_idh &= ~(1 << 15);
+                _al_count_id_hintl = htolel((letohl(_al_count_id_hintl) & ~0x01));
         }
 
-        bool all_listen() const { return _al_count_idh & (1 << 15); }
+        bool all_listen() const { return letohl(_al_count_id_hintl & 0x01); }
 
-        Hint hint() const { return _hint; }
-        void hint(const Hint & h) { _hint = h; }
+        Hint hint() const { return ((letohl(_al_count_id_hintl) & 0xff000000) >> 24) + ((letohl(_hinth_crcl) & 0x00ffffff) << 8); }
+        void hint(const Hint & h) {
+            _al_count_id_hintl = htolel((letohl(_al_count_id_hintl) & ~0xff000000) | ((h & 0x0ff) << 24));
+            _hinth_crcl = htolel((letohl(_hinth_crcl) & ~0x00ffffff) | ((static_cast<unsigned int>(h & 0xffffff00)) >> 8));
+        }
 
         friend Debug & operator<<(Debug & db, const Microframe & m) {
-            db << "{al=" << m.all_listen() << ",c=" << m.count() << ",id=" << m.id() << ",h=" << m.hint() << ",crc=" << m._crc << "}";
+            db << "{al=" << m.all_listen() << ",c=" << m.count() << ",id=" << m.id() << ",h=" << m.hint() << "}";
             return db;
         }
         friend OStream & operator<<(OStream & db, const Microframe & m) {
-            db << "{al=" << m.all_listen() << ",c=" << m.count() << ",id=" << m.id() << ",h=" << m.hint() << ",crc=" << m._crc << "}";
+            db << "{al=" << m.all_listen() << ",c=" << m.count() << ",id=" << m.id() << ",h=" << m.hint()<< "}";
             return db;
         }
 
     private:
-        unsigned short _al_count_idh; // all_listen : 1
-                                      // count : 11
-                                      // id MSBs: 4
-        unsigned char _idl;           // id LSBs: 8
-        Hint _hint;
-        CRC _crc;
+        unsigned int _al_count_id_hintl; // All listen, Count, ID, Hint LSB
+        unsigned int _hinth_crcl; // Hint MSBs, CRC LSB
+        unsigned char _crch; // CRC MSB
     } __attribute__((packed));
 
     // Packet Header
@@ -492,6 +503,7 @@ __BEGIN_SYS
 class TSTP: public TSTP_Common, private NIC::Observer
 {
     template<typename> friend class Smart_Data;
+    friend class Epoch;
 
 public:
     typedef NIC::Buffer Buffer;
@@ -514,7 +526,48 @@ public:
         T * data() { return reinterpret_cast<T *>(&_data); }
 
         friend Debug & operator<<(Debug & db, const _Packet & p) {
-            db << "{h=" << reinterpret_cast<const Header &>(p) << ",d=" << p._data << "}";
+            db << "{h=" << reinterpret_cast<const Header &>(p);
+            switch(reinterpret_cast<const Header &>(p).type()) {
+                case INTEREST:
+                    db << reinterpret_cast<const Interest &>(p);
+                    break;
+                case RESPONSE:
+                    db << reinterpret_cast<const Response &>(p);
+                    break;
+                case COMMAND:
+                    db << reinterpret_cast<const Command &>(p);
+                    break;
+                case CONTROL: {
+                    switch(reinterpret_cast<const Control &>(p).subtype()) {
+                        case DH_RESPONSE:
+                            db << reinterpret_cast<const DH_Response &>(p);
+                            break;
+                        case AUTH_REQUEST:
+                            db << reinterpret_cast<const Auth_Request &>(p);
+                            break;
+                        case DH_REQUEST:
+                            db << reinterpret_cast<const DH_Request &>(p);
+                            break;
+                        case AUTH_GRANTED:
+                            db << reinterpret_cast<const Auth_Granted &>(p);
+                            break;
+                        case REPORT:
+                            db << reinterpret_cast<const Report &>(p);
+                            break;
+                        case KEEP_ALIVE:
+                            db << reinterpret_cast<const Keep_Alive &>(p);
+                            break;
+                        case EPOCH:
+                            db << reinterpret_cast<const Epoch &>(p);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                default:
+                    break;
+            }
+            db << "}";
             return db;
         }
 
@@ -576,7 +629,7 @@ public:
         unsigned char _mode : 2;
         unsigned char _precision : 6;
         Time_Offset _expiry;
-        Microsecond _period;
+        Microsecond _period; // TODO: should be Time_Offset
         CRC _crc;
     } __attribute__((packed));
 
@@ -758,11 +811,12 @@ public:
     class Report: public Control
     {
     public:
-        Report(const Unit & unit, const Error & error = 0)
-        : Control(REPORT, 0, 0, now(), here(), here()), _unit(unit), _error(error) { }
+        Report(const Unit & unit, const Error & error = 0, bool epoch_request = false)
+        : Control(REPORT, 0, 0, now(), here(), here()), _unit(unit), _error(error), _epoch_request(epoch_request) { }
 
         const Unit & unit() const { return _unit; }
         Error error() const { return _error; }
+        bool epoch_request() const { return _epoch_request; }
 
         friend Debug & operator<<(Debug & db, const Report & r) {
             db << reinterpret_cast<const Control &>(r) << ",u=" << r._unit << ",e=" << r._error;
@@ -772,6 +826,7 @@ public:
     private:
         Unit _unit;
         Error _error;
+        bool _epoch_request;
         CRC _crc;
     } __attribute__((packed));
 
@@ -791,6 +846,28 @@ public:
         CRC _crc;
     } __attribute__((packed));
 
+    // Epoch Control Message
+    class Epoch: public Control
+    {
+    public:
+        Epoch(const Region & dst, const Time & ep = TSTP::_epoch, const Global_Coordinates & coordinates = TSTP::_global_coordinates)
+        : Control(EPOCH, 0, 0, now(), here(), here()), _destination(dst), _epoch(ep), _coordinates(coordinates) { }
+
+        const Region & destination() const { return _destination; }
+        const Time epoch() const { return _epoch; }
+        const Global_Coordinates & coordinates() const { return _coordinates; }
+
+        friend Debug & operator<<(Debug & db, const Epoch & e) {
+            db << reinterpret_cast<const Control &>(e) << ",e=" << e._epoch << ",c=" << e._coordinates;
+            return db;
+        }
+
+    private:
+        Region _destination;
+        Time _epoch;
+        Global_Coordinates _coordinates;
+        CRC _crc;
+    } __attribute__((packed));
 
     // TSTP Smart Data bindings
     // Interested (binder between Interest messages and Smart Data)
@@ -831,12 +908,12 @@ public:
     {
     public:
         template<typename T>
-        Responsive(T * data, const Unit & unit, const Error & error, const Time & expiry)
+        Responsive(T * data, const Unit & unit, const Error & error, const Time & expiry, bool epoch_request = false)
         : Response(unit, error, expiry), _size(sizeof(Response) - sizeof(Response::Data) + sizeof(typename T::Value)), _t0(0), _t1(0), _link(this, T::UNIT) {
             db<TSTP>(TRC) << "TSTP::Responsive(d=" << data << ",s=" << _size << ") => " << this << endl;
             db<TSTP>(INF) << "TSTP::Responsive() => " << reinterpret_cast<const Response &>(*this) << endl;
             _responsives.insert(&_link);
-            advertise();
+            advertise(epoch_request);
         }
         ~Responsive() {
             db<TSTP>(TRC) << "TSTP::~Responsive(this=" << this << ")" << endl;
@@ -852,10 +929,10 @@ public:
         Time t1() const { return _t1; }
 
         void respond(const Time & expiry) { send(expiry); }
-        void advertise() {
+        void advertise(bool epoch_request = false) {
             db<TSTP>(TRC) << "TSTP::Responsive::advertise()" << endl;
             Buffer * buf = alloc(sizeof(Report));
-            Report * report = new (buf->frame()->data<Report>()) Report(unit(), error());
+            Report * report = new (buf->frame()->data<Report>()) Report(unit(), error(), epoch_request);
             marshal(buf);
             db<TSTP>(INF) << "TSTP::Responsive::advertise:report=" << report << " => " << (*report) << endl;
             _nic->send(buf);
@@ -1371,10 +1448,25 @@ protected:
 public:
     ~TSTP();
 
+    // Local network Space-Time
     static Coordinates here() { return Locator::here(); }
-    static Coordinates sink() { return Coordinates(0, 0, 0); }
     static Time now() { return Timekeeper::now(); }
-    static void adjust(const Time & t) { Radio::Timer::adjust(Radio::Timer::us2count(t)); }
+    static Coordinates sink() { return Coordinates(0, 0, 0); }
+    static Time local(const Time & global) { return global - _epoch; }
+    static Coordinates local(Global_Coordinates global) {
+        global -= _global_coordinates;
+        return Coordinates(global.x, global.y, global.z);
+    }
+
+    // Global Space-Time
+    static Global_Coordinates absolute(const Coordinates & coordinates) { return _global_coordinates + coordinates; }
+    static Time absolute(const Time & t) {
+        if((t == static_cast<Time>(-1)) || (t == 0))
+           return t;
+        return _epoch + t;
+    }
+    static void epoch(const Time & t) { _epoch = t - now(); }
+    static void coordinates(const Global_Coordinates & c) { _global_coordinates = c; }
 
     static void attach(Observer * obs, void * subject) { _observed.attach(obs, int(subject)); }
     static void detach(Observer * obs, void * subject) { _observed.detach(obs, int(subject)); }
@@ -1412,11 +1504,17 @@ private:
                         return Region(buf->frame()->data<Auth_Granted>()->destination().center, buf->frame()->data<Auth_Granted>()->destination().radius, origin, deadline);
                     }
                     case REPORT: {
-                        return Region(sink(), 0, buf->frame()->data<Response>()->time(), -1/*TODO*/);
+                        return Region(sink(), 0, buf->frame()->data<Report>()->time(), -1/*TODO*/);
                     }
                     case KEEP_ALIVE: {
-                        Coordinates fake = here();
-                        return Region(Coordinates(fake.x + Random::random(), fake.y + Random::random(), fake.z + Random::random()), 0, 0, -1); // Should never be destined_to_me
+                        while(true) {
+                            Coordinates fake(here().x + (Random::random() % RADIO_RANGE), here().y + (Random::random() % RADIO_RANGE), (here().z + Random::random() % RADIO_RANGE));
+                            if(fake != here())
+                                return Region(fake, 0, 0, -1); // Should never be destined_to_me
+                        }
+                    }
+                    case EPOCH: {
+                        return buf->frame()->data<Epoch>()->destination();
                     }
                 }
             default:
@@ -1428,7 +1526,7 @@ private:
     static void keep_alive() {
         db<TSTP>(TRC) << "TSTP::keep_alive()" << endl;
         Buffer * buf = alloc(sizeof(Keep_Alive));
-        Keep_Alive * keep_alive = new (buf->frame()->data<Keep_Alive>()) Keep_Alive();
+        Keep_Alive * keep_alive = new (buf->frame()->data<Keep_Alive>()) Keep_Alive;
         marshal(buf);
         buf->deadline = now() + Life_Keeper::PERIOD;
         db<TSTP>(INF) << "TSTP::keep_alive():keep_alive = " << keep_alive << " => " << (*keep_alive) << endl;
@@ -1446,7 +1544,6 @@ private:
         return _nic->alloc(NIC::Address::BROADCAST, NIC::TSTP, 0, 0, size - sizeof(Header));
     }
 
-    static Coordinates absolute(const Coordinates & coordinates) { return coordinates; }
     void update(NIC::Observed * obs, NIC::Protocol prot, NIC::Buffer * buf);
 
 private:
@@ -1454,6 +1551,8 @@ private:
     static Interests _interested;
     static Responsives _responsives;
     static Observed _observed; // Channel protocols are singletons
+    static Time _epoch;
+    static Global_Coordinates _global_coordinates;
 };
 
 __END_SYS

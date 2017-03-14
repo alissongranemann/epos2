@@ -262,7 +262,7 @@ public:
 
     // Bit set by hardware in FCS field when AUTO_CRC is set
     enum {
-        AUTO_CRC_OK = 0x80,
+        AUTO_CRC_OK = 1 << 7,
     };
 
     // Useful bits in XREG_FRMCTRL1
@@ -458,7 +458,7 @@ public:
         }
 
         static Time_Stamp us2count(const Microsecond & us) { return static_cast<Time_Stamp>(us) * (CLOCK / 1000000); }
-        static Microsecond count2us(const Time_Stamp & ts) { return ts * 1000000 / CLOCK; }
+        static Microsecond count2us(const Time_Stamp & ts) { return ts / (CLOCK / 1000000); }
 
     private:
         static void int_enable(const Reg32 & interrupt) { mactimer(MTIRQM) |= interrupt; }
@@ -499,9 +499,9 @@ public:
                 _overflow_count++;
 
             IC::Interrupt_Handler h;
-                                                          // TODO: implicit CPU::int_enable()
             if((ints & INT_COMPARE1) && (h = _handler) && (_int_request_time <= read_raw())) {
-                //kout << 't';
+                if(TSTP_MAC<CC2538RF>::state_machine_debugged)
+                    kout << 't';
                 int_disable();
                 CPU::int_enable();
                 h(interrupt);
@@ -754,6 +754,7 @@ public:
          case FULL: // Able to receive and transmit
              power_ieee802_15_4(FULL);
              xreg(FRMCTRL0) = (xreg(FRMCTRL0) & ~(3 * RX_MODE)) | (RX_MODE_NORMAL * RX_MODE);
+             xreg(RFIRQM0) &= ~INT_FIFOP;
              xreg(RFIRQM0) |= INT_FIFOP;
              break;
          case LIGHT: // Able to sense channel and transmit

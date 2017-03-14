@@ -73,6 +73,7 @@ int http_send()
                 popped = Storage::pop(&e);
                 CPU::int_enable();
             }
+            TSTP::epoch(m95->now());
             cout << "Turning GPRS off" << endl;
             m95->off();
         } else
@@ -87,7 +88,7 @@ int tstp_work()
     M95 * m95 = M95::get(0);
 
     TSTP::Time t = m95->now();
-    TSTP::adjust(t);
+    TSTP::epoch(t);
 
     m95->off();
 
@@ -96,7 +97,7 @@ int tstp_work()
 
     Water_Level level(region_station0, INTEREST_EXPIRY, INTEREST_PERIOD);
     Water_Turbidity turbidity(region_station0, INTEREST_EXPIRY, INTEREST_PERIOD);
-    Rain rain(region_station0, INTEREST_EXPIRY, INTEREST_PERIOD, true);
+    Rain rain(region_station0, INTEREST_EXPIRY, INTEREST_PERIOD, Rain::CUMULATIVE);
 
     while(Periodic_Thread::wait_next()) {
 
@@ -107,6 +108,7 @@ int tstp_work()
             last = turbidity.time();
         if(rain.time() > last)
             last = rain.time();
+        last = TSTP::absolute(last);
 
         cout << "last = " << last << endl;
         cout << "level.time() = " << level.time() << endl;

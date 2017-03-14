@@ -176,7 +176,9 @@ void TSTP::Router::update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf)
     } else if(!buf->is_microframe) {
         Header * header = buf->frame()->data<Header>();
         // Keep Alive messages are never forwarded
-        if(!((header->type() == CONTROL) && (buf->frame()->data<Control>()->subtype() == KEEP_ALIVE))) {
+        if((header->type() == CONTROL) && (buf->frame()->data<Control>()->subtype() == KEEP_ALIVE))
+            buf->destined_to_me = false;
+        else {
             Region dst = TSTP::destination(buf);
             buf->destined_to_me = ((header->origin() != TSTP::here()) && (dst.contains(TSTP::here(), dst.t0)));
             if(buf->destined_to_me || (buf->my_distance < buf->sender_distance)) {
@@ -198,6 +200,7 @@ void TSTP::Router::update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf)
                 send_buf->sender_distance = buf->sender_distance;
                 send_buf->is_new = false;
                 send_buf->is_microframe = false;
+                send_buf->attempts = 0;
 
                 // Calculate offset
                 offset(send_buf);
@@ -481,6 +484,8 @@ NIC * TSTP::_nic;
 TSTP::Interests TSTP::_interested;
 TSTP::Responsives TSTP::_responsives;
 TSTP::Observed TSTP::_observed;
+TSTP::Time TSTP::_epoch;
+TSTP::Global_Coordinates TSTP::_global_coordinates;
 
 // Methods
 TSTP::~TSTP()
@@ -568,11 +573,28 @@ void TSTP::update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf)
                             if(interested->region().contains(report->origin(), report->time()))
                                 interested->advertise();
                         }
+                    if(report->epoch_request() && (here() == sink())) {
+                        db<TSTP>(TRC) << "TSTP::update: responding to Epoch request" << endl;
+                        Buffer * buf = alloc(sizeof(Epoch));
+                        Epoch * epoch = new (buf->frame()->data<Epoch>()) Epoch(Region(report->origin(), 0, now(), now() + Life_Keeper::PERIOD));
+                        marshal(buf);
+                        db<TSTP>(INF) << "TSTP::update:epoch = " << epoch << " => " << (*epoch) << endl;
+                        _nic->send(buf);
+                    }
                 }
             } break;
             case KEEP_ALIVE:
                 db<TSTP>(INF) << "TSTP::update: Keep_Alive: " << *buf->frame()->data<Keep_Alive>() << endl;
                 break;
+            case EPOCH: {
+                db<TSTP>(INF) << "TSTP::update: Epoch: " << *buf->frame()->data<Epoch>() << endl;
+                Epoch * epoch = reinterpret_cast<Epoch *>(packet);
+                if(here() != sink()) {
+                    _global_coordinates = epoch->coordinates();
+                    _epoch = epoch->epoch();
+                    db<TSTP>(INF) << "TSTP::update: Epoch: adjusted epoch Space-Time to: " << _global_coordinates << ", " << _epoch << endl;
+                }
+            } break;
             default:
                 db<TSTP>(WRN) << "TSTP::update: Unrecognized Control subtype: " << buf->frame()->data<Control>()->subtype() << endl;
                 break;

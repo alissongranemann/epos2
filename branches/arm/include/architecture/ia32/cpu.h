@@ -365,6 +365,10 @@ public:
         return compare;
    }
 
+    static Reg32 htolel(Reg32 v) { return v; }
+    static Reg16 htoles(Reg16 v) { return v; }
+    static Reg32 letohl(Reg32 v) { return v; }
+    static Reg16 letohs(Reg16 v) { return v; }
     static Reg32 htonl(Reg32 v) { ASM("bswap %0" : "=r"(v) : "0"(v), "r"(v)); return v; }
     static Reg16 htons(Reg16 v) { return swap16(v); }
     static Reg32 ntohl(Reg32 v) { return htonl(v); }
@@ -607,6 +611,10 @@ private:
     static unsigned int _bus_clock;
 };
 
+inline CPU::Reg32 htolel(CPU::Reg32 v) { return CPU::htolel(v); }
+inline CPU::Reg16 htoles(CPU::Reg16 v) { return CPU::htoles(v); }
+inline CPU::Reg32 letohl(CPU::Reg32 v) { return CPU::letohl(v); }
+inline CPU::Reg16 letohs(CPU::Reg16 v) { return CPU::letohs(v); }
 inline CPU::Reg32 htonl(CPU::Reg32 v) { return CPU::htonl(v); }
 inline CPU::Reg16 htons(CPU::Reg16 v) { return CPU::htons(v); }
 inline CPU::Reg32 ntohl(CPU::Reg32 v) { return CPU::ntohl(v); }

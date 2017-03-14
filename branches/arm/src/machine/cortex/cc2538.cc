@@ -132,8 +132,13 @@ void CC2538::handle_int()
         db<CC2538>(TRC) << "CC2538::handle_int:RFERRF=" << hex << errf << endl;
     }
 
-    if(irqrf0 & INT_FIFOP) { // Frame received
-        //kout << 'h';
+    if(errf & (INT_RXUNDERF | INT_RXOVERF)) { // RX Error
+        CC2538RF::drop();
+        IC::enable(IC::INT_NIC0_TIMER);
+        db<CC2538>(INF) << "CC2538::handle_int:RFERRF=" << hex << errf << endl;
+    } else if(irqrf0 & INT_FIFOP) { // Frame received
+        if(TSTP_MAC<CC2538RF>::state_machine_debugged)
+            kout << 'h';
         if(Traits<CC2538>::hysterically_debugged)
             db<CC2538>(TRC) << "CC2538::handle_int:receive()" << endl;
         if(CC2538RF::filter()) {
@@ -174,11 +179,8 @@ void CC2538::handle_int()
         } else {
             IC::enable(IC::INT_NIC0_TIMER); // Make sure radio and MAC timer don't preempt one another
         }
-        //kout << 'H';
-    } else if (errf & (INT_RXUNDERF | INT_RXOVERF)) {
-        CC2538RF::drop(); // Error
-        IC::enable(IC::INT_NIC0_TIMER);
-        db<CC2538>(INF) << "CC2538::handle_int:RFERRF=" << hex << errf << endl;
+        if(TSTP_MAC<CC2538RF>::state_machine_debugged)
+            kout << 'H';
     } else {
         IC::enable(IC::INT_NIC0_TIMER);
     }

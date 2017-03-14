@@ -2,6 +2,7 @@
 
 #include <ic.h>
 #include <usb.h>
+#include <machine.h>
 
 __USING_SYS
 
@@ -183,6 +184,14 @@ void USB::init()
 
     IC::int_vector(IC::INT_USB0, &int_handler);
     IC::enable(IC::INT_USB0);
+
+    // FIXME
+    bool a = CPU::int_disabled();
+    if(a)
+        CPU::int_enable();
+    Machine::delay(2000000);
+    if(a)
+        CPU::int_enable();
 }
 
 #endif

@@ -82,7 +82,7 @@ public:
         for(Element * e = _observers.head(); e; e = e->next()) {
             if(e->rank() == c) {
                 db<Observeds, Semaphore>(INF) << "Observed::notify(this=" << this << ",obs=" << e->object() << ")" << endl;
-                e->object()->update(this, c, d);
+                e->object()->update(c, d);
                 notified = true;
             }
         }

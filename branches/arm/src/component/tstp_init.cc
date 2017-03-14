@@ -31,17 +31,27 @@ void TSTP::Locator::bootstrap()
     else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x00\x00\x00\x00", 8)) // Adjust this value to the ID of the mote
         _here = Coordinates(10,10,0); // Adjust this value to the coordinates of the sensor
 
+    // For the Global Coordinates, Latitude, Longitude and z were taken from Google Maps,
+    // then transformed into x,y using The World Coordinate Converter (http://twcc.fr/)
+    // Source coordinate system: "GPS (WGS84) (deg)"
+    // Destination coordinate system: "EPSG:32633"
+    // (EPSG:32633 is not on the default list in twcc. Click the green plus sign button, and type "EPSG:32633" into box number 2)
+
     // UFSC HU mesh
-    //if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xb3\x0e\x16\x06", 8)) // Sink
+    //if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xb3\x0e\x16\x06", 8)) { // Sink
     //    _here = TSTP::sink();
+    //    TSTP::coordinates(Global_Coordinates(74494581, 694493840, 25300));
+    //}
     //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xb0\x0e\x16\x06", 8)) // Water flow sensor 1
     //    _here = Coordinates(50,0,0);
     //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x28\x0f\x16\x06", 8)) // Water flow sensor 2
     //    _here = Coordinates(-6000,4500,0);
 
     // LISHA Testbed
-    //if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xee\x0e\x16\x06", 8))
+    //if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xee\x0e\x16\x06", 8)) { // Sink
     //    _here = TSTP::sink();
+    //    TSTP::coordinates(Global_Coordinates(741869040, 679816341, 25300));
+    //}
     //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x7f\x0e\x16\x06", 8)) // Dummy 0
     //    _here = Coordinates(10,5,0);
     //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x69\x0e\x16\x06", 8)) // Dummy 1
@@ -70,8 +80,10 @@ void TSTP::Locator::bootstrap()
     //    _here = Coordinates(-270, -110, 160);
 
     // SSB
-    //if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x0b\x0f\x16\x06", 8)) // Test Sink
+    //if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x0b\x0f\x16\x06", 8)) { // Test Sink
     //    _here = Coordinates(0, 0, 0);
+    //    TSTP::coordinates(Global_Coordinates(75270213, 696322550, 101500));
+    //}
     //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x1a\x83\x0d\x06", 8)) // NOT SURE Lights 0
     //    _here = Coordinates(430, 50, 250);
     //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xd3\x82\x0d\x06", 8)) // NOT SURE Lights 1
@@ -122,7 +134,7 @@ void TSTP::Locator::bootstrap()
     TSTP::_nic->attach(this, NIC::TSTP);
 
     // TODO: This should be in TSTP::init(), but only here we know if we are the sink
-    if(here() != sink())
+    if((here() != sink()) && (!Traits<Radio>::promiscuous))
         new (SYSTEM) TSTP::Life_Keeper;
 
     // Wait for spatial localization

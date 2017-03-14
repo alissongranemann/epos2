@@ -103,6 +103,10 @@ public:
         return old;
     }
 
+    static Reg32 htolel(Reg32 v) { return (BIG_ENDIAN) ? swap32(v) : v; }
+    static Reg16 htoles(Reg16 v) { return (BIG_ENDIAN) ? swap16(v) : v; }
+    static Reg32 letohl(Reg32 v) { return htolel(v); }
+    static Reg16 letohs(Reg16 v) { return htoles(v); }
     static Reg32 htonl(Reg32 v) { return (BIG_ENDIAN) ? v : swap32(v); }
     static Reg16 htons(Reg16 v) { return (BIG_ENDIAN) ? v : swap16(v); }
     static Reg32 ntohl(Reg32 v) { return htonl(v); }
