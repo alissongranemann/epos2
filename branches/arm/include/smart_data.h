@@ -18,14 +18,14 @@ public:
         long y;
         long z;
         unsigned long long t;
-        unsigned char mac[16];
+        //unsigned char mac[16];
         unsigned char version;
         unsigned int unit;
 
         friend OStream & operator<<(OStream & os, const DB_Record & d) {
-            os << "{va=" << d.value << ",e=" << d.error << ",(" << d.x << "," << d.y << "," << d.z << "),t=" << d.t<< ",m=[" << hex << d.mac[0];
-            for(unsigned int i = 1; i < 16; i++)
-                os << "," << hex << d.mac[i];
+            os << "{va=" << d.value << ",e=" << d.error << ",(" << d.x << "," << d.y << "," << d.z << "),t=" << d.t;//<< ",m=[" << hex << d.mac[0];
+            //for(unsigned int i = 1; i < 16; i++)
+            //    os << "," << hex << d.mac[i];
             os << dec << "],ve=" << d.version << ",u=" << d.unit << "}";
             return os;
         }
@@ -147,8 +147,8 @@ public:
         ret.y = c.y;
         ret.z = c.z;
         ret.t = time();
-        for(unsigned int i = 0; i < 16; i++)
-            ret.mac[i] = 0;
+        //for(unsigned int i = 0; i < 16; i++)
+        //    ret.mac[i] = 0;
         ret.version = 0;
         ret.unit = unit();
         return ret;
@@ -168,6 +168,17 @@ public:
         if(_mode & CUMULATIVE)
             _value = 0;
         return ret;
+    }
+
+    Smart_Data & operator=(const Value & v) {
+        if(_device != REMOTE) {
+            Transducer::actuate(_device, this, v);
+            Transducer::sense(_device, this);
+            _time = TSTP::now();
+        }
+        if(_interested)
+            _interested->command(v);
+        return *this;
     }
 
     bool expired() const { return TSTP::now() > (_time + _expiry); }
@@ -204,7 +215,12 @@ private:
             db<Smart_Data>(INF) << "Smart_Data::update[I]:msg=" << interest << " => " << *interest << endl;
             _responsive->t0(interest->region().t0);
             _responsive->t1(interest->region().t1);
-            if(interest->period()) {
+            if(interest->mode() == TSTP::Mode::DELETE) {
+                if(_thread) {
+                    delete _thread;
+                    _thread = 0;
+                }
+            } else if(interest->period()) {
                 if(!_thread)
                     _thread = new Periodic_Thread(interest->period(), &updater, _device, interest->expiry(), this);
                 else {
@@ -236,15 +252,11 @@ private:
         case TSTP::COMMAND: {
             if(_mode & COMMANDED) {
                 TSTP::Command * command = reinterpret_cast<TSTP::Command *>(packet);
-                Transducer::actuate(_device, this, command->command<void>());
+                *this = *(command->command<Value>());
             }
         } break;
-        case TSTP::CONTROL: {
-//            if(subtype == DELETE) { // Interest being revoked
-//                delete _thread;
-//                _thread = 0;
-//            }
-        } break;
+        default:
+            break;
         }
     }
 

@@ -16,8 +16,7 @@ int main()
     if(Traits<Hydro_Board>::P7_enabled)
         new Rain(0, 1000000, Rain::ADVERTISED);
 
-    while(true)
-        Delay(10 * 60 * 1000000);
+    Thread::self()->suspend();
 
     return 0;
 }

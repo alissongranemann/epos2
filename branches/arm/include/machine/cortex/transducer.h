@@ -40,7 +40,7 @@ public:
             data->_value = -1;
     }
 
-    static void actuate(unsigned int dev, Smart_Data<Keyboard_Sensor> * data, void * command) {}
+    static void actuate(unsigned int dev, Smart_Data<Keyboard_Sensor> * data, const Smart_Data<Keyboard_Sensor>::Value & command) {}
 };
 
 #ifdef __mmod_emote3__
@@ -60,7 +60,7 @@ public:
         data->_value = level(dev);
     }
 
-    static void actuate(unsigned int dev, Smart_Data<Water_Level_Sensor> * data, void * command) {}
+    static void actuate(unsigned int dev, Smart_Data<Water_Level_Sensor> * data, const Smart_Data<Water_Level_Sensor>::Value & command) {}
 };
 
 class Water_Turbidity_Sensor: public Hydro_Board
@@ -78,7 +78,7 @@ public:
         data->_value = turbidity(dev);
     }
 
-    static void actuate(unsigned int dev, Smart_Data<Water_Turbidity_Sensor> * data, void * command) {}
+    static void actuate(unsigned int dev, Smart_Data<Water_Turbidity_Sensor> * data, const Smart_Data<Water_Turbidity_Sensor>::Value & command) {}
 };
 
 class Water_Flow_Sensor: public Hydro_Board
@@ -96,7 +96,7 @@ public:
         data->_value = water_flow();
     }
 
-    static void actuate(unsigned int dev, Smart_Data<Water_Flow_Sensor> * data, void * command) {}
+    static void actuate(unsigned int dev, Smart_Data<Water_Flow_Sensor> * data, const Smart_Data<Water_Flow_Sensor>::Value & command) {}
 };
 
 class Pluviometer: public Hydro_Board
@@ -114,7 +114,7 @@ public:
         data->_value = rain();
     }
 
-    static void actuate(unsigned int dev, Smart_Data<Pluviometer> * data, void * command) {}
+    static void actuate(unsigned int dev, Smart_Data<Pluviometer> * data, const Smart_Data<Pluviometer>::Value & command) {}
 };
 
 class Current_Sensor: public Smart_Plug
@@ -135,8 +135,8 @@ public:
         data->_value = current(dev);
     }
 
-    static void actuate(unsigned int dev, Smart_Data<Current_Sensor> * data, void * command) {
-        act(dev, 0); // TODO
+    static void actuate(unsigned int dev, Smart_Data<Current_Sensor> * data, const Smart_Data<Current_Sensor>::Value & command) {
+        Smart_Plug::actuate(dev, command);
     }
 };
 
@@ -161,7 +161,7 @@ public:
         data->_value = adc.read();
     }
 
-    static void actuate(unsigned int dev, Smart_Data<ADC_Sensor> * data, void * command) {}
+    static void actuate(unsigned int dev, Smart_Data<ADC_Sensor> * data, const Smart_Data<ADC_Sensor>::Value & command) {}
 
     static void attach(Observer * obs) { _observed.attach(obs); }
     static void detach(Observer * obs) { _observed.detach(obs); }
@@ -196,7 +196,7 @@ public:
         data->_value = adc.read();
     }
 
-    static void actuate(unsigned int dev, Smart_Data<Temperature_Sensor> * data, void * command) {}
+    static void actuate(unsigned int dev, Smart_Data<Temperature_Sensor> * data, const Smart_Data<Temperature_Sensor>::Value & command) {}
 
     static void attach(Observer * obs) { _observed.attach(obs); }
     static void detach(Observer * obs) { _observed.detach(obs); }
@@ -234,7 +234,7 @@ public:
         data->_value = _dev[dev]->get();
     }
 
-    static void actuate(unsigned int dev, Smart_Data<GPIO_Sensor> * data, void * command) {}
+    static void actuate(unsigned int dev, Smart_Data<GPIO_Sensor> * data, const Smart_Data<GPIO_Sensor>::Value & command) {}
 
     static void attach(Observer * obs) { _observed.attach(obs); }
     static void detach(Observer * obs) { _observed.detach(obs); }

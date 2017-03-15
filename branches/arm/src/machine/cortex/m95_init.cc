@@ -30,9 +30,21 @@ M95::~M95()
     off();
 }
 
+void M95::check_timeout()
+{
+    if(TSC::time_stamp() > _init_timeout) {
+        off();
+        CPU::int_disable();
+        Machine::delay(5000000);
+        Machine::reboot();
+    }
+}
+
 void M95::on()
 {
     db<M95>(TRC) << "M95::on()" << endl;
+
+    _init_timeout = TSC::time_stamp() + 150000000ull * (TSC::frequency() / 1000000);
 
     if(_status->get()) {
         db<M95>(WRN) << "M95::on() => was already on!" << endl;
@@ -44,7 +56,8 @@ void M95::on()
     // Leave pwrkey up until status is stable at 1.
     _pwrkey->set();
     do {
-        while(!_status->get());
+        while(!_status->get())
+            check_timeout();
         Machine::delay(1000000);
     } while(!_status->get());
     _pwrkey->clear();
@@ -56,6 +69,7 @@ void M95::on()
     send_command("AT", 2);
     // Turn off echo. This could fail a few times, until the board detects the baudrate
     do {
+        check_timeout();
         const char cmd[] = "ATE0";
         send_command(cmd, strlen(cmd));
     } while(!wait_response("ATE0\r\r\nOK\r\n",300000));
@@ -63,6 +77,7 @@ void M95::on()
     db<M95>(TRC) << "M95::on(): checking SIM card" << endl;
     // Check SIM card
     do {
+        check_timeout();
         const char cmd[] = "AT+CPIN?";
         send_command(cmd, strlen(cmd));
     } while(!wait_response("+CPIN: READY\r\n\r\nOK\r\n",5000000));
@@ -70,18 +85,21 @@ void M95::on()
     db<M95>(TRC) << "M95::on(): waiting for network registration" << endl;
     // Check Network registration
     do {
+        check_timeout();
         const char cmd[] = "AT+CREG?";
         send_command(cmd, strlen(cmd));
     } while(!wait_response("+CREG: 0,1\r\n\r\nOK\r\n",5000000));
 
     // Select UART1
     do {
+        check_timeout();
         const char cmd[] = "AT+QIFGCNT=0";
         send_command(cmd, strlen(cmd));
     } while(!wait_response("OK\r\n",300000));
 
     // Enable DNS
     do {
+        check_timeout();
         const char cmd[] = "AT+QIDNSIP=1";
         send_command(cmd, strlen(cmd));
     } while(!wait_response("OK\r\n",300000));
@@ -90,6 +108,7 @@ void M95::on()
     switch(Traits<M95>::PROVIDER) {
         case Traits<M95>::CLARO: {
             do {
+                check_timeout();
                 const char cmd[] = "AT+QICSGP=1,\"g.claro.com.br\",\"claro\",\"claro\"";
                 send_command(cmd, strlen(cmd));
             } while(!wait_response("OK\r\n",300000));
@@ -110,67 +129,67 @@ void M95::on()
 
     // Startup TCP/IP with the set APN parameters
     do {
+        check_timeout();
         const char cmd[] = "AT+QIREGAPP";
         send_command(cmd, strlen(cmd));
     } while(!wait_response("OK\r\n",300000));
 
     // Wait for TCP/IP stack to get to the "IP START" state
     do {
+        check_timeout();
         const char cmd[] = "AT+QISTAT";
         send_command(cmd, strlen(cmd));
     } while(!wait_response("OK\r\n\r\nSTATE: IP START\r\n",300000));
 
     db<M95>(INF) << "M95::on(): activating GPRS. This could take up to 150s" << endl;
-    unsigned int i = 0;
     // Activate GPRS
     do {
-        if(i++ >= 30) {
-            db<M95>(WRN) << "M95::on(): Can't activate GPRS! Reseting board and retrying." << endl;
-            reset();
-            return;
-        }
+        check_timeout();
         const char cmd[] = "AT+QIACT";
         send_command(cmd, strlen(cmd));
     } while(!wait_response("OK\r\n",150000000));// {
 
     // Wait for activation to be effective
     do {
+        check_timeout();
         const char cmd[] = "AT+QISTAT";
         send_command(cmd, strlen(cmd));
     } while(!wait_response("OK\r\n\r\nSTATE: IP GPRSACT\r\n",300000));
 
     // Disable time zone change event reporting
     do {
+        check_timeout();
         const char cmd[] = "AT+CTZR=0";
         send_command(cmd, strlen(cmd));
     } while(!wait_response("OK\r\n",300000));
 
     // Enable time synchronization from GSM network (needs network support)
     do {
+        check_timeout();
         const char cmd[] = "AT+QNITZ=1";
         send_command(cmd, strlen(cmd));
     } while(!wait_response("OK\r\n",300000));
 
     // Automatically update the RTC with network time
     do {
+        check_timeout();
         const char cmd[] = "AT+CTZU=1";
         send_command(cmd, strlen(cmd));
     } while(!wait_response("OK\r\n",300000));
 
-    for(i = 0; i < 10; i++) {
+    while(true) {
+        check_timeout();
         if(now() / 1000000 < 1451606400)
             Machine::delay(1000000);
         else
             break;
     }
-    if(i >= 10) {
-        db<M95>(WRN) << "M95::on(): Can't synchronize time with the network. Reseting board and retrying." << endl;
-        reset();
-    }
 }
 
 void M95::off()
 {
+    _init_timeout = TSC::time_stamp() + 150000000ull * (TSC::frequency() / 1000000);
+
     if(!_status->get()) {
         db<M95>(WRN) << "M95::off() => was already off!" << endl;
         return;
@@ -188,7 +207,8 @@ void M95::off()
     _pwrkey->set();
     Machine::delay(1000000);
     _pwrkey->clear();
-    while(_status->get());
+    while(_status->get())
+        check_timeout();
 
     _http_data_mode = false;
     _last_send = 0;

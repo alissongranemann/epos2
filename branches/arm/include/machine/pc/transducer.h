@@ -35,7 +35,7 @@ public:
             data->_value = -1;
     }
 
-    static void actuate(unsigned int dev, Smart_Data<Keyboard_Sensor> * data, void * command) {}
+    static void actuate(unsigned int dev, Smart_Data<Keyboard_Sensor> * data, const Smart_Data<Keyboard_Sensor>::Value & command) {}
 };
 
 typedef Smart_Data<Keyboard_Sensor> Acceleration;

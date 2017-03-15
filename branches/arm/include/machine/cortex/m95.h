@@ -62,6 +62,8 @@ public:
 
     static void init(unsigned int unit);
 
+    void check_timeout();
+
     int receive(Address * src, Protocol * prot, void * data, unsigned int size) { return 0; }
     Buffer * alloc(NIC * nic, const Address & dst, const Protocol & prot, unsigned int once, unsigned int always, unsigned int payload) { return 0; }
     void free(Buffer * buf) { return; }
@@ -88,6 +90,7 @@ private:
     UART * _uart;
     bool _http_data_mode;
     TSC::Time_Stamp _last_send;
+    TSC::Time_Stamp _init_timeout;
 };
 
 __END_SYS

@@ -71,7 +71,7 @@ bool M95::wait_response(const char * expected, const RTC::Microsecond & timeout,
 
     TSC::Time_Stamp end = TSC::time_stamp() + timeout * TSC::frequency() / 1000000;
 
-    const char error[] = "ERROR\r\n";
+    const char error[] = "ERROR";
     bool ret = true;
     unsigned int i = 0;
     unsigned int j = 0;
@@ -143,7 +143,6 @@ RTC::Microsecond M95::now()
 
     // adapted from an Aplication Note by Microchip for a PIC 18 MCU
     // http://ww1.microchip.com/downloads/en/AppNotes/01412A.pdf
-    // note to self: call the legal department
 
     //Code from http://www.oryx-embedded.com/doc/date__time_8c_source.html
 

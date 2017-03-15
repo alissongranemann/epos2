@@ -96,7 +96,7 @@ public:
     Actuator(PWM * pwm) : _pwm(pwm) {}
     Actuator(GPIO * gpio) {}
 
-    void act(const Percent & duty_cycle) {
+    void actuate(const Percent & duty_cycle) {
         _pwm->duty_cycle(duty_cycle);
     }
 
@@ -110,8 +110,11 @@ public:
     Actuator(PWM * pwm){}
     Actuator(GPIO * gpio) : _gpio(gpio) {}
 
-    void act(bool on) {
-        _gpio->set(on);
+    void actuate(const Percent & data) {
+        if(data >= 50)
+            _gpio->set();
+        else
+            _gpio->clear();
     }
 
 private:
@@ -139,11 +142,11 @@ public:
         return _power_meter[dev]->average();
     }
 
-    static void act(unsigned int dev, unsigned int data) {
+    static void actuate(unsigned int dev, unsigned int data) {
         if(dev == 0)
-            _actuator0->act(data);
+            _actuator0->actuate(data);
         else if(dev == 1)
-            _actuator1->act(data);
+            _actuator1->actuate(data);
     }
 
     static void attach(Observer * obs) { _observed.attach(obs); }

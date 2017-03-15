@@ -888,7 +888,18 @@ public:
         }
 
         void advertise() { send(); }
-        void revoke() { }//_mode = DELETE; send(); } // TODO
+        void revoke() { _mode = DELETE; send(); }
+
+        template<typename Value>
+        void command(const Value & v) {
+            db<TSTP>(TRC) << "TSTP::Interested::command(v=" << v << ")" << endl;
+            Buffer * buf = alloc(sizeof(Command));
+            Command * command = new (buf->frame()->data<Command>()) Command(unit(), region());
+            memcpy(command->command<Value>(), &v, sizeof(Value));
+            marshal(buf);
+            db<TSTP>(INF) << "TSTP::Interested::command:command=" << command << " => " << (*command) << endl;
+            _nic->send(buf);
+        }
 
     private:
         void send() {

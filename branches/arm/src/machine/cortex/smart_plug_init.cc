@@ -36,11 +36,11 @@ void Smart_Plug::init()
         case Traits<Smart_Plug>::DIMMER: {
             User_Timer * t = new (SYSTEM) User_Timer(Traits<Smart_Plug>::PWM_TIMER_CHANNEL, Traits<Smart_Plug>::PWM_PERIOD, 0);
             GPIO * g = new (SYSTEM) GPIO('D', 2, GPIO::OUT); // TODO: check pins
-            _actuator0 = new (SYSTEM) Actuator0(new (SYSTEM) PWM(t, g, 50));
+            _actuator1 = new (SYSTEM) Actuator1(new (SYSTEM) PWM(t, g, 50));
         } break;
         case Traits<Smart_Plug>::SWITCH: {
             GPIO * g = new (SYSTEM) GPIO('D', 2, GPIO::OUT); // TODO: check pins
-            _actuator0 = new (SYSTEM) Actuator0(g);
+            _actuator1 = new (SYSTEM) Actuator1(g);
         } break;
         default:
             break;
