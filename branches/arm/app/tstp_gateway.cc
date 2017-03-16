@@ -23,7 +23,7 @@ int main()
     cout << "The time now is " << TSTP::now() << endl;
     cout << "I am" << (TSTP::here() == TSTP::sink() ? " " : " not ") << "the sink" << endl;
 
-    Coordinates center_sensor(10,10,10);
+    Coordinates center_sensor(10,10,0);
     Region region_sensor(center_sensor, 0, TSTP::now(), -1);
 
     cout << "I will now ask for Acceleration data from any sensor located in " << region_sensor << endl;
