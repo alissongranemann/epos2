@@ -70,6 +70,7 @@ public:
         PICC_Type type() const { return static_cast<PICC_Type>(_uid_sak[_size] & 0x7F); }
         Reg8 size() const { return _size; }
         const Reg8 * uid() const { return _uid_sak; }
+        Reg8 * uid() { return _uid_sak; }
 
         void sak(Reg8 s) { _uid_sak[_size] = s; }
         void size(unsigned int s) { assert(_size <= SIZE_MAX); _size = s; }

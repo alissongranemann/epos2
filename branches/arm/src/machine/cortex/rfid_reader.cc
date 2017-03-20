@@ -17,7 +17,7 @@ void MFRC522::initialize()
 {
     if(!_reset->get()) {
         _reset->set();
-        Machine::delay(100000); // TODO: Why delay 100000?
+        Machine::delay(100000); // According to datasheet section 8.8.2, the MFRC522 start-up delay time is the start-up time of the crystal oscilator circuit + 37.74us.
     }
     else
         reset();
@@ -41,7 +41,7 @@ void MFRC522::initialize()
 void MFRC522::reset()
 {
     write_reg(PCD_Register::COMMAND, PCD_Command::SOFT_RESET);
-    Machine::delay(100000); // TODO: Why delay 100000?
+    Machine::delay(100000); // According to datasheet section 8.8.2, the MFRC522 start-up delay time is the start-up time of the crystal oscilator circuit + 37.74us.
     while(read_reg(PCD_Register::COMMAND) & (1 << 4)); // PCD still restarting
 }
 
@@ -78,12 +78,12 @@ bool MFRC522::read_card(UID * uid, unsigned int valid_bits)
             case 1:
                 buffer[0] = MIFARE::PICC_Command::SEL_CL1;
                 uid_index = 0;
-                use_cascade_tag = valid_bits && uid->size() > 4;  // Use only when it's known that the UID has more than 4 bytes. // TODO: is this correct? shouldn't it be (valid_bits > 4) && (uid->size() > 4)  ?
+                use_cascade_tag = (valid_bits > 0) && (uid->size() > 4);  // Use only when it's known that the UID has more than 4 bytes.
             break;
             case 2:
                 buffer[0] = MIFARE::PICC_Command::SEL_CL2;
                 uid_index = 3;
-                use_cascade_tag = valid_bits && uid->size() > 7;  // Use only when it's known that the UID has more than 7 bytes. // TODO: is this correct? shouldn't it be (valid_bits > 7) && (uid->size() > 7)  ?
+                use_cascade_tag = (valid_bits > 0) && (uid->size() > 7); // Use only when it's known that the UID has more than 7 bytes.
             break;
             case 3:
                 buffer[0] = MIFARE::PICC_Command::SEL_CL3;
@@ -105,7 +105,7 @@ bool MFRC522::read_card(UID * uid, unsigned int valid_bits)
         if(use_cascade_tag)
             buffer[index++] = MIFARE::PICC_Command::CT;
 
-        unsigned int bytes_to_copy = current_level_known_bits / 8 + ((current_level_known_bits % 8) ? 1 : 0); // The number of bytes to be coppied.
+        unsigned int bytes_to_copy = current_level_known_bits / 8 + ((current_level_known_bits % 8) ? 1 : 0); // The number of bytes to be copied.
         if(bytes_to_copy) {
             unsigned int max_bytes = use_cascade_tag ? 3 : 4;  // Max of 4 bytes per level. Cascade Tag takes 1 byte.
             if(bytes_to_copy > max_bytes)
@@ -180,15 +180,11 @@ bool MFRC522::read_card(UID * uid, unsigned int valid_bits)
             }
         }
 
-        // TODO: shouldn't this be done after the checks in the if's below?
         // Copy UID bytes from buffer to uid
         index = (buffer[2] == MIFARE::PICC_Command::CT) ? 3 : 2;
         bytes_to_copy = (buffer[2] == MIFARE::PICC_Command::CT) ? 3 : 4;
-        CPU::Reg8 new_uid[UID::SIZE_MAX];
-        memcpy(new_uid, uid->uid(), uid->size());
-        for(count = 0; count < bytes_to_copy; count++)
-            new_uid[uid_index + count] = buffer[index++];
-        uid->uid(new_uid);
+        memcpy(&uid->uid()[uid_index], &buffer[index], bytes_to_copy);
+        uid->size(3 * cascade_level + 1);
 
         // Check response SAK
         if((response_length != 3) || (tx_last_bits != 0)) // SAK must have 24 bits (1 byte + CRC_A).
@@ -208,8 +204,6 @@ bool MFRC522::read_card(UID * uid, unsigned int valid_bits)
             break;
         }
     }
-
-    uid->size(3 * cascade_level + 1);
 
     return true;
 }
@@ -247,15 +241,16 @@ unsigned int MFRC522::read(unsigned int block, Block data)
         CPU::Reg8 wait_irq = 0x30;
         CPU::Reg8 buffer_size = sizeof(buffer);
         PCD_Status_Code status = communicate_with_picc(PCD_Command::TRANSCEIVE, wait_irq, buffer, 4, buffer, &buffer_size, 0, 0, true);
-        memcpy(data, buffer, 16); // TODO: shouldn't we copy only ifstatus == OK ?
-        return status == PCD_Status_Code::OK;
+        if(status == PCD_Status_Code::OK)
+            memcpy(data, buffer, 16);
+        return status;
     }
 }
 
 bool MFRC522::authenticate(unsigned int sector, const Key & key, const UID & uid)
 {
     CPU::Reg8 block;
-    block = MFRC522::block(sector);
+    block = MFRC522::key_block(sector);
 
     CPU::Reg8 cmd = key.type() == Key::TYPE_A ? MIFARE::MF_AUTH_KEY_A : MIFARE::MF_AUTH_KEY_B;
 
@@ -284,8 +279,8 @@ MFRC522::PCD_Status_Code MFRC522::crc(const void * data, unsigned int length, un
     write_reg(PCD_Register::FIFO_DATA, length, data);        // Push data to the FIFO
     write_reg(PCD_Register::COMMAND, PCD_Command::CALC_CRC); // Start calculation
 
-    unsigned int i = 500000; // TODO: Why this value?
-    for(;;) {
+    // Each loop iteration takes 7.3 us. Timeout if it takes more than 90 ms.
+    for(unsigned int i = 13000;;) {
         CPU::Reg8 n = read_reg(PCD_Register::DIV_IRQ);
         if(n & 0x04) // CRC_IRQ bit set - calculation done
             break;
@@ -320,8 +315,8 @@ MFRC522::PCD_Status_Code MFRC522::communicate_with_picc(
     if(command == PCD_Command::TRANSCEIVE)
         write_reg(PCD_Register::BIT_FRAMING, read_reg(PCD_Register::BIT_FRAMING) | 0x80); // StartSend=1, transmission of data starts
 
-    unsigned int i = 200000;
-    for(;;) {
+    // Each loop iteration takes 7.3 us. Timeout if it takes more than 90 ms.
+    for(unsigned int i = 13000;;) {
         CPU::Reg8 n = read_reg(PCD_Register::COM_IRQ);
         if(n & wait_irq) // Success interruption bit set
             break;
@@ -417,7 +412,6 @@ CPU::Reg8 MFRC522::read_reg(PCD_Register reg)
     _select->clear();
     _spi->put_data(0x80 | (reg & 0xfe));  // MSB == 1 -> read  // LSB is always 0
     _spi->get_data();
-    Machine::delay(1000); // TODO: Why delay 1000?
     _spi->put_data(0);
     CPU::Reg8 data = _spi->get_data();
     _select->set();
@@ -438,7 +432,6 @@ void MFRC522::read_reg(PCD_Register reg, CPU::Reg8 count, CPU::Reg8* values, CPU
     _spi->put_data(address);
     _spi->get_data();
     while (index < count) {
-        Machine::delay(1000); // TODO: Why delay 1000?
         if(index == 0 && rx_align) {  // Only update bit positions rx_align..7 in values[0]
             CPU::Reg8 mask = 0;
             for(CPU::Reg8 i = rx_align; i <= 7; i++)
@@ -466,7 +459,6 @@ void MFRC522::write_reg(PCD_Register reg, CPU::Reg8 value)
     _select->clear();
     _spi->put_data((reg & 0x7e)); // MSB == 0 -> write  // LSB is always 0
     _spi->get_data();
-    Machine::delay(1000); // TODO: Why delay 1000?
     _spi->put_data(value);
     _spi->get_data();
     _select->set();
@@ -480,7 +472,6 @@ void MFRC522::write_reg(PCD_Register reg, unsigned int count, const void * value
     _spi->put_data(reg & 0x7E); // MSB == 0 -> write  // LSB is always 0
     _spi->get_data();
     for(unsigned int i = 0; i < count; i++) {
-        Machine::delay(1000); // TODO: Why delay 1000?
         _spi->put_data(reinterpret_cast<const char*>(values)[i]);
         _spi->get_data();
     }

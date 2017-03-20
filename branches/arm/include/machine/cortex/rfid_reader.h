@@ -139,7 +139,7 @@ public:
             return block / 4;
         return 32 + (block - 128) / 16;
     }
-    static unsigned int block(unsigned int sector) {
+    static unsigned int key_block(unsigned int sector) {
         if(sector < 32)
             return sector * 4 + 3;
         return 128 + (sector - 32) * 16 + 15;
@@ -176,66 +176,53 @@ public:
     typedef Engine::UID UID;
     typedef Engine::Key Key;
 
-    class Card
-    {
-        friend class RFID_Reader;
-
-        static const unsigned int SECTORS = 40;
-
-    public:
-        UID & uid() { return _uid; }
-        const UID & uid() const { return _uid; }
-        Card() {}
-
-    protected:
-        const Key & key(unsigned int sector) { assert(sector < SECTORS); return _key[sector]; }
-        void key(unsigned int sector, const Key & k) { assert(sector < SECTORS); _key[sector].key(&k); }
-
-    private:
-        ~Card() {} // Call RFID_Reader.free(Card); instead
-        UID _uid;
-        Key _key[SECTORS];
-    };
-
 public:
-    RFID_Reader(SPI * spi, GPIO * select, GPIO * reset) : MFRC522(spi, select, reset) {}
+    RFID_Reader(SPI * spi, GPIO * select, GPIO * reset) : MFRC522(spi, select, reset) {
+        Engine::initialize();
+    }
 
-    Card * get() {
-        Card * c = new (SYSTEM) Card;
+    UID get() {
+        UID u;
         while(!ready_to_get());
-        read_card(&(c->_uid));
-        return c;
+        Engine::read_card(&u);
+        return u;
     }
 
-    void free(Card * c) {
-        if(select(c))
+    bool halt(UID & u) {
+        if(ready_to_put() && select(u)) {
             Engine::halt_card();
-        delete c;
+            return true;
+        }
+        return false;
     }
 
-    unsigned int put(Card * c, unsigned int block, const Block data) {
+    unsigned int put(UID & u, unsigned int block, const Block data, const Key * key = 0) {
         unsigned int ret = 0;
-        if(select(c)) {
+        if(select(u)) {
             unsigned int s = sector(block);
-            if(Engine::authenticate(s, c->key(s), c->uid()))
+            if(key) {
+                if(Engine::authenticate(s, *key, u))
+                    ret = Engine::put(block, data);
+                Engine::deauthenticate();
+            } else
                 ret = Engine::put(block, data);
-            Engine::deauthenticate();
         }
         return ret;
     }
 
-    unsigned int read(Card * c, unsigned int block, Block data) {
+    unsigned int read(UID & u, unsigned int block, Block data, const Key * key = 0) {
         unsigned int ret = 0;
-        if(select(c)) {
+        if(select(u)) {
             unsigned int s = sector(block);
-            if(Engine::authenticate(s, c->key(s), c->uid()))
+            if(key) {
+                if(Engine::authenticate(s, *key, u))
+                    ret = Engine::put(block, data);
+                Engine::deauthenticate();
+            } else
                 ret = Engine::read(block, data);
-            Engine::deauthenticate();
         }
         return ret;
     }
-
-    void key(Card * c, unsigned int block, const Key & key) { c->key(sector(block), key); }
 
     void reset() { Engine::reset(); }
 
@@ -243,9 +230,9 @@ public:
     bool ready_to_put() { return Engine::card_present(); }
 
 private:
-    bool select(Card * c) {
+    bool select(UID & u) {
         while(!ready_to_put());
-        return Engine::select(c->uid());
+        return Engine::select(u);
     }
 };
 

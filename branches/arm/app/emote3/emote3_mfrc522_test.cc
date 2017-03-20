@@ -8,15 +8,14 @@ using namespace EPOS;
 
 OStream cout;
 
-const unsigned int SECTOR = 21;
-const unsigned int BLOCK = 5;
+const unsigned int BLOCK = 21;
 
-void read(RFID_Reader & reader, RFID_Reader::Card * card, RFID_Reader::Key & key)
+void read(RFID_Reader & reader, RFID_Reader::UID & uid, const RFID_Reader::Key & key)
 {
     unsigned char data[16];
 
-    if(reader.read(card, SECTOR, data)) {
-        cout << "Sector " << SECTOR << " data:" << endl;
+    if(reader.read(uid, BLOCK, data, &key)) {
+        cout << "Block " << BLOCK << " data:" << endl;
         for(unsigned int i = 0; i < 16; i++)
             cout << hex << data[i] << " ";
         cout << endl;
@@ -24,7 +23,7 @@ void read(RFID_Reader & reader, RFID_Reader::Card * card, RFID_Reader::Key & key
         cout << "READ FAILED" << endl;
 }
 
-void write(RFID_Reader & reader, RFID_Reader::Card * card, RFID_Reader::Key & key) {
+void write(RFID_Reader & reader, RFID_Reader::UID & uid, const RFID_Reader::Key & key) {
     unsigned char data[16];
     cout << "Random generated data:" << endl;
     for(unsigned int i = 0; i < 16; i++) {
@@ -33,7 +32,7 @@ void write(RFID_Reader & reader, RFID_Reader::Card * card, RFID_Reader::Key & ke
     }
     cout << endl;
 
-    if(reader.put(card, SECTOR, data))
+    if(reader.put(uid, BLOCK, data, &key))
         cout << "Write operation done" << endl;
     else
         cout << "WRITE FAILED" << endl;
@@ -55,22 +54,20 @@ int main()
 
     while(true) {
         cout << endl;
-        RFID_Reader::Card * card = reader.get();
+        RFID_Reader::UID uid = reader.get();
 
-        if(card) {
-            cout << "UID: " << card->uid() << endl;
-            reader.key(card, BLOCK, key);
+        cout << "UID: " << uid << endl;
 
-            cout << "Using block " << BLOCK << ", sector " << SECTOR << endl;
-            cout << "Press 'w' to write or any other key to read" << endl;
+        cout << "Using block " << BLOCK << endl;
+        cout << "Press 'w' to write or any other key to read" << endl;
 
-            if(input.get() == 'w')
-                write(reader, card, key);
-            else
-                read(reader, card, key);
-        }
+        if(input.get() == 'w')
+            write(reader, uid, key);
+        else
+            read(reader, uid, key);
 
-        reader.free(card);
+        reader.halt(uid);
+
         Alarm::delay(500000);
     }
 }
