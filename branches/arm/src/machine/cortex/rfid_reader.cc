@@ -8,11 +8,33 @@
 
 __BEGIN_SYS
 
+// RFID Reader API
+
+// Class attributes
+RFID_Reader::Observed RFID_Reader::_observed;
+
+// Methods
+
+
 // MFRC522 MIFARE Reader chip from NXP
 
 // Class attributes
 
 // Methods
+MFRC522::MFRC522(SPI * spi, GPIO * select, GPIO * reset) : _spi(spi), _select(select), _reset(reset)
+{
+    _spi->disable();
+    _select->direction(GPIO::OUT);
+    _select->set();
+    _reset->direction(GPIO::INOUT);
+    _reset->clear();
+}
+
+MFRC522::~MFRC522()
+{
+    _spi->disable();
+}
+
 void MFRC522::initialize()
 {
     if(!_reset->get()) {
@@ -479,6 +501,43 @@ void MFRC522::write_reg(PCD_Register reg, unsigned int count, const void * value
     _spi->disable();
 }
 
+
+// W400 Wiegand Reader from Khomp
+
+// Class attributes
+W400 * W400::_instance;
+
+// Methods
+W400::~W400()
+{
+    _input0->int_disable();
+    _input1->int_disable();
+    if(_instance == this)
+        _instance = 0;
+}
+
+void W400::reset()
+{
+    int_disable();
+    reset_package();
+    _input0->direction(GPIO::IN);
+    _input1->direction(GPIO::IN);
+    _input0->handler(&RFID_Reader::input0_handler, GPIO::FALLING);
+    _input1->handler(&RFID_Reader::input1_handler, GPIO::RISING);
+    int_enable();
+}
+
+void W400::int_enable()
+{
+    _input0->int_enable();
+    _input1->int_enable();
+}
+
+void W400::int_disable()
+{
+    _input0->int_disable();
+    _input1->int_disable();
+}
 
 __END_SYS
 

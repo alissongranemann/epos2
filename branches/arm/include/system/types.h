@@ -121,6 +121,7 @@ class M95;
 class AT86RF;
 class GEM;
 class SPI;
+class RFID_Reader;
 
 // Components
 class System;

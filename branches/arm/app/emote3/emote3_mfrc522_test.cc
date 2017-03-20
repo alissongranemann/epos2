@@ -14,7 +14,7 @@ void read(RFID_Reader & reader, RFID_Reader::UID & uid, const RFID_Reader::Key &
 {
     unsigned char data[16];
 
-    if(reader.read(uid, BLOCK, data, &key)) {
+    if(reader.read(uid, BLOCK, data, key)) {
         cout << "Block " << BLOCK << " data:" << endl;
         for(unsigned int i = 0; i < 16; i++)
             cout << hex << data[i] << " ";
@@ -32,7 +32,7 @@ void write(RFID_Reader & reader, RFID_Reader::UID & uid, const RFID_Reader::Key 
     }
     cout << endl;
 
-    if(reader.put(uid, BLOCK, data, &key))
+    if(reader.put(uid, BLOCK, data, key))
         cout << "Write operation done" << endl;
     else
         cout << "WRITE FAILED" << endl;

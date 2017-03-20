@@ -13,8 +13,8 @@
 
 __BEGIN_SYS
 
-// MFRC522 MIFARE Reader chip from NXP
-class MFRC522: private Machine_Model
+// MFRC522 MIFARE Reader/Writer chip from NXP
+class MFRC522: private Machine_Model, public MIFARE
 {
     static const unsigned int BLOCK_SIZE = 16;
 
@@ -109,17 +109,14 @@ protected:
 
     typedef unsigned char Block[BLOCK_SIZE];
 
-    MFRC522(SPI * spi, GPIO * select, GPIO * reset) : _spi(spi), _select(select), _reset(reset) {
-        _spi->disable();
-        _select->direction(GPIO::OUT);
-        _select->set();
-        _reset->direction(GPIO::INOUT);
-        _reset->clear();
-    }
+    MFRC522(SPI * spi, GPIO * select, GPIO * reset);
+    ~MFRC522();
 
     void initialize();
     void reset();
     bool card_present();
+    bool ready_to_get() { return card_present(); }
+    bool ready_to_put() { return card_present(); }
     bool read_card(UID * uid, unsigned int valid_bits = 0);
     bool select(UID & uid) { return read_card(&uid, uid.size() * 8); }
     void halt_card();
@@ -127,11 +124,15 @@ protected:
     unsigned int read(unsigned int block, Block data);
     bool authenticate(unsigned int sector, const Key & key, const UID & UID);
 
+    void int_enable(); // Unused
+    void int_disable(); // Unused
+    static bool input0_handler(const IC::Interrupt_Id & id); // Unused
+    static bool input1_handler(const IC::Interrupt_Id & id); // Unused
+
     void deauthenticate() {
         // clear MFCrypto1On bit
         write_reg(PCD_Register::STATUS_2, read_reg(PCD_Register::STATUS_2) & (~0x08));
     }
-
 
 public:
     static unsigned int sector(unsigned int block) {
@@ -164,20 +165,178 @@ private:
     GPIO * _select, * _reset;
 };
 
-typedef MFRC522 RFID_Reader_Engine;
+// W400 Wiegand Reader from Khomp
+class W400
+{
+public:
+    typedef char Key; // Unused
+    typedef char Block[1]; // Unused
+
+    class UID
+    {
+    public:
+        UID() : _facility(0), _serial(0) {}
+        operator unsigned int() { return (_facility << 16) | _serial; }
+        UID & operator=(const unsigned int v) { _facility = v >> 16; _serial = v; return *this; }
+
+        unsigned char facility() const { return _facility; }
+        unsigned short serial() const { return _serial; }
+        void facility(unsigned char f) { _facility = f; }
+        void serial(unsigned short s) { _serial = s; }
+
+    private:
+        unsigned char _facility;
+        unsigned short _serial;
+    }__attribute__((packed));
+
+public:
+    W400(SPI * spi, GPIO * input0, GPIO * input1) :
+        _package_bit_count(0), _package_half_value(0), _package_half_parity(true), _first_half_parity_error(false), _package_serial(0), _package_facility(0), _input0(input0), _input1(input1) {
+            _instance = this;
+        }
+
+    ~W400();
+
+    void int_enable();
+    void int_disable();
+
+    void reset();
+    void initialize() { reset(); }
+    bool ready_to_get() { return _unread_card != 0; }
+    bool ready_to_put() { return true; }
+    bool read_card(UID * uid) {
+        bool ret = _unread_card;
+        if(ret) {
+            *uid = _unread_card;
+            _unread_card = 0;
+        }
+        return ret;
+    }
+    bool select(UID & uid) { return _unread_card == uid; }
+    void halt_card() { _unread_card = 0; }
+
+    unsigned int put(unsigned int block, const void * data); // Unused
+    unsigned int read(unsigned int block, void * data); // Unused
+    bool authenticate(unsigned int sector, const Key & key, const UID & UID); // Unused
+    void deauthenticate(); // Unused
+    static unsigned int sector(unsigned int block); // Unused
+    static unsigned int block(unsigned int sector); // Unused
+
+    static bool input0_handler(const IC::Interrupt_Id & id) {
+        bool ret = false;
+        if(_instance)
+            ret = _instance->handle_bit0();
+        return ret;
+    }
+
+    static bool input1_handler(const IC::Interrupt_Id & id) {
+        bool ret = false;
+        if(_instance)
+            ret = _instance->handle_bit1();
+        return ret;
+    }
+
+private:
+    bool handle_bit0() {
+        _package_half_value <<= 1;
+        _package_bit_count++;
+        return process();
+    }
+
+    bool handle_bit1() {
+        _package_half_value = (_package_half_value << 1) + 1;
+        _package_half_parity = !_package_half_parity;
+        _package_bit_count++;
+        return process();
+    }
+
+    bool process() {
+        bool ret = false;
+
+        if(_package_bit_count == 13) {
+            if(_package_half_parity) { // First half is odd parity
+                _package_facility = (_package_half_value & 0x0FF0) >> 4;
+                _package_serial = (_package_half_value & 0x0F) << 12;
+                _package_half_value = 0;
+                _package_half_parity = true;
+            } else
+                _first_half_parity_error = true;
+
+        } else if(_package_bit_count == 26) {
+            if(!_first_half_parity_error) {
+                _package_serial |= (_package_half_value & 0x01FFE) >> 1;
+                if(!_package_half_parity) { // Second half is even parity
+                    _unread_card.serial(_package_serial);
+                    _unread_card.facility(_package_facility);
+                    ret = true;
+                }
+            }
+
+            reset_package();
+
+        } else if(_package_bit_count > 26)
+            reset_package();
+
+        return ret;
+    }
+
+    void reset_package() {
+        _package_bit_count = 0;
+        _package_half_value = 0;
+        _package_half_parity = true;
+        _package_serial = 0;
+        _package_facility = 0;
+        _first_half_parity_error = false;
+    }
+
+private:
+    UID _unread_card;
+    unsigned char _package_bit_count;
+    unsigned short _package_half_value;
+    bool _package_half_parity;
+    bool _first_half_parity_error;
+    unsigned short _package_serial;
+    unsigned char _package_facility;
+
+    GPIO * _input0;
+    GPIO * _input1;
+
+    static W400 * _instance;
+};
 
 
-// MIFARE RFID Reader/Writer
-class RFID_Reader: public RFID_Reader_Common, public MIFARE, private RFID_Reader_Engine
+typedef IF<Traits<RFID_Reader>::ENGINE == Traits<RFID_Reader>::MFRC522, MFRC522, W400>::Result RFID_Reader_Engine;
+
+class RFID_Reader: public RFID_Reader_Common, private RFID_Reader_Engine
 {
     typedef RFID_Reader_Engine Engine;
 
 public:
     typedef Engine::UID UID;
     typedef Engine::Key Key;
+    typedef Engine::Block Block;
+
+    typedef _UTIL::Observer Observer;
+    typedef _UTIL::Observed Observed;
+
+    using Engine::int_enable;
+    using Engine::int_disable;
+
+    static void attach(Observer * obs) { _observed.attach(obs); }
+    static void detach(Observer * obs) { _observed.detach(obs); }
+
+    static void input0_handler(const IC::Interrupt_Id & id) {
+        if(Engine::input0_handler(id))
+            notify();
+    }
+
+    static void input1_handler(const IC::Interrupt_Id & id) {
+        if(Engine::input1_handler(id))
+            notify();
+    }
 
 public:
-    RFID_Reader(SPI * spi, GPIO * select, GPIO * reset) : MFRC522(spi, select, reset) {
+    RFID_Reader(SPI * spi, GPIO * gpio0, GPIO * gpio1) : Engine(spi, gpio0, gpio1) {
         Engine::initialize();
     }
 
@@ -196,44 +355,56 @@ public:
         return false;
     }
 
-    unsigned int put(UID & u, unsigned int block, const Block data, const Key * key = 0) {
+    unsigned int put(UID & u, unsigned int block, const Block data) {
+        unsigned int ret = 0;
+        if(select(u))
+            ret = Engine::put(block, data);
+        return ret;
+    }
+
+    unsigned int put(UID & u, unsigned int block, const Block data, const Key & key) {
         unsigned int ret = 0;
         if(select(u)) {
             unsigned int s = sector(block);
-            if(key) {
-                if(Engine::authenticate(s, *key, u))
-                    ret = Engine::put(block, data);
-                Engine::deauthenticate();
-            } else
+            if(Engine::authenticate(s, key, u))
                 ret = Engine::put(block, data);
+            Engine::deauthenticate();
         }
         return ret;
     }
 
-    unsigned int read(UID & u, unsigned int block, Block data, const Key * key = 0) {
+    unsigned int read(UID & u, unsigned int block, Block data) {
+        unsigned int ret = 0;
+        if(select(u))
+            ret = Engine::read(block, data);
+        return ret;
+    }
+
+    unsigned int read(UID & u, unsigned int block, Block data, const Key & key) {
         unsigned int ret = 0;
         if(select(u)) {
             unsigned int s = sector(block);
-            if(key) {
-                if(Engine::authenticate(s, *key, u))
-                    ret = Engine::put(block, data);
-                Engine::deauthenticate();
-            } else
-                ret = Engine::read(block, data);
+            if(Engine::authenticate(s, key, u))
+                ret = Engine::put(block, data);
+            Engine::deauthenticate();
         }
         return ret;
     }
 
     void reset() { Engine::reset(); }
 
-    bool ready_to_get() { return Engine::card_present(); }
-    bool ready_to_put() { return Engine::card_present(); }
+    bool ready_to_get() { return Engine::ready_to_get(); }
+    bool ready_to_put() { return Engine::ready_to_put(); }
 
 private:
+    static bool notify() { return _observed.notify(); }
+
     bool select(UID & u) {
         while(!ready_to_put());
         return Engine::select(u);
     }
+
+    static Observed _observed;
 };
 
 __END_SYS

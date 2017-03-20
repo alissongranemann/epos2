@@ -41,6 +41,13 @@ public:
         return *_data;
     }
 
+    void handler(const IC::Interrupt_Handler & handler, const Edge & int_edge = RISING) {
+        int_disable();
+        _handler = handler;
+        _devices[_port][_pin] = this;
+        int_enable(int_edge);
+    }
+
     void set(bool value = true) {
         assert(_direction == INOUT || _direction == OUT);
         if(_direction == INOUT) {
