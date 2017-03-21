@@ -261,7 +261,7 @@ public:
     }
 
     static void enable(const Interrupt_Id & id) {
-        if(id <= HARD_INT)
+        if(id < HARD_INT)
             return;
         IRQ i = int2irq(id);
         db<IC>(TRC) << "IC::enable(irq=" << i << ")" << endl;
@@ -279,7 +279,7 @@ public:
     }
 
     static void disable(const Interrupt_Id & id) {
-        if(id <= HARD_INT)
+        if(id < HARD_INT)
             return;
         IRQ i = int2irq(id);
         db<IC>(TRC) << "IC::disable(irq=" << i << ")" << endl;

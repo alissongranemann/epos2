@@ -5,12 +5,16 @@
 
 #include <tstp.h>
 #include <periodic_thread.h>
+#include <utility/observer.h>
 
 __BEGIN_SYS
 
-class Smart_Data_Common
+class Smart_Data_Common: public _UTIL::Observed
 {
 public:
+    typedef _UTIL::Observed Observed;
+    typedef _UTIL::Observer Observer;
+
     struct DB_Record {
         unsigned long long value;
         unsigned char error;
@@ -247,6 +251,7 @@ private:
                 _coordinates = response->origin();
                 _time = response->time();
                 db<Smart_Data>(INF) << "Smart_Data:update[R]:this=" << this << " => " << *this << endl;
+                notify();
             }
         }
         case TSTP::COMMAND: {
@@ -270,6 +275,7 @@ private:
             _responsive->time(_time);
             _responsive->respond(_time + _expiry);
         }
+        notify();
     }
 
     static int updater(unsigned int dev, Time_Offset expiry, Smart_Data * data) {
@@ -284,6 +290,8 @@ private:
                 data->_responsive->time(t);
                 data->_responsive->respond(t + expiry);
             }
+
+            data->notify();
         } while(Periodic_Thread::wait_next());
 
         return 0;

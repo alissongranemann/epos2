@@ -27,12 +27,12 @@ public:
 
 private:
     enum {              // Description                                    Type  Value after reset
-        FCTL    = 0x08, // Flash control                                  RW    0x00000004   
-        FADDR   = 0x0C, // Sets the address to be written in flash memory RW    0x00000000   
-        FWDATA  = 0x10, // Flash data                                     RW    0x00000000   
-        DIECFG0 = 0x14, // FLASH information page bit settings            RO    0xB9640580   
-        DIECFG1 = 0x18, // FLASH information page bit settings            RO    0x00000000   
-        DIECFG2 = 0x1C, // FLASH information page bit settings            RO    0x00002000   
+        FCTL    = 0x08, // Flash control                                  RW    0x00000004
+        FADDR   = 0x0C, // Sets the address to be written in flash memory RW    0x00000000
+        FWDATA  = 0x10, // Flash data                                     RW    0x00000000
+        DIECFG0 = 0x14, // FLASH information page bit settings            RO    0xB9640580
+        DIECFG1 = 0x18, // FLASH information page bit settings            RO    0x00000000
+        DIECFG2 = 0x1C, // FLASH information page bit settings            RO    0x00002000
     };
 
     // Useful bits in FCTL register
@@ -270,14 +270,14 @@ public:
             Address new_start = start;
             if(end + SIZEOF_T > SIZE)
                 new_end = DATA_ADDR + SIZEOF_T;
-            else 
+            else
                 new_end = end + SIZEOF_T;
 
             if(((end <= start) && (new_end > start)) ||
                     ((new_end < end) && ((new_end > start) || (end <= start)))) {
                 if(start + SIZEOF_T > SIZE)
                     new_start = DATA_ADDR + SIZEOF_T;
-                else 
+                else
                     new_start += start + SIZEOF_T;
             }
 

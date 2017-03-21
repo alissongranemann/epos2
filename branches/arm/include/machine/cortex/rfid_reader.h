@@ -176,8 +176,11 @@ public:
     {
     public:
         UID() : _facility(0), _serial(0) {}
-        operator unsigned int() { return (_facility << 16) | _serial; }
-        UID & operator=(const unsigned int v) { _facility = v >> 16; _serial = v; return *this; }
+        UID(unsigned int v) : _facility(v >> 16), _serial(v) {}
+
+        operator unsigned int() const { return (_facility << 16) | _serial; }
+
+        unsigned int uid() const { return *this; }
 
         unsigned char facility() const { return _facility; }
         unsigned short serial() const { return _serial; }
@@ -396,9 +399,10 @@ public:
     bool ready_to_get() { return Engine::ready_to_get(); }
     bool ready_to_put() { return Engine::ready_to_put(); }
 
-private:
+protected:
     static bool notify() { return _observed.notify(); }
 
+private:
     bool select(UID & u) {
         while(!ready_to_put());
         return Engine::select(u);

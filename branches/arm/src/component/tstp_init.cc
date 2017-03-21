@@ -74,12 +74,12 @@ void TSTP::Locator::bootstrap()
     //    _here = Coordinates(10-730,-10-80, 0);
     //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x1a\x84\x0d\x06", 8)) // Router 1 (corridor, green)
     //    _here = Coordinates(-225,40,0);
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x65\x84\x0d\x06", 8)) // Router 2 (corridor, blue)
-    //    _here = Coordinates(-225,42,0);
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xb0\x0e\x16\x06", 8)) // Router 2
-    //    _here = Coordinates(505-730,20-80,10);
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xb7\x82\x0d\x06", 8)) // Router 3 (door)
+    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x65\x84\x0d\x06", 8)) // Router 2 (main door)
+    //    _here = Coordinates(-210, 120, 140);
+    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xb7\x82\x0d\x06", 8)) // Router 3 (Guto's door)
     //    _here = Coordinates(-270, -110, 160);
+    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x46\x5c\x3a\x06", 8)) // Door
+    //    _here = Coordinates(-200, 150, 200);
 
     // SSB
     //if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x0b\x0f\x16\x06", 8)) { // Test Sink
