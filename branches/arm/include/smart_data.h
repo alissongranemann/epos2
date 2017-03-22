@@ -312,6 +312,42 @@ private:
     Responsive * _responsive;
 };
 
+template<typename Destination, typename Transform, typename ...Sources>
+class Actuator: public Smart_Data_Common::Observer
+{
+public:
+    Actuator(Destination * d, Transform * a, Sources * ... s)
+        : _destination(d), _transform(a), _sources{s...}
+    {
+        attach(s...);
+    }
+    ~Actuator() {
+        unsigned int index = 0;
+        detach((reinterpret_cast<Sources*>(_sources[index++]))...);
+    }
+
+    void update(Smart_Data_Common::Observed * obs) {
+        unsigned int index = 0;
+        _transform->apply(_destination, (reinterpret_cast<Sources*>(_sources[index++]))...);
+    }
+
+private:
+    template<typename T, typename ...U>
+    void attach(T * t, U * ... u) { t->attach(this); attach(u...); }
+    template<typename T>
+    void attach(T * t) { t->attach(this); }
+
+    template<typename T, typename ...U>
+    void detach(T * t, U * ... u) { t->detach(this); detach(u...); }
+    template<typename T>
+    void detach(T * t) { t->detach(this); }
+
+private:
+    Destination * _destination;
+    Transform * _transform;
+    void * _sources[sizeof...(Sources)];
+};
+
 __END_SYS
 
 #endif

@@ -508,6 +508,10 @@ void TSTP::update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf)
     }
 
     Packet * packet = buf->frame()->data<Packet>();
+    
+    if(packet->time() > now())
+        return;
+
     switch(packet->type()) {
     case INTEREST: {
         Interest * interest = reinterpret_cast<Interest *>(packet);

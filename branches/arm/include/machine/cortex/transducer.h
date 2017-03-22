@@ -469,6 +469,43 @@ typedef Smart_Data<Water_Turbidity_Sensor> Water_Turbidity;
 typedef Smart_Data<Pluviometer> Rain;
 typedef Smart_Data<Door_Sensor> Door;
 
+
+// Transforms
+
+template<typename T>
+class Percent_Transform
+{
+public:
+    Percent_Transform(typename T::Value min, typename T::Value max) : _min(min), _step((max - min) / 100) {}
+
+    template<typename U>
+    void apply(U * result, T * source) {
+        *result = (*source - _min) / _step;
+    }
+
+private:
+    typename T::Value _min;
+    typename T::Value _step;
+};
+
+class Average_Transform
+{
+public:
+    Average_Transform() {}
+
+    template<typename T, typename ...U>
+    void apply(T * result, U * ... sources) {
+        *result = sum<T::Value, U...>((*sources)...) / sizeof...(U);
+    }
+
+private:
+    template<typename T, typename U, typename ...V>
+    T sum(const U & s0, const V & ... s) { return s0 + sum<T, V...>(s...); }
+
+    template<typename T, typename U>
+    T sum(const U & s) { return s; }
+};
+
 #endif
 
 typedef Smart_Data<Keyboard_Sensor> Acceleration;

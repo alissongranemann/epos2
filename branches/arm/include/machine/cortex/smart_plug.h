@@ -91,10 +91,10 @@ private:
 };
 
 template<bool dimmer = true>
-class Actuator {
+class _Smart_Plug_Actuator {
 public:
-    Actuator(PWM * pwm) : _pwm(pwm) {}
-    Actuator(GPIO * gpio) {}
+    _Smart_Plug_Actuator(PWM * pwm) : _pwm(pwm) {}
+    _Smart_Plug_Actuator(GPIO * gpio) {}
 
     void actuate(const Percent & duty_cycle) {
         _pwm->duty_cycle(duty_cycle);
@@ -105,10 +105,10 @@ private:
 };
 
 template<>
-class Actuator<false> {
+class _Smart_Plug_Actuator<false> {
 public:
-    Actuator(PWM * pwm){}
-    Actuator(GPIO * gpio) : _gpio(gpio) {}
+    _Smart_Plug_Actuator(PWM * pwm){}
+    _Smart_Plug_Actuator(GPIO * gpio) : _gpio(gpio) {}
 
     void actuate(const Percent & data) {
         if(data >= 50)
@@ -131,8 +131,8 @@ public:
     typedef _UTIL::Observer Observer;
     typedef _UTIL::Observed Observed;
 
-    typedef Actuator<Traits<Smart_Plug>::P1_ACTUATOR == Traits<Smart_Plug>::DIMMER> Actuator0;
-    typedef Actuator<Traits<Smart_Plug>::P2_ACTUATOR == Traits<Smart_Plug>::DIMMER> Actuator1;
+    typedef _Smart_Plug_Actuator<Traits<Smart_Plug>::P1_ACTUATOR == Traits<Smart_Plug>::DIMMER> Actuator0;
+    typedef _Smart_Plug_Actuator<Traits<Smart_Plug>::P2_ACTUATOR == Traits<Smart_Plug>::DIMMER> Actuator1;
 
 public:
     Smart_Plug() {}

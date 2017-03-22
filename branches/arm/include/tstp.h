@@ -325,7 +325,7 @@ public:
             I32 = 0 << 29, // Value is an integral number stored in the 32 last significant bits of a 32-bit big-endian integer.
             I64 = 1 << 29, // Value is an integral number stored in the 64 last significant bits of a 64-bit big-endian integer.
             F32 = 2 << 29, // Value is a real number stored as an IEEE 754 binary32 big-endian floating point.
-            D64 = 3 << 29, // Value is a real number stored as an IEEE 754 binary64 big-endian doulbe precision floating point.
+            D64 = 3 << 29, // Value is a real number stored as an IEEE 754 binary64 big-endian double precision floating point.
             NUM = D64      // AND mask to select NUM bits
         };
 
