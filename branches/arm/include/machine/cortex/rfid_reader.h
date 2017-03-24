@@ -345,15 +345,19 @@ public:
 
     UID get() {
         UID u;
-        while(!ready_to_get());
-        Engine::read_card(&u);
-        return u;
+        while (true) {
+            while(!ready_to_get());
+            if (Engine::read_card(&u))
+                return u;
+        }
     }
 
     bool halt(UID & u) {
-        if(ready_to_put() && select(u)) {
-            Engine::halt_card();
-            return true;
+        for (unsigned int i = 0; i < 2; i++) {
+            if(ready_to_put() && Engine::select(u)) {
+                Engine::halt_card();
+                return true;
+            }
         }
         return false;
     }
@@ -404,7 +408,7 @@ protected:
 
 private:
     bool select(UID & u) {
-        while(!ready_to_put());
+        while(!ready_to_get());
         return Engine::select(u);
     }
 

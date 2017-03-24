@@ -206,7 +206,6 @@ bool MFRC522::read_card(UID * uid, unsigned int valid_bits)
         index = (buffer[2] == MIFARE::PICC_Command::CT) ? 3 : 2;
         bytes_to_copy = (buffer[2] == MIFARE::PICC_Command::CT) ? 3 : 4;
         memcpy(&uid->uid()[uid_index], &buffer[index], bytes_to_copy);
-        uid->size(3 * cascade_level + 1);
 
         // Check response SAK
         if((response_length != 3) || (tx_last_bits != 0)) // SAK must have 24 bits (1 byte + CRC_A).
@@ -222,6 +221,7 @@ bool MFRC522::read_card(UID * uid, unsigned int valid_bits)
         if(response_buffer[0] & 0x04) // Cascade bit set - UID not ready
             cascade_level++;
         else {
+            uid->size(3 * cascade_level + 1);
             uid->sak(response_buffer[0]);
             break;
         }
@@ -265,7 +265,7 @@ unsigned int MFRC522::read(unsigned int block, Block data)
         PCD_Status_Code status = communicate_with_picc(PCD_Command::TRANSCEIVE, wait_irq, buffer, 4, buffer, &buffer_size, 0, 0, true);
         if(status == PCD_Status_Code::OK)
             memcpy(data, buffer, 16);
-        return status;
+        return status == PCD_Status_Code::OK;
     }
 }
 
