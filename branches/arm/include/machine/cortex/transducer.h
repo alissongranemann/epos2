@@ -18,12 +18,10 @@
 
 __BEGIN_SYS
 
-typedef TSTP::Region Region;
-typedef TSTP::Coordinates Coordinates;
-
 enum CUSTOM_UNITS
 {
-    DOOR = TSTP::Unit::DIR | 1,
+    UNIT_RFID = TSTP::Unit::DIGITAL | 1,
+    UNIT_SWITCH = TSTP::Unit::DIGITAL | 2,
 };
 
 class Keyboard_Sensor: public Keyboard
@@ -222,7 +220,7 @@ private:
 class GPIO_Sensor // TODO
 {
 public:
-    static const unsigned int UNIT = TSTP::Unit::DIGITAL + 1;
+    static const unsigned int UNIT = CUSTOM_UNITS::UNIT_SWITCH;
     static const unsigned int NUM = TSTP::Unit::I32;
     static const int ERROR = 0; // Unknown
 
@@ -266,7 +264,7 @@ class Door_Sensor: public RFID_Reader
     static const unsigned int DOOR_OPEN_TIME = 30 * 1000000;
 
 public:
-    static const unsigned int UNIT = CUSTOM_UNITS::DOOR;
+    static const unsigned int UNIT = CUSTOM_UNITS::UNIT_RFID;
     static const unsigned int NUM = TSTP::Unit::I32;
     static const int ERROR = 0; // Unknown
 
@@ -469,42 +467,6 @@ typedef Smart_Data<Water_Turbidity_Sensor> Water_Turbidity;
 typedef Smart_Data<Pluviometer> Rain;
 typedef Smart_Data<Door_Sensor> Door;
 
-
-// Transforms
-
-template<typename T>
-class Percent_Transform
-{
-public:
-    Percent_Transform(typename T::Value min, typename T::Value max) : _min(min), _step((max - min) / 100) {}
-
-    template<typename U>
-    void apply(U * result, T * source) {
-        *result = (*source - _min) / _step;
-    }
-
-private:
-    typename T::Value _min;
-    typename T::Value _step;
-};
-
-class Average_Transform
-{
-public:
-    Average_Transform() {}
-
-    template<typename T, typename ...U>
-    void apply(T * result, U * ... sources) {
-        *result = sum<T::Value, U...>((*sources)...) / sizeof...(U);
-    }
-
-private:
-    template<typename T, typename U, typename ...V>
-    T sum(const U & s0, const V & ... s) { return s0 + sum<T, V...>(s...); }
-
-    template<typename T, typename U>
-    T sum(const U & s) { return s; }
-};
 
 #endif
 

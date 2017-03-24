@@ -312,6 +312,63 @@ private:
     Responsive * _responsive;
 };
 
+
+// Smart Data Transform and Aggregation functions
+
+template<typename T>
+class Percent_Transform
+{
+public:
+    Percent_Transform(typename T::Value min, typename T::Value max) : _min(min), _step((max - min) / 100) {}
+
+    template<typename U>
+    void apply(U * result, T * source) {
+        typename T::Value v = *source;
+        if(v < _min)
+            *result = 0;
+        else
+            *result = (v - _min) / _step;
+    }
+
+private:
+    typename T::Value _min;
+    typename T::Value _step;
+};
+
+class Sum_Transform
+{
+public:
+    Sum_Transform() {}
+
+    template<typename T, typename ...U>
+    void apply(T * result, U * ... sources) {
+        *result = sum<T::Value, U...>((*sources)...);
+    }
+
+private:
+    template<typename T, typename U, typename ...V>
+    T sum(const U & s0, const V & ... s) { return s0 + sum<T, V...>(s...); }
+
+    template<typename T, typename U>
+    T sum(const U & s) { return s; }
+};
+
+class Average_Transform: private Sum_Transform
+{
+public:
+    Average_Transform() {}
+
+    template<typename T, typename ...U>
+    void apply(T * result, U * ... sources) {
+        typename T::Value r;
+        Sum_Transform::apply(&r, sources...);
+        *result = r / sizeof...(U);
+    }
+};
+
+
+// Smart Data Actuator
+
 template<typename Destination, typename Transform, typename ...Sources>
 class Actuator: public Smart_Data_Common::Observer
 {

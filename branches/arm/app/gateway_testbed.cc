@@ -9,10 +9,16 @@
 
 using namespace EPOS;
 
+// TODO
+Door_Sensor::Observed Door_Sensor::_observed;
+Door_Sensor * Door_Sensor::_dev[Door_Sensor::MAX_DEVICES];
+
 IF<Traits<USB>::enabled, USB, UART>::Result io;
 
 typedef Smart_Data_Common::DB_Series DB_Series;
 typedef Smart_Data_Common::DB_Record DB_Record;
+typedef TSTP::Coordinates Coordinates;
+typedef TSTP::Region Region;
 
 const unsigned int INTEREST_PERIOD = 1 * 60 * 1000000;
 const unsigned int INTEREST_EXPIRY = 2 * INTEREST_PERIOD;
@@ -50,7 +56,7 @@ private:
     T * _data;
 };
 
-class Door_Aggregator
+class Door_Transform
 {
 public:
     void apply(Door * source, Door * destination) {
@@ -155,12 +161,14 @@ int main()
     print(data_door0.db_series());
 
 
-    // Event-driven actuators
-    Percent_Transform<Luminous_Intensity> lights1_transform(683, 1833);
-    Actuator<Current, Percent_Transform<Luminous_Intensity>, Luminous_Intensity> lights1_actuator(&data_lights1, &lights1_transform, &data_lux0);
+    // Data transforms and aggregators
+    Percent_Transform<Luminous_Intensity> lights1_transform(150, 1833);
+    Door_Transform door0_transform;
 
-    Door_Aggregator door_aggregator;
-    Actuator<Door, Door_Aggregator, Door> door_actuator(&data_door0, &door_aggregator, &data_door0);
+
+    // Event-driven actuators
+    Actuator<Current, Percent_Transform<Luminous_Intensity>, Luminous_Intensity> lights1_actuator(&data_lights1, &lights1_transform, &data_lux0);
+    Actuator<Door, Door_Transform, Door> door_actuator(&data_door0, &door0_transform, &data_door0);
 
 
     // Printers to output received messages to serial
@@ -172,10 +180,10 @@ int main()
     Printer<Current> p7(&data_outlet1);
     Printer<Current> p8(&data_lights1);
     Printer<Luminous_Intensity> p9(&data_lux0);
-    // Door_Aggregator already prints Door messages
+    // Door_Transform already prints Door messages
 
 
-    // And we're done!
+    // And we're done! TSTP will do all the work for us.
     Thread::self()->suspend();
 
     return 0;

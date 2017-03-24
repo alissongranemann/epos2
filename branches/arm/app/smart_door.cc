@@ -6,6 +6,10 @@ using namespace EPOS;
 
 OStream cout;
 
+// TODO
+Door_Sensor::Observed Door_Sensor::_observed;
+Door_Sensor * Door_Sensor::_dev[Door_Sensor::MAX_DEVICES];
+
 int main()
 {
     cout << "Smart Door" << endl;
