@@ -137,7 +137,7 @@ template<> struct Traits<Scratchpad>: public Traits<Machine_Common>
 template<> struct Traits<RFID_Reader>: public Traits<Machine_Common>
 {
     enum {MFRC522, W400};
-    static const int ENGINE = W400;
+    static const int ENGINE = MFRC522;
 };
 
 template<> struct Traits<NIC>: public Traits<Machine_Common>
