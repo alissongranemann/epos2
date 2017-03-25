@@ -77,6 +77,20 @@ public:
         void uid(const void * u, unsigned int s) { size(s); memcpy(_uid_sak, u, _size); }
         void uid(const void * u) { memcpy(_uid_sak, u, _size); }
 
+        operator unsigned int() const {
+            unsigned int ret = 0;
+            for(unsigned int i = 0; i < SIZE_MAX; i++)
+                ret ^= _uid_sak[i] << ((i % sizeof(unsigned int)) * 8);
+            return ret;
+        }
+
+        operator unsigned long long() const { 
+            unsigned long long ret = 0;
+            for(unsigned int i = 0; i < SIZE_MAX; i++)
+                ret ^= _uid_sak[i] << ((i % sizeof(unsigned long long)) * 8);
+            return ret;
+        }
+
         friend Debug & operator<<(Debug & db, const UID & u) {
             db << "{s=" << u._size << ",u=";
             db << hex << u._uid_sak[0];

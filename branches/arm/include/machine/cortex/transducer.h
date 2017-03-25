@@ -217,8 +217,10 @@ private:
     static Observed _observed;
 };
 
-class GPIO_Sensor // TODO
+class Switch_Sensor: public GPIO
 {
+    static const unsigned int MAX_DEVICES = 8;
+
 public:
     static const unsigned int UNIT = CUSTOM_UNITS::UNIT_SWITCH;
     static const unsigned int NUM = TSTP::Unit::I32;
@@ -231,23 +233,34 @@ public:
     typedef _UTIL::Observed Observed;
 
 public:
-    GPIO_Sensor() {}
-
-    GPIO_Sensor(unsigned int dev, char port, unsigned int pin) {
-        _dev[dev] = new GPIO(port, pin, GPIO::IN, GPIO::Pull::UP, &int_handler, GPIO::Edge::BOTH);
+    Switch_Sensor(unsigned int dev, char port, unsigned int pin, const GPIO::Direction & dir, const GPIO::Pull & p = GPIO::UP)
+    : GPIO(port, pin, dir, p) {
+        assert(dev < MAX_DEVICES);
+        _dev[dev] = this;
     }
 
-    static void sense(unsigned int dev, Smart_Data<GPIO_Sensor> * data) {
+    Switch_Sensor(unsigned int dev, char port, unsigned int pin, const GPIO::Direction & dir, const GPIO::Pull & p, const GPIO::Edge & int_edge)
+    : GPIO(port, pin, dir, p, &int_handler, int_edge) {
+        assert(dev < MAX_DEVICES);
+        _dev[dev] = this;
+    }
+
+    static void sense(unsigned int dev, Smart_Data<Switch_Sensor> * data) {
+        assert(dev < MAX_DEVICES);
         data->_value = _dev[dev]->get();
     }
 
-    static void actuate(unsigned int dev, Smart_Data<GPIO_Sensor> * data, const Smart_Data<GPIO_Sensor>::Value & command) {}
+    static void actuate(unsigned int dev, Smart_Data<Switch_Sensor> * data, const Smart_Data<Switch_Sensor>::Value & command) {
+        assert(dev < MAX_DEVICES);
+        _dev[dev]->set(command);
+        data->_value = command;
+    }
 
     static void attach(Observer * obs) { _observed.attach(obs); }
     static void detach(Observer * obs) { _observed.detach(obs); }
 
 private:
-    static void int_handler(const unsigned int & id) { notify(); }
+    static void int_handler(const IC::Interrupt_Id & id) { notify(); }
 
     static bool notify() { return _observed.notify(); }
 
@@ -255,13 +268,12 @@ private:
 
 private:
     static Observed _observed;
-    static GPIO * _dev[32];
+    static Switch_Sensor * _dev[MAX_DEVICES];
 };
 
-class Door_Sensor: public RFID_Reader
+class RFID_Sensor
 {
     static const unsigned int MAX_DEVICES = 8;
-    static const unsigned int DOOR_OPEN_TIME = 30 * 1000000;
 
 public:
     static const unsigned int UNIT = CUSTOM_UNITS::UNIT_RFID;
@@ -286,7 +298,8 @@ public:
 
         Data() : _code(0) {}
         Data(unsigned int v) : RFID_Reader::UID(v >> 8), _code(v) {}
-        Data(const RFID_Reader::UID & u, unsigned char code = 0) : RFID_Reader::UID(u), _code(code) {}
+        Data(const RFID_Reader::UID & u) : RFID_Reader::UID(u) {}
+        Data(const RFID_Reader::UID & u, unsigned char code) : RFID_Reader::UID(u), _code(code) {}
 
         operator unsigned int() const {
             unsigned int i = uid();
@@ -305,167 +318,57 @@ public:
         unsigned char _code;
     }__attribute__((packed));
 
-    Door_Sensor(unsigned int dev, GPIO * door_gpio, GPIO * button, SPI * reader_spi, GPIO * reader_gpio0, GPIO * reader_gpio1)
-    : RFID_Reader(reader_spi, reader_gpio0, reader_gpio1), _button_pressed(false), _door_control_gpio(door_gpio), _button(button),
-      _door_control_condition(), _door_control_thread(&door_control, &_door_control_condition, door_gpio) {
+    RFID_Sensor(unsigned int dev, SPI * reader_spi, GPIO * reader_gpio0, GPIO * reader_gpio1)
+    : _device(reader_spi, reader_gpio0, reader_gpio1)
+    {
         assert(dev < MAX_DEVICES);
         _dev[dev] = this;
-        _door_control_gpio->set();
-
-        _button->direction(GPIO::IN);
-        _button->handler(&button_handler, GPIO::FALLING);
     }
 
-    ~Door_Sensor() {
-        _button->int_disable();
+    ~RFID_Sensor() {
         for(unsigned int i = 0; i < MAX_DEVICES; i++)
             if(_dev[i] == this)
                 _dev[i] = 0;
     }
 
-    static void button_handler(const IC::Interrupt_Id & id) {
-        for(unsigned int i = 0; i < MAX_DEVICES; i++) // TODO
-            if(_dev[i])
-                _dev[i]->button();
-    }
-
-    static void sense(unsigned int dev, Smart_Data<Door_Sensor> * data) {
+    static void sense(unsigned int dev, Smart_Data<RFID_Sensor> * data) {
         assert(dev < MAX_DEVICES);
         if(_dev[dev])
             _dev[dev]->sense(data);
     }
 
-    static void actuate(unsigned int dev, Smart_Data<Door_Sensor> * data, const Smart_Data<Door_Sensor>::Value & command) {
-        assert(dev < MAX_DEVICES);
-        if(_dev[dev])
-            _dev[dev]->actuate(data, command);
+    static void actuate(unsigned int dev, Smart_Data<RFID_Sensor> * data, const Smart_Data<RFID_Sensor>::Value & command) {
+        data->_value = command;
     }
+
+    static void attach(Observer * obs) { RFID_Reader::attach(obs); }
+    static void detach(Observer * obs) { RFID_Reader::detach(obs); }
 
 private:
-    static int door_control(Condition * condition, GPIO * gpio) {
-        while(true) {
-            condition->wait();
-            gpio->set();
-            Alarm::delay(DOOR_OPEN_TIME);
-            gpio->clear();
-        }
-        return 0;
-    }
-
-    void button() {
-        _button_pressed = true;
-        _door_control_gpio->set();
-        notify();
-    }
-
-    void sense(Smart_Data<Door_Sensor> * data) {
-        if(_button_pressed) {
-            _button_pressed = false;
-            Data d(1, Data::Code::AUTHORIZED | Data::Code::OPEN_NOW);
-            data->_value = d;
-            _door_control_condition.signal();
-        } else if(RFID_Reader::ready_to_get()) {
-            RFID_Reader::UID id = RFID_Reader::get();
-            Data d(id, code(id));
-            data->_value = d;
-
-            if(d.authorized())
-                _door_control_condition.signal();
+    void sense(Smart_Data<RFID_Sensor> * data) {
+        if(_device.ready_to_get()) {
+            Data id_with_code = _device.get();
+            data->_value = id_with_code;
         } else
             data->_value = 0;
     }
 
-    void actuate(Smart_Data<Door_Sensor> * data, const Smart_Data<Door_Sensor>::Value & command) {
-        Data d = command;
-        if(d.open())
-            _door_control_condition.signal();
-
-        unsigned int end = list_size();
-        for(unsigned int i = 0; i < end; i++) {
-            Data d2 = read(i);
-            if(d.uid() == d2.uid()) {
-                if(d.code() != d2.code())
-                    update(d, i);
-                return;
-            }
-        }
-
-        if(d.authorized())
-            push(d, end);
-    }
-
-    unsigned char code(const RFID_Reader::UID & u) {
-        for(unsigned int i = 0; i < list_size(); i++) {
-            Data d = read(i);
-            if(d.uid() == u)
-                return d.code();
-        }
-
-        return Data::Code::DENIED;
-    }
-
-    unsigned int list_size() {
-        unsigned int ret;
-        Persistent_Storage::read(0, &ret, sizeof(unsigned int));
-        if(ret > FLASH_LIMIT) {
-            ret = 0;
-            Persistent_Storage::write(0, &ret, sizeof(unsigned int));
-        }
-        return ret;
-    }
-
-    Data read(unsigned int flash_block) {
-        Data d;
-        Persistent_Storage::read(sizeof(Persistent_Storage::Word) + flash_block * SIZE_ALIGNED, &d, sizeof(Data));
-        return d;
-    }
-
-    void update(const Data & d, unsigned int flash_block) {
-        Persistent_Storage::write(sizeof(Persistent_Storage::Word) + flash_block * SIZE_ALIGNED, &d, sizeof(Data));
-    }
-
-    unsigned int push(const Data & d, unsigned int flash_block) {
-        bool pushed = true;
-        unsigned int addr = sizeof(Persistent_Storage::Word) + flash_block * SIZE_ALIGNED;
-        if(addr > FLASH_LIMIT) {
-            flash_block = Random::random() % FLASH_LIMIT;
-            addr = sizeof(Persistent_Storage::Word) + flash_block * SIZE_ALIGNED;
-            pushed = false;
-        }
-
-        Persistent_Storage::write(addr, &d, sizeof(Data));
-
-        if(pushed) {
-            unsigned int b = flash_block + 1;
-            Persistent_Storage::write(0, &b, sizeof(unsigned int));
-        }
-
-        return flash_block;
-    }
-
 private:
-    static const unsigned int SIZE_ALIGNED = (((sizeof(Data) + sizeof(Persistent_Storage::Word) - 1) / sizeof(Persistent_Storage::Word)) * sizeof(Persistent_Storage::Word));
-    static const unsigned int FLASH_LIMIT = Persistent_Storage::SIZE / SIZE_ALIGNED - 1;
-
-private:
-    bool _button_pressed;
-    GPIO * _door_control_gpio;
-    GPIO * _button;
-    Condition _door_control_condition;
-    Thread _door_control_thread;
+    RFID_Reader _device;
     static Observed _observed;
-    static Door_Sensor * _dev[MAX_DEVICES];
+    static RFID_Sensor * _dev[MAX_DEVICES];
 };
 
 typedef Smart_Data<Current_Sensor> Current;
 typedef Smart_Data<ADC_Sensor> Luminous_Intensity;
 typedef Smart_Data<Temperature_Sensor> Temperature;
-typedef Smart_Data<GPIO_Sensor> Presence;
 typedef Smart_Data<Water_Flow_Sensor> Water_Flow;
 typedef Smart_Data<Water_Level_Sensor> Water_Level;
 typedef Smart_Data<Water_Turbidity_Sensor> Water_Turbidity;
 typedef Smart_Data<Pluviometer> Rain;
-typedef Smart_Data<Door_Sensor> Door;
+typedef Smart_Data<RFID_Sensor> RFID;
+typedef Smart_Data<Switch_Sensor> Presence;
+typedef Smart_Data<Switch_Sensor> Switch;
 
 
 #endif

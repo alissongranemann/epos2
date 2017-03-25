@@ -10,8 +10,10 @@
 using namespace EPOS;
 
 // TODO
-Door_Sensor::Observed Door_Sensor::_observed;
-Door_Sensor * Door_Sensor::_dev[Door_Sensor::MAX_DEVICES];
+RFID_Sensor::Observed RFID_Sensor::_observed;
+RFID_Sensor * RFID_Sensor::_dev[RFID_Sensor::MAX_DEVICES];
+Switch_Sensor::Observed Switch_Sensor::_observed;
+Switch_Sensor * Switch_Sensor::_dev[Switch_Sensor::MAX_DEVICES];
 
 IF<Traits<USB>::enabled, USB, UART>::Result io;
 
@@ -59,30 +61,30 @@ private:
 class Door_Transform
 {
 public:
-    void apply(Door * source, Door * destination) {
+    void apply(RFID * destination, RFID * source) {
+        unsigned int d = *source;
         DB_Record r = source->db_record();
+        RFID_Sensor::Data data = d;
 
-        Door_Sensor::Data d = r.value;
-
-        if(d.authorized()) {
-            if(!authorize(d.uid())) {
-                d.authorized(false);
-                d.open(false);
-                *destination = d;
+        if(data.authorized()) {
+            if(!authorize(data.uid())) {
+                data.authorized(false);
+                data.open(false);
+                *destination = data;
             }
         } else {
-            if(authorize(d.uid())) {
-                d.authorized(true);
-                d.open(true);
+            if(authorize(data.uid())) {
+                data.authorized(true);
+                data.open(true);
                 *destination = d;
             }
         }
 
-        r.value = d.uid();
+        r.value = data.uid();
         print(r);
     }
 
-    bool authorize(const Door_Sensor::UID & u) {
+    bool authorize(const RFID_Reader::UID & u) {
         return u != 0; // Accept everyone
     }
 };
@@ -146,7 +148,8 @@ int main()
     Current data_outlet1(region_outlet1, INTEREST_EXPIRY, INTEREST_PERIOD);
     Current data_lights1(region_lights1, INTEREST_EXPIRY, INTEREST_PERIOD);
     Luminous_Intensity data_lux0(region_lux0, INTEREST_EXPIRY, INTEREST_PERIOD);
-    Door data_door0(region_door0, INTEREST_EXPIRY, 0);
+    RFID data_rfid0(region_door0, INTEREST_EXPIRY, 0);
+    Switch data_door0(region_door0, INTEREST_EXPIRY, 12500000);
 
 
     // Output interests to serial
@@ -158,17 +161,18 @@ int main()
     print(data_outlet1.db_series());
     print(data_lights1.db_series());
     print(data_lux0.db_series());
+    print(data_rfid0.db_series());
     print(data_door0.db_series());
 
 
     // Data transforms and aggregators
-    Percent_Transform<Luminous_Intensity> lights1_transform(150, 1833);
-    Door_Transform door0_transform;
+    Inverse_Percent_Transform<Luminous_Intensity> lux0_transform(150, 1833);
+    Door_Transform rfid0_transform;
 
 
     // Event-driven actuators
-    Actuator<Current, Percent_Transform<Luminous_Intensity>, Luminous_Intensity> lights1_actuator(&data_lights1, &lights1_transform, &data_lux0);
-    Actuator<Door, Door_Transform, Door> door_actuator(&data_door0, &door0_transform, &data_door0);
+    Actuator<Current, Inverse_Percent_Transform<Luminous_Intensity>, Luminous_Intensity> lights1_actuator(&data_lights1, &lux0_transform, &data_lux0);
+    Actuator<RFID, Door_Transform, RFID> door_actuator(&data_rfid0, &rfid0_transform, &data_rfid0);
 
 
     // Printers to output received messages to serial
@@ -180,7 +184,8 @@ int main()
     Printer<Current> p7(&data_outlet1);
     Printer<Current> p8(&data_lights1);
     Printer<Luminous_Intensity> p9(&data_lux0);
-    // Door_Transform already prints Door messages
+    // Door_Transform already prints RFID messages
+    Printer<Switch> p10(&data_door0);
 
 
     // And we're done! TSTP will do all the work for us.

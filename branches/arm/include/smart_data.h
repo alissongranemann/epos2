@@ -175,11 +175,8 @@ public:
     }
 
     Smart_Data & operator=(const Value & v) {
-        if(_device != REMOTE) {
+        if(_device != REMOTE)
             Transducer::actuate(_device, this, v);
-            Transducer::sense(_device, this);
-            _time = TSTP::now();
-        }
         if(_interested)
             _interested->command(v);
         return *this;
@@ -258,6 +255,7 @@ private:
             if(_mode & COMMANDED) {
                 TSTP::Command * command = reinterpret_cast<TSTP::Command *>(packet);
                 *this = *(command->command<Value>());
+                _coordinates = command->origin();
             }
         } break;
         default:
@@ -270,12 +268,12 @@ private:
         Transducer::sense(_device, this);
         db<Smart_Data>(TRC) << "Smart_Data::update(this=" << this << ",exp=" << _expiry << ") => " << _value << endl;
         db<Smart_Data>(TRC) << "Smart_Data::update:responsive=" << _responsive << " => " << *reinterpret_cast<TSTP::Response *>(_responsive) << endl;
+        notify();
         if(_responsive) {
             _responsive->value(_value);
             _responsive->time(_time);
             _responsive->respond(_time + _expiry);
         }
-        notify();
     }
 
     static int updater(unsigned int dev, Time_Offset expiry, Smart_Data * data) {
@@ -289,9 +287,9 @@ private:
                 data->_responsive->value(data->_value);
                 data->_responsive->time(t);
                 data->_responsive->respond(t + expiry);
-            }
 
-            data->notify();
+                data->notify();
+            }
         } while(Periodic_Thread::wait_next());
 
         return 0;
@@ -326,13 +324,32 @@ public:
         typename T::Value v = *source;
         if(v < _min)
             *result = 0;
-        else
-            *result = (v - _min) / _step;
+        else {
+            v = (v - _min) / _step;
+            if(v > 100)
+                v = 100;
+
+            *result = v;
+        }
     }
 
 private:
     typename T::Value _min;
     typename T::Value _step;
+};
+
+template<typename T>
+class Inverse_Percent_Transform: private Percent_Transform<T>
+{
+public:
+    Inverse_Percent_Transform(typename T::Value min, typename T::Value max) : Percent_Transform<T>(min, max) {}
+
+    template<typename U>
+    void apply(U * result, T * source) {
+        typename U::Value r;
+        Percent_Transform<T>::apply(&r, source);
+        *result = 100 - r;
+    }
 };
 
 class Sum_Transform
