@@ -287,7 +287,7 @@ public:
     typedef RFID_Reader::Observed Observed;
 
 public:
-    class Data : public RFID_Reader::UID
+    class Data : private RFID_Reader::UID
     {
     public:
         enum Code {
@@ -302,9 +302,11 @@ public:
         Data(const RFID_Reader::UID & u, unsigned char code) : RFID_Reader::UID(u), _code(code) {}
 
         operator unsigned int() const {
-            unsigned int i = uid();
+            unsigned int i = RFID_Reader::UID::operator unsigned int();
             return (i << 8) | _code;
         }
+
+        const RFID_Reader::UID & uid() const { return *this; }
 
         unsigned char code() const { return _code; }
         void code(unsigned char c) { _code = c; }

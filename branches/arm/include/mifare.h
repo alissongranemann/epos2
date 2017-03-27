@@ -62,32 +62,44 @@ public:
         static const unsigned int SIZE_MAX = 10;
 
         UID() : _size(0) {}
-        UID(const void * uid, unsigned int size = SIZE_MAX, Reg8 sak = 0) : _size(size) {
-            memcpy(_uid_sak, uid, _size);
+        UID(const void * id, unsigned int size = SIZE_MAX, Reg8 sak = 0) {
+            uid(id, size);
             _uid_sak[_size] = sak;
         }
+        UID(unsigned int v) : _size(4) {
+            unsigned int i;
+            for(i = 0; i < 4; i++)
+                _uid_sak[i] = reinterpret_cast<Reg8*>(&v)[i];
+            for(; i < SIZE_MAX + 1; i++)
+                _uid_sak[i] = 0;
+        }
+        UID(unsigned long long v) : _size(10) { // ID size must be 4, 7, or 10
+            unsigned int i;
+            for(i = 0; i < 8; i++)
+                _uid_sak[i] = reinterpret_cast<Reg8*>(&v)[i];
+            for(; i < SIZE_MAX + 1; i++)
+                _uid_sak[i] = 0;
+        }
 
-        PICC_Type type() const { return static_cast<PICC_Type>(_uid_sak[_size] & 0x7F); }
-        Reg8 size() const { return _size; }
         const Reg8 * uid() const { return _uid_sak; }
         Reg8 * uid() { return _uid_sak; }
 
         void sak(Reg8 s) { _uid_sak[_size] = s; }
-        void size(unsigned int s) { assert(_size <= SIZE_MAX); _size = s; }
-        void uid(const void * u, unsigned int s) { size(s); memcpy(_uid_sak, u, _size); }
-        void uid(const void * u) { memcpy(_uid_sak, u, _size); }
+        PICC_Type type() const { return static_cast<PICC_Type>(_uid_sak[_size] & 0x7F); }
 
-        operator unsigned int() const {
-            unsigned int ret = 0;
+        Reg8 size() const { return _size; }
+        void size(unsigned int s) { assert(_size <= SIZE_MAX); _size = s; }
+
+        void uid(const void * u, unsigned int s) { size(s); uid(u); }
+        void uid(const void * u) {
             for(unsigned int i = 0; i < SIZE_MAX; i++)
-                ret ^= _uid_sak[i] << ((i % sizeof(unsigned int)) * 8);
-            return ret;
+                _uid_sak[i] = (i < _size) ? reinterpret_cast<const Reg8*>(u)[i] : 0;
         }
 
-        operator unsigned long long() const { 
+        operator unsigned int() const {
             unsigned long long ret = 0;
             for(unsigned int i = 0; i < SIZE_MAX; i++)
-                ret ^= _uid_sak[i] << ((i % sizeof(unsigned long long)) * 8);
+                ret ^= _uid_sak[i] << ((i % sizeof(unsigned int)) * 8);
             return ret;
         }
 

@@ -71,7 +71,7 @@ void TSTP::Locator::bootstrap()
     //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x5e\x83\x0d\x06", 8)) // Lights 1 (A1)
     //    _here = Coordinates(305-730, -170-80, 220);
     //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x0b\x0f\x16\x06", 8)) // Luminosity sensor
-    //    _here = Coordinates(10-730,-10-80, 0);
+    //    _here = Coordinates(-720,-90, 0);
     //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x1a\x84\x0d\x06", 8)) // Router 1 (corridor, green)
     //    _here = Coordinates(-225,40,0);
     //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x65\x84\x0d\x06", 8)) // Router 2 (main door)
@@ -80,6 +80,8 @@ void TSTP::Locator::bootstrap()
     //    _here = Coordinates(-270, -110, 160);
     //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x46\x5c\x3a\x06", 8)) // Door
     //    _here = Coordinates(-200, 150, 200);
+    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x0d\x3e\x3a\x06", 8)) // Presence
+    //    _here = Coordinates(-720, -100, 0);
 
     // SSB
     //if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x0b\x0f\x16\x06", 8)) { // Test Sink

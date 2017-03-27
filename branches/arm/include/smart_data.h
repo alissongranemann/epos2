@@ -313,6 +313,18 @@ private:
 
 // Smart Data Transform and Aggregation functions
 
+class No_Transform
+{
+public:
+    No_Transform() {}
+
+    template<typename T, typename U>
+    void apply(T * result, U * source) {
+        typename U::Value v = *source;
+        *result = v;
+    }
+};
+
 template<typename T>
 class Percent_Transform
 {

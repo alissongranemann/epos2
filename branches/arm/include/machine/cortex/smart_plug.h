@@ -97,6 +97,7 @@ public:
     _Smart_Plug_Actuator(GPIO * gpio) {}
 
     void actuate(const Percent & duty_cycle) {
+        if((duty_cycle != 0) && (duty_cycle != 1))
         _pwm->duty_cycle(duty_cycle);
     }
 
@@ -111,10 +112,10 @@ public:
     _Smart_Plug_Actuator(GPIO * gpio) : _gpio(gpio) {}
 
     void actuate(const Percent & data) {
-        if(data >= 50)
-            _gpio->set();
-        else
+        if(data == 0)
             _gpio->clear();
+        else if(data == 1)
+            _gpio->set();
     }
 
 private:
@@ -142,11 +143,9 @@ public:
         return _power_meter[dev]->average();
     }
 
-    static void actuate(unsigned int dev, unsigned int data) {
-        if(dev == 0)
-            _actuator0->actuate(data);
-        else if(dev == 1)
-            _actuator1->actuate(data);
+    static void actuate(unsigned int dev, Percent data) {
+        _actuator0->actuate(data);
+        _actuator1->actuate(data);
     }
 
     static void attach(Observer * obs) { _observed.attach(obs); }

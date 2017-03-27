@@ -24,6 +24,7 @@ typedef TSTP::Region Region;
 
 const unsigned int INTEREST_PERIOD = 1 * 60 * 1000000;
 const unsigned int INTEREST_EXPIRY = 2 * INTEREST_PERIOD;
+const unsigned int PRESENCE_EXPIRY = 15 * 60 * 1000000;
 
 void print(const DB_Series & d)
 {
@@ -56,6 +57,16 @@ public:
 
 private:
     T * _data;
+};
+
+class Presence_Transform
+{
+public:
+    void apply(Current * destination, Presence * source) {
+        Presence::Value p = *source;
+        if(p)
+            *destination = 1;
+    }
 };
 
 class Door_Transform
@@ -119,8 +130,9 @@ int main()
     Coordinates center_outlet0(460-730, -250-80, -15);
     Coordinates center_outlet1(-5-730, -30-80, -15);
     Coordinates center_lights1(305-730, -170-80, 220);
-    Coordinates center_lux0(10-730,-10-80, 0);
+    Coordinates center_lux0(-720,-90, 0);
     Coordinates center_door0(-200,150,200);
+    Coordinates center_presence0(-720,-100,0);
 
 
     // Regions of interest
@@ -135,6 +147,7 @@ int main()
     Region region_lights1(center_lights1, 0, 0, -1);
     Region region_lux0(center_lux0, 0, 0, -1);
     Region region_door0(center_door0, 0, 0, -1);
+    Region region_presence0(center_presence0, 0, 0, -1);
 
 
     // Data of interest
@@ -150,6 +163,7 @@ int main()
     Luminous_Intensity data_lux0(region_lux0, INTEREST_EXPIRY, INTEREST_PERIOD);
     RFID data_rfid0(region_door0, INTEREST_EXPIRY, 0);
     Switch data_door0(region_door0, INTEREST_EXPIRY, 12500000);
+    Presence data_presence0(region_presence0, PRESENCE_EXPIRY, 0);
 
 
     // Output interests to serial
@@ -163,16 +177,18 @@ int main()
     print(data_lux0.db_series());
     print(data_rfid0.db_series());
     print(data_door0.db_series());
+    print(data_presence0.db_series());
 
 
     // Data transforms and aggregators
-    Inverse_Percent_Transform<Luminous_Intensity> lux0_transform(150, 1833);
+    Percent_Transform<Luminous_Intensity> lux0_transform(0, 1833);
+    Presence_Transform presence0_transform;
     Door_Transform rfid0_transform;
 
 
     // Event-driven actuators
-    Actuator<Current, Inverse_Percent_Transform<Luminous_Intensity>, Luminous_Intensity> lights1_actuator(&data_lights1, &lux0_transform, &data_lux0);
     Actuator<RFID, Door_Transform, RFID> door_actuator(&data_rfid0, &rfid0_transform, &data_rfid0);
+    Actuator<Current, Presence_Transform, Presence> presence0_actuator(&data_lights1, &presence0_transform, &data_presence0);
 
 
     // Printers to output received messages to serial
@@ -186,10 +202,18 @@ int main()
     Printer<Luminous_Intensity> p9(&data_lux0);
     // Door_Transform already prints RFID messages
     Printer<Switch> p10(&data_door0);
+    Printer<Presence> p11(&data_presence0);
 
+    Alarm::delay(INTEREST_EXPIRY);
 
-    // And we're done! TSTP will do all the work for us.
-    Thread::self()->suspend();
+    // Time-triggered actuators
+    while(true) {
+        Alarm::delay(PRESENCE_EXPIRY);
+        if(data_presence0.expired())
+            data_lights1 = 0;
+        else
+            lux0_transform.apply(&data_lights1, &data_lux0);
+    }
 
     return 0;
 }
