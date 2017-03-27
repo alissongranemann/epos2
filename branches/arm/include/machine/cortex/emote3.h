@@ -1163,10 +1163,9 @@ protected:
 
 
 // PWM
-    static void enable_pwm(unsigned int timer, char gpio_port, unsigned int gpio_pin)
+    static void enable_pwm(unsigned int timer, unsigned int gpio_port, unsigned int gpio_pin)
     {
-        unsigned int port = gpio_port - 'A';
-        unsigned int sel = PA0_SEL + 0x20 * port + 0x4 * gpio_pin;
+        unsigned int sel = PA0_SEL + 0x20 * gpio_port + 0x4 * gpio_pin;
 
         switch(timer) {
             case 0: ioc(sel) = GPT0CP1; break;
@@ -1179,14 +1178,23 @@ protected:
         unsigned int pin_bit = 1 << gpio_pin;
         switch(gpio_port)
         {
-            case 'A': gpioa(AFSEL) |= pin_bit; break;
-            case 'B': gpiob(AFSEL) |= pin_bit; break;
-            case 'C': gpioc(AFSEL) |= pin_bit; break;
-            case 'D': gpiod(AFSEL) |= pin_bit; break;
+            case 0: gpioa(AFSEL) |= pin_bit; break;
+            case 1: gpiob(AFSEL) |= pin_bit; break;
+            case 2: gpioc(AFSEL) |= pin_bit; break;
+            case 3: gpiod(AFSEL) |= pin_bit; break;
         }
     }
 
-    static void disable_pwm(unsigned int timer, char gpio_port, unsigned int gpio_pin) {}
+    static void disable_pwm(unsigned int timer, unsigned int gpio_port, unsigned int gpio_pin) {
+        unsigned int pin_bit = 1 << gpio_pin;
+        switch(gpio_port)
+        {
+            case 0: gpioa(AFSEL) &= ~pin_bit; break;
+            case 1: gpiob(AFSEL) &= ~pin_bit; break;
+            case 2: gpioc(AFSEL) &= ~pin_bit; break;
+            case 3: gpiod(AFSEL) &= ~pin_bit; break;
+        }
+    }
 
     static void config_SSI(volatile Log_Addr * base, Reg32 clock, SSI_Frame_Format protocol, SSI_Mode mode, Reg32 bit_rate, Reg32 data_width) {
         Reg32 pre_div, max_bit_rate, value;

@@ -1,16 +1,28 @@
-#include <machine/cortex_m/emote3_pwm.h>
+#include <timer.h>
+#include <gpio.h>
+#include <pwm.h>
 
 using namespace EPOS;
 
+const unsigned int PWM_PERIOD = 100000;
+
+OStream cout;
+
 int main()
-{    
-    auto frequency_hertz = 10000;
-    auto duty_cycle_percent = 50;
+{
+    Percent duty_cycle = 50;
 
-    eMote3_PWM pwm(1, frequency_hertz, duty_cycle_percent);
-    pwm.enable();
+    cout << "eMote3 PWM test" << endl;
 
-    while(1);
+    GPIO led('C', 3, GPIO::OUT);
+    User_Timer timer(0, PWM_PERIOD, 0);
+
+    PWM pwm(&timer, &led, duty_cycle);
+
+    while(true) {
+        Machine::delay(1000000);
+        pwm.duty_cycle(duty_cycle = (duty_cycle + 10) % 100);
+    }
 
     return 0;
 }
