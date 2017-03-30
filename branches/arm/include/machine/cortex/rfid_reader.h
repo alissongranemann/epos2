@@ -392,7 +392,7 @@ public:
         if(select(u)) {
             unsigned int s = sector(block);
             if(Engine::authenticate(s, key, u))
-                ret = Engine::put(block, data);
+                ret = Engine::read(block, data);
             Engine::deauthenticate();
         }
         return ret;

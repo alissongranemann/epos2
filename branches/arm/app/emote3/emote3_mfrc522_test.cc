@@ -67,7 +67,5 @@ int main()
             read(reader, uid, key);
 
         reader.halt(uid);
-
-        Alarm::delay(500000);
     }
 }
