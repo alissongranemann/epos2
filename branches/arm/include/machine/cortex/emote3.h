@@ -116,7 +116,7 @@ public:
     };
 
     // Useful bits in the I2CM_STAT register
-    enum {                         // Description (type)
+    enum {                        // Description (type)
         I2C_STAT_BUSBSY = 1 << 6, // Bus Busy (RO)
         I2C_STAT_IDLE   = 1 << 5, // I2C Idle (RO)
         I2C_STAT_ARBLST = 1 << 4, // Arbitration Lost (RO)
