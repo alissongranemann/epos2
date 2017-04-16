@@ -126,6 +126,20 @@ void TSTP::Locator::bootstrap()
     //    _here = Coordinates(430, -10, 220);
     //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x47\x83\x0d\x06", 8)) // Air Conditioner 1
     //    _here = Coordinates(150, -10, 220);
+    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x8e\x83\x0d\x06", 8)) // Water 0
+    //    _here = Coordinates(1140, -688, 350);
+    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x31\x84\x0d\x06", 8)) // Water 1
+    //    _here = Coordinates(1090, -688, 350);
+    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x7f\x82\x0d\x06", 8)) // Water 2 
+    //    _here = Coordinates(-750, -870, 350);
+    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x1b\xb0\x0d\x06", 8)) // Water 3 
+    //    _here = Coordinates(-800, -970, 350);
+    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xdc\xaf\x0d\x06", 8)) // Water 4
+    //    _here = Coordinates(-850, -870, 350);
+    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x02\x0b\x0d\x06", 8)) // Router 1 
+    //    _here = Coordinates(, , 550); // TODO
+    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xe7\x83\x0d\x06", 8)) // Water 5
+    //    _here = Coordinates(, , 350); // TODO
 
     //else
     //    _confidence = 0;
