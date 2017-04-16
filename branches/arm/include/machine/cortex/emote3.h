@@ -798,18 +798,22 @@ public:
         EVENT_GPIO_A = 1 << 0,
     };
 
-    // Change in power mode will only be effective when ASM("wfi") is called
-    static void power_mode(POWER_MODE p)
-    {
-        if(p <= PMSLEEP) {
+    // Change in power mode will only be effective when ASM("wfi") is executed
+    static void power(const Power_Mode & mode) {
+        switch(mode) {
+        case FULL: // Active Mode
+        case LIGHT: // Sleep Mode
             scs(SCR) &= ~SLEEPDEEP;
-        }
-        else {
+            break;
+        case SLEEP: // Deep Sleep Power Mode 0
             scs(SCR) |= SLEEPDEEP;
-            scr(PMCTL) = p - POWER_MODE_0;
-        }
-        //if(p != POWER_MODE::ACTIVE)
-        //    ASM("wfi");
+            scr(PMCTL) = 0;
+            break;
+        case OFF: // Deep Sleep Power Mode 3
+            scs(SCR) |= SLEEPDEEP;
+            scr(PMCTL) = 3;
+            break;
+       }
     }
 
     static void wake_up_on(WAKE_UP_EVENT e) {
@@ -1049,11 +1053,9 @@ protected:
         case LIGHT:
         case SLEEP:
             scr(RCGCGPT) |= 1 << unit;
-            scr(SCGCGPT) |= 1 << unit;
             break;
         case OFF:
             scr(RCGCGPT) &= ~(1 << unit);
-            scr(SCGCGPT) &= ~(1 << unit);
             break;
        }
     }
@@ -1111,7 +1113,7 @@ protected:
             break;
         case OFF:
             scr(RCGCUART) &= ~(1 << unit);              // Deactivate UART "unit" clock
-            scr(SCGCUART) &= ~(1 << unit);              // Deactivate port "unit" clock
+            scr(SCGCUART) &= ~(1 << unit);              // Deactivate UART "unit" clock
             break;
         }
     }
@@ -1151,20 +1153,16 @@ protected:
         case LIGHT:
         case SLEEP:
             scr(RCGCRFC) |= RCGCRFC_RFC0;
-            scr(SCGCRFC) |= RCGCRFC_RFC0;
-            scr(DCGCRFC) |= RCGCRFC_RFC0;
             break;
         case OFF:
             scr(RCGCRFC) &= ~RCGCRFC_RFC0;
-            scr(SCGCRFC) &= ~RCGCRFC_RFC0;
             break;
         }
     }
 
 
 // PWM
-    static void enable_pwm(unsigned int timer, unsigned int gpio_port, unsigned int gpio_pin)
-    {
+    static void enable_pwm(unsigned int timer, unsigned int gpio_port, unsigned int gpio_pin) {
         unsigned int sel = PA0_SEL + 0x20 * gpio_port + 0x4 * gpio_pin;
 
         switch(timer) {
@@ -1203,7 +1201,6 @@ protected:
         if(base == reinterpret_cast<Log_Addr *>(SSI0_BASE)) {
             //Enable the SSI module using the SYS_CTRL_RCGCSSI register.
             scr(RCGCSSI) |= 0x1; // Enable clock for SSI0 while in Running mode
-            scr(SCGCSSI) |= 0x1; // Enable clock for SSI0 while in Sleep mode
 
             //Set the GPIO pin configuration through the Pxx_SEL registers for the desired output
             if(mode == MASTER)
@@ -1217,7 +1214,6 @@ protected:
         } else {
 
             scr(RCGCSSI) |= 0x02; // Enable clock for SSI1 while in Running mode
-            scr(SCGCSSI) |= 0x02; // Enable clock for SSI1 while in Sleep mode
 
             if(mode == MASTER)
                 ioc(PA2_SEL) = SSI1_CLK_OUT;
@@ -1265,8 +1261,7 @@ protected:
         gpioa(AFSEL) |= (PIN2) + (PIN3) + (PIN4) + (PIN5);
     }
 
-    static void i2c_config(char gpio_port_sda, unsigned int gpio_pin_sda, char gpio_port_scl, unsigned int gpio_pin_scl)
-    {
+    static void i2c_config(char gpio_port_sda, unsigned int gpio_pin_sda, char gpio_port_scl, unsigned int gpio_pin_scl) {
         assert((gpio_port_sda >= 'A') && (gpio_port_sda <= 'D'));
         assert(gpio_pin_sda <= 7);
         assert((gpio_port_scl >= 'A') && (gpio_port_scl <= 'D'));
@@ -1302,8 +1297,7 @@ protected:
         ioc(I2CMSSCL) = (n_scl << 3) + gpio_pin_scl;
     }
 
-    static void adc_config(unsigned char channel)
-    {
+    static void adc_config(unsigned char channel) {
         gpioa(DIR) &= ~(1 << channel);
         gpio_floating(0, channel);
     }
