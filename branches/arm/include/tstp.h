@@ -1519,7 +1519,7 @@ private:
                     }
                     case KEEP_ALIVE: {
                         while(true) {
-                            Coordinates fake(here().x + (Random::random() % RADIO_RANGE), here().y + (Random::random() % RADIO_RANGE), (here().z + Random::random() % RADIO_RANGE));
+                            Coordinates fake(here().x + (Random::random() % (RADIO_RANGE / 3)), here().y + (Random::random() % (RADIO_RANGE / 3)), (here().z + Random::random() % (RADIO_RANGE / 3)));
                             if(fake != here())
                                 return Region(fake, 0, 0, -1); // Should never be destined_to_me
                         }

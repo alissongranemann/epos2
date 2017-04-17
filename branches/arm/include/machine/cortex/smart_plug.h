@@ -109,7 +109,7 @@ template<>
 class _Smart_Plug_Actuator<false> {
 public:
     _Smart_Plug_Actuator(PWM * pwm){}
-    _Smart_Plug_Actuator(GPIO * gpio) : _gpio(gpio) {}
+    _Smart_Plug_Actuator(GPIO * gpio) : _gpio(gpio) { _gpio->set(); }
 
     void actuate(const Percent & data) {
         if(data == 0)

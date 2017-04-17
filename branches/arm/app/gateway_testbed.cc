@@ -213,6 +213,8 @@ int main()
             data_lights1 = 0;
         else
             lux0_transform.apply(&data_lights1, &data_lux0);
+
+        data_door0 = 0;
     }
 
     return 0;
