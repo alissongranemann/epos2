@@ -82,67 +82,75 @@ void TSTP::Locator::bootstrap()
     //    _here = Coordinates(-200, 150, 200);
     //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x0d\x3e\x3a\x06", 8)) // Presence
     //    _here = Coordinates(-720, -100, 0);
-
-    // SSB
-    //if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x0b\x0f\x16\x06", 8)) { // Test Sink
-    //    _here = Coordinates(0, 0, 0);
-    //    TSTP::coordinates(Global_Coordinates(75270213, 696322550, 101500));
-    //}
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x1a\x83\x0d\x06", 8)) // NOT SURE Lights 0
-    //    _here = Coordinates(430, 50, 250);
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xd3\x82\x0d\x06", 8)) // NOT SURE Lights 1
-    //    _here = Coordinates(150, 50, 250);
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xcb\x82\x0d\x06", 8)) // Lights 2
-    //    _here = Coordinates(-140, 50, 250);
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x04\x84\x0d\x06", 8)) // Lights 3
-    //    _here = Coordinates(430, 300, 250);
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x1e\x83\x0d\x06", 8)) // Lights 4
-    //    _here = Coordinates(150, 300, 250);
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x98\x83\x0d\x06", 8)) // Lights 5
-    //    _here = Coordinates(-140, 300, 250);
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xf6\x82\x0d\x06", 8)) // Lights 7
-    //    _here = Coordinates(150, 500, 250);
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xfa\x82\x0d\x06", 8)) // Lights 8
-    //    _here = Coordinates(-140, 500, 250);
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x84\x82\x0d\x06", 8)) // NOT SURE Outlet 3
-    //    _here = Coordinates(-140, -10, -40);
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x0b\x83\x0d\x06", 8)) // Outlet 4
-    //    _here = Coordinates(-250, -10, -40);
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x4c\x83\x0d\x06", 8)) // Outlet 5
-    //    _here = Coordinates(-260, 200, -40);
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x98\x82\x0d\x06", 8)) // Outlet 6
-    //    _here = Coordinates(-260, 400, -40);
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x8b\x82\x0d\x06", 8)) // NOT SURE Outlet 9
-    //    _here = Coordinates(5, 570, -40);
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x90\x82\x0d\x06", 8)) // NOT SURE Outlet 11
-    //    _here = Coordinates(185, 570, -40);
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x03\x83\x0d\x06", 8)) // Outlet 12
-    //    _here = Coordinates(345, 570, -40);
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x22\x83\x0d\x06", 8)) // Lux 0
-    //    _here = Coordinates(300, 320, 40);
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xa4\x82\x0d\x06", 8)) // Temperature 0
-    //    _here = Coordinates(-130, 320, 40);
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x51\x82\x0d\x06", 8)) // Air Conditioner 0
-    //    _here = Coordinates(430, -10, 220);
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x47\x83\x0d\x06", 8)) // Air Conditioner 1
-    //    _here = Coordinates(150, -10, 220);
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x8e\x83\x0d\x06", 8)) // Water 0
-    //    _here = Coordinates(1140, -688, 350);
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x31\x84\x0d\x06", 8)) // Water 1
-    //    _here = Coordinates(1090, -688, 350);
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x7f\x82\x0d\x06", 8)) // Water 2 
-    //    _here = Coordinates(-750, -870, 350);
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x1b\xb0\x0d\x06", 8)) // Water 3 
-    //    _here = Coordinates(-800, -970, 350);
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xdc\xaf\x0d\x06", 8)) // Water 4
-    //    _here = Coordinates(-850, -870, 350);
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x02\x0b\x0d\x06", 8)) // Router 1 
-    //    _here = Coordinates(, , 550); // TODO
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xe7\x83\x0d\x06", 8)) // Water 5
-    //    _here = Coordinates(, , 350); // TODO
-
     //else
     //    _confidence = 0;
+
+    // SSB
+    //if(Traits<TSTP>::sink)
+    //    _here = Coordinates(0, 0, 0);
+    //else {
+    //    if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x0b\x0f\x16\x06", 8)) { // Test Sink
+    //        _here = Coordinates(0, 0, 0);
+    //        TSTP::coordinates(Global_Coordinates(75270213, 696322550, 101500));
+    //    }
+    //    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x1a\x83\x0d\x06", 8)) // Lights 0
+    //        _here = Coordinates(430, 50, 250);
+    //    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xd3\x82\x0d\x06", 8)) // NOT SURE Lights 1
+    //        _here = Coordinates(150, 50, 250);
+    //    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xcb\x82\x0d\x06", 8)) // Lights 2
+    //        _here = Coordinates(-140, 50, 250);
+    //    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x04\x84\x0d\x06", 8)) // Lights 3
+    //        _here = Coordinates(430, 300, 250);
+    //    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x1e\x83\x0d\x06", 8)) // Lights 4
+    //        _here = Coordinates(150, 300, 250);
+    //    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x98\x83\x0d\x06", 8)) // Lights 5
+    //        _here = Coordinates(-140, 300, 250);
+    //    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xf6\x82\x0d\x06", 8)) // Lights 7
+    //        _here = Coordinates(150, 500, 250);
+    //    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xfa\x82\x0d\x06", 8)) // Lights 8
+    //        _here = Coordinates(-140, 500, 250);
+    //    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x84\x82\x0d\x06", 8)) // NOT SURE Outlet 3
+    //        _here = Coordinates(-140, -10, -40);
+    //    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x0b\x83\x0d\x06", 8)) // Outlet 4
+    //        _here = Coordinates(-250, -10, -40);
+    //    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x4c\x83\x0d\x06", 8)) // Outlet 5
+    //        _here = Coordinates(-260, 200, -40);
+    //    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x98\x82\x0d\x06", 8)) // Outlet 6
+    //        _here = Coordinates(-260, 400, -40);
+    //    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x8b\x82\x0d\x06", 8)) // NOT SURE Outlet 9
+    //        _here = Coordinates(5, 570, -40);
+    //    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x90\x82\x0d\x06", 8)) // NOT SURE Outlet 11
+    //        _here = Coordinates(185, 570, -40);
+    //    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x03\x83\x0d\x06", 8)) // Outlet 12
+    //        _here = Coordinates(345, 570, -40);
+    //    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x22\x83\x0d\x06", 8)) // Lux 0
+    //        _here = Coordinates(300, 320, 40);
+    //    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xa4\x82\x0d\x06", 8)) // Temperature 0
+    //        _here = Coordinates(-130, 320, 40);
+    //    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x51\x82\x0d\x06", 8)) // Air Conditioner 0
+    //        _here = Coordinates(430, -10, 220);
+    //    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x47\x83\x0d\x06", 8)) // Air Conditioner 1
+    //        _here = Coordinates(150, -10, 220);
+    //    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x8e\x83\x0d\x06", 8)) // Water 0
+    //        _here = Coordinates(1140, -688, 350);
+    //    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x31\x84\x0d\x06", 8)) // Water 1
+    //        _here = Coordinates(1090, -688, 350);
+    //    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x7f\x82\x0d\x06", 8)) // Water 2 // NOT OK
+    //        _here = Coordinates(-750, -870, 350);
+    //    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x1b\xb0\x0d\x06", 8)) // Water 3 // OK
+    //        _here = Coordinates(-800, -970, 350);
+    //    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xdc\xaf\x0d\x06", 8)) // Water 4 // OK
+    //        _here = Coordinates(-850, -870, 350);
+    //    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x02\x0b\x0d\x06", 8)) // Router 0 
+    //        _here = Coordinates(610, 1700, 550);
+    //    else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xe7\x83\x0d\x06", 8)) // Water 5
+    //        _here = Coordinates(710, 2800, 350);
+    //    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xXX\xXX\xXX\xXX", 8)) // Rain 0 // TODO
+    //    //    _here = Coordinates(2727, 3500, 0);
+
+    //    else
+    //        _confidence = 0;
+    //}
 
     if(Traits<Radio>::promiscuous) {
         _here = Coordinates(12,12,12);

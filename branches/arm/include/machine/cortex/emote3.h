@@ -1053,9 +1053,13 @@ protected:
         case LIGHT:
         case SLEEP:
             scr(RCGCGPT) |= 1 << unit;
+            scr(SCGCGPT) |= 1 << unit;
+            scr(DCGCGPT) |= 1 << unit;
             break;
         case OFF:
             scr(RCGCGPT) &= ~(1 << unit);
+            scr(SCGCGPT) &= ~(1 << unit);
+            scr(DCGCGPT) &= ~(1 << unit);
             break;
        }
     }
@@ -1110,10 +1114,12 @@ protected:
         case SLEEP:
             scr(RCGCUART) |= 1 << unit;                 // Enable clock for UART "unit" while in Running mode
             scr(SCGCUART) |= 1 << unit;                 // Enable clock for UART "unit" while in Sleep mode
+            scr(DCGCUART) |= 1 << unit;                 // Enable clock for UART "unit" while in Deep Sleep mode
             break;
         case OFF:
             scr(RCGCUART) &= ~(1 << unit);              // Deactivate UART "unit" clock
             scr(SCGCUART) &= ~(1 << unit);              // Deactivate UART "unit" clock
+            scr(DCGCUART) &= ~(1 << unit);              // Deactivate UART "unit" clock
             break;
         }
     }
@@ -1153,9 +1159,13 @@ protected:
         case LIGHT:
         case SLEEP:
             scr(RCGCRFC) |= RCGCRFC_RFC0;
+            scr(SCGCRFC) |= RCGCRFC_RFC0;
+            scr(DCGCRFC) |= RCGCRFC_RFC0;
             break;
         case OFF:
             scr(RCGCRFC) &= ~RCGCRFC_RFC0;
+            scr(SCGCRFC) &= ~RCGCRFC_RFC0;
+            scr(DCGCRFC) &= ~RCGCRFC_RFC0;
             break;
         }
     }
@@ -1201,6 +1211,8 @@ protected:
         if(base == reinterpret_cast<Log_Addr *>(SSI0_BASE)) {
             //Enable the SSI module using the SYS_CTRL_RCGCSSI register.
             scr(RCGCSSI) |= 0x1; // Enable clock for SSI0 while in Running mode
+            scr(SCGCSSI) |= 0x1; // Enable clock for SSI0 while in Sleep mode
+            scr(DCGCSSI) |= 0x1; // Enable clock for SSI0 while in Deep Sleep mode
 
             //Set the GPIO pin configuration through the Pxx_SEL registers for the desired output
             if(mode == MASTER)
@@ -1214,6 +1226,8 @@ protected:
         } else {
 
             scr(RCGCSSI) |= 0x02; // Enable clock for SSI1 while in Running mode
+            scr(SCGCSSI) |= 0x02; // Enable clock for SSI1 while in Sleep mode
+            scr(DCGCSSI) |= 0x02; // Enable clock for SSI1 while in Deep Sleep mode
 
             if(mode == MASTER)
                 ioc(PA2_SEL) = SSI1_CLK_OUT;
@@ -1269,6 +1283,8 @@ protected:
 
         // Enable the I2C clock using the SYS_CTRL_RCGCI2C register
         scr(RCGCI2C) |= 0x1; // When the CPU is in active (run) mode
+        scr(SCGCI2C) |= 0x1; // When the CPU is in Sleep mode
+        scr(DCGCI2C) |= 0x1; // When the CPU is in Deep Sleep mode
 
         // Calculate the offset for the GPIO's IOC_Pxx_SEL
         auto n_sda = gpio_port_sda - 'A';

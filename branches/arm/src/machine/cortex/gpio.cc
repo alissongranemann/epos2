@@ -5,7 +5,14 @@
 
 #ifdef __GPIO_H
 
+#include <machine/cortex/transducer.h>
+
 __BEGIN_SYS
+
+// Smart Data bindings
+Switch_Sensor::Observed Switch_Sensor::_observed;
+Switch_Sensor * Switch_Sensor::_dev[MAX_DEVICES];
+
 
 // Class attributes
 GPIO * GPIO::_devices[GPIO_PORTS][8];
