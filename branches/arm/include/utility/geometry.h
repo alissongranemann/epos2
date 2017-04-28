@@ -1,5 +1,8 @@
 // EPOS Geometry Utility Declarations
 
+#ifndef __geometry_h
+#define __geometry_h
+
 #include <utility/math.h>
 
 __BEGIN_UTIL
@@ -202,3 +205,5 @@ public:
 }__attribute__((packed));
 
 __END_UTIL
+
+#endif
