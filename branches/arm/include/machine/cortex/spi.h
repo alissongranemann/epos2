@@ -37,12 +37,12 @@ public:
 public:
 
     SSI_Engine(Reg32 unit = 0) :
-	_base(reinterpret_cast(unit ? SSI1_BASE : SSI0_BASE))
+	_base(reinterpret_cast<Log_Addr *>(unit ? SSI1_BASE : SSI0_BASE))
     {
     }
 
     SSI_Engine(Reg32 unit, Reg32 clock, SSI_Frame_Format protocol, SSI_Mode mode, Reg32 bit_rate, Reg32 data_width) :
-    _base(reinterpret_cast(unit ? SSI1_BASE : SSI0_BASE)) {
+    _base(reinterpret_cast<Log_Addr *>(unit ? SSI1_BASE : SSI0_BASE)) {
         assert(unit < UNITS);
         config(clock, protocol, mode, bit_rate, data_width);
     }
