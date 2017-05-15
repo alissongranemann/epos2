@@ -57,7 +57,7 @@ int main()
 {
     cout << "Hello main" << endl;
 
-    led = new GPIO('c',3, GPIO::OUTPUT); // This works for eMote3
+    led = new GPIO('C',3, GPIO::OUTPUT); // This works for eMote3
 
     led_value = true;
     led->set(led_value);
