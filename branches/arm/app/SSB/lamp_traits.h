@@ -206,13 +206,13 @@ template<> struct Traits<Smart_Plug>: public Traits<Machine_Common>
     static const bool enabled = true;
 
     enum { DIMMER, SWITCH, DISABLED };
-    static const unsigned int P1_ACTUATOR = DISABLED;
-    static const unsigned int P2_ACTUATOR = DISABLED;
+    static const unsigned int P1_ACTUATOR = SWITCH;
+    static const unsigned int P2_ACTUATOR = DIMMER;
     static const unsigned int PWM_TIMER_CHANNEL = 0;
     static const unsigned int PWM_PERIOD = 100; // us
 
     static const bool P1_power_meter_enabled = true;
-    static const bool P2_power_meter_enabled = true;
+    static const bool P2_power_meter_enabled = false;
 };
 
 template<> struct Traits<Hydro_Board>: public Traits<Machine_Common>

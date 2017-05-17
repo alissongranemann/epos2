@@ -144,8 +144,10 @@ public:
     }
 
     static void actuate(unsigned int dev, Percent data) {
-        _actuator0->actuate(data);
-        _actuator1->actuate(data);
+        if(_actuator0)
+            _actuator0->actuate(data);
+        if(_actuator1)
+            _actuator1->actuate(data);
     }
 
     static void attach(Observer * obs) { _observed.attach(obs); }

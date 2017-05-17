@@ -11,7 +11,9 @@ using namespace EPOS;
 
 const RTC::Microsecond INTEREST_PERIOD = 10ull * 60 * 1000000;
 const RTC::Microsecond INTEREST_EXPIRY = 2 * INTEREST_PERIOD;
+
 const RTC::Microsecond HTTP_SEND_PERIOD = 30ull * 60 * 1000000;
+const unsigned int HTTP_SEND_PERIOD_MULTIPLY = 1;//2 * 12;
 
 typedef Smart_Data_Common::DB_Record DB_Record;
 typedef Smart_Data_Common::DB_Series DB_Series;
@@ -25,7 +27,10 @@ int http_send()
     M95 * m95 = M95::get(0);
     int ret;
 
-    while(Periodic_Thread::wait_next()) {
+    while(true) {
+        for(unsigned int i = 0; i < HTTP_SEND_PERIOD_MULTIPLY; i++)
+            Periodic_Thread::wait_next();
+
         cout << "http_send()" << endl;
         CPU::int_disable();
         if(Storage::pop(&e)) {
@@ -72,9 +77,9 @@ int tstp_work()
 
     cout << "epoch now = " << TSTP::absolute(TSTP::now()) / 1000000 << endl;
 
-    Coordinates center_station1(50,0,0);
-    //Coordinates center_station2(-6000,4500,0);
-    Region region_station1(center_station1, 0, 0, -1);
+    TSTP::Coordinates center_station1(50,0,0);
+    //TSTP::Coordinates center_station2(-6000,4500,0);
+    TSTP::Region region_station1(center_station1, 0, 0, -1);
 
     Water_Flow flow0(0, INTEREST_EXPIRY, static_cast<Water_Flow::Mode>(Water_Flow::PRIVATE | Water_Flow::CUMULATIVE));
     Water_Flow flow1(region_station1, INTEREST_EXPIRY, INTEREST_PERIOD, Water_Flow::CUMULATIVE);
@@ -158,7 +163,6 @@ int main()
     //Storage::clear(); cout << "storage cleared" << endl; while(true);
 
     Periodic_Thread * tstp_worker = new Periodic_Thread(INTEREST_PERIOD, tstp_work);
-    Alarm::delay(INTEREST_PERIOD);
     Periodic_Thread * http_sender = new Periodic_Thread(HTTP_SEND_PERIOD, http_send);
 
     cout << "threads created. Joining." << endl;

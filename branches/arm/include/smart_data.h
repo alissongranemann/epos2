@@ -15,26 +15,6 @@ public:
     typedef _UTIL::Observed Observed;
     typedef _UTIL::Observer Observer;
 
-    struct DB_Record {
-        unsigned long long value;
-        unsigned char error;
-        long x;
-        long y;
-        long z;
-        unsigned long long t;
-        //unsigned char mac[16];
-        unsigned char version;
-        unsigned int unit;
-
-        friend OStream & operator<<(OStream & os, const DB_Record & d) {
-            os << "{va=" << d.value << ",e=" << d.error << ",(" << d.x << "," << d.y << "," << d.z << "),t=" << d.t;//<< ",m=[" << hex << d.mac[0];
-            //for(unsigned int i = 1; i < 16; i++)
-            //    os << "," << hex << d.mac[i];
-            os << dec << "],ve=" << d.version << ",u=" << d.unit << "}";
-            return os;
-        }
-    }__attribute__((packed));
-
     struct DB_Series {
         unsigned char version;
         unsigned long unit;
@@ -45,10 +25,29 @@ public:
         unsigned long long t0;
         unsigned long long t1;
 
-        friend OStream & operator<<(OStream & os, const DB_Series & d) {
-            os << "{ve=" << d.version << ",u=" << d.unit << ",(" << d.x << "," << d.y << "," << d.z << ")+" << d.r << ",t=[" << d.t0 << "," << d.t1 << "]}";
-            return os;
-        }
+        //friend OStream & operator<<(OStream & os, const DB_Series & d) {
+        //    os << "{ve=" << d.version << ",u=" << d.unit << ",(" << d.x << "," << d.y << "," << d.z << ")+" << d.r << ",t=[" << d.t0 << "," << d.t1 << "]}";
+        //    return os;
+        //}
+    }__attribute__((packed));
+
+    struct DB_Record {
+        double value;
+        unsigned char error;
+        long x;
+        long y;
+        long z;
+        unsigned long long t;
+        unsigned char mac[16];
+        DB_Series series;
+
+        //friend OStream & operator<<(OStream & os, const DB_Record & d) {
+        //    os << "{va=" << d.value << ",e=" << d.error << ",(" << d.x << "," << d.y << "," << d.z << "),t=" << d.t;
+        //    for(unsigned int i = 1; i < 16; i++)
+        //        os << "," << hex << d.mac[i];
+        //    os << dec << "],s=" << d.series << "}";
+        //    return os;
+        //}
     }__attribute__((packed));
 };
 
@@ -127,34 +126,30 @@ public:
         }
     }
 
-    DB_Series db_series() {
-        DB_Series ret;
-        assert(_interested);
-        ret.version = 0;
-        ret.unit = _unit;
-        TSTP::Global_Coordinates c = TSTP::absolute(_interested->region().center);
-        ret.x = c.x;
-        ret.y = c.y;
-        ret.z = c.z;
-        ret.r = _interested->region().radius;
-        ret.t0 = TSTP::absolute(_interested->region().t0);
-        ret.t1 = TSTP::absolute(_interested->region().t1);
-        return ret;
-    }
-
     DB_Record db_record() {
+        assert(_interested);
+
         DB_Record ret;
+
+        ret.series.version = 0;
+        ret.series.unit = _unit;
+        TSTP::Global_Coordinates c = TSTP::absolute(_interested->region().center);
+        ret.series.x = c.x;
+        ret.series.y = c.y;
+        ret.series.z = c.z;
+        ret.series.r = _interested->region().radius;
+        ret.series.t0 = TSTP::absolute(_interested->region().t0);
+        ret.series.t1 = TSTP::absolute(_interested->region().t1);
+
         ret.value = this->operator Value();
         ret.error = error();
-        TSTP::Global_Coordinates c = location();
+        c = location();
         ret.x = c.x;
         ret.y = c.y;
         ret.z = c.z;
         ret.t = time();
-        //for(unsigned int i = 0; i < 16; i++)
-        //    ret.mac[i] = 0;
-        ret.version = 0;
-        ret.unit = unit();
+        for(unsigned int i = 0; i < 16; i++)
+            ret.mac[i] = 0;
         return ret;
     }
 
@@ -253,6 +248,7 @@ private:
         }
         case TSTP::COMMAND: {
             if(_mode & COMMANDED) {
+                // TODO: Check if this command was already treated
                 TSTP::Command * command = reinterpret_cast<TSTP::Command *>(packet);
                 *this = *(command->command<Value>());
                 _coordinates = command->origin();
@@ -263,6 +259,7 @@ private:
         }
     }
 
+    // Event-driven update
     void update(typename Transducer::Observed * obs) {
         _time = TSTP::now();
         Transducer::sense(_device, this);
@@ -276,6 +273,7 @@ private:
         }
     }
 
+    // Time-triggered update
     static int updater(unsigned int dev, Time_Offset expiry, Smart_Data * data) {
         do {
             Time t = TSTP::now();
