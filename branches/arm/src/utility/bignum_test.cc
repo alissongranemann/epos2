@@ -4,8 +4,6 @@
 #include <utility/string.h>
 #include <utility/bignum.h>
 #include <utility/random.h>
-#include <utility/aes.h>
-#include <utility/diffie_hellman.h>
 
 using namespace EPOS;
 
