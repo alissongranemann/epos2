@@ -65,15 +65,15 @@ void TSTP::Locator::bootstrap()
     //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x97\x0e\x16\x06", 8)) // Dummy 5
     //    _here = Coordinates(-5,5,0);
     //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x11\x83\x0d\x06", 8)) // Outlet 0 (B0)
-    //    _here = Coordinates(460-730, -250-80, -15);
+    //    _here = Coordinates(-270, -330, -15);
     //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x74\x82\x0d\x06", 8)) // Outlet 1 (B1)
-    //    _here = Coordinates(-5-730, -30-80, -15);
+    //    _here = Coordinates(-735, -110, -15);
     //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x5e\x83\x0d\x06", 8)) // Lights 1 (A1)
-    //    _here = Coordinates(305-730, -170-80, 220);
+    //    _here = Coordinates(-425, -250, 220);
     //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x0b\x0f\x16\x06", 8)) // Luminosity sensor
-    //    _here = Coordinates(-720,-90, 0);
+    //    _here = Coordinates(-720, -90, 0);
     //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x1a\x84\x0d\x06", 8)) // Router 1 (corridor, green)
-    //    _here = Coordinates(-225,40,0);
+    //    _here = Coordinates(-225, 40, 0);
     //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x65\x84\x0d\x06", 8)) // Router 2 (main door)
     //    _here = Coordinates(-210, 120, 140);
     //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xb7\x82\x0d\x06", 8)) // Router 3 (Guto's door)

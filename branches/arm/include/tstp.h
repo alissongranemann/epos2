@@ -1065,7 +1065,7 @@ public:
         typedef Radio::Timer::Time_Stamp Time_Stamp;
         typedef Radio::Timer::Offset Offset;
 
-        static const unsigned int SYNC_PERIOD = 300000000; // TODO
+        static const unsigned int SYNC_PERIOD = 12500000; // For 0.5ms maximum drift
 
     public:
         Timekeeper() {
@@ -1429,19 +1429,23 @@ public:
         static unsigned int _dh_requests_open;
     };
 
-    // TSTP Life Keeper explicitly asks for metadata whenever it's needed
+    // TSTP Life Keeper explicitly asks for Metadata whenever it's needed
     class Life_Keeper
     {
         friend class TSTP;
 
-        static const unsigned int PERIOD = 10000000;
+        static const unsigned int PERIOD = 10 * 1000000;
 
         Life_Keeper(): _thread(&life_keeper) {}
 
     private:
         static int life_keeper() {
             while(true) {
-                if(!(TSTP::Locator::synchronized() && TSTP::Timekeeper::synchronized() && TSTP::Router::synchronized() && TSTP::Security::synchronized())) {
+                if((TSTP::here() == TSTP::sink())
+                    || !(TSTP::Locator::synchronized()
+                        && TSTP::Timekeeper::synchronized()
+                        && TSTP::Router::synchronized()
+                      /*&& TSTP::Security::synchronized())*/)) {
                     db<TSTP>(TRC) << "TSTP::Life_Keeper: sending keep alive message" << endl;
                     TSTP::keep_alive();
                 }
