@@ -44,7 +44,7 @@ void TSTP::Locator::bootstrap()
     //}
     //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xb0\x0e\x16\x06", 8)) // Water flow sensor 1
     //    _here = Coordinates(50,0,0);
-    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\x28\x0f\x16\x06", 8)) // Water flow sensor 2
+    //else if(!memcmp(Machine::id(), "\x00\x4b\x12\x00\xfb\x39\x3a\x06", 8)) // Water flow sensor 2
     //    _here = Coordinates(-6000,4500,0);
 
     // LISHA Testbed

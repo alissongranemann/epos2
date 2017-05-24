@@ -13,7 +13,7 @@ __BEGIN_SYS
 class TSTP_Common: public IEEE802_15_4
 {
 protected:
-    static const unsigned int RADIO_RANGE = 1700; // Approximated radio range of nodes, in centimeters
+    static const unsigned int RADIO_RANGE = 8000; // Approximated radio range of nodes, in centimeters
     static const bool drop_expired = true;
 
 public:

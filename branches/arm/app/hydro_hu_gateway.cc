@@ -9,11 +9,11 @@
 
 using namespace EPOS;
 
-const RTC::Microsecond INTEREST_PERIOD = 10ull * 60 * 1000000;
-const RTC::Microsecond INTEREST_EXPIRY = 2 * INTEREST_PERIOD;
+const RTC::Microsecond INTEREST_EXPIRY = 5ull * 60 * 1000000;
+const RTC::Microsecond INTEREST_PERIOD = INTEREST_EXPIRY / 2;
 
 const RTC::Microsecond HTTP_SEND_PERIOD = 30ull * 60 * 1000000;
-const unsigned int HTTP_SEND_PERIOD_MULTIPLY = 1;//2 * 12;
+const unsigned int HTTP_SEND_PERIOD_MULTIPLY = 4;//2 * 12;
 
 typedef Smart_Data_Common::DB_Record DB_Record;
 typedef Smart_Data_Common::DB_Series DB_Series;
@@ -70,63 +70,17 @@ int tstp_work()
     OStream cout;
     cout << "tstp_work() init" << endl;
 
-    M95 * m95 = M95::get(0);
-
-    TSTP::Time t = m95->now();
-    TSTP::epoch(t);
-
     cout << "epoch now = " << TSTP::absolute(TSTP::now()) / 1000000 << endl;
 
     TSTP::Coordinates center_station1(50,0,0);
-    //TSTP::Coordinates center_station2(-6000,4500,0);
+    TSTP::Coordinates center_station2(-6000,4500,0);
+
     TSTP::Region region_station1(center_station1, 0, 0, -1);
+    TSTP::Region region_station2(center_station2, 0, 0, -1);
 
     Water_Flow flow0(0, INTEREST_EXPIRY, static_cast<Water_Flow::Mode>(Water_Flow::PRIVATE | Water_Flow::CUMULATIVE));
     Water_Flow flow1(region_station1, INTEREST_EXPIRY, INTEREST_PERIOD, Water_Flow::CUMULATIVE);
-
-    DB_Series s0;
-    s0.version = 0;
-    s0.unit = flow0.unit();
-    TSTP::Global_Coordinates c = TSTP::absolute(TSTP::here());
-    s0.x = c.x;
-    s0.y = c.y;
-    s0.z = c.z;
-    s0.r = 0;
-    s0.t0 = 0;
-    s0.t1 = -1ull;
-    cout << "s0 = " << s0 << endl;
-    if(Quectel_HTTP::post("http://150.162.62.3/data/hydro/put_new.php", &s0, sizeof(DB_Series)) <= 0) {
-        cout << "Retrying post..." << endl;
-        if(Quectel_HTTP::post("http://150.162.62.3/data/hydro/put_new.php", &s0, sizeof(DB_Series)) <= 0) {
-            cout << "Retrying post..." << endl;
-            if(Quectel_HTTP::post("http://150.162.62.3/data/hydro/put_new.php", &s0, sizeof(DB_Series)) <= 0) {
-                CPU::int_disable();
-                cout << "Post failed! Rebooting" << endl;
-                m95->off();
-                Machine::reboot();
-            }
-        }
-    }
-
-    cout << "posted s0" << endl;
-
-    DB_Series s1 = flow1.db_series();
-    cout << "s1 = " << s1 << endl;
-    if(Quectel_HTTP::post("http://150.162.62.3/data/hydro/put_new.php", &s1, sizeof(DB_Series)) <= 0) {
-        cout << "Retrying post..." << endl;
-        if(Quectel_HTTP::post("http://150.162.62.3/data/hydro/put_new.php", &s1, sizeof(DB_Series)) <= 0) {
-            cout << "Retrying post..." << endl;
-            if(Quectel_HTTP::post("http://150.162.62.3/data/hydro/put_new.php", &s1, sizeof(DB_Series)) <= 0) {
-                CPU::int_disable();
-                cout << "Post failed! Rebooting" << endl;
-                m95->off();
-                Machine::reboot();
-            }
-        }
-    }
-    cout << "posted s1" << endl;
-
-    m95->off();
+    Water_Flow flow2(region_station2, INTEREST_EXPIRY, INTEREST_PERIOD, Water_Flow::CUMULATIVE);
 
     cout << "Going to sleep..." << endl;
     while(Periodic_Thread::wait_next()) {
@@ -140,12 +94,16 @@ int tstp_work()
         cout << "r0 = " << r0 << endl;
         Smart_Data_Common::DB_Record r1 = flow1.db_record();
         cout << "r1 = " << r1 << endl;
+        Smart_Data_Common::DB_Record r2 = flow2.db_record();
+        cout << "r2 = " << r2 << endl;
 
         CPU::int_disable();
         Storage::push(r0);
         cout << "push r0 OK" << endl;
         Storage::push(r1);
         cout << "push r1 OK" << endl;
+        Storage::push(r2);
+        cout << "push r2 OK" << endl;
         CPU::int_enable();
         cout << "Going to sleep..." << endl;
     }
@@ -156,13 +114,21 @@ int tstp_work()
 int main()
 {
     OStream cout;
-    cout << "main()" << endl;
 
-    Alarm::delay(5000000);
+    cout << "main()" << endl;
 
     //Storage::clear(); cout << "storage cleared" << endl; while(true);
 
-    Periodic_Thread * tstp_worker = new Periodic_Thread(INTEREST_PERIOD, tstp_work);
+    Alarm::delay(5000000);
+
+    M95 * m95 = M95::get(0);
+
+    TSTP::Time t = m95->now();
+    TSTP::epoch(t);
+
+    m95->off();
+
+    Periodic_Thread * tstp_worker = new Periodic_Thread(INTEREST_EXPIRY, tstp_work);
     Periodic_Thread * http_sender = new Periodic_Thread(HTTP_SEND_PERIOD, http_send);
 
     cout << "threads created. Joining." << endl;
