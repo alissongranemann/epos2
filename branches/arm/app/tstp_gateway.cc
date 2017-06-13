@@ -6,6 +6,9 @@ using namespace EPOS;
 
 OStream cout;
 
+typedef TSTP::Coordinates Coordinates;
+typedef TSTP::Region Region;
+
 const unsigned int INTEREST_PERIOD = 1000000;
 const unsigned int INTEREST_EXPIRY = 2 * INTEREST_PERIOD;
 

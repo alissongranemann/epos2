@@ -877,7 +877,7 @@ public:
     class Map: public Control
     {
     public:
-        Report(const Unit & unit, const Error & error = 0, bool epoch_request = false)
+        Map(const Unit & unit, const Error & error = 0, bool epoch_request = false)
         : Control(MAP, 0, 0, now(), here(), here()), _unit(unit), _error(error), _epoch_request(epoch_request) { }
 
         const Unit & unit() const { return _unit; }

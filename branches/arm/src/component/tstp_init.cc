@@ -252,6 +252,14 @@ void TSTP::init(const NIC & nic)
     //security->bootstrap();
 
     _nic->attach(tstp, NIC::TSTP);
+
+    if(TSTP::here() != TSTP::sink())  {
+        Buffer * buf = alloc(sizeof(Report));
+        Map * map = new (buf->frame()->data<Map>()) Map(TSTP::Unit::I32, 0, false);
+        marshal(buf);
+        db<TSTP>(INF) << "TSTP::Map::send:=" << map << " => " << (*map) << endl;
+        _nic->send(buf);
+    }
 }
 
 template void TSTP::init<0>(const NIC & nic);
