@@ -54,6 +54,7 @@ public:
         REPORT = 4,
         KEEP_ALIVE = 5,
         EPOCH = 6,
+        MAP
     };
 
     // Scale for local network's geographic coordinates
@@ -560,6 +561,9 @@ public:
                         case EPOCH:
                             db << reinterpret_cast<const Epoch &>(p);
                             break;
+                        case MAP:
+                            db << reinterpret_cast<const Map &>(p);
+                            break;
                         default:
                             break;
                     }
@@ -866,6 +870,29 @@ public:
         Region _destination;
         Time _epoch;
         Global_Coordinates _coordinates;
+        CRC _crc;
+    } __attribute__((packed));
+
+    // Map Control Message
+    class Map: public Control
+    {
+    public:
+        Report(const Unit & unit, const Error & error = 0, bool epoch_request = false)
+        : Control(MAP, 0, 0, now(), here(), here()), _unit(unit), _error(error), _epoch_request(epoch_request) { }
+
+        const Unit & unit() const { return _unit; }
+        Error error() const { return _error; }
+        bool epoch_request() const { return _epoch_request; }
+
+        friend Debug & operator<<(Debug & db, const Map & r) {
+            db << reinterpret_cast<const Control &>(r) << ",u=" << r._unit << ",e=" << r._error;
+            return db;
+        }
+
+    private:
+        Unit _unit;
+        Error _error;
+        bool _epoch_request;
         CRC _crc;
     } __attribute__((packed));
 
@@ -1530,6 +1557,9 @@ private:
                     }
                     case EPOCH: {
                         return buf->frame()->data<Epoch>()->destination();
+                    }
+                    case MAP: {
+                        return Region(sink(), 0, buf->frame()->data<Report>()->time(), -1/*TODO*/);
                     }
                 }
             default:
