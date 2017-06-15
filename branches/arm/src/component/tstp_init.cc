@@ -188,8 +188,9 @@ void TSTP::Locator::bootstrap()
     TSTP::_nic->attach(this, NIC::TSTP);
 
     // TODO: This should be in TSTP::init(), but only here we know if we are the sink
-    if((here() != sink()) && (!Traits<Radio>::promiscuous))
+    if((here() != sink()) && (!Traits<Radio>::promiscuous)){
         new (SYSTEM) TSTP::Life_Keeper;
+    }
 
     // Wait for spatial localization
     while(_confidence < 80)
@@ -253,12 +254,15 @@ void TSTP::init(const NIC & nic)
 
     _nic->attach(tstp, NIC::TSTP);
 
+    //should be in Locator, but need to wait timekeeper->bootstrap();
     if(TSTP::here() != TSTP::sink())  {
         Buffer * buf = alloc(sizeof(Report));
         Map * map = new (buf->frame()->data<Map>()) Map(TSTP::Unit::I32, 0, false);
         marshal(buf);
         db<TSTP>(INF) << "TSTP::Map::send:=" << map << " => " << (*map) << endl;
         _nic->send(buf);
+    } else{
+        Interest_Admission_Control();
     }
 }
 

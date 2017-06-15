@@ -1559,7 +1559,7 @@ private:
                         return buf->frame()->data<Epoch>()->destination();
                     }
                     case MAP: {
-                        return Region(sink(), 0, buf->frame()->data<Report>()->time(), -1/*TODO*/);
+                        return Region(sink(), 0, buf->frame()->data<Map>()->time(), -1/*TODO*/);
                     }
                 }
             default:
@@ -1598,6 +1598,39 @@ private:
     static Observed _observed; // Channel protocols are singletons
     static Time _epoch;
     static Global_Coordinates _global_coordinates;
+};
+
+class Interest_Admission_Control: private TSTP::Observer
+{
+
+public:
+    
+    enum Mode {
+        NEW_NODE = 0,
+        NEW_INTEREST = 1
+    };
+
+public:
+
+    Interest_Admission_Control() {
+        TSTP::attach(this, reinterpret_cast<void *>(NEW_NODE));
+        TSTP::attach(this, reinterpret_cast<void *>(NEW_INTEREST));
+    }
+
+    ~Interest_Admission_Control() {
+        TSTP::detach(this, reinterpret_cast<void *>(NEW_NODE));
+        TSTP::detach(this, reinterpret_cast<void *>(NEW_INTEREST));
+    }
+
+    friend Debug & operator<<(Debug & db, const Interest_Admission_Control & d) {
+        db << "Interest_Admission_Control";
+        return db;
+    }
+   
+    void update(TSTP::Observed * obs, int subject, TSTP::Buffer * buf) {
+        db<TSTP>(TRC) << "Interest_Admission_Control::update: obs(" << obs << ",buf=" << buf << ")" << endl;
+    }
+
 };
 
 __END_SYS

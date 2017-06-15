@@ -609,7 +609,10 @@ void TSTP::update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf)
                 }
             } break;
             case MAP:
-                db<TSTP>(INF) << "TSTP::update: Map: " << *buf->frame()->data<Map>() << endl;
+                db<TSTP>(INF) << "TSTP::update: Map:" << *buf->frame()->data<Map>() << endl;
+                if(here() == sink()) {
+                    notify(reinterpret_cast<void *>(Interest_Admission_Control::NEW_NODE), buf);   
+                }
                 break;
             default:
                 db<TSTP>(WRN) << "TSTP::update: Unrecognized Control subtype: " << buf->frame()->data<Control>()->subtype() << endl;
