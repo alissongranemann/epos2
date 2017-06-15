@@ -256,13 +256,15 @@ void TSTP::init(const NIC & nic)
 
     //should be in Locator, but need to wait timekeeper->bootstrap();
     if(TSTP::here() != TSTP::sink())  {
+        //Alarm::delay(1000000);
         Buffer * buf = alloc(sizeof(Report));
         Map * map = new (buf->frame()->data<Map>()) Map(TSTP::Unit::I32, 0, false);
         marshal(buf);
         db<TSTP>(INF) << "TSTP::Map::send:=" << map << " => " << (*map) << endl;
         _nic->send(buf);
     } else{
-        Interest_Admission_Control();
+        Interest_Admission_Control * iac = new Interest_Admission_Control();
+        iac->init();
     }
 }
 

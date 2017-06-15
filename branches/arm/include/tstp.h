@@ -54,7 +54,7 @@ public:
         REPORT = 4,
         KEEP_ALIVE = 5,
         EPOCH = 6,
-        MAP
+        MAP = 7
     };
 
     // Scale for local network's geographic coordinates
@@ -1591,15 +1591,6 @@ private:
 
     void update(NIC::Observed * obs, NIC::Protocol prot, NIC::Buffer * buf);
 
-private:
-    static NIC * _nic;
-    static Interests _interested;
-    static Responsives _responsives;
-    static Observed _observed; // Channel protocols are singletons
-    static Time _epoch;
-    static Global_Coordinates _global_coordinates;
-};
-
 class Interest_Admission_Control: private TSTP::Observer
 {
 
@@ -1610,16 +1601,19 @@ public:
         NEW_INTEREST = 1
     };
 
-public:
 
     Interest_Admission_Control() {
+       
+    }
+
+    void init(){
         TSTP::attach(this, reinterpret_cast<void *>(NEW_NODE));
-        TSTP::attach(this, reinterpret_cast<void *>(NEW_INTEREST));
+        //TSTP::attach(this, reinterpret_cast<void *>(NEW_INTEREST));
     }
 
     ~Interest_Admission_Control() {
         TSTP::detach(this, reinterpret_cast<void *>(NEW_NODE));
-        TSTP::detach(this, reinterpret_cast<void *>(NEW_INTEREST));
+        //TSTP::detach(this, reinterpret_cast<void *>(NEW_INTEREST));
     }
 
     friend Debug & operator<<(Debug & db, const Interest_Admission_Control & d) {
@@ -1631,7 +1625,22 @@ public:
         db<TSTP>(TRC) << "Interest_Admission_Control::update: obs(" << obs << ",buf=" << buf << ")" << endl;
     }
 
+    Interest_Admission_Control& operator=(const Interest_Admission_Control& iac){
+        return *this;
+    }
+
 };
+
+private:
+    static NIC * _nic;
+    static Interests _interested;
+    static Responsives _responsives;
+    static Observed _observed; // Channel protocols are singletons
+    static Time _epoch;
+    static Global_Coordinates _global_coordinates;
+
+};
+
 
 __END_SYS
 
