@@ -67,6 +67,4 @@ if __name__ == "__main__":
             mote.close()
             mote = init_mote()
         else:
-            print("(", len(data), ") data=(", data, ")")
-            print("(", len(data), ") data=(", data.decode(), ")")
-            print("(", len(data), ") data=(", data.decode("ascii"), ")");
+            print("(", len(data), ") data=(", data, ")");
