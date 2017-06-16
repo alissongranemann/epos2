@@ -1591,16 +1591,39 @@ private:
 
     void update(NIC::Observed * obs, NIC::Protocol prot, NIC::Buffer * buf);
 
+class Interest_Admission_Control_Common
+{
+public:
+    
+   struct Message {
+        long x;
+        long y;
+        long z;
+
+        friend OStream & operator<<(OStream & os, const Message & d) {
+            os << d.x << "," << d.y << "," << d.z;
+            return os;
+        }
+    }__attribute__((packed));
+
+};
+
 class Interest_Admission_Control: private TSTP::Observer
 {
 
+private:
+
+    IF<Traits<USB>::enabled, USB, UART>::Result io;
+    OStream cout;
+
 public:
+
+    typedef TSTP::Interest_Admission_Control_Common::Message Message;
     
     enum Mode {
         NEW_NODE = 0,
         NEW_INTEREST = 1
     };
-
 
     Interest_Admission_Control() {
        
@@ -1608,12 +1631,10 @@ public:
 
     void init(){
         TSTP::attach(this, reinterpret_cast<void *>(NEW_NODE));
-        //TSTP::attach(this, reinterpret_cast<void *>(NEW_INTEREST));
     }
 
     ~Interest_Admission_Control() {
         TSTP::detach(this, reinterpret_cast<void *>(NEW_NODE));
-        //TSTP::detach(this, reinterpret_cast<void *>(NEW_INTEREST));
     }
 
     friend Debug & operator<<(Debug & db, const Interest_Admission_Control & d) {
@@ -1623,6 +1644,14 @@ public:
    
     void update(TSTP::Observed * obs, int subject, TSTP::Buffer * buf) {
         db<TSTP>(TRC) << "Interest_Admission_Control::update: obs(" << obs << ",buf=" << buf << ")" << endl;
+        TSTP::Packet * packet = buf->frame()->data<TSTP::Packet>();
+        TSTP::Map * response = reinterpret_cast<TSTP::Map *>(packet);
+        TSTP::Coordinates coord = response->origin();
+        print(coord);
+    }
+
+    void print(const Coordinates & c){
+       
     }
 
     Interest_Admission_Control& operator=(const Interest_Admission_Control& iac){

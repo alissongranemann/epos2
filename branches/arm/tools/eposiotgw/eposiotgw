@@ -34,7 +34,8 @@ def init_mote():
             print("Waiting for", DEV, "to appear")
             while not os.path.exists(DEV) or not os.access(DEV, os.W_OK):
                 pass
-            mote = serial.Serial(DEV, 115200, timeout = TIMEOUT, write_timeout = 10)
+            #mote = serial.Serial(DEV, 115200, timeout = TIMEOUT, write_timeout = 10)
+            mote=serial.Serial(DEV,baudrate=115200, bytesize=8, parity='N', stopbits=1,timeout=TIMEOUT)
             ok = True
         except KeyboardInterrupt:
             raise
@@ -59,12 +60,12 @@ def init_mote():
 if __name__ == "__main__":
     mote = init_mote()
 
-    session = requests.Session()
-    session.headers = {'Connection': 'close', 'Content-type' : 'application/octet-stream', 'Content-length' : 82}
-    session.cert = MY_CERTIFICATE
+    #session = requests.Session()
+    #session.headers = {'Connection': 'close', 'Content-type' : 'application/octet-stream', 'Content-length' : 82}
+    #session.cert = MY_CERTIFICATE
     #TODO: server verification is not working
     #session.verify = SERVER_CERTIFICATE
-    session.verify = False
+    #session.verify = False
 
     while True:
         try:
@@ -79,6 +80,6 @@ if __name__ == "__main__":
             mote.close()
             mote = init_mote()
         else:
-            response = session.post(URL, data)
-
-            print("[", str(response.status_code), "] (", len(data), ") ", data, sep='');
+            #response = session.post(URL, data)
+            #data.decode('utf-8')
+            print("(", len(data), ") data=(", data.decode(), ")");
