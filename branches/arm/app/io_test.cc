@@ -10,7 +10,7 @@ using namespace EPOS;
         long z;
 
         friend OStream & operator<<(OStream & os, const Message & d) {
-            os << d.x << "," << d.y << "," << d.z;
+            os << d.x << d.y << d.z;
             return os;
         }
     }__attribute__((packed));
@@ -46,7 +46,7 @@ int main()
     }
 
     Message msg;
-    msg.x = 10;
+    msg.x = -10;
     msg.y = 10;
     msg.z = 5;
 

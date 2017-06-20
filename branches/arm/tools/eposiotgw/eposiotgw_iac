@@ -9,6 +9,7 @@ import time
 import serial
 import argparse
 import requests
+import struct
 
 parser = argparse.ArgumentParser(description='EPOS Serial->IoT Gateway')
 parser.add_argument('-d','--dev', help='EPOSMote III device descriptor file', default='/dev/ttyACM0')
@@ -67,4 +68,5 @@ if __name__ == "__main__":
             mote.close()
             mote = init_mote()
         else:
-            print("(", len(data), ") data=(", data, ")");
+            print("(", len(data), ") data=(", data, ")")
+            print("msg=", struct.unpack('3i', data));
