@@ -69,4 +69,4 @@ if __name__ == "__main__":
             mote = init_mote()
         else:
             print("(", len(data), ") data=(", data, ")")
-            print("msg=", struct.unpack('3i', data));
+            print("msg=", struct.unpack('=3l', data));
