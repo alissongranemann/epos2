@@ -258,13 +258,10 @@ void TSTP::init(const NIC & nic)
     if(TSTP::here() != TSTP::sink())  {
         Alarm::delay(1000000);
         Buffer * buf = alloc(sizeof(Report));
-        Map * map = new (buf->frame()->data<Map>()) Map(TSTP::Unit::I32, 0, false);
+        Iac * map = new (buf->frame()->data<Iac>()) Iac(TSTP::Unit::I32, 0, false);
         marshal(buf);
-        db<TSTP>(INF) << "TSTP::Map::send:=" << map << " => " << (*map) << endl;
+        db<TSTP>(INF) << "TSTP::Iac::send:=" << map << " => " << (*map) << endl;
         _nic->send(buf);
-    } else{
-        Interest_Admission_Control * iac = new Interest_Admission_Control();
-        iac->init();
     }
 }
 

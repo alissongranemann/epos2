@@ -54,7 +54,7 @@ public:
         REPORT = 4,
         KEEP_ALIVE = 5,
         EPOCH = 6,
-        MAP = 7
+        IAC = 7
     };
 
     // Scale for local network's geographic coordinates
@@ -561,8 +561,8 @@ public:
                         case EPOCH:
                             db << reinterpret_cast<const Epoch &>(p);
                             break;
-                        case MAP:
-                            db << reinterpret_cast<const Map &>(p);
+                        case IAC:
+                            db << reinterpret_cast<const Iac &>(p);
                             break;
                         default:
                             break;
@@ -873,18 +873,18 @@ public:
         CRC _crc;
     } __attribute__((packed));
 
-    // Map Control Message
-    class Map: public Control
+    // IAC Control Message
+    class Iac: public Control
     {
     public:
-        Map(const Unit & unit, const Error & error = 0, bool epoch_request = false)
-        : Control(MAP, 0, 0, now(), here(), here()), _unit(unit), _error(error), _epoch_request(epoch_request) { }
+    	Iac(const Unit & unit, const Error & error = 0, bool epoch_request = false)
+        : Control(IAC, 0, 0, now(), here(), here()), _unit(unit), _error(error), _epoch_request(epoch_request) { }
 
         const Unit & unit() const { return _unit; }
         Error error() const { return _error; }
         bool epoch_request() const { return _epoch_request; }
 
-        friend Debug & operator<<(Debug & db, const Map & r) {
+        friend Debug & operator<<(Debug & db, const Iac & r) {
             db << reinterpret_cast<const Control &>(r) << ",u=" << r._unit << ",e=" << r._error;
             return db;
         }
@@ -1558,8 +1558,8 @@ private:
                     case EPOCH: {
                         return buf->frame()->data<Epoch>()->destination();
                     }
-                    case MAP: {
-                        return Region(sink(), 0, buf->frame()->data<Map>()->time(), -1/*TODO*/);
+                    case IAC: {
+                        return Region(sink(), 0, buf->frame()->data<Iac>()->time(), -1/*TODO*/);
                     }
                 }
             default:
@@ -1590,75 +1590,6 @@ private:
     }
 
     void update(NIC::Observed * obs, NIC::Protocol prot, NIC::Buffer * buf);
-
-class Interest_Admission_Control_Common
-{
-public:
-    
-   struct Message {
-        long x;
-        long y;
-        long z;
-
-        friend OStream & operator<<(OStream & os, const Message & d) {
-            os << d.x << "," << d.y << "," << d.z;
-            return os;
-        }
-    }__attribute__((packed));
-
-};
-
-class Interest_Admission_Control: private TSTP::Observer
-{
-
-private:
-
-    IF<Traits<USB>::enabled, USB, UART>::Result io;
-    OStream cout;
-
-public:
-
-    typedef TSTP::Interest_Admission_Control_Common::Message Message;
-    
-    enum Mode {
-        NEW_NODE = 0,
-        NEW_INTEREST = 1
-    };
-
-    Interest_Admission_Control() {
-       
-    }
-
-    void init(){
-        TSTP::attach(this, reinterpret_cast<void *>(NEW_NODE));
-    }
-
-    ~Interest_Admission_Control() {
-        TSTP::detach(this, reinterpret_cast<void *>(NEW_NODE));
-    }
-
-    friend Debug & operator<<(Debug & db, const Interest_Admission_Control & d) {
-        db << "Interest_Admission_Control";
-        return db;
-    }
-   
-    void update(TSTP::Observed * obs, int subject, TSTP::Buffer * buf) {
-        db<TSTP>(TRC) << "Interest_Admission_Control::update: obs(" << obs << ",buf=" << buf << ")" << endl;
-        TSTP::Packet * packet = buf->frame()->data<TSTP::Packet>();
-        TSTP::Map * response = reinterpret_cast<TSTP::Map *>(packet);
-        TSTP::Coordinates coord = response->origin();
-        print(coord);
-    }
-
-    void print(const Coordinates & c){
-       
-    }
-
-    Interest_Admission_Control& operator=(const Interest_Admission_Control& iac){
-        return *this;
-    }
-
-};
 
 private:
     static NIC * _nic;

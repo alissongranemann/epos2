@@ -10,6 +10,7 @@
 #include <tcp.h>
 #include <tstp.h>
 #include <http.h> // Quectel HTTP implements the whole stack, so it can be used as a Network
+#include <iac.h>
 
 __BEGIN_SYS
 
@@ -48,6 +49,13 @@ void Network::init()
 //        if(Traits<TSTP>::enabled)
 //            new (SYSTEM) TSTP;
     }
+
+    //TODO if(Traits<Network>::NETWORKS::Count<TSTP>::Result) {
+    if(Traits<TSTP>::sink){
+    	IAC::init();
+    }
+
+    //}
 
 }
 

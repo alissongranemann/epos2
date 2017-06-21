@@ -608,10 +608,10 @@ void TSTP::update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf)
                     db<TSTP>(INF) << "TSTP::update: Epoch: adjusted epoch Space-Time to: " << _global_coordinates << ", " << _epoch << endl;
                 }
             } break;
-            case MAP:
-                db<TSTP>(INF) << "TSTP::update: Map:" << *buf->frame()->data<Map>() << endl;
+            case IAC:
+                db<TSTP>(INF) << "TSTP::update: Iac:" << *buf->frame()->data<Iac>() << endl;
                 if(here() == sink()) {
-                    notify(reinterpret_cast<void *>(Interest_Admission_Control::NEW_NODE), buf);   
+                    notify(reinterpret_cast<void *>(0), buf);
                 }
                 break;
             default:
