@@ -6,6 +6,7 @@
 #include <tstp.h>
 #include <periodic_thread.h>
 #include <utility/observer.h>
+#include <iac.h>
 
 __BEGIN_SYS
 
@@ -61,7 +62,7 @@ struct Smart_Data_Type_Wrapper
 // Smart Data encapsulates Transducers (i.e. sensors and actuators), local or remote, and bridges them with TSTP
 // Transducers must be Observed objects, must implement either sense() or actuate(), and must define UNIT, NUM, and ERROR.
 template<typename Transducer>
-class Smart_Data: public Smart_Data_Common, private TSTP::Observer, private Transducer::Observer
+class Smart_Data: public Smart_Data_Common, private TSTP::Observer, private Transducer::Observer, private IAC::Observer
 {
     friend class Smart_Data_Type_Wrapper<Transducer>::Type; // friend S is OK in C++11, but this GCC does not implements it yet. Remove after GCC upgrade.
 
@@ -111,7 +112,11 @@ public:
     // Remote, event-driven (period = 0) or time-triggered data source
     Smart_Data(const Region & region, const Microsecond & expiry, const Microsecond & period = 0, const Mode & mode = PRIVATE)
     : _unit(UNIT), _value(0), _error(ERROR), _coordinates(0), _time(0), _expiry(expiry), _device(REMOTE), _mode(static_cast<Mode>(mode & (~COMMANDED))), _thread(0), _interested(new Interested(this, region, UNIT, TSTP::SINGLE, 0, expiry, period)), _responsive(0) {
-        TSTP::attach(this, _interested);
+        if(_interested->time_triggered()){
+        	IAC::new_interest(this);
+        }else{
+    	    TSTP::attach(this, _interested);
+        }
     }
 
     ~Smart_Data() {
@@ -266,6 +271,12 @@ private:
         default:
             break;
         }
+    }
+
+    void update(IAC::Observed * obs, bool * result) {
+       db<Smart_Data>(TRC) << "Smart_Data::update - IAC" << endl;
+       if(result)
+	       TSTP::attach(this, _interested);
     }
 
     // Event-driven update
