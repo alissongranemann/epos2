@@ -53,6 +53,8 @@ void Network::init()
     //TODO if(Traits<Network>::NETWORKS::Count<TSTP>::Result) {
     if(Traits<TSTP>::sink){
     	IAC::init();
+    }else{
+    	TSTP::send_location_to_sink();
     }
 
     //}

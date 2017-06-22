@@ -254,15 +254,6 @@ void TSTP::init(const NIC & nic)
 
     _nic->attach(tstp, NIC::TSTP);
 
-    //should be in Locator, but need to wait timekeeper->bootstrap();
-    if(TSTP::here() != TSTP::sink())  {
-        Alarm::delay(1000000);
-        Buffer * buf = alloc(sizeof(Report));
-        Iac * map = new (buf->frame()->data<Iac>()) Iac(TSTP::Unit::I32, 0, false);
-        marshal(buf);
-        db<TSTP>(INF) << "TSTP::Iac::send:=" << map << " => " << (*map) << endl;
-        _nic->send(buf);
-    }
 }
 
 template void TSTP::init<0>(const NIC & nic);

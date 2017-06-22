@@ -877,23 +877,18 @@ public:
     class Iac: public Control
     {
     public:
-    	Iac(const Unit & unit, const Error & error = 0, bool epoch_request = false)
-        : Control(IAC, 0, 0, now(), here(), here()), _unit(unit), _error(error), _epoch_request(epoch_request) { }
+    	Iac(const Error & error = 0)
+        : Control(IAC, 0, 0, now(), here(), here()), _error(error) { }
 
-        const Unit & unit() const { return _unit; }
         Error error() const { return _error; }
-        bool epoch_request() const { return _epoch_request; }
 
         friend Debug & operator<<(Debug & db, const Iac & r) {
-            db << reinterpret_cast<const Control &>(r) << ",u=" << r._unit << ",e=" << r._error;
+            db << reinterpret_cast<const Control &>(r) << ",e=" << r._error;
             return db;
         }
 
     private:
-        Unit _unit;
         Error _error;
-        bool _epoch_request;
-        CRC _crc;
     } __attribute__((packed));
 
     // TSTP Smart Data bindings
@@ -1516,6 +1511,7 @@ public:
 
     template<unsigned int UNIT>
     static void init(const NIC & nic);
+    static void send_location_to_sink();
 
 private:
     static Region destination(Buffer * buf) {

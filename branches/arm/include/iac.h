@@ -2,6 +2,7 @@
 #define __iac_h
 
 #include <tstp.h>
+#include <iac_handler.h>
 #include <utility/observer.h>
 
 __BEGIN_SYS
@@ -31,9 +32,8 @@ class IAC: private TSTP::Observer
 
 private:
 
-    IF<Traits<USB>::enabled, USB, UART>::Result io;
-    OStream cout;
-    static Observed _observed; // Channel protocols are singletons
+    static IAC_Handler _handler;
+    static Observed _observed;
 
 public:
 
@@ -46,20 +46,13 @@ public:
     static void detach(Observer * obs) { _observed.detach(obs); }
     static bool notify(bool * result) { return _observed.notify(result); }
 
+    void update(TSTP::Observed * obs, int subject, TSTP::Buffer * buf);
+
     friend Debug & operator<<(Debug & db, const IAC & d) {
-        db << "Interest_Admission_Control";
+        db << "IAC";
         return db;
     }
    
-    //new node
-    void update(TSTP::Observed * obs, int subject, TSTP::Buffer * buf) {
-        db<TSTP>(TRC) << "Interest_Admission_Control::update: obs(" << obs << ",buf=" << buf << ")" << endl;
-//        TSTP::Packet * packet = buf->frame()->data<TSTP::Packet>();
-//        TSTP::Map * response = reinterpret_cast<TSTP::Map *>(packet);
-//        TSTP::Coordinates coord = response->origin();
-//        print(coord);
-    }
-
     IAC& operator=(const IAC& iac){
         return *this;
     }
