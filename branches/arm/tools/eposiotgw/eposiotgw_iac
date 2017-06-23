@@ -57,7 +57,7 @@ if __name__ == "__main__":
 
     while True:
         try:
-            data = mote.read(12)
+            data = mote.read(80)
         except KeyboardInterrupt:
             raise
         except Exception as e:
@@ -69,4 +69,4 @@ if __name__ == "__main__":
             mote = init_mote()
         else:
             print("(", len(data), ") data=(", data, ")")
-            print("msg=", struct.unpack('=3l', data));
+            print("msg=", struct.unpack('=1i64s12s', data));

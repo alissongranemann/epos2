@@ -2,8 +2,8 @@
 #define __iac_h
 
 #include <tstp.h>
-#include <iac_handler.h>
 #include <utility/observer.h>
+#include <serial_port.h>
 
 __BEGIN_SYS
 
@@ -27,13 +27,11 @@ public:
 class IAC: private TSTP::Observer
 {
 
-    typedef Data_Observed<bool> Observed;
-    typedef Data_Observer<bool> Observer;
-
 private:
 
-    static IAC_Handler _handler;
-    static Observed _observed;
+    typedef Serial_Port::Message Message;
+
+    static Serial_Port * serial_port;
 
 public:
 
@@ -42,9 +40,7 @@ public:
     ~IAC();
 
     static void init();
-    static void new_interest(Observer * obs);
-    static void detach(Observer * obs) { _observed.detach(obs); }
-    static bool notify(bool * result) { return _observed.notify(result); }
+    static void new_interest(Observer * obs, TSTP::Interest * interest);
 
     void update(TSTP::Observed * obs, int subject, TSTP::Buffer * buf);
 

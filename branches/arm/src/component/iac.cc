@@ -2,11 +2,12 @@
 
 __BEGIN_SYS
 
-IAC::Observed IAC::_observed;
-IAC_Handler IAC::_handler;
+Serial_Port * IAC::serial_port;
 
 IAC::IAC(){
     db<TSTP>(TRC) << "IAC()" << endl;
+    serial_port = new Serial_Port();
+    serial_port->epoch();
 }
 
 IAC::~IAC() {
@@ -16,18 +17,16 @@ IAC::~IAC() {
 
 void IAC::init(){
     db<TSTP>(TRC) << "IAC::init()" << endl;
-	IAC * iac = new IAC();
+    IAC * iac = new IAC();
     TSTP::attach(iac, reinterpret_cast<void *>(0));
-    //_handler = new IAC_IO_Handler();
 }
 
-void IAC::new_interest(Observer * obs){
+void IAC::new_interest(Observer * obs, TSTP::Interest * interest){
     db<TSTP>(TRC) << "IAC::new_interest()" << endl;
-    _observed.attach(obs);
-    //write usb
-    //bool * result = new bool(true);
-    //notify(result);
-    _handler.new_interest();
+    Message * msg = new Message();
+    msg->type = 1;
+    serial_port->handle_tx_message(msg);
+    serial_port->handle_rx_message();
 }
 
 //new node
@@ -35,7 +34,8 @@ void IAC::update(TSTP::Observed * obs, int subject, TSTP::Buffer * buf) {
     db<TSTP>(TRC) << "IAC::update: obs(" << obs << ",buf=" << buf << ")" << endl;
     TSTP::Header * packet = buf->frame()->data<TSTP::Header>();
     TSTP::Coordinates coord = packet->origin();
-    _handler.new_node();
+    Message * msg = new Message();
+    serial_port->handle_tx_message(msg);
 }
 
 __END_SYS
