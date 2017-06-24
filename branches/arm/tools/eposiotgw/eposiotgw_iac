@@ -81,10 +81,11 @@ def read_msg():
         mote.close()
         init_mote()
     else:
-        if read_end()[0] != 36:
-            read_first(); 
-        print("msg=", struct.unpack('=1i3l1L2Q', data))
-        mote.write(bytes(str(1), 'ascii'))
+        if read_end()[0] == 36:
+            print("msg=", struct.unpack('=1i3l1L2Q', data))
+            mote.write(bytes(str(1), 'ascii'))
+        else:
+            read_first();
 
 def read_end():
     try:

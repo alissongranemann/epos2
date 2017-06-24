@@ -873,8 +873,7 @@ public:
         CRC _crc;
     } __attribute__((packed));
 
-    // IAC Control Message
-    class Iac: public Control
+/*    class Iac: public Control
     {
     public:
     	Iac(const Error & error = 0)
@@ -889,6 +888,29 @@ public:
 
     private:
         Error _error;
+    } __attribute__((packed));*/
+
+    // IAC Control Message
+    class Iac: public Control
+    {
+    public:
+    	Iac(const Unit & unit, const Error & error = 0, bool epoch_request = false)
+        : Control(IAC, 0, 0, now(), here(), here()), _unit(unit), _error(error), _epoch_request(epoch_request) { }
+
+        const Unit & unit() const { return _unit; }
+        Error error() const { return _error; }
+        bool epoch_request() const { return _epoch_request; }
+
+        friend Debug & operator<<(Debug & db, const Iac & r) {
+            db << reinterpret_cast<const Control &>(r) << ",u=" << r._unit << ",e=" << r._error;
+            return db;
+        }
+
+    private:
+        Unit _unit;
+        Error _error;
+        bool _epoch_request;
+        CRC _crc;
     } __attribute__((packed));
 
     // TSTP Smart Data bindings

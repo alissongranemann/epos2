@@ -15,15 +15,4 @@ void Serial_Port::handle_transmission_complete() {
     }
 }
 
-void Serial_Port::handle_receive_complete(){
-    //Message pMsg;
-    //memcpy(pMsg, m_receiveBuffer.data, m_receiveBuffer.length);
-    //pMsg->length = m_receiveBuffer.length;
-    // Pass the message to the higher layers
-    //m_pReceiveQueue->insert(&pMsg.e);
-
-    //m_receiveBuffer.current_index = 0;
-    //notify()
-}
-
 __END_SYS

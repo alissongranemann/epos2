@@ -34,7 +34,7 @@ void IAC::new_interest(Serial_Port::Observer * obs, TSTP::Interest * interest){
     msg.period = interest->period();
     msg.expiry = interest->expiry();
     serial_port->handle_tx_message(msg);
-    serial_port->handle_rx_message();
+    //serial_port->handle_rx_message();
 }
 
 //new node

@@ -53,11 +53,7 @@ private:
     IF<Traits<USB>::enabled, USB, UART>::Result io;
     static Observed _observed;
 
-    Queue<MessageWrapper> m_pReceiveQueue;
     Queue<MessageWrapper> m_pTransmitQueue;
-
-    Message m_receiveBuffer;
-    Message m_transmitBuffer;
 
 public:
     Serial_Port()
@@ -70,7 +66,6 @@ public:
         //io_write(m_interruptStatusRegister, ENABLE_RX_DISABLE_TX_MASK);
 
         m_pTransmitQueue = Queue<MessageWrapper>();
-        m_pReceiveQueue = Queue<MessageWrapper>();
     }
 
     ~Serial_Port()
@@ -123,7 +118,6 @@ public:
         db<TSTP>(TRC) << "Serial_Port::handle_rx_message:" << endl;
         char c = io.get();
         notify(new bool(c - '0'));
-        handle_receive_complete();
     }
 
     static void attach(Observer * obs) { _observed.attach(obs); }
