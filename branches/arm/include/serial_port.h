@@ -15,12 +15,14 @@ class Serial_Port
 public:
 
     typedef Data_Observed<bool> Observed;
+
     typedef Data_Observer<bool> Observer;
 
-    enum HEADER {
+    typedef unsigned char HEADER;
+    enum {
 
-        START = 0x01,
-        END = 0x02
+        START = '^',
+        END = '$'
 
     };
 
@@ -108,10 +110,10 @@ public:
     }
 
     void send_message(const Message & msg){
-        io.put('^');
+        io.put(START);
         for(unsigned int i = 0; i < sizeof(Message); i++)
             io.put(reinterpret_cast<const char *>(&msg)[i]);
-        io.put('$');
+        io.put(END);
     }
 
     void handle_rx_message() {

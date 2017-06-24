@@ -47,6 +47,7 @@ void IAC::update(TSTP::Observed * obs, int subject, TSTP::Buffer * buf) {
     msg.x = coord.x;
     msg.y = coord.y;
     msg.z = coord.z;
+    msg.r = TSTP::RADIO_RANGE;
     serial_port->handle_tx_message(msg);
 }
 

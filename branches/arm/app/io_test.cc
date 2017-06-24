@@ -45,10 +45,11 @@ int main()
     msg2.expiry = 250;
 
     while(true){
-        Alarm::delay(INTEREST_PERIOD);
+        //Alarm::delay(INTEREST_PERIOD);
         //cout << "msg1=" << sizeof(msg1) << endl;
         //cout << "msg2=" << sizeof(msg2) << endl;
         serial_port->handle_tx_message(msg1);
+        serial_port->handle_tx_message(msg2);
         //serial_port->handle_tx_message(msg2);
     }
     return 0;
