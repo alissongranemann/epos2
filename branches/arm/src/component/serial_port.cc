@@ -6,7 +6,7 @@ Serial_Port::Observed Serial_Port::_observed;
 
 void Serial_Port::handle_transmission_complete() {
     if (!m_pTransmitQueue.empty()) {
-        Message * pMsg = m_pTransmitQueue.remove()->object();
+        Message pMsg = m_pTransmitQueue.remove()->object()->msg;
         //m_transmitBuffer.length = pMsg.length;
         //m_transmitBuffer.current_index = 0;
 
@@ -16,7 +16,7 @@ void Serial_Port::handle_transmission_complete() {
 }
 
 void Serial_Port::handle_receive_complete(){
-    Message pMsg;
+    //Message pMsg;
     //memcpy(pMsg, m_receiveBuffer.data, m_receiveBuffer.length);
     //pMsg->length = m_receiveBuffer.length;
     // Pass the message to the higher layers

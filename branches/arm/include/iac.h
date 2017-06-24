@@ -40,7 +40,7 @@ public:
     ~IAC();
 
     static void init();
-    static void new_interest(Observer * obs, TSTP::Interest * interest);
+    static void new_interest(Serial_Port::Observer * obs, TSTP::Interest * interest);
 
     void update(TSTP::Observed * obs, int subject, TSTP::Buffer * buf);
 

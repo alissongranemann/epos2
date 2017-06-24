@@ -113,8 +113,8 @@ public:
     Smart_Data(const Region & region, const Microsecond & expiry, const Microsecond & period = 0, const Mode & mode = PRIVATE)
     : _unit(UNIT), _value(0), _error(ERROR), _coordinates(0), _time(0), _expiry(expiry), _device(REMOTE), _mode(static_cast<Mode>(mode & (~COMMANDED))), _thread(0), _interested(new Interested(this, region, UNIT, TSTP::SINGLE, 0, expiry, period)), _responsive(0) {
         if(_interested->time_triggered()){
-        	IAC::new_interest(this, _interested);
-        }else{
+            IAC::new_interest(this, _interested);
+        } else{
     	    TSTP::attach(this, _interested);
         }
     }

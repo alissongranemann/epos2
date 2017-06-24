@@ -52,21 +52,57 @@ def init_mote():
     print("init_mote() done", file=sys.stderr)
     return mote
 
+def read_first():
+    try:
+        first = mote.read(1)
+        while struct.unpack('=1B', first)[0] != 94:
+            first = mote.read(1)
+            if not len(first):
+                mote.close()
+                init_mote()
+        read_msg()
+    except KeyboardInterrupt:
+        raise
+    except Exception as e:
+        print("Exception caught:", e, file=sys.stderr)
+        mote.close()
+        init_mote()
+
+def read_msg():
+    try:
+        data = mote.read(36)
+    except KeyboardInterrupt:
+        raise
+    except Exception as e:
+        print("Exception caught:", e, file=sys.stderr)
+        data = b''
+
+    if not len(data):
+        mote.close()
+        init_mote()
+    else:
+        if read_end()[0] != 36:
+            read_first(); 
+        print("msg=", struct.unpack('=1i3l1L2Q', data))
+        mote.write(bytes(str(1), 'ascii'))
+
+def read_end():
+    try:
+        end = mote.read(1)
+    except KeyboardInterrupt:
+        raise
+    except Exception as e:
+        print("Exception caught:", e, file=sys.stderr)
+        mote.close()
+        init_mote()
+
+    if not len(end):
+        mote.close()
+        init_mote()
+    else:
+        return struct.unpack('=1B', end)
+
 if __name__ == "__main__":
     mote = init_mote()
-
-    while True:
-        try:
-            data = mote.read(80)
-        except KeyboardInterrupt:
-            raise
-        except Exception as e:
-            print("Exception caught:", e, file=sys.stderr)
-            data = b''
-
-        if not len(data):
-            mote.close()
-            mote = init_mote()
-        else:
-            print("(", len(data), ") data=(", data, ")")
-            print("msg=", struct.unpack('=1i64s12s', data));
+    while(True):
+        read_first();
