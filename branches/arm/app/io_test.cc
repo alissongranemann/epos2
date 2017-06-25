@@ -6,7 +6,10 @@
 
 using namespace EPOS;
 
-typedef Serial_Port::Message Message;
+typedef IAC_Common::New_Interest New_Interest;
+typedef IAC_Common::New_Node New_Node;
+typedef Serial_Port::Message<IAC_Common::New_Interest> New_Interest_Message;
+typedef Serial_Port::Message<IAC_Common::New_Node> New_Node_Message;
 typedef TSTP::Coordinates Coordinates;
 typedef TSTP::Region Region;
 
@@ -26,23 +29,11 @@ int main()
 
     TSTP::Interest interest(region, TSTP::Unit::I32, TSTP::Mode::SINGLE, 0, 0, 0);
 
-    // char data[64];
-    //memcpy(data, &interest, sizeof(TSTP::Interest)); // "Serialize"
+    New_Node new_node(5, 10, 15);
+    New_Node_Message msg1(IAC_Common::NEW_NODE, new_node);
 
-    Message msg1;
-    msg1.type = 0;
-    msg1.x = 10;
-    msg1.y = 10;
-    msg1.z = 10;
-
-    Message msg2;
-    msg2.type = 0;
-    msg2.x = 10;
-    msg2.y = 10;
-    msg2.z = 10;
-    msg2.r = 5;
-    msg2.period = 100;
-    msg2.expiry = 250;
+    New_Interest new_interest(15, 10, 5, region.radius, INTEREST_PERIOD, INTEREST_PERIOD * 3);
+    New_Interest_Message msg2(IAC_Common::NEW_INTEREST, new_interest);
 
     while(true){
         //Alarm::delay(INTEREST_PERIOD);

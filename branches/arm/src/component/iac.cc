@@ -25,16 +25,10 @@ void IAC::new_interest(Serial_Port::Observer * obs, TSTP::Interest * interest){
     db<TSTP>(TRC) << "IAC::new_interest()" << endl;
     serial_port->attach(obs);
     TSTP::Region region = interest->region();
-    Message msg;
-    msg.type = 1;
-    msg.x = region.center.x;
-    msg.y = region.center.y;
-    msg.z = region.center.z;
-    msg.r = region.radius;
-    msg.period = interest->period();
-    msg.expiry = interest->expiry();
+    IAC_Common::New_Interest new_interest(region.center.x, region.center.y, region.center.z, region.radius, interest->period(), interest->expiry());
+    Serial_Port::Message<IAC_Common::New_Interest> msg(IAC_Common::NEW_INTEREST, new_interest);
     serial_port->handle_tx_message(msg);
-    //serial_port->handle_rx_message();
+    serial_port->handle_rx_message();
 }
 
 //new node
@@ -42,12 +36,8 @@ void IAC::update(TSTP::Observed * obs, int subject, TSTP::Buffer * buf) {
     db<TSTP>(TRC) << "IAC::update: obs(" << obs << ",buf=" << buf << ")" << endl;
     TSTP::Header * packet = buf->frame()->data<TSTP::Header>();
     TSTP::Coordinates coord = packet->origin();
-    Message msg;
-    msg.type = 0;
-    msg.x = coord.x;
-    msg.y = coord.y;
-    msg.z = coord.z;
-    msg.r = TSTP::RADIO_RANGE;
+    IAC_Common::New_Node new_node(coord.x, coord.y, coord.z);
+    Serial_Port::Message<IAC_Common::New_Node> msg(IAC_Common::NEW_NODE, new_node);
     serial_port->handle_tx_message(msg);
 }
 

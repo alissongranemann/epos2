@@ -11,15 +11,43 @@ class IAC_Common
 {
 public:
     
-   struct Message {
+    typedef unsigned int Type;
+    enum {
+
+        NEW_NODE = 0,
+        NEW_INTEREST = 1
+
+    };
+
+    struct New_Node {
+
+        New_Node(long _x, long _y, long _z)
+        : x(_x), y(_y), z(_z), r(TSTP::RADIO_RANGE) {}
+
         long x;
         long y;
         long z;
+        unsigned long r;
 
-        friend OStream & operator<<(OStream & os, const Message & d) {
+     }__attribute__((packed));
+
+    struct New_Interest {
+
+        New_Interest(long _x, long _y, long _z, long _r, unsigned long long _period, unsigned long long _expiry)
+        : x(_x), y(_y), z(_z), r(_r), period(_period), expiry(_expiry) {}
+
+        long x;
+        long y;
+        long z;
+        unsigned long r;
+        unsigned long long period;
+        unsigned long long expiry;
+
+        friend OStream & operator<<(OStream & os, const New_Interest & d) {
             os << d.x << "," << d.y << "," << d.z;
             return os;
         }
+
     }__attribute__((packed));
 
 };
@@ -28,8 +56,6 @@ class IAC: private TSTP::Observer
 {
 
 private:
-
-    typedef Serial_Port::Message Message;
 
     static Serial_Port * serial_port;
 

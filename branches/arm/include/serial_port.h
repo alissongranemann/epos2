@@ -26,36 +26,33 @@ public:
 
     };
 
+    template <typename MessageType>
     struct Message
     {
+        Message(int _type, MessageType _msg) : type(_type), length(sizeof(MessageType)), msg(_msg) {}
 
-        Message() : type(0), x(0), y(0), z(0), r(0), period(0), expiry(0) {}
-
-        unsigned int type;
-        long x;
-        long y;
-        long z;
-        unsigned long r;
-        unsigned long long period;
-        unsigned long long expiry;
+        int type;
+        int length;
+        MessageType msg;
 
     }__attribute__((packed));
 
-    struct MessageWrapper
-    {
-        MessageWrapper(Message _msg)
-        : msg(_msg), e(this) {}
-
-        Message msg;
-        Queue<MessageWrapper>::Element e;
-    };
+//    template <typename MessageType>
+//    struct MessageWrapper
+//    {
+//        MessageWrapper(Message _msg)
+//        : msg(_msg), e(this) {}
+//
+//        Message<MessageType> msg;
+//        Queue<MessageWrapper<MessageType>>::Element e;
+//    };
 
 private:
 
     IF<Traits<USB>::enabled, USB, UART>::Result io;
     static Observed _observed;
 
-    Queue<MessageWrapper> m_pTransmitQueue;
+    //Queue<MessageWrapper> m_pTransmitQueue;
 
 public:
     Serial_Port()
@@ -67,7 +64,7 @@ public:
 
         //io_write(m_interruptStatusRegister, ENABLE_RX_DISABLE_TX_MASK);
 
-        m_pTransmitQueue = Queue<MessageWrapper>();
+       // m_pTransmitQueue = Queue<MessageWrapper>();
     }
 
     ~Serial_Port()
@@ -95,25 +92,29 @@ public:
 
     void handle_receive_complete();
 
-    void handle_tx_message(const Message & new_msg) {
+    template <typename MessageType>
+    void handle_tx_message(const Message<MessageType> & new_msg) {
         db<TSTP>(TRC) << "Serial_Port::handle_tx_message:" << endl;
 
-        if (!m_pTransmitQueue.empty()) {
-            MessageWrapper msgWrapper(new_msg);
-            m_pTransmitQueue.insert(&msgWrapper.e);
-            Message msg = m_pTransmitQueue.remove()->object()->msg;
-            send_message(msg);
-        } else {
-            send_message(new_msg);
-        }
+        //if (!m_pTransmitQueue.empty()) {
+         //   MessageWrapper msgWrapper(new_msg);
+         //   m_pTransmitQueue.insert(&msgWrapper.e);
+         //   Message msg = m_pTransmitQueue.remove()->object()->msg;
+         //   send_message(msg);
+       // } else {
+        send_message(new_msg);
+       // }
         handle_transmission_complete();
     }
 
-    void send_message(const Message & msg){
+    template <typename MessageType>
+    void send_message(const Message<MessageType> & msg){
+        CPU::int_disable();
         io.put(START);
-        for(unsigned int i = 0; i < sizeof(Message); i++)
+        for(unsigned int i = 0; i < sizeof(msg); i++)
             io.put(reinterpret_cast<const char *>(&msg)[i]);
         io.put(END);
+        CPU::int_enable();
     }
 
     void handle_rx_message() {
