@@ -1,0 +1,75 @@
+#!/usr/bin/env python3
+
+# To get an unencrypted PEM (without passphrase):
+# openssl rsa -in certificate.pem -out certificate_unencrypted.pem
+
+import os
+import sys
+import time
+import serial
+import argparse
+import requests
+import struct
+
+parser = argparse.ArgumentParser(description='EPOS Serial->IoT Gateway')
+parser.add_argument('-d','--dev', help='EPOSMote III device descriptor file', default='/dev/ttyACM0')
+parser.add_argument('-t','--timeout', help='Timeout for reading from mote', default=600)
+args = vars(parser.parse_args())
+
+DEV = args['dev']
+TIMEOUT = int(args['timeout'])
+
+def init_mote():
+    global DEV
+    global TIMEOUT
+
+    ok = False
+    while not ok:
+        try:
+            print("Waiting for", DEV, "to appear")
+            while not os.path.exists(DEV) or not os.access(DEV, os.W_OK):
+                pass
+            #mote = serial.Serial(DEV, 115200, timeout = TIMEOUT, write_timeout = 10)
+            mote=serial.Serial(DEV,baudrate=115200, bytesize=8, parity='N', stopbits=1,timeout=TIMEOUT)
+            ok = True
+        except KeyboardInterrupt:
+            raise
+        except Exception as e:
+            print("Exception caught:", e, file=sys.stderr)
+            ok = False
+            time.sleep(3)
+
+    print("Mote open", file=sys.stderr)
+    ts = bytes(str(int(time.time() * 1000000)), 'ascii')
+    try:
+        mote.write(ts + b'X')
+        print("epoch written", file=sys.stderr)
+    except KeyboardInterrupt:
+        raise
+    except serial.serialutil.SerialTimeoutException:
+        pass
+
+    print("init_mote() done", file=sys.stderr)
+    return mote
+
+def read_msg():
+    try:
+        data = mote.read(8)
+    except KeyboardInterrupt:
+        raise
+    except Exception as e:
+        print("Exception caught:", e, file=sys.stderr)
+        data = b''
+
+    if not len(data):
+        mote.close()
+        init_mote()
+    else:
+        unpack = struct.unpack('=2i', data)
+        print("msg=", unpack)
+        mote.read(unpack[1])
+
+if __name__ == "__main__":
+    mote = init_mote()
+    #while(True):
+    read_msg();
