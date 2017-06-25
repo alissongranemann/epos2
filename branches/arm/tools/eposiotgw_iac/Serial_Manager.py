@@ -3,21 +3,22 @@ from Interest import Interest
 from enum import IntEnum, unique
 from Sensor import Sensor
 from Serial import Serial
+import struct
 
 @unique
 class Request_Type(IntEnum):
     SENSOR = 0
     INTEREST = 1
+    CONFIG = 2
 
 @unique
 class Index(IntEnum):
-    TYPE = 0
-    X = 1
-    Y = 2
-    Z = 3
-    RADIUS = 4
-    PERIOD = 5
-    EXPIRY = 6
+    X = 0
+    Y = 1
+    Z = 2
+    RADIUS = 3
+    PERIOD = 4
+    EXPIRY = 5
 
 class Serial_Manager:
 
@@ -31,14 +32,22 @@ class Serial_Manager:
         else:
             print("Writing on serial fail")
 
-    def handle_serial_request(self, data):
-        print(data)
-        if(data[Index.TYPE] == Request_Type.SENSOR):
-            sensor = self.extract_sensor_data(data)
+    def handle_serial_request(self, type, data):
+        if(type == Request_Type.SENSOR):
+            unpacked_data = struct.unpack('=3l1L', data)
+            print("msg=", unpacked_data)
+            sensor = self.extract_sensor_data(unpacked_data)
             self.admission_control.handle_new_sensor_request(sensor)
-        else:
-            interest = self.extract_interest_data(data)
+        if(type == Request_Type.INTEREST):
+            unpacked_data = struct.unpack('=3l1L2Q', data)
+            print("msg=", unpacked_data)
+            interest = self.extract_interest_data(unpacked_data)
             self.admission_control.handle_new_interest_request(interest)
+        if(type == Request_Type.CONFIG):
+            #do config
+            unpacked_data = struct.unpack('=1L1I', data)
+            print("msg=", unpacked_data)
+            print("Sink radius=", unpacked_data[0], "/ MAC Period=", unpacked_data[1])
 
     def extract_sensor_data(self, data):
         x = data[Index.X]

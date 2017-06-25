@@ -9,6 +9,12 @@ import time
 import serial
 import argparse
 import struct
+from enum import IntEnum, unique
+
+@unique
+class Header_Index(IntEnum):
+    TYPE = 0
+    LENGTH = 1
 
 class Serial:
     # 'EPOSMote III device descriptor file'
@@ -70,10 +76,9 @@ class Serial:
 
     def read_msg(self):
         try:
-            #data = self.mote.read(36)
             data = self.mote.read(8)
             header = struct.unpack('=2i', data)
-            data = self.mote.read(header[1])
+            data = self.mote.read(header[Header_Index.LENGTH])
         except KeyboardInterrupt:
             raise
         except Exception as e:
@@ -86,14 +91,8 @@ class Serial:
         else:
             if self.read_end()[0] != 36:
                 self.read_first();
-            if(header[0] == 0):
-                unpacked_data = struct.unpack('=3l1L', data)
-            if(header[0] == 1):
-                unpacked_data = struct.unpack('=3l1L2Q', data)
-            if(header[0] == 2):
-                unpacked_data = struct.unpack('=1L1I', data)    
-            print("msg=", unpacked_data)
-            #self.serial_manager.handle_serial_request(unpacked_data)
+            print("header=", header)
+            self.serial_manager.handle_serial_request(header[Header_Index.TYPE], data)
             #self.mote.write(bytes(str(1), 'ascii'))
 
     def read_end(self):
