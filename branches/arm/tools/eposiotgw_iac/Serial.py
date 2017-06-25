@@ -18,7 +18,7 @@ class Header_Index(IntEnum):
 
 class Serial:
     # 'EPOSMote III device descriptor file'
-    DEV = '/dev/ttyACM0'
+    DEV = '/dev/ttyACM1'
     # 'Timeout for reading from mote'
     TIMEOUT = 600
 
@@ -59,57 +59,42 @@ class Serial:
         return mote
 
     def read_first(self):
-        try:
-            first = self.mote.read(1)
-            while struct.unpack('=1B', first)[0] != 94:
-                first = self.mote.read(1)
-                if not len(first):
-                    self.mote.close()
-                    self.init_mote()
-        except KeyboardInterrupt:
-            raise
-        except Exception as e:
-            print("Exception caught read first:", e, file=sys.stderr)
-            self.mote.close()
-            self.init_mote()
-        self.read_msg()
+        self.read(1, self.read_header)
 
-    def read_msg(self):
+    def read_header(self, start, args):
+        unpack = struct.unpack('=1B', start)
+        if unpack[0] == 94:
+            self.read(8, self.check_end)
+
+    def check_end(self, header_data, args):
+        header = struct.unpack('=2i', header_data)
+        self.read(1, self.read_msg, header)
+ 
+    def read_msg(self, end, args):
+        unpack = struct.unpack('=1B', end)
+        header = args[0];
+        if unpack[0] == 36:
+            self.read(header[Header_Index.LENGTH], self.send_to_manager, header[Header_Index.TYPE])
+
+    def send_to_manager(self, msg, args):
+        self.serial_manager.handle_serial_request(args[0], msg)
+
+
+    def read(self, length, method, *args):
         try:
-            data = self.mote.read(8)
-            header = struct.unpack('=2i', data)
-            data = self.mote.read(header[Header_Index.LENGTH])
+            data = self.mote.read(length)
         except KeyboardInterrupt:
             raise
         except Exception as e:
             print("Exception caught read msg:", e, file=sys.stderr)
-            data = b''
+            self.mote.close()
+            self.init_mote()
 
         if not len(data):
             self.mote.close()
             self.init_mote()
         else:
-            if self.read_end()[0] != 36:
-                self.read_first();
-            print("header=", header)
-            self.serial_manager.handle_serial_request(header[Header_Index.TYPE], data)
-            #self.mote.write(bytes(str(1), 'ascii'))
-
-    def read_end(self):
-        try:
-            end = self.mote.read(1)
-        except KeyboardInterrupt:
-            raise
-        except Exception as e:
-            print("Exception caught:", e, file=sys.stderr)
-            self.mote.close()
-            self.init_mote()
-
-        if not len(end):
-            self.mote.close()
-            self.init_mote()
-        else:
-            return struct.unpack('=1B', end)
+            method(data, args)
 
     def write(self, data):
         aceptable = int(data)

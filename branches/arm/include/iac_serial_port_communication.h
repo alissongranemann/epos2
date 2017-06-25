@@ -4,6 +4,7 @@
 #include <system/config.h>
 #include <utility/queue.h>
 #include <machine.h>
+#include <mutex.h>
 
 __BEGIN_SYS
 
@@ -26,11 +27,19 @@ public:
     template <typename MessageType>
     struct Message
     {
-        Message(int _type, MessageType _msg) : type(_type), length(sizeof(MessageType)), msg(_msg) {}
+        Message(int _type, MessageType _msg)
+        : start_header(START), type(_type), length(sizeof(MessageType)), end_header(END), msg(_msg) {}
 
+        char start_header;
         int type;
         int length;
+        char end_header;
         MessageType msg;
+
+        friend OStream & operator<<(OStream & os, const Message & d) {
+            os << "type=" << d.type << ",length" << d.length << ",msg=" < d.msg;
+            return os;
+        }
 
     }__attribute__((packed));
 
@@ -50,14 +59,16 @@ public:
     void handle_tx_message(const Message<MessageType> & msg) {
         db<TSTP>(TRC) << "Serial_Port::handle_tx_message:" << endl;
         CPU::int_disable();
-        io.put(START);
         for(unsigned int i = 0; i < sizeof(msg); i++)
-        io.put(reinterpret_cast<const char *>(&msg)[i]);
-        io.put(END);
+            io.put(reinterpret_cast<const char *>(&msg)[i]);
         CPU::int_enable();
     }
 
-    void handle_rx_message();
+    void handle_rx_message() {
+        db<TSTP>(TRC) << "Serial_Port::handle_rx_message:" << endl;
+        char c = io.get();
+        notify(new bool(c - '0'));
+    }
 
     static void attach(Observer * obs) { _observed.attach(obs); }
     static void detach(Observer * obs) { _observed.detach(obs); }

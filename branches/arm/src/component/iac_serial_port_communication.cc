@@ -28,10 +28,4 @@ void Iac_Serial_Port_Communication::epoch() {
     }
 }
 
-void Iac_Serial_Port_Communication::handle_rx_message() {
-    db<TSTP>(TRC) << "Serial_Port::handle_rx_message:" << endl;
-    char c = io.get();
-    notify(new bool(c - '0'));
-}
-
 __END_SYS

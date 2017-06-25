@@ -6,39 +6,42 @@
 
 using namespace EPOS;
 
-typedef IAC_Common::New_Interest New_Interest;
-typedef IAC_Common::New_Node New_Node;
-typedef Iac_Serial_Port_Communication::Message<IAC_Common::New_Interest> New_Interest_Message;
-typedef Iac_Serial_Port_Communication::Message<IAC_Common::New_Node> New_Node_Message;
-typedef TSTP::Coordinates Coordinates;
-typedef TSTP::Region Region;
-
 OStream cout;
 
 IF<Traits<USB>::enabled, USB, UART>::Result io;
+Iac_Serial_Port_Communication * serial_port;
 
-const unsigned int PERIOD = 1000000;
+const unsigned int PERIOD = 100000;
 
-int main()
-{
+int send_msgs(int index){
+    IAC::New_Node new_node(5, 10, 15);
+    IAC::New_Node_Message msg1(IAC_Common::NEW_NODE, new_node);
 
-    Iac_Serial_Port_Communication * serial_port = new Iac_Serial_Port_Communication();
+    IAC::New_Interest new_interest(15, 10, 5, 15, PERIOD, PERIOD * 3);
+    IAC::New_Interest_Message msg2(IAC_Common::NEW_INTEREST, new_interest);
 
-    Coordinates center_sensor(10,10,0);
-    Region region(center_sensor, 0, TSTP::now(), -1);
-
-    TSTP::Interest interest(region, TSTP::Unit::I32, TSTP::Mode::SINGLE, 0, 0, 0);
-
-    New_Node new_node(5, 10, 15);
-    New_Node_Message msg1(IAC_Common::NEW_NODE, new_node);
-
-    New_Interest new_interest(15, 10, 5, region.radius, PERIOD, PERIOD * 3);
-    New_Interest_Message msg2(IAC_Common::NEW_INTEREST, new_interest);
+    IAC_Common::Config config(116);
+    Iac_Serial_Port_Communication::Message<IAC_Common::Config> msg3(IAC_Common::CONFIG, config);
 
     while(true){
         Alarm::delay(PERIOD);
+        cout << "send_msg thread=" << index << endl;
         serial_port->handle_tx_message(msg1);
         serial_port->handle_tx_message(msg2);
+        serial_port->handle_tx_message(msg3);
     }
+}
+
+int main()
+{
+    serial_port = new Iac_Serial_Port_Communication();
+
+    Thread * thread_1 = new Thread(&send_msgs, 0);
+    Thread * thread_2 = new Thread(&send_msgs, 1);
+
+    cout << "threads created." << endl;
+    thread_1->join();
+    thread_2->join();
+
     return 0;
 }

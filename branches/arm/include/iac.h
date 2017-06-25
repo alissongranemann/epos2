@@ -29,6 +29,11 @@ public:
         long z;
         unsigned long r;
 
+        friend OStream & operator<<(OStream & os, const New_Node & d) {
+            os << "coord(" << d.x << "," << d.y << "," << d.z << "),r=" << d.r;
+            return os;
+        }
+
      }__attribute__((packed));
 
     struct New_Interest {
@@ -44,7 +49,7 @@ public:
         unsigned long long expiry;
 
         friend OStream & operator<<(OStream & os, const New_Interest & d) {
-            os << d.x << "," << d.y << "," << d.z;
+            os << "coord(" << d.x << "," << d.y << "," << d.z << "),r=" << d.r << ",p=" << d.period << ", e=" << d.expiry;
             return os;
         }
 
@@ -64,6 +69,15 @@ public:
 
 class IAC: private TSTP::Observer
 {
+
+public:
+
+    typedef IAC_Common::New_Interest New_Interest;
+    typedef IAC_Common::New_Node New_Node;
+    typedef IAC_Common::Config Config;
+    typedef Iac_Serial_Port_Communication::Message<New_Interest> New_Interest_Message;
+    typedef Iac_Serial_Port_Communication::Message<New_Node> New_Node_Message;
+    typedef Iac_Serial_Port_Communication::Message<Config> Config_Message;
 
 private:
 

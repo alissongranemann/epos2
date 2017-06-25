@@ -55,12 +55,8 @@ def init_mote():
 def read_first():
     try:
         first = mote.read(1)
-        while struct.unpack('=1B', first)[0] != 94:
-            first = mote.read(1)
-            if not len(first):
-                mote.close()
-                init_mote()
-        read_msg()
+        if struct.unpack('=1B', first)[0] == 94:
+            read_msg()
     except KeyboardInterrupt:
         raise
     except Exception as e:
@@ -71,9 +67,6 @@ def read_first():
 def read_msg():
     try:
         data = mote.read(8)
-        header = struct.unpack('=2i', data)
-        print("header=", header)
-        data = mote.read(header[1])
     except KeyboardInterrupt:
         raise
     except Exception as e:
@@ -85,6 +78,9 @@ def read_msg():
         init_mote()
     else:
         if read_end()[0] == 36:
+            header = struct.unpack('=2i', data)
+            print("header=", header)
+            data = mote.read(header[1])
             if(header[0] == 0):
                 print("msg=", struct.unpack('=3l1L', data))                
             if(header[0] == 1):
@@ -92,8 +88,6 @@ def read_msg():
             if(header[0] == 2):
                 print("msg=", struct.unpack('=1L1I', data))
                 #mote.write(bytes(str(1), 'ascii'))
-        else:
-            read_first();
 
 def read_end():
     try:
