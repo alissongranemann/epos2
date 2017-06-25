@@ -2,12 +2,16 @@
 
 __BEGIN_SYS
 
-Serial_Port * IAC::serial_port;
+Iac_Serial_Port_Communication * IAC::serial_port;
 
 IAC::IAC(){
     db<TSTP>(TRC) << "IAC()" << endl;
-    serial_port = new Serial_Port();
+    serial_port = new Iac_Serial_Port_Communication();
     serial_port->epoch();
+    //FIXME DUTY = 9918; CI = 146903
+    IAC_Common::Config config(116);  //fixme period (MAC::PERIOD / 1000);
+    Iac_Serial_Port_Communication::Message<IAC_Common::Config> msg(IAC_Common::CONFIG, config);
+    serial_port->handle_tx_message(msg);
 }
 
 IAC::~IAC() {
@@ -21,12 +25,12 @@ void IAC::init(){
     TSTP::attach(iac, reinterpret_cast<void *>(0));
 }
 
-void IAC::new_interest(Serial_Port::Observer * obs, TSTP::Interest * interest){
+void IAC::new_interest(Iac_Serial_Port_Communication::Observer * obs, TSTP::Interest * interest){
     db<TSTP>(TRC) << "IAC::new_interest()" << endl;
     serial_port->attach(obs);
     TSTP::Region region = interest->region();
     IAC_Common::New_Interest new_interest(region.center.x, region.center.y, region.center.z, region.radius, interest->period(), interest->expiry());
-    Serial_Port::Message<IAC_Common::New_Interest> msg(IAC_Common::NEW_INTEREST, new_interest);
+    Iac_Serial_Port_Communication::Message<IAC_Common::New_Interest> msg(IAC_Common::NEW_INTEREST, new_interest);
     serial_port->handle_tx_message(msg);
     serial_port->handle_rx_message();
 }
@@ -37,7 +41,7 @@ void IAC::update(TSTP::Observed * obs, int subject, TSTP::Buffer * buf) {
     TSTP::Header * packet = buf->frame()->data<TSTP::Header>();
     TSTP::Coordinates coord = packet->origin();
     IAC_Common::New_Node new_node(coord.x, coord.y, coord.z);
-    Serial_Port::Message<IAC_Common::New_Node> msg(IAC_Common::NEW_NODE, new_node);
+    Iac_Serial_Port_Communication::Message<IAC_Common::New_Node> msg(IAC_Common::NEW_NODE, new_node);
     serial_port->handle_tx_message(msg);
 }
 

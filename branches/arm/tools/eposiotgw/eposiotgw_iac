@@ -89,6 +89,8 @@ def read_msg():
                 print("msg=", struct.unpack('=3l1L', data))                
             if(header[0] == 1):
                 print("msg=", struct.unpack('=3l1L2Q', data))
+            if(header[0] == 2):
+                print("msg=", struct.unpack('=1L1I', data))
                 #mote.write(bytes(str(1), 'ascii'))
         else:
             read_first();

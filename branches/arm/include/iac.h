@@ -3,7 +3,8 @@
 
 #include <tstp.h>
 #include <utility/observer.h>
-#include <serial_port.h>
+#include <iac_serial_port_communication.h>
+#include "machine/common/tstp_mac.h"
 
 __BEGIN_SYS
 
@@ -13,10 +14,9 @@ public:
     
     typedef unsigned int Type;
     enum {
-
         NEW_NODE = 0,
-        NEW_INTEREST = 1
-
+        NEW_INTEREST = 1,
+        CONFIG
     };
 
     struct New_Node {
@@ -50,6 +50,16 @@ public:
 
     }__attribute__((packed));
 
+    struct Config {
+
+        Config(unsigned int _period)
+        : r(TSTP::RADIO_RANGE), period(_period) {}
+
+        unsigned long r;
+        unsigned int period;
+
+     }__attribute__((packed));
+
 };
 
 class IAC: private TSTP::Observer
@@ -57,7 +67,9 @@ class IAC: private TSTP::Observer
 
 private:
 
-    static Serial_Port * serial_port;
+    typedef IF<EQUAL<Traits<Network>::NETWORKS::Get<Traits<NIC>::NICS::Find<CC2538>::Result>::Result, _SYS::TSTP>::Result, TSTP_MAC<CC2538RF>, IEEE802_15_4_MAC<CC2538RF>>::Result MAC;
+
+    static Iac_Serial_Port_Communication * serial_port;
 
 public:
 
@@ -66,7 +78,7 @@ public:
     ~IAC();
 
     static void init();
-    static void new_interest(Serial_Port::Observer * obs, TSTP::Interest * interest);
+    static void new_interest(Iac_Serial_Port_Communication::Observer * obs, TSTP::Interest * interest);
 
     void update(TSTP::Observed * obs, int subject, TSTP::Buffer * buf);
 
