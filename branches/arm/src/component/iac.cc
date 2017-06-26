@@ -16,24 +16,23 @@ IAC::IAC(){
 
 IAC::~IAC() {
     db<TSTP>(TRC) << "~IAC()" << endl;
-    TSTP::detach(this, reinterpret_cast<void *>(0));
+    TSTP::detach(this, reinterpret_cast<void *>(IAC_Common::NEW_NODE));
 }
 
 void IAC::init(){
     db<TSTP>(TRC) << "IAC::init()" << endl;
     IAC * iac = new IAC();
-    TSTP::attach(iac, reinterpret_cast<void *>(0));
+    TSTP::attach(iac, reinterpret_cast<void *>(IAC_Common::NEW_NODE));
 }
 
-void IAC::new_interest(Iac_Serial_Port_Communication::Observer * obs, TSTP::Interest * interest){
+void IAC::new_interest(Observer * obs, TSTP::Interest * interest){
     db<TSTP>(TRC) << "IAC::new_interest()" << endl;
-    serial_port->attach(obs);
     TSTP::Region region = interest->region();
     TSTP::Coordinates coord = region.center;
     IAC_Common::New_Interest new_interest(coord.x, coord.y, coord.z, region.radius, interest->period(), interest->expiry());
     Iac_Serial_Port_Communication::Message<IAC_Common::New_Interest> msg(IAC_Common::NEW_INTEREST, new_interest);
     serial_port->handle_tx_message(msg);
-    //serial_port->handle_rx_message();
+    //serial_port->handle_rx_message(obs);
 }
 
 //new node

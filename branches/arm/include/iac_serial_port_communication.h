@@ -10,13 +10,25 @@ __BEGIN_SYS
 
 #define PACKETSIZE sizeof(Message)
 
-class Iac_Serial_Port_Communication
+class IAC_Observer
 {
 
 public:
 
-    typedef Data_Observed<bool> Observed;
-    typedef Data_Observer<bool> Observer;
+    IAC_Observer() {
+        db<TSTP>(TRC) << "IAC_Observer() => " << this << endl;
+    }
+
+    virtual ~IAC_Observer();
+
+    virtual void update(bool * response) = 0;
+
+};
+
+class Iac_Serial_Port_Communication
+{
+
+public:
 
     typedef unsigned char HEADER;
     enum {
@@ -46,7 +58,6 @@ public:
 private:
 
     IF<Traits<USB>::enabled, USB, UART>::Result io;
-    static Observed _observed;
 
 public:
     Iac_Serial_Port_Communication();
@@ -64,15 +75,11 @@ public:
         CPU::int_enable();
     }
 
-    void handle_rx_message() {
+    void handle_rx_message(IAC_Observer * obs) {
         db<TSTP>(TRC) << "Serial_Port::handle_rx_message:" << endl;
         char c = io.get();
-        notify(new bool(c - '0'));
+        obs->update(new bool(c - '0'));
     }
-
-    static void attach(Observer * obs) { _observed.attach(obs); }
-    static void detach(Observer * obs) { _observed.detach(obs); }
-    static bool notify(bool * result) { return _observed.notify(result); }
 
 };
 

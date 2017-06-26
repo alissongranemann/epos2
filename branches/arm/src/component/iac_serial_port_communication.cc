@@ -2,8 +2,6 @@
 
 __BEGIN_SYS
 
-Iac_Serial_Port_Communication::Observed Iac_Serial_Port_Communication::_observed;
-
 Iac_Serial_Port_Communication::Iac_Serial_Port_Communication(){
 
 }

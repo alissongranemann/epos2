@@ -78,6 +78,7 @@ public:
     typedef Iac_Serial_Port_Communication::Message<New_Interest> New_Interest_Message;
     typedef Iac_Serial_Port_Communication::Message<New_Node> New_Node_Message;
     typedef Iac_Serial_Port_Communication::Message<Config> Config_Message;
+    typedef IAC_Observer Observer;
 
 private:
 
@@ -92,7 +93,7 @@ public:
     ~IAC();
 
     static void init();
-    static void new_interest(Iac_Serial_Port_Communication::Observer * obs, TSTP::Interest * interest);
+    static void new_interest(Observer * obs, TSTP::Interest * interest);
 
     void update(TSTP::Observed * obs, int subject, TSTP::Buffer * buf);
 
