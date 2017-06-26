@@ -18,7 +18,7 @@ class Header_Index(IntEnum):
 
 class Serial:
     # 'EPOSMote III device descriptor file'
-    DEV = '/dev/ttyACM1'
+    DEV = '/dev/ttyACM0'
     # 'Timeout for reading from mote'
     TIMEOUT = 600
 
