@@ -2,6 +2,8 @@
 
 __BEGIN_SYS
 
+Data_Observed<bool, int> Iac_Serial_Port_Communication::_observed;
+
 Iac_Serial_Port_Communication::Iac_Serial_Port_Communication(){
 
 }

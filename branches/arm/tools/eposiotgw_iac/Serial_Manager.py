@@ -18,6 +18,7 @@ class Index(IntEnum):
     RADIUS = 3
     PERIOD = 4
     EXPIRY = 5
+    REF = 6
 
 class Serial_Manager:
 
@@ -32,10 +33,10 @@ class Serial_Manager:
             sensor = self.extract_sensor_data(unpacked_data)
             self.admission_control.handle_new_sensor_request(sensor)
         if(type == Request_Type.INTEREST):
-            unpacked_data = struct.unpack('=3l1L2Q', data)
+            unpacked_data = struct.unpack('=3l1L2Q1i', data)
             print("msg=", unpacked_data)
             interest = self.extract_interest_data(unpacked_data)
-            # self.admission_control.handle_new_interest_request(interest)
+            self.admission_control.handle_new_interest_request(interest)
         if(type == Request_Type.CONFIG):
             #do config
             unpacked_data = struct.unpack('=1L1I', data)
@@ -54,7 +55,8 @@ class Serial_Manager:
         radius = data[Index.RADIUS]
         period = data[Index.PERIOD]
         expiry = data[Index.EXPIRY]
-        return Interest(x, y, radius, period, expiry)
+        ref = data[Index.REF]
+        return Interest(x, y, radius, period, expiry, ref)
 
     def write(self, data):
         self.serial.write(data)
