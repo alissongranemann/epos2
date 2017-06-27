@@ -12,6 +12,9 @@ class TSTP_Admission_Control:
         self.estimator = Burden_Estimator(self.wsn)
         self.serial_manager = Serial_Manager(self)
 
+    def config(self, sink_radius, mac_period):
+        self.estimator.set_mac_period(mac_period)
+
     def handle_new_sensor_request(self, sensor):
         isAceptable = self.estimator.is_sensor_aceptable(sensor)
         if(isAceptable):
