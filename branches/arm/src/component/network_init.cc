@@ -50,14 +50,13 @@ void Network::init()
 //            new (SYSTEM) TSTP;
     }
 
-    //TODO if(Traits<Network>::NETWORKS::Count<TSTP>::Result) {
-    if(Traits<TSTP>::sink){
-    	IAC::init();
-    }else{
-    	TSTP::send_location_to_sink();
+    if(Traits<TSTP>::iac) {
+        if(Traits<TSTP>::sink){
+            IAC::init();
+        } else{
+            TSTP::send_location_to_sink();
+        }
     }
-
-    //}
 
 }
 

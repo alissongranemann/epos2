@@ -202,6 +202,8 @@ template<> struct Traits<TSTP>: public Traits<Network>
 {
     static const bool enabled = NETWORKS::Count<TSTP>::Result;
     static const bool sink = false;
+    static const bool iac = true;
+
 };
 
 template<> template <typename S> struct Traits<Smart_Data<S>>: public Traits<Network>
