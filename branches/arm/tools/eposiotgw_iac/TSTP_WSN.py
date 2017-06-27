@@ -10,6 +10,7 @@ class TSTP_WSN:
         self.graph = Sensor_Graph()
         self.gateway = Sensor(0, 0, 10)
         self.add_sensor(self.gateway)
+        self.interests = []
 
     def add_sensor(self, sensor):
         if(self.graph.contains(sensor)):
@@ -25,7 +26,7 @@ class TSTP_WSN:
         self.graph.add_edges(sensor, reachable_sensors)
 
     def add_interest(self, interest):
-        pass
+        self.interests.append(interest)
 
     def get_sensors_in_range(self, coordinate_object):
         sensors_in_range = self.rtree.get_sensors_in_range(coordinate_object)
