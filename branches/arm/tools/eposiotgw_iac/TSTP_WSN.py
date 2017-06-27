@@ -24,7 +24,6 @@ class TSTP_WSN:
 
     def add_interest(self, interest):
         print ("interest added on TSTP")
-        self.graph.draw()
 
     def get_sensors_in_range(self, coordinate_object):
         return self.rtree.get_sensors_in_range(coordinate_object)
@@ -34,3 +33,6 @@ class TSTP_WSN:
 
     def shortest_path(self, coordinate_object):
         return self.graph.shortest_path(self.gateway, coordinate_object)
+
+    def draw(self):
+        self.graph.draw()

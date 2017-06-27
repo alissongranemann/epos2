@@ -28,7 +28,7 @@ class Burden_Estimator:
         return aceptable
 
     def estimate_path_burden(self, path):
-        # Itera do sensor que destino até o gateway
+        # Itera do sensor destino até o gateway
         for i in range(len(path), 0, -1):
             sensor = path[i - 1]
             burden = self.estimate_sensor_burden(sensor)
