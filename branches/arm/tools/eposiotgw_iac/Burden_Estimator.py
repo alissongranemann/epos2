@@ -1,7 +1,12 @@
+import math
+
 class Burden_Estimator:
 
     def __init__(self, wsn):
         self.wsn = wsn;
+
+    def set_mac_period(self, mac_period):
+        self.mac_period = mac_period
 
     def is_sensor_aceptable(self, sensor):
         return True
@@ -23,15 +28,15 @@ class Burden_Estimator:
 
         print("The number of hops to nearest sensor is:", len(shortest_path))
 
-        aceptable = self.estimate_path_burden(shortest_path)
+        aceptable = self.estimate_path_burden(shortest_path, interest.period)
 
         return aceptable
 
-    def estimate_path_burden(self, path):
-        # Itera do sensor destino até o gateway
+    def estimate_path_burden(self, path, period):
+        # Itera do sensor que destino até o gateway
         for i in range(len(path), 0, -1):
             sensor = path[i - 1]
-            burden = self.estimate_sensor_burden(sensor)
+            burden = self.estimate_sensor_burden(sensor, period)
             if(burden < 100):
                 sensor.set_burden(burden)
             else:
@@ -40,11 +45,12 @@ class Burden_Estimator:
                 return False
         return True
 
-    def estimate_sensor_burden(self, sensor):
-        print('The burden on sensor', sensor, 'will be calculated soon')
+    def estimate_sensor_burden(self, sensor, period):
+        sensor_burden = math.ceil(mac_period / period) + sensor.burden
+        print('The burden on sensor', sensor, 'is ', interest_burden)
         return 1
 
     def restore_path_estimation(self, path, init):
         for i in range(init, len(path)):
             sensor = path[i]
-            sensor.restore_burden
+            sensor.restore_burden()

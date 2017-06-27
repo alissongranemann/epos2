@@ -40,7 +40,7 @@ class Serial_Manager:
             #do config
             unpacked_data = struct.unpack('=1L1I', data)
             print("msg=", unpacked_data)
-            print("Sink radius=", unpacked_data[0], "/ MAC Period=", unpacked_data[1])
+            self.admission_control.config(unpacked_data[0], unpacked_data[1])
 
     def extract_sensor_data(self, data):
         x = data[Index.X]
