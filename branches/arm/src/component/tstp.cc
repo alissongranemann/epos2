@@ -629,6 +629,7 @@ void TSTP::update(NIC::Observed * obs, NIC::Protocol prot, Buffer * buf)
 }
 
 void TSTP::send_location_to_sink(){
+    Alarm::delay(1000000);
     Buffer * buf = alloc(sizeof(Iac));
     Iac * map = new (buf->frame()->data<Iac>()) Iac(0);
     marshal(buf);

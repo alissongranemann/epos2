@@ -4,7 +4,6 @@
 #include <tstp.h>
 #include <utility/observer.h>
 #include <iac_serial_port_communication.h>
-#include "machine/common/tstp_mac.h"
 
 __BEGIN_SYS
 
@@ -38,8 +37,8 @@ public:
 
     struct New_Interest {
 
-        New_Interest(long _x, long _y, long _z, long _r, unsigned long long _period, unsigned long long _expiry)
-        : x(_x), y(_y), z(_z), r(_r), period(_period), expiry(_expiry) {}
+        New_Interest(long _x, long _y, long _z, long _r, unsigned long long _period, unsigned long long _expiry, void * _ref)
+        : x(_x), y(_y), z(_z), r(_r), period(_period), expiry(_expiry), ref(int(_ref)) {}
 
         long x;
         long y;
@@ -47,9 +46,10 @@ public:
         unsigned long r;
         unsigned long long period;
         unsigned long long expiry;
+        int ref;
 
         friend OStream & operator<<(OStream & os, const New_Interest & d) {
-            os << "coord(" << d.x << "," << d.y << "," << d.z << "),r=" << d.r << ",p=" << d.period << ", e=" << d.expiry;
+            os << "coord(" << d.x << "," << d.y << "," << d.z << "),r=" << d.r << ",p=" << d.period << ", e=" << d.expiry << ", ref=" << d.ref;;
             return os;
         }
 
@@ -65,6 +65,7 @@ public:
 
      }__attribute__((packed));
 
+
 };
 
 class IAC: private TSTP::Observer
@@ -78,11 +79,10 @@ public:
     typedef Iac_Serial_Port_Communication::Message<New_Interest> New_Interest_Message;
     typedef Iac_Serial_Port_Communication::Message<New_Node> New_Node_Message;
     typedef Iac_Serial_Port_Communication::Message<Config> Config_Message;
-    typedef IAC_Observer Observer;
+    typedef Data_Observer<bool, int> Observer;
+    typedef Data_Observed<bool, int> Observed;
 
 private:
-
-    typedef IF<EQUAL<Traits<Network>::NETWORKS::Get<Traits<NIC>::NICS::Find<CC2538>::Result>::Result, _SYS::TSTP>::Result, TSTP_MAC<CC2538RF>, IEEE802_15_4_MAC<CC2538RF>>::Result MAC;
 
     static Iac_Serial_Port_Communication * serial_port;
 
@@ -93,9 +93,10 @@ public:
     ~IAC();
 
     static void init();
-    static void new_interest(Observer * obs, TSTP::Interest * interest);
+    static void new_interest(IAC::Observer * obs, TSTP::Interested * interested);
 
     void update(TSTP::Observed * obs, int subject, TSTP::Buffer * buf);
+    void update(Observed * obs, int subject, bool * result);
 
     friend Debug & operator<<(Debug & db, const IAC & d) {
         db << "IAC";
