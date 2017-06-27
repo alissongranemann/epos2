@@ -18,7 +18,7 @@ class Header_Index(IntEnum):
 
 class Serial:
     # 'EPOSMote III device descriptor file'
-    DEV = '/dev/ttyACM2'
+    DEV = '/dev/ttyACM1'
     # 'Timeout for reading from mote'
     TIMEOUT = 600
 
@@ -87,8 +87,7 @@ class Serial:
             raise
         except Exception as e:
             print("Exception caught read msg:", e, file=sys.stderr)
-            self.mote.close()
-            self.init_mote()
+            data = b''
 
         if not len(data):
             self.mote.close()
