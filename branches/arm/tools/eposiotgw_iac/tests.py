@@ -4,6 +4,7 @@ from Interest import Interest
 import struct
 
 admission_control = TSTP_Admission_Control(True)
+admission_control.config(10, 116)
 
 def create_sensor(x, y):
     return Sensor(x, y, 10)

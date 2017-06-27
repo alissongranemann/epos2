@@ -46,8 +46,8 @@ class Burden_Estimator:
         return True
 
     def estimate_sensor_burden(self, sensor, period):
-        sensor_burden = math.ceil(mac_period / period) + sensor.burden
-        print('The burden on sensor', sensor, 'is ', interest_burden)
+        sensor_burden = math.ceil(self.mac_period / period) + sensor.burden
+        print('The burden on sensor', sensor, 'is ', sensor_burden)
         return 1
 
     def restore_path_estimation(self, path, init):
