@@ -1,7 +1,7 @@
 from Serial_Manager import Serial_Manager
 from Burden_Estimator import Burden_Estimator
 from TSTP_WSN import TSTP_WSN
-from TSTP_Exception import *
+import struct
 
 class TSTP_Admission_Control:
 
@@ -9,7 +9,7 @@ class TSTP_Admission_Control:
         self.wsn = TSTP_WSN()
         self.estimator = Burden_Estimator(self.wsn)
         self.test_mode = test_mode
-        if(not test_mode):
+        if(not self.test_mode):
             self.serial_manager = Serial_Manager(self)
 
     def config(self, sink_radius, mac_period):
@@ -33,9 +33,7 @@ class TSTP_Admission_Control:
     def notify(self, isAceptable, interest_ref):
         if(not self.test_mode):
             print("interest_ref=", interest_ref)
-            msg = bytes(str(interest_ref), 'ascii')
-            self.serial_manager.write(msg + b'X')
-            self.serial_manager.write(bytes(str(1), 'ascii'))
+            self.serial_manager.write_response_message(isAceptable, interest_ref)
 
     def update_interests_without_response(self):
         unnaceptable_interests = self.estimator.get_unnaceptable_interests()

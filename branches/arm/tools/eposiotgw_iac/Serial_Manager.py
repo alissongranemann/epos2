@@ -57,5 +57,10 @@ class Serial_Manager:
         ref = data[Index.REF]
         return Interest(x, y, radius, period, expiry, ref)
 
+    def write_response_message(result, interest_ref):
+        msg = bytes(str(interest_ref), 'ascii')
+        msg = msg + b'X' + bytes(str(result), 'ascii')
+        self.serial.write(msg)
+
     def write(self, data):
         self.serial.write(data)
