@@ -22,9 +22,15 @@ class Serial:
     # 'Timeout for reading from mote'
     TIMEOUT = 600
 
-    def __init__(self, Serial_Manager):
-        self.serial_manager = Serial_Manager;
+    def __init__(self):
+        self.serial_manager = None;
+
+    def set_serial_manager(self, serial_manager):
+        self.serial_manager = serial_manager;
         self.mote = self.init_mote()
+        self.begin_communication()
+
+    def begin_communication(self):
         while(True):
             self.read_first();
 
@@ -69,7 +75,7 @@ class Serial:
     def check_end(self, header_data, args):
         header = struct.unpack('=2i', header_data)
         self.read(1, self.read_msg, header)
- 
+
     def read_msg(self, end, args):
         unpack = struct.unpack('=1B', end)
         header = args[0];

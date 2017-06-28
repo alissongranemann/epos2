@@ -22,9 +22,14 @@ class Index(IntEnum):
 
 class Serial_Manager:
 
-    def __init__(self, Admission_Control):
-        self.admission_control = Admission_Control;
-        self.serial = Serial(self)
+    def __init__(self):
+        self.admission_control = None;
+        self.serial = None
+
+    def set_admission_control(self, admission_control):
+        self.admission_control = admission_control
+        self.serial = Serial()
+        self.serial.set_serial_manager(self)
 
     def handle_serial_request(self, type, data):
         if(type == Request_Type.SENSOR):
@@ -57,7 +62,7 @@ class Serial_Manager:
         ref = data[Index.REF]
         return Interest(x, y, radius, period, expiry, ref)
 
-    def write_response_message(result, interest_ref):
+    def write_response_message(self, result, interest_ref):
         msg = bytes(str(interest_ref), 'ascii')
         msg = msg + b'X' + bytes(str(result), 'ascii')
         self.serial.write(msg)

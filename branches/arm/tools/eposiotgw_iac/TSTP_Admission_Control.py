@@ -10,7 +10,8 @@ class TSTP_Admission_Control:
         self.estimator = Burden_Estimator(self.wsn)
         self.test_mode = test_mode
         if(not self.test_mode):
-            self.serial_manager = Serial_Manager(self)
+            self.serial_manager = Serial_Manager()
+            self.serial_manager.set_admission_control(self)
 
     def config(self, sink_radius, mac_period):
         self.estimator.set_mac_period(mac_period)
