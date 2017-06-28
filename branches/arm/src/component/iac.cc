@@ -2,12 +2,13 @@
 
 __BEGIN_SYS
 
-Iac_Serial_Port_Communication* IAC::serial_port;
+IAC_Serial_Manager* IAC::serial_port;
 
 IAC::IAC() {
     db<TSTP>(TRC) << "IAC()" << endl;
-    serial_port = new Iac_Serial_Port_Communication();
-    serial_port->epoch();
+    serial_port = new IAC_Serial_Manager();
+    TSTP::Time epoch = serial_port->epoch();
+    TSTP::epoch(epoch);
     //FIXME DUTY = 9918; CI = 146903
     Config config(116);//fixme period = (MAC::PERIOD / 1000);
     Config_Message msg(IAC_Common::CONFIG, config);
@@ -30,7 +31,7 @@ void IAC::new_interest(IAC::Observer * obs, TSTP::Interested * interested) {
     TSTP::Region region = interested->region();
     TSTP::Coordinates coord = region.center;
     IAC_Common::New_Interest new_interest(coord.x, coord.y, coord.z, region.radius, interested->period(), interested->expiry(), interested);
-    Iac_Serial_Port_Communication::Message<IAC_Common::New_Interest> msg(IAC_Common::NEW_INTEREST, new_interest);
+    IAC_Serial_Manager::Message<IAC_Common::New_Interest> msg(IAC_Common::NEW_INTEREST, new_interest);
     db<TSTP>(TRC) << "IAC::new_interest() msg = " << new_interest << endl;
     serial_port->handle_tx_message(msg);
     serial_port->attach(obs, interested);
