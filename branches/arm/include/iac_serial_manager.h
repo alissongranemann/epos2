@@ -41,7 +41,9 @@ public:
 
 private:
 
-    IF<Traits<USB>::enabled, USB, UART>::Result io;
+    typedef IF<Traits<USB>::enabled, USB, UART>::Result IO;
+
+    static IO io;
     static Data_Observed<bool, int> _observed;
 
 public:
@@ -49,10 +51,10 @@ public:
 
     ~IAC_Serial_Manager();
 
-    unsigned long long epoch();
+    static unsigned long long epoch();
 
     template <typename MessageType>
-    void handle_tx_message(const Message<MessageType> & msg) {
+    static void handle_tx_message(const Message<MessageType> & msg) {
         db<TSTP>(TRC) << "Serial_Port::handle_tx_message:" << endl;
         CPU::int_disable();
         for(unsigned int i = 0; i < sizeof(msg); i++)
@@ -60,7 +62,7 @@ public:
         CPU::int_enable();
     }
 
-    void handle_rx_message() {
+    static void handle_rx_message() {
         db<TSTP>(TRC) << "Serial_Port::handle_rx_message:" << endl;
         char c = io.get();
         int subject = 0;

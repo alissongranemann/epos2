@@ -2,17 +2,14 @@
 
 __BEGIN_SYS
 
-IAC_Serial_Manager* IAC::serial_port;
-
 IAC::IAC() {
     db<TSTP>(TRC) << "IAC()" << endl;
-    serial_port = new IAC_Serial_Manager();
-    TSTP::Time epoch = serial_port->epoch();
+    TSTP::Time epoch = IAC_Serial_Manager::epoch();
     TSTP::epoch(epoch);
     //FIXME DUTY = 9918; CI = 146903
     Config config(116);//fixme period = (MAC::PERIOD / 1000);
     Config_Message msg(IAC_Common::CONFIG, config);
-    serial_port->handle_tx_message(msg);
+    IAC_Serial_Manager::handle_tx_message(msg);
 }
 
 IAC::~IAC() {
@@ -33,9 +30,9 @@ void IAC::new_interest(IAC::Observer * obs, TSTP::Interested * interested) {
     IAC_Common::New_Interest new_interest(coord.x, coord.y, coord.z, region.radius, interested->period(), interested->expiry(), interested);
     IAC_Serial_Manager::Message<IAC_Common::New_Interest> msg(IAC_Common::NEW_INTEREST, new_interest);
     db<TSTP>(TRC) << "IAC::new_interest() msg = " << new_interest << endl;
-    serial_port->handle_tx_message(msg);
-    serial_port->attach(obs, interested);
-    serial_port->handle_rx_message();
+    IAC_Serial_Manager::handle_tx_message(msg);
+    IAC_Serial_Manager::attach(obs, interested);
+    IAC_Serial_Manager::handle_rx_message();
 }
 
 //new node
@@ -45,7 +42,7 @@ void IAC::update(TSTP::Observed * obs, int subject, TSTP::Buffer * buf) {
     TSTP::Coordinates coord = packet->origin();
     New_Node new_node(coord.x, coord.y, coord.z);
     New_Node_Message msg(IAC_Common::NEW_NODE, new_node);
-    serial_port->handle_tx_message(msg);
+    IAC_Serial_Manager::handle_tx_message(msg);
     //serial_port->handle_rx_message();
 }
 
