@@ -102,10 +102,9 @@ class Serial:
             method(data, args)
 
     def write(self, data):
-        aceptable = int(data)
         try:
-            self.mote.write(bytes(aceptable))
-            print("epoch written", file=sys.stderr)
+            self.mote.write(data)
+            print("Data written on EPOS", data)
         except KeyboardInterrupt:
             raise
         except serial.serialutil.SerialTimeoutException:

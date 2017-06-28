@@ -21,7 +21,6 @@ class TSTP_Admission_Control:
         isAceptable = self.estimator.is_sensor_aceptable(sensor)
         if(isAceptable):
             self.wsn.add_sensor(sensor)
-        #self.notify(isAceptable)
         self.update_interests_without_response()
 
     def handle_new_interest_request(self, interest):
