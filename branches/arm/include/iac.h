@@ -82,6 +82,8 @@ public:
     typedef Data_Observer<bool, int> Observer;
     typedef Data_Observed<bool, int> Observed;
 
+    static const unsigned int Tr = 1457;
+
 private:
 
     void update(TSTP::Observed * obs, int subject, TSTP::Buffer * buf);

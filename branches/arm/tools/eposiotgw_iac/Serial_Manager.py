@@ -63,9 +63,16 @@ class Serial_Manager:
         return Interest(x, y, radius, period, expiry, ref)
 
     def write_response_message(self, result, interest_ref):
-        msg = bytes(str(interest_ref), 'ascii')
-        msg = msg + b'X' + bytes(str(result), 'ascii')
+        self.write_header(1);
+        self.write_msg(result, interest_ref)
+
+    def write_header(self, times):
+        header = bytes('^', 'ascii') + bytes(str(times), 'ascii') + bytes('$', 'ascii')
+        self.serial.write(header)
+
+    def write_msg(self, result, interest_ref):
+        ref = bytes(str(interest_ref), 'ascii')
+        msg = ref + b'X' + bytes(str(int(result)), 'ascii')
         self.serial.write(msg)
 
-    def write(self, data):
-        self.serial.write(data)
+

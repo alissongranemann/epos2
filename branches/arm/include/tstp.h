@@ -623,7 +623,7 @@ public:
         bool event_driven() { return !time_triggered(); }
 
         friend Debug & operator<<(Debug & db, const Interest & m) {
-            db << reinterpret_cast<const Header &>(m) << ",u=" << m._unit << ",m=" << ((m._mode == ALL) ? 'A' : 'S') << ",e=" << int(m._precision) << ",x=" << m._expiry << ",re=" << m._region << ",p=" << m._period;
+            db << reinterpret_cast<const Header &>(m) << ",u=" << m._unit << ",m=" << ((m._mode == ALL) ? 'A' : (m._mode == SINGLE) ? 'S' : 'D') << ",e=" << int(m._precision) << ",x=" << m._expiry << ",re=" << m._region << ",p=" << m._period;
             return db;
         }
 
