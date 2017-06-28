@@ -28,7 +28,7 @@ class TSTP_Admission_Control:
         isAceptable = self.estimator.is_interest_aceptable(interest)
         if(isAceptable):
             self.wsn.add_interest(interest)
-        self.notify(False, interest.ref)
+        self.notify(isAceptable, interest.ref)
 
     def notify(self, isAceptable, interest_ref):
         if(not self.test_mode):
