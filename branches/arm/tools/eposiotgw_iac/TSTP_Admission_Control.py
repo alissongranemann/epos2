@@ -36,6 +36,7 @@ class TSTP_Admission_Control:
 
     def update_interests_without_response(self):
         unnaceptable_interests = self.estimator.get_unnaceptable_interests()
+        self.serial_manager.write_header(len(unnaceptable_interests))
         for i in unnaceptable_interests:
-            # self.notify(isAceptable = False, i.ref)
+            self.serial_manager.write_msg(False, i.ref)
             pass

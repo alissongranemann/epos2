@@ -273,8 +273,8 @@ private:
     }
 
     void update(IAC::Observed * obs, int subject, bool * result) {
-        db<Smart_Data>(TRC) << "Smart_Data::update - IAC" << endl;
-        if(!result)
+        db<Smart_Data>(TRC) << "Smart_Data::update - IAC result=" << result << endl;
+        if(!(*result))
             _interested->revoke();
     }
 
