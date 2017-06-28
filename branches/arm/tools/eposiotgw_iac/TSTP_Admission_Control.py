@@ -4,11 +4,11 @@ from TSTP_WSN import TSTP_WSN
 
 class TSTP_Admission_Control:
 
-    def __init__(self, test_mode = False):
+    def __init__(self, use_serial = True):
         self.wsn = TSTP_WSN()
         self.estimator = Burden_Estimator(self.wsn)
-        self.test_mode = test_mode
-        if(not self.test_mode):
+        self.use_serial = use_serial
+        if(self.use_serial):
             self.serial_manager = Serial_Manager()
             self.serial_manager.set_admission_control(self)
 
@@ -30,13 +30,13 @@ class TSTP_Admission_Control:
         self.notify(isAceptable, interest.ref)
 
     def notify(self, isAceptable, interest_ref):
-        if(not self.test_mode):
+        if(self.use_serial):
             print("interest_ref=", interest_ref)
             self.serial_manager.write_response_message(isAceptable, interest_ref)
 
     def update_interests_without_response(self):
         unnaceptable_interests = self.estimator.get_unnaceptable_interests()
-        self.serial_manager.write_header(len(unnaceptable_interests))
-        for i in unnaceptable_interests:
-            self.serial_manager.write_msg(False, i.ref)
-            pass
+        if(self.use_serial):
+            self.serial_manager.write_header(len(unnaceptable_interests))
+            for i in unnaceptable_interests:
+                self.serial_manager.write_msg(False, i.ref)

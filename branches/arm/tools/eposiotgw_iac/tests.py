@@ -5,7 +5,7 @@ import struct
 
 mac_period = 116
 
-admission_control = TSTP_Admission_Control(True)
+admission_control = TSTP_Admission_Control(False)
 admission_control.config(20, mac_period)
 
 def create_sensor(x, y):
