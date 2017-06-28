@@ -17,6 +17,7 @@ class TSTP_Admission_Control:
         self.wsn.set_gateway_range(sink_radius)
 
     def handle_new_sensor_request(self, sensor):
+        print("Admission control received a new sensor", sensor)
         isAceptable = self.estimator.is_sensor_aceptable(sensor)
         if(isAceptable):
             self.wsn.add_sensor(sensor)
