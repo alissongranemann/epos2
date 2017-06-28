@@ -38,7 +38,6 @@ class Serial_Manager:
             interest = self.extract_interest_data(unpacked_data)
             self.admission_control.handle_new_interest_request(interest)
         if(type == Request_Type.CONFIG):
-            #do config
             unpacked_data = struct.unpack('=1L1I', data)
             print("msg=", unpacked_data)
             self.admission_control.config(unpacked_data[0], unpacked_data[1])

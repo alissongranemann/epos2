@@ -8,3 +8,6 @@ class Interest(Coordinate_Object):
         self.period = period
         self.expiry = expiry
         self.ref = ref
+
+    def __str__(self):
+     return "("+ str(self.x) + ", " + str(self.y) + ", " + str(self.range) + ", " + str(self.period) + ")"

@@ -1,0 +1,2 @@
+class NoSensorInRegionException(Exception):
+    pass
