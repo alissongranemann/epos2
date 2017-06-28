@@ -84,8 +84,6 @@ public:
 
 private:
 
-    static IAC_Serial_Manager * serial_port;
-
     void update(TSTP::Observed * obs, int subject, TSTP::Buffer * buf);
 
 public:

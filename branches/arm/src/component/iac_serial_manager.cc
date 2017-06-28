@@ -3,6 +3,8 @@
 __BEGIN_SYS
 
 Data_Observed<bool, int> IAC_Serial_Manager::_observed;
+IAC_Serial_Manager::IO IAC_Serial_Manager::io;
+
 
 IAC_Serial_Manager::IAC_Serial_Manager(){
 
