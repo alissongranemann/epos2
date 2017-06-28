@@ -20,24 +20,26 @@ class Burden_Estimator:
             aceptable = self.estimate_path_burden(shortest_path, interest.period)
             return aceptable
         except (NoSensorInRegionException, NetworkXNoPath):
-            print("Não foi possivel estimar o caminho até o gateway")
+            print("There are no path to", interest, "addind interest to interests_without_response list")
             self.interests_without_response.append(interest)
             return True
 
     def get_shortest_path(self, interest):
         sensors_in_region = self.wsn.get_sensors_in_range(interest)
-        print("Sensors in region of interest:")
+        print("Sensors in region of interest: ", end = '')
         for s in sensors_in_region:
-            print(s)
+            print(s, end = '')
+        print()
 
         nearest_sensor = self.wsn.get_nearest_sensor(sensors_in_region)
         print("The nearest sensor of gateway in region is: ", nearest_sensor)
 
         shortest_path = self.wsn.shortest_path(nearest_sensor)
-        print("The shortest_path to nearest sensor is:")
+        print("The shortest_path to nearest sensor is: ", end = ''),
 
         for s in shortest_path:
-            print(s)
+            print("->",s, end = '')
+        print()
 
         return shortest_path
 
@@ -46,36 +48,42 @@ class Burden_Estimator:
         for i in range(len(path), 0, -1):
             sensor = path[i - 1]
             burden = self.estimate_sensor_burden(sensor, period)
-            if(burden < 100):
+            if(burden <= 100):
                 sensor.set_burden(burden)
             else:
-                from_sensor = i - 1
+                from_sensor = i
                 self.restore_path_estimation(path, from_sensor)
                 return False
         return True
 
     def estimate_sensor_burden(self, sensor, period):
-        sensor_burden = math.ceil(self.mac_period / period) + sensor.burden
+        sensor_burden = math.ceil((self.mac_period / period) * 100) + sensor.burden
         print('The burden on sensor', sensor, 'is ', sensor_burden)
         return sensor_burden
 
     def restore_path_estimation(self, path, init):
         for i in range(init, len(path)):
             sensor = path[i]
+            print('The burden on sensor', sensor, 'is ', sensor.burden, "will be restored to", sensor.backup_burden)
             sensor.restore_burden()
 
     def get_unnaceptable_interests(self):
         unnaceptable_interests = []
+        if(len(self.interests_without_response) > 0):
+            print('checking if unnaceptable interests can be admited')
         for i in self.interests_without_response:
             try:
                 shortest_path = self.get_shortest_path(i)
                 aceptable = self.estimate_path_burden(shortest_path, i.period)
                 if(not aceptable):
                     unnaceptable_interests.append(i)
-                    print("Interesse não aceito")
                 else:
                     self.interests_without_response.remove(i)
-                    print("UHULL, interesse aceito")
             except (NoSensorInRegionException, NetworkXNoPath):
-                print("Não foi possivel estimar o caminho até o gateway")
+                print("The interest", i, "cant be admited yet")
+        if(len(unnaceptable_interests) > 0):
+            print('the following interests worent admited', end = '')
+            for i in unnaceptable_interests:
+                print(i, end = '')
+            print()
         return unnaceptable_interests

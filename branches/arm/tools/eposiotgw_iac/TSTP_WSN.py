@@ -8,8 +8,7 @@ class TSTP_WSN:
     def __init__(self):
         self.rtree = Sensor_Rtree()
         self.graph = Sensor_Graph()
-        self.gateway = Sensor(0, 0, 10)
-        self.add_sensor(self.gateway)
+        self.gateway = Sensor(0, 0, 0)
         self.interests = []
 
     def add_sensor(self, sensor):
@@ -45,3 +44,4 @@ class TSTP_WSN:
 
     def set_gateway_range(self, range):
         self.gateway.range = range;
+        self.add_sensor(self.gateway)

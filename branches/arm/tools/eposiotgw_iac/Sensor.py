@@ -12,7 +12,7 @@ class Sensor(Coordinate_Object):
         self.range = range;
 
     def set_burden(self, burden):
-        self.backup_burden = burden
+        self.backup_burden = self.burden
         self.burden = burden
 
     def restore_burden(self):

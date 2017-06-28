@@ -24,6 +24,7 @@ class TSTP_Admission_Control:
         self.update_interests_without_response()
 
     def handle_new_interest_request(self, interest):
+        print("Admission control recevied a new interest", interest)
         isAceptable = self.estimator.is_interest_aceptable(interest)
         if(isAceptable):
             self.wsn.add_interest(interest)
