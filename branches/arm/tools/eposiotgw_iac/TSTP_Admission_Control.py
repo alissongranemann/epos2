@@ -1,7 +1,6 @@
 from Serial_Manager import Serial_Manager
 from Burden_Estimator import Burden_Estimator
 from TSTP_WSN import TSTP_WSN
-import struct
 
 class TSTP_Admission_Control:
 
@@ -24,7 +23,7 @@ class TSTP_Admission_Control:
         self.update_interests_without_response()
 
     def handle_new_interest_request(self, interest):
-        print("Admission control recevied a new interest", interest)
+        print("Admission control received a new interest", interest)
         isAceptable = self.estimator.is_interest_aceptable(interest)
         if(isAceptable):
             self.wsn.add_interest(interest)
