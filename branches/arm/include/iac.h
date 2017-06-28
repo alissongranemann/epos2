@@ -3,7 +3,7 @@
 
 #include <tstp.h>
 #include <utility/observer.h>
-#include <iac_serial_port_communication.h>
+#include "iac_serial_manager.h"
 
 __BEGIN_SYS
 
@@ -76,15 +76,17 @@ public:
     typedef IAC_Common::New_Interest New_Interest;
     typedef IAC_Common::New_Node New_Node;
     typedef IAC_Common::Config Config;
-    typedef Iac_Serial_Port_Communication::Message<New_Interest> New_Interest_Message;
-    typedef Iac_Serial_Port_Communication::Message<New_Node> New_Node_Message;
-    typedef Iac_Serial_Port_Communication::Message<Config> Config_Message;
+    typedef IAC_Serial_Manager::Message<New_Interest> New_Interest_Message;
+    typedef IAC_Serial_Manager::Message<New_Node> New_Node_Message;
+    typedef IAC_Serial_Manager::Message<Config> Config_Message;
     typedef Data_Observer<bool, int> Observer;
     typedef Data_Observed<bool, int> Observed;
 
 private:
 
-    static Iac_Serial_Port_Communication * serial_port;
+    static IAC_Serial_Manager * serial_port;
+
+    void update(TSTP::Observed * obs, int subject, TSTP::Buffer * buf);
 
 public:
 
@@ -94,9 +96,6 @@ public:
 
     static void init();
     static void new_interest(IAC::Observer * obs, TSTP::Interested * interested);
-
-    void update(TSTP::Observed * obs, int subject, TSTP::Buffer * buf);
-    void update(Observed * obs, int subject, bool * result);
 
     friend Debug & operator<<(Debug & db, const IAC & d) {
         db << "IAC";

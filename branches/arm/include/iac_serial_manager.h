@@ -9,7 +9,7 @@ __BEGIN_SYS
 
 #define PACKETSIZE sizeof(Message)
 
-class Iac_Serial_Port_Communication
+class IAC_Serial_Manager
 {
 
 public:
@@ -45,18 +45,18 @@ private:
     static Data_Observed<bool, int> _observed;
 
 public:
-    Iac_Serial_Port_Communication();
+    IAC_Serial_Manager();
 
-    ~Iac_Serial_Port_Communication();
+    ~IAC_Serial_Manager();
 
-    void epoch();
+    unsigned long long epoch();
 
     template <typename MessageType>
     void handle_tx_message(const Message<MessageType> & msg) {
         db<TSTP>(TRC) << "Serial_Port::handle_tx_message:" << endl;
         CPU::int_disable();
         for(unsigned int i = 0; i < sizeof(msg); i++)
-        io.put(reinterpret_cast<const char *>(&msg)[i]);
+            io.put(reinterpret_cast<const char *>(&msg)[i]);
         CPU::int_enable();
     }
 
