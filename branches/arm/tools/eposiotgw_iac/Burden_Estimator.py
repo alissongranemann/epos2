@@ -1,6 +1,7 @@
 import math
 from networkx.exception import NetworkXNoPath
 from TSTP_Exception import NoSensorInRegionException
+from copy import deepcopy
 
 class Burden_Estimator:
 
@@ -69,16 +70,20 @@ class Burden_Estimator:
 
     def get_unnaceptable_interests(self):
         unnaceptable_interests = []
+        print("lennNNnnnn", len(self.interests_without_response))
+
+        copy_list = deepcopy(self.interests_without_response)
         if(len(self.interests_without_response) > 0):
             print('checking if unnaceptable interests can be admited')
         for i in self.interests_without_response:
             try:
+                print("iiiiiiiiiiiiiiiiiiiiii",i)
                 shortest_path = self.get_shortest_path(i)
                 aceptable = self.estimate_path_burden(shortest_path, i.period)
                 if(not aceptable):
                     unnaceptable_interests.append(i)
-                else:
-                    self.interests_without_response.remove(i)
+                # else:
+                #     self.interests_without_response.remove(i)
             except (NoSensorInRegionException, NetworkXNoPath):
                 print("The interest", i, "cant be admited yet")
         if(len(unnaceptable_interests) > 0):
