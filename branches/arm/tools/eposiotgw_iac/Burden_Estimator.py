@@ -21,16 +21,16 @@ class Burden_Estimator:
             aceptable = self.estimate_path_burden(shortest_path, interest.period)
             return aceptable
         except (NoSensorInRegionException, NetworkXNoPath):
-            print("There are no path to", interest, "addind interest to interests_without_response list")
+            print("There is no path to", interest, "- Adding interest to interests_without_response list")
             self.interests_without_response.append(interest)
             return True
 
     def get_shortest_path(self, interest):
         sensors_in_region = self.wsn.get_sensors_in_range(interest)
-        print("Sensors in region of interest: ", end = '')
+        print("Sensors in region", end = '')
         for s in sensors_in_region:
             print(s, end = '')
-        print()
+        print(" of interest with id =", interest.ref)
 
         nearest_sensor = self.wsn.get_nearest_sensor(sensors_in_region)
         print("The nearest sensor of gateway in region is: ", nearest_sensor)
@@ -70,20 +70,16 @@ class Burden_Estimator:
 
     def get_unnaceptable_interests(self):
         unnaceptable_interests = []
-        print("lennNNnnnn", len(self.interests_without_response))
-
-        copy_list = deepcopy(self.interests_without_response)
         if(len(self.interests_without_response) > 0):
-            print('checking if unnaceptable interests can be admited')
-        for i in self.interests_without_response:
+            print('Checking if unnaceptable interests can be admited')
+        for i in list(self.interests_without_response):
             try:
-                print("iiiiiiiiiiiiiiiiiiiiii",i)
                 shortest_path = self.get_shortest_path(i)
                 aceptable = self.estimate_path_burden(shortest_path, i.period)
                 if(not aceptable):
                     unnaceptable_interests.append(i)
-                # else:
-                #     self.interests_without_response.remove(i)
+                else:
+                    self.interests_without_response.remove(i)
             except (NoSensorInRegionException, NetworkXNoPath):
                 print("The interest", i, "cant be admited yet")
         if(len(unnaceptable_interests) > 0):
