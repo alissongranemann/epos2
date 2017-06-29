@@ -2,14 +2,11 @@ from Coordinate_Object import Coordinate_Object
 
 class Sensor(Coordinate_Object):
 
-    id = 0;
-    range = 0;
-    burden = 0;
-    backup_burden = 0
-
     def __init__(self, x, y, range):
         Coordinate_Object.__init__(self, x, y)
         self.range = range;
+        self.burden = 0;
+        self.backup_burden = 0
 
     def set_burden(self, burden):
         self.backup_burden = self.burden
