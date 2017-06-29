@@ -1,3 +1,0 @@
-SRCS = \
-axi4lite_to_wishbone.v \
-wishbone_to_axi4lite.vhd

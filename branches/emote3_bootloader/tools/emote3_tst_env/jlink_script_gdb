@@ -1,7 +1,0 @@
-selemu
-exec device = CC2538SF53
-h
-r
-loadbin APPLICATION_NAME,0
-h
-r
