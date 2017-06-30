@@ -2,17 +2,19 @@ from TSTP_Admission_Control import TSTP_Admission_Control
 from Sensor import Sensor
 from Interest import Interest
 import struct
+import random
 
 mac_period = 116
 
 admission_control = TSTP_Admission_Control(False)
 admission_control.config(20, mac_period)
 
+
 def create_sensor(x, y):
     return Sensor(x, y, 20)
 
 def create_interest(x, y, radius, period, expiry):
-    return Interest(x, y, 10, period, expiry, 10)
+    return Interest(x, y, 10, period, expiry, random.randint(0,200))
 
 def create_sensor_request(x, y):
     admission_control.handle_new_sensor_request(create_sensor(x, y))
@@ -32,7 +34,8 @@ def test_add_sensors_before_interests():
     create_interest_request(23, 0, 10, 2, 0)
 
 def test_add_interest_before_sensors():
-    create_interest_request(23, 0, 10, 2 * mac_period, 0)
+    create_interest_request(23, 0, 10, 1 * mac_period, 0)
+    create_interest_request(25, 0, 10, 2 * mac_period, 0)
     create_interest_request(25, 0, 10, 2 * mac_period, 0)
 
     create_sensor_request(0, 0)

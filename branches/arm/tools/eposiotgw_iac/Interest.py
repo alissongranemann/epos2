@@ -10,4 +10,12 @@ class Interest(Coordinate_Object):
         self.ref = ref
 
     def __str__(self):
-     return "("+ str(self.x) + ", " + str(self.y) + ", " + str(self.range) + ", " + str(self.period) + ")"
+     return "("+ str(self.x) + ", " + str(self.y) + ", " + str(self.range) + ", " + str(self.period) + ", " + str(self.ref) + ")"
+
+    def __hash__(self):
+        return hash((self.ref))
+
+    def __eq__(self, other):
+        if type(other) is type(self):
+            return self.ref == other.ref
+        return False
