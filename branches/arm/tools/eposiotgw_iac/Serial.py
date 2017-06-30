@@ -55,13 +55,10 @@ class Serial:
         ts = bytes(str(int(time.time() * 1000000)), 'ascii')
         try:
             mote.write(ts + b'X')
-            print("epoch written", file=sys.stderr)
         except KeyboardInterrupt:
             raise
         except serial.serialutil.SerialTimeoutException:
             pass
-
-        print("init_mote() done", file=sys.stderr)
         return mote
 
     def read_first(self):
@@ -104,7 +101,6 @@ class Serial:
     def write(self, data):
         try:
             self.mote.write(data)
-            print("Data written on EPOS", data)
         except KeyboardInterrupt:
             raise
         except serial.serialutil.SerialTimeoutException:

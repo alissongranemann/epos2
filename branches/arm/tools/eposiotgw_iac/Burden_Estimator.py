@@ -3,7 +3,6 @@ from networkx.exception import NetworkXNoPath
 from TSTP_Exception import NoSensorInRegionException
 from copy import deepcopy
 
-
 class Burden_Estimator:
 
     def __init__(self, wsn):
@@ -22,13 +21,13 @@ class Burden_Estimator:
             aceptable = self.estimate_path_burden(shortest_path, interest.period)
             return aceptable
         except (NoSensorInRegionException, NetworkXNoPath):
-            print("There are no path to", interest, "addind interest to interests_without_response list")
+            print("There is no path to", interest, "- Adding interest to interests_without_response list")
             self.interests_without_response.append(interest)
             return True
 
     def get_shortest_path(self, interest):
         sensors_in_region = self.wsn.get_sensors_in_range(interest)
-        print("Sensors in region of interest: ", end = '')
+        print("Sensors in region", end = '')
         for s in sensors_in_region:
             print(s, end = '')
         print()
@@ -71,10 +70,10 @@ class Burden_Estimator:
 
     def get_unnaceptable_interests(self):
         unnaceptable_interests = []
-        iteration_set = deepcopy(self.interests_without_response)
+        iteration_list = deepcopy(self.interests_without_response)
         if(len(self.interests_without_response) > 0):
             print('checking if unnaceptable interests can be admited')
-        for interest in iteration_set:
+        for interest in iteration_list:
             try:
                 shortest_path = self.get_shortest_path(interest)
                 aceptable = self.estimate_path_burden(shortest_path, interest.period)

@@ -32,7 +32,6 @@ class TSTP_Admission_Control:
 
     def notify(self, isAceptable, interest_ref):
         if(self.use_serial):
-            print("interest_ref=", interest_ref)
             self.serial_manager.write_response_message(isAceptable, interest_ref)
 
     def update_interests_without_response(self):

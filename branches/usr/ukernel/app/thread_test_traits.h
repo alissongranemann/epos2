@@ -1,1 +1,0 @@
-../src/abstraction/thread_test_traits.h
